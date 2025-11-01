@@ -40,4 +40,58 @@ Your build must use: **Next.js 14+ (App Router) for SSR/SSG**, **TypeScript** fo
 
 Build step-by-step. Output: Complete, runnable code in a monorepo structure. Explain each step with rationale, code snippets, and testing notes. Ensure ~10,000 words total (detailed explanations). If code exceeds limits, provide zipped repo link simulation.
 
----
+
+## UI Revamp Plan
+
+This section provides a concrete plan to revamp the UI for the SysDesignAI MVP. The goal is to make the practice experience clearer, more modern, and more usable across devices while keeping risk low and changes incremental.
+
+### Goals
+- Make the practice flow clearer and more focused (chat-first, diagram/notes secondary).
+- Improve visual hierarchy and accessibility (color tokens, spacing, contrast, keyboard navigation).
+- Modernize components using the existing `shadcn/ui` primitives and Tailwind tokens.
+- Keep sessions ephemeral and zero-auth; changes are UI-only unless an API improvement is required.
+
+### Scope (what we'll change)
+- Visual system: add a tokens section (colors, spacing, type scale), dark-mode-friendly palette.
+- Page layout: update `/practice/[slug]/page.tsx` to a 2-column responsive layout with a collapsible right pane for diagrams/notes.
+- Components: restyle and, where needed, refactor `ProblemCard`, `ChatInterface`, `DiagramCanvas`, `FeedbackModal`, and shared `ui/*` primitives.
+- Small UX additions: phase progress indicator (Requirements → HLD → LLD → Trade-offs → Feedback), session export (transcript PDF), and improved diagram export (PNG/SVG).
+
+### Deliverables
+1. `UI Revamp` section added to project docs (this file).
+2. Visual tokens (new/updated Tailwind config snippets and a `src/styles/tokens.ts` or equivalent if required).
+3. Component-level updates in `src/components/*` (minimal API changes, prefer props compatibility).
+4. Updated `/practice/[slug]/page.tsx` layout and header with phase progress.
+5. Accessibility adjustments and keyboard shortcuts list in the repo docs.
+6. Automated checks: `pnpm build`, `pnpm lint`, and `pnpm test` pass for touched files.
+
+### Timeline & Phases (suggested)
+- Phase A (1 day): Plan & audit — produce this plan (done) and run a component audit.
+- Phase B (2 days): Visual system & tokenization — update Tailwind, add color tokens and small theme utilities.
+- Phase C (3 days): Component updates — restyle `ProblemCard`, `ChatInterface`, `DiagramCanvas`, `FeedbackModal`, and `ui/*` primitives.
+- Phase D (1 day): Practice page layout and integration — wire updated components into `/practice/[slug]` and add phase progress + export actions.
+- Phase E (1 day): Tests & QA — run build/lint/tests, fix issues, and add a couple of unit tests for new behavior.
+
+### Component-level tasks (quick mapping)
+- `src/components/ProblemCard.tsx` — improve card layout, add difficulty badge, hover actions, ensure keyboard focus styles.
+- `src/components/ChatInterface.tsx` — restyle messages, add phase header, quick-send keyboard (Cmd/Ctrl+Enter), compact message composer, and accessibility attributes.
+- `src/components/DiagramCanvas.tsx` — add snap-to-grid toggle, basic toolbar (rectangle, connector, text), and export button.
+- `src/components/FeedbackModal.tsx` — standardize modal layout and make feedback actionable (scores + short tips list).
+- `src/components/ui/*` — update `button`, `card`, `input`, `textarea` primitives for consistent spacing and states.
+
+### Quality gates
+- Build: `pnpm build` should pass after changes.
+- Lint/Types: `pnpm lint` and TypeScript checks must pass for edited files.
+- Tests: Add minimal unit tests (Vitest) for `ProblemCard` rendering and `ChatInterface` basic interactions. Tests should pass locally.
+
+### Assumptions & Constraints
+- No authentication or persistence changes will be introduced.
+- LangGraph/AI flows remain the same; only UI hooks / display change unless a UX bug forces minor API tweaks.
+- Keep changes minimal and reversible — prefer feature flags or small PR-sized commits.
+
+### Next steps (immediate)
+1. Audit current components to create a short inventory of props/styles used (I will run this if you want me to). 
+2. Apply visual tokens and small Tailwind updates.
+3. Begin component restyles one-by-one, starting with `ProblemCard` and `ChatInterface`.
+
+If you want, I can now run the component audit (scan `src/components` and list what needs edits) and then begin implementing the `ProblemCard` and `ChatInterface` restyles. Tell me whether to proceed with the audit now, or if you'd like changes to the plan first.
