@@ -6,7 +6,7 @@ import DiagramCanvas from './DiagramCanvas';
 import FeedbackModal from './FeedbackModal';
 import { Button } from './ui/button';
 import { ThemeToggle } from './ui/theme-toggle';
-import { Download, ChevronsDown, ChevronsUp, Home, Sparkles, Layout } from 'lucide-react';
+import { Download, ChevronsDown, ChevronsUp, Home, Sparkles, Layout, Pencil } from 'lucide-react';
 import { SystemDesignProblem } from '@/types';
 import { tokens } from '@/styles/tokens';
 import Link from 'next/link';
@@ -16,6 +16,9 @@ const PHASES = ['Requirements', 'HLD', 'LLD', 'Trade-offs', 'Scalability', 'Feed
 export default function PracticeUI({ problem }: { problem: SystemDesignProblem }) {
   const [phase, setPhase] = useState<string>('Requirements');
   const [diagramCollapsed, setDiagramCollapsed] = useState(false);
+
+  // Diagram is only relevant for HLD and LLD phases
+  const isDiagramRelevant = phase === 'HLD' || phase === 'LLD';
 
   const getPhaseColor = (currentPhase: string) => {
     const phaseKey = currentPhase.toLowerCase().replace(' ', '') as keyof typeof tokens.colors.phase;
@@ -88,7 +91,7 @@ export default function PracticeUI({ problem }: { problem: SystemDesignProblem }
             {PHASES.map((p, idx) => (
               <div key={p} className="flex items-center">
                 <div
-                  className={`text-xs px-4 py-2 rounded-full font-semibold transition-all duration-300 whitespace-nowrap ${
+                  className={`text-xs px-4 py-2 rounded-full font-semibold transition-all duration-300 whitespace-nowrap flex items-center gap-2 ${
                     p === phase
                       ? 'text-white shadow-lg scale-105'
                       : 'bg-muted/50 text-muted-foreground hover:bg-muted/70'
@@ -96,6 +99,9 @@ export default function PracticeUI({ problem }: { problem: SystemDesignProblem }
                   style={p === phase ? { backgroundColor: getPhaseColor(p) } : {}}
                 >
                   {p}
+                  {(p === 'HLD' || p === 'LLD') && (
+                    <Pencil className="h-3 w-3" />
+                  )}
                 </div>
                 {idx < PHASES.length - 1 && (
                   <div className="w-8 h-0.5 bg-border mx-1" />
@@ -110,35 +116,54 @@ export default function PracticeUI({ problem }: { problem: SystemDesignProblem }
           <StepByStepChat problem={problem} />
         </div>
 
-        {/* Diagram Section - Full Width Below */}
-        <div className={`mt-6 transition-all duration-300 animate-fade-in ${diagramCollapsed ? 'h-0 opacity-0 overflow-hidden' : 'min-h-[600px] h-[calc(100vh-200px)] opacity-100'}`} style={{ animationDelay: '200ms' }}>
-          <div className="relative h-full">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setDiagramCollapsed(!diagramCollapsed)}
-              className="absolute -top-12 right-0 z-10 shadow-lg"
-            >
-              <Layout className="h-4 w-4 mr-2" />
-              {diagramCollapsed ? 'Show Diagram' : 'Hide Diagram'}
-              {diagramCollapsed ? <ChevronsDown className="h-4 w-4 ml-2" /> : <ChevronsUp className="h-4 w-4 ml-2" />}
-            </Button>
-            <DiagramCanvas />
-          </div>
-        </div>
+        {/* Diagram Section - Only show for HLD and LLD phases */}
+        {isDiagramRelevant && (
+          <>
+            {/* Diagram available notification */}
+            <div className="mt-6 p-4 glass rounded-lg border-2 border-primary/30 bg-primary/5 animate-fade-in">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Pencil className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-sm">System Diagram Now Available!</h3>
+                  <p className="text-xs text-muted-foreground">
+                    Use the diagram canvas below to visualize your {phase} architecture
+                  </p>
+                </div>
+              </div>
+            </div>
 
-        {/* Floating diagram toggle when collapsed */}
-        {diagramCollapsed && (
-          <Button
-            variant="default"
-            size="lg"
-            onClick={() => setDiagramCollapsed(false)}
-            className="fixed bottom-8 right-8 shadow-2xl z-50 gradient-bg animate-bounce"
-          >
-            <Layout className="h-5 w-5 mr-2" />
-            Show Diagram Canvas
-            <ChevronsDown className="h-5 w-5 ml-2" />
-          </Button>
+            <div className={`mt-6 transition-all duration-300 animate-fade-in ${diagramCollapsed ? 'h-0 opacity-0 overflow-hidden' : 'min-h-[600px] h-[calc(100vh-200px)] opacity-100'}`} style={{ animationDelay: '200ms' }}>
+              <div className="relative h-full">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setDiagramCollapsed(!diagramCollapsed)}
+                  className="absolute -top-12 right-0 z-10 shadow-lg"
+                >
+                  <Layout className="h-4 w-4 mr-2" />
+                  {diagramCollapsed ? 'Show Diagram' : 'Hide Diagram'}
+                  {diagramCollapsed ? <ChevronsDown className="h-4 w-4 ml-2" /> : <ChevronsUp className="h-4 w-4 ml-2" />}
+                </Button>
+                <DiagramCanvas />
+              </div>
+            </div>
+
+            {/* Floating diagram toggle when collapsed */}
+            {diagramCollapsed && (
+              <Button
+                variant="default"
+                size="lg"
+                onClick={() => setDiagramCollapsed(false)}
+                className="fixed bottom-8 right-8 shadow-2xl z-50 gradient-bg animate-bounce"
+              >
+                <Layout className="h-5 w-5 mr-2" />
+                Show Diagram Canvas
+                <ChevronsDown className="h-5 w-5 ml-2" />
+              </Button>
+            )}
+          </>
         )}
       </div>
     </div>

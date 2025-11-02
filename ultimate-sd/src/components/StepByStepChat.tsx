@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { SystemDesignProblem } from '@/types';
 import { tokens } from '@/styles/tokens';
+import SchemaBuilder from '@/components/SchemaBuilder';
 import { 
   Sparkles, 
   Plus, 
@@ -26,7 +27,7 @@ interface StepData {
   subStep: string;
   title: string;
   prompt: string;
-  inputType: 'list' | 'textarea';
+  inputType: 'list' | 'textarea' | 'schema';
   placeholder?: string;
 }
 
@@ -71,9 +72,9 @@ const PHASE_STEPS: { [key: string]: StepData[] } = {
       phase: 'HLD',
       subStep: 'data-model',
       title: 'Data Model',
-      prompt: 'What are your main entities and their relationships? Describe your database schema.',
-      inputType: 'textarea',
-      placeholder: 'Describe your entities, tables, and relationships...'
+      prompt: 'What are your main entities and their relationships? Design your database schema with tables, fields, and relationships.',
+      inputType: 'schema',
+      placeholder: 'Build your schema using the visual builder below'
     },
     {
       phase: 'HLD',
@@ -152,6 +153,7 @@ interface FeedbackResult {
 interface SavedStepData {
   listItems: string[];
   textInput: string;
+  schemaData: any[];
   feedback: FeedbackResult | null;
   completed: boolean;
 }
@@ -165,6 +167,7 @@ export default function StepByStepChat({ problem }: Props) {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [listItems, setListItems] = useState<string[]>([]);
   const [textInput, setTextInput] = useState('');
+  const [schemaData, setSchemaData] = useState<any[]>([]);
   const [newItemInput, setNewItemInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackResult | null>(null);
@@ -188,11 +191,13 @@ export default function StepByStepChat({ problem }: Props) {
     if (saved) {
       setListItems(saved.listItems);
       setTextInput(saved.textInput);
+      setSchemaData(saved.schemaData || []);
       setFeedback(saved.feedback);
       setShowFeedback(saved.feedback !== null);
     } else {
       setListItems([]);
       setTextInput('');
+      setSchemaData([]);
       setFeedback(null);
       setShowFeedback(false);
     }
@@ -221,9 +226,11 @@ export default function StepByStepChat({ problem }: Props) {
   const handleSubmit = async () => {
     const userAnswer = currentStep.inputType === 'list' 
       ? listItems.join('\n') 
+      : currentStep.inputType === 'schema'
+      ? JSON.stringify(schemaData, null, 2)
       : textInput;
 
-    if (!userAnswer.trim()) return;
+    if (!userAnswer.trim() || (currentStep.inputType === 'schema' && schemaData.length === 0)) return;
 
     setLoading(true);
     setShowFeedback(false);
@@ -250,6 +257,7 @@ export default function StepByStepChat({ problem }: Props) {
       newSavedData.set(currentStepKey, {
         listItems: [...listItems],
         textInput,
+        schemaData: [...schemaData],
         feedback: data.feedback,
         completed: data.feedback.isAcceptable
       });
@@ -311,6 +319,7 @@ export default function StepByStepChat({ problem }: Props) {
       newSavedData.set(currentStepKey, {
         listItems: [],
         textInput: '',
+        schemaData: [],
         feedback: null,
         completed: false
       });
@@ -465,6 +474,18 @@ export default function StepByStepChat({ problem }: Props) {
                     </p>
                   )}
                 </div>
+              ) : currentStep.inputType === 'schema' ? (
+                <div>
+                  <SchemaBuilder 
+                    value={schemaData} 
+                    onChange={setSchemaData}
+                  />
+                  {schemaData.length === 0 && (
+                    <p className="text-xs text-muted-foreground text-center py-4 mt-4">
+                      Add at least one entity with fields to continue
+                    </p>
+                  )}
+                </div>
               ) : (
                 <Textarea
                   value={textInput}
@@ -498,7 +519,13 @@ export default function StepByStepChat({ problem }: Props) {
 
                 <Button
                   onClick={handleSubmit}
-                  disabled={loading || (currentStep.inputType === 'list' ? listItems.length === 0 : !textInput.trim())}
+                  disabled={loading || (
+                    currentStep.inputType === 'list' 
+                      ? listItems.length === 0 
+                      : currentStep.inputType === 'schema'
+                      ? schemaData.length === 0
+                      : !textInput.trim()
+                  )}
                   className="gradient-bg"
                 >
                   {loading ? (
