@@ -22,10 +22,20 @@ import {
   Grid3x3,
   Image as ImageIcon,
   Undo,
-  Redo
+  Redo,
+  Users,
+  Smartphone,
+  Gauge,
+  Cable,
+  Lock,
+  Zap,
+  Box,
+  HardDrive,
+  Binary
 } from 'lucide-react';
 
-type Tool = 'select' | 'rectangle' | 'circle' | 'database' | 'server' | 'cloud' | 'text' | 'arrow' | 'line';
+type Tool = 'select' | 'rectangle' | 'circle' | 'database' | 'server' | 'cloud' | 'text' | 'arrow' | 'line' | 
+  'loadbalancer' | 'cache' | 'queue' | 'client' | 'api' | 'microservice' | 'cdn';
 
 interface DiagramElement {
   id: string;
@@ -175,6 +185,223 @@ function SystemDesignCanvas() {
         ctx.closePath();
         ctx.fill();
         ctx.stroke();
+        break;
+      
+      case 'loadbalancer':
+        // Load Balancer - Gauge icon style (semi-circle with needle)
+        ctx.fillRect(element.x, element.y, element.width, element.height);
+        ctx.strokeRect(element.x, element.y, element.width, element.height);
+        
+        const lbCx = element.x + element.width / 2;
+        const lbCy = element.y + element.height / 2;
+        const lbRadius = Math.min(element.width, element.height) * 0.35;
+        
+        // Draw semi-circle gauge
+        ctx.beginPath();
+        ctx.arc(lbCx, lbCy + lbRadius * 0.3, lbRadius, Math.PI, 0, false);
+        ctx.stroke();
+        
+        // Draw tick marks
+        for (let i = 0; i <= 4; i++) {
+          const angle = Math.PI + (i / 4) * Math.PI;
+          const startR = lbRadius * 0.85;
+          const endR = lbRadius;
+          ctx.beginPath();
+          ctx.moveTo(lbCx + Math.cos(angle) * startR, lbCy + lbRadius * 0.3 + Math.sin(angle) * startR);
+          ctx.lineTo(lbCx + Math.cos(angle) * endR, lbCy + lbRadius * 0.3 + Math.sin(angle) * endR);
+          ctx.stroke();
+        }
+        
+        // Draw needle pointing up-right
+        const needleAngle = Math.PI * 1.25;
+        ctx.beginPath();
+        ctx.moveTo(lbCx, lbCy + lbRadius * 0.3);
+        ctx.lineTo(lbCx + Math.cos(needleAngle) * lbRadius * 0.7, lbCy + lbRadius * 0.3 + Math.sin(needleAngle) * lbRadius * 0.7);
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.lineWidth = isSelected ? 3 : 2;
+        break;
+      
+      case 'cache':
+        // Cache - Lightning bolt (Zap icon)
+        ctx.fillRect(element.x, element.y, element.width, element.height);
+        ctx.strokeRect(element.x, element.y, element.width, element.height);
+        
+        const cacheCx = element.x + element.width / 2;
+        const cacheCy = element.y + element.height / 2;
+        const zW = element.width * 0.25;
+        const zH = element.height * 0.35;
+        
+        // Lightning bolt shape matching Zap icon
+        ctx.beginPath();
+        ctx.moveTo(cacheCx + zW * 0.3, cacheCy - zH);
+        ctx.lineTo(cacheCx - zW * 0.3, cacheCy);
+        ctx.lineTo(cacheCx + zW * 0.1, cacheCy + zH * 0.1);
+        ctx.lineTo(cacheCx - zW * 0.3, cacheCy + zH);
+        ctx.lineTo(cacheCx + zW * 0.3, cacheCy - zH * 0.1);
+        ctx.lineTo(cacheCx - zW * 0.1, cacheCy - zH * 0.1);
+        ctx.closePath();
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.lineWidth = isSelected ? 3 : 2;
+        break;
+      
+      case 'queue':
+        // Message Queue - Binary icon style (1s and 0s pattern)
+        ctx.fillRect(element.x, element.y, element.width, element.height);
+        ctx.strokeRect(element.x, element.y, element.width, element.height);
+        
+        const qCx = element.x + element.width / 2;
+        const qCy = element.y + element.height / 2;
+        
+        // Draw binary pattern
+        ctx.font = 'bold 14px monospace';
+        ctx.fillStyle = element.color;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        const binaryText = ['1 0', '0 1', '1 1'];
+        binaryText.forEach((text, i) => {
+          const yOffset = (i - 1) * 12;
+          ctx.fillText(text, qCx, qCy + yOffset);
+        });
+        
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'alphabetic';
+        break;
+      
+      case 'client':
+        // Client - Users icon (two overlapping circles with bodies)
+        ctx.fillRect(element.x, element.y, element.width, element.height);
+        ctx.strokeRect(element.x, element.y, element.width, element.height);
+        
+        const clientCx = element.x + element.width / 2;
+        const clientCy = element.y + element.height / 2;
+        const headR = element.height * 0.12;
+        const offset = element.width * 0.12;
+        
+        // Left person
+        ctx.beginPath();
+        ctx.arc(clientCx - offset, clientCy - headR * 1.5, headR, 0, Math.PI * 2);
+        ctx.stroke();
+        // Left person body (arc)
+        ctx.beginPath();
+        ctx.arc(clientCx - offset, clientCy + headR * 2, headR * 1.8, Math.PI * 1.2, Math.PI * 1.8);
+        ctx.stroke();
+        
+        // Right person (overlapping)
+        ctx.beginPath();
+        ctx.arc(clientCx + offset, clientCy - headR * 1.5, headR, 0, Math.PI * 2);
+        ctx.stroke();
+        // Right person body (arc)
+        ctx.beginPath();
+        ctx.arc(clientCx + offset, clientCy + headR * 2, headR * 1.8, Math.PI * 1.2, Math.PI * 1.8);
+        ctx.stroke();
+        break;
+      
+      case 'api':
+        // API Gateway - Cable icon (plug with connector)
+        ctx.fillRect(element.x, element.y, element.width, element.height);
+        ctx.strokeRect(element.x, element.y, element.width, element.height);
+        
+        const apiCx = element.x + element.width / 2;
+        const apiCy = element.y + element.height / 2;
+        const cableW = element.width * 0.15;
+        const cableH = element.height * 0.3;
+        
+        // Cable connector top
+        ctx.beginPath();
+        ctx.moveTo(apiCx - cableW, apiCy - cableH);
+        ctx.lineTo(apiCx - cableW, apiCy - cableH * 0.5);
+        ctx.lineTo(apiCx + cableW, apiCy - cableH * 0.5);
+        ctx.lineTo(apiCx + cableW, apiCy - cableH);
+        ctx.stroke();
+        
+        // Pins
+        const pinSpacing = cableW * 0.6;
+        [-pinSpacing, 0, pinSpacing].forEach(xOff => {
+          ctx.beginPath();
+          ctx.moveTo(apiCx + xOff, apiCy - cableH * 0.5);
+          ctx.lineTo(apiCx + xOff, apiCy);
+          ctx.stroke();
+        });
+        
+        // Cable line
+        ctx.beginPath();
+        ctx.moveTo(apiCx, apiCy);
+        ctx.lineTo(apiCx, apiCy + cableH);
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.lineWidth = isSelected ? 3 : 2;
+        break;
+      
+      case 'microservice':
+        // Microservice - Box icon (cube in 3D)
+        ctx.fillRect(element.x, element.y, element.width, element.height);
+        ctx.strokeRect(element.x, element.y, element.width, element.height);
+        
+        const msInset = Math.min(element.width, element.height) * 0.15;
+        const msX = element.x + msInset;
+        const msY = element.y + msInset;
+        const msW = element.width - msInset * 2;
+        const msH = element.height - msInset * 2;
+        
+        // Front face
+        ctx.strokeRect(msX, msY, msW, msH);
+        
+        // 3D effect - connect corners
+        ctx.beginPath();
+        ctx.moveTo(element.x + msInset * 0.5, element.y + msInset * 0.5);
+        ctx.lineTo(msX, msY);
+        ctx.moveTo(element.x + element.width - msInset * 0.5, element.y + msInset * 0.5);
+        ctx.lineTo(msX + msW, msY);
+        ctx.moveTo(element.x + msInset * 0.5, element.y + element.height - msInset * 0.5);
+        ctx.lineTo(msX, msY + msH);
+        ctx.stroke();
+        
+        // Back edges
+        ctx.beginPath();
+        ctx.moveTo(element.x + msInset * 0.5, element.y + msInset * 0.5);
+        ctx.lineTo(element.x + element.width - msInset * 0.5, element.y + msInset * 0.5);
+        ctx.lineTo(element.x + element.width - msInset * 0.5, element.y + element.height - msInset * 0.5);
+        ctx.lineTo(element.x + msInset * 0.5, element.y + element.height - msInset * 0.5);
+        ctx.closePath();
+        ctx.stroke();
+        break;
+      
+      case 'cdn':
+        // CDN - HardDrive icon (disk with lines)
+        ctx.fillRect(element.x, element.y, element.width, element.height);
+        ctx.strokeRect(element.x, element.y, element.width, element.height);
+        
+        const cdnCx = element.x + element.width / 2;
+        const cdnW = element.width * 0.6;
+        const cdnH = element.height * 0.15;
+        const cdnTop = element.y + element.height * 0.25;
+        
+        // Top ellipse
+        ctx.beginPath();
+        ctx.ellipse(cdnCx, cdnTop, cdnW / 2, cdnH, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        
+        // Vertical lines (sides)
+        ctx.beginPath();
+        ctx.moveTo(cdnCx - cdnW / 2, cdnTop);
+        ctx.lineTo(cdnCx - cdnW / 2, cdnTop + element.height * 0.35);
+        ctx.moveTo(cdnCx + cdnW / 2, cdnTop);
+        ctx.lineTo(cdnCx + cdnW / 2, cdnTop + element.height * 0.35);
+        ctx.stroke();
+        
+        // Bottom ellipse
+        ctx.beginPath();
+        ctx.ellipse(cdnCx, cdnTop + element.height * 0.35, cdnW / 2, cdnH, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        
+        // Indicator light
+        ctx.beginPath();
+        ctx.arc(cdnCx - cdnW * 0.3, cdnTop + element.height * 0.175, 3, 0, Math.PI * 2);
+        ctx.fillStyle = element.color;
+        ctx.fill();
         break;
       
       case 'arrow':
@@ -447,7 +674,7 @@ function SystemDesignCanvas() {
             variant={currentTool === 'select' ? 'default' : 'ghost'}
             onClick={() => setCurrentTool('select')}
             className="h-8 w-8 p-0"
-            title="Select (V)"
+            title="Select & Move (V)"
           >
             <Move className="h-4 w-4" />
           </Button>
@@ -456,7 +683,7 @@ function SystemDesignCanvas() {
             variant={currentTool === 'rectangle' ? 'default' : 'ghost'}
             onClick={() => setCurrentTool('rectangle')}
             className="h-8 w-8 p-0"
-            title="Rectangle (R)"
+            title="Rectangle - Generic Component (R)"
           >
             <Square className="h-4 w-4" />
           </Button>
@@ -465,7 +692,7 @@ function SystemDesignCanvas() {
             variant={currentTool === 'circle' ? 'default' : 'ghost'}
             onClick={() => setCurrentTool('circle')}
             className="h-8 w-8 p-0"
-            title="Circle (C)"
+            title="Circle - Process/Node (C)"
           >
             <Circle className="h-4 w-4" />
           </Button>
@@ -474,7 +701,7 @@ function SystemDesignCanvas() {
             variant={currentTool === 'database' ? 'default' : 'ghost'}
             onClick={() => setCurrentTool('database')}
             className="h-8 w-8 p-0"
-            title="Database (D)"
+            title="Database - SQL/NoSQL Storage (D)"
           >
             <Database className="h-4 w-4" />
           </Button>
@@ -483,7 +710,7 @@ function SystemDesignCanvas() {
             variant={currentTool === 'server' ? 'default' : 'ghost'}
             onClick={() => setCurrentTool('server')}
             className="h-8 w-8 p-0"
-            title="Server (S)"
+            title="Server - Application Server (S)"
           >
             <Server className="h-4 w-4" />
           </Button>
@@ -492,7 +719,7 @@ function SystemDesignCanvas() {
             variant={currentTool === 'cloud' ? 'default' : 'ghost'}
             onClick={() => setCurrentTool('cloud')}
             className="h-8 w-8 p-0"
-            title="Cloud"
+            title="Cloud - Cloud Service/Infrastructure"
           >
             <Cloud className="h-4 w-4" />
           </Button>
@@ -501,7 +728,7 @@ function SystemDesignCanvas() {
             variant={currentTool === 'arrow' ? 'default' : 'ghost'}
             onClick={() => setCurrentTool('arrow')}
             className="h-8 w-8 p-0"
-            title="Arrow (A)"
+            title="Arrow - Data Flow Direction (A)"
           >
             <ArrowRight className="h-4 w-4" />
           </Button>
@@ -510,7 +737,7 @@ function SystemDesignCanvas() {
             variant={currentTool === 'line' ? 'default' : 'ghost'}
             onClick={() => setCurrentTool('line')}
             className="h-8 w-8 p-0"
-            title="Line (L)"
+            title="Line - Connection/Link (L)"
           >
             <Workflow className="h-4 w-4" />
           </Button>
@@ -519,9 +746,78 @@ function SystemDesignCanvas() {
             variant={currentTool === 'text' ? 'default' : 'ghost'}
             onClick={() => setCurrentTool('text')}
             className="h-8 w-8 p-0"
-            title="Text (T)"
+            title="Text - Label/Annotation (T)"
           >
             <Type className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <div className="h-8 w-px bg-border" />
+
+        {/* System Design Components */}
+        <div className="flex items-center gap-1 p-1 bg-background rounded-lg border border-border">
+          <Button
+            size="sm"
+            variant={currentTool === 'loadbalancer' ? 'default' : 'ghost'}
+            onClick={() => setCurrentTool('loadbalancer')}
+            className="h-8 w-8 p-0"
+            title="Load Balancer - Distributes Traffic"
+          >
+            <Gauge className="h-4 w-4" />
+          </Button>
+          <Button
+            size="sm"
+            variant={currentTool === 'cache' ? 'default' : 'ghost'}
+            onClick={() => setCurrentTool('cache')}
+            className="h-8 w-8 p-0"
+            title="Cache - Redis/Memcached"
+          >
+            <Zap className="h-4 w-4" />
+          </Button>
+          <Button
+            size="sm"
+            variant={currentTool === 'queue' ? 'default' : 'ghost'}
+            onClick={() => setCurrentTool('queue')}
+            className="h-8 w-8 p-0"
+            title="Message Queue - Kafka/RabbitMQ/SQS"
+          >
+            <Binary className="h-4 w-4" />
+          </Button>
+          <Button
+            size="sm"
+            variant={currentTool === 'client' ? 'default' : 'ghost'}
+            onClick={() => setCurrentTool('client')}
+            className="h-8 w-8 p-0"
+            title="Client - User/Mobile/Web App"
+          >
+            <Users className="h-4 w-4" />
+          </Button>
+          <Button
+            size="sm"
+            variant={currentTool === 'api' ? 'default' : 'ghost'}
+            onClick={() => setCurrentTool('api')}
+            className="h-8 w-8 p-0"
+            title="API Gateway - REST/GraphQL Endpoint"
+          >
+            <Cable className="h-4 w-4" />
+          </Button>
+          <Button
+            size="sm"
+            variant={currentTool === 'microservice' ? 'default' : 'ghost'}
+            onClick={() => setCurrentTool('microservice')}
+            className="h-8 w-8 p-0"
+            title="Microservice - Service Component"
+          >
+            <Box className="h-4 w-4" />
+          </Button>
+          <Button
+            size="sm"
+            variant={currentTool === 'cdn' ? 'default' : 'ghost'}
+            onClick={() => setCurrentTool('cdn')}
+            className="h-8 w-8 p-0"
+            title="CDN - Content Delivery Network"
+          >
+            <HardDrive className="h-4 w-4" />
           </Button>
         </div>
 
