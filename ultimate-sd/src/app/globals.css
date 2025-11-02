@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-  --color-background: hsl(0 0% 100%);
+  --color-background: hsl(220 17% 97%);
   --color-foreground: hsl(222.2 84% 4.9%);
   --color-card: hsl(0 0% 100%);
   --color-card-foreground: hsl(222.2 84% 4.9%);
@@ -55,28 +55,187 @@
   }
 }
 
+/* Design tokens (minimal set for UX consistency) */
+:root {
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --type-lg: 1.25rem;
+  --type-md: 1rem;
+  --type-sm: 0.875rem;
+}
+
+/* Focus ring helper for accessibility */
+.focus-ring:focus {
+  outline: 3px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  height: 1px; width: 1px;
+  overflow: hidden;
+  clip: rect(1px, 1px, 1px, 1px);
+  white-space: nowrap;
+}
+
+/* Enhanced animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-slide-in {
+  animation: slideIn 0.4s ease-out;
+}
+
 .chat-bubble {
-  border-radius: 0.5rem;
+  border-radius: 0.75rem;
   padding: 1rem;
   box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  animation: fadeIn 0.3s ease-out;
 }
 
 .ai {
-  background-color: rgb(239 246 255);
+  background: linear-gradient(135deg, rgb(239 246 255) 0%, rgb(224 242 254) 100%);
   color: rgb(30 64 175);
+  border-left: 3px solid rgb(59 130 246);
 }
 
 .dark .ai {
-  background-color: rgb(30 64 175);
+  background: linear-gradient(135deg, rgb(30 58 138) 0%, rgb(30 64 175) 100%);
   color: rgb(239 246 255);
+  border-left: 3px solid rgb(96 165 250);
 }
 
 .user {
-  background-color: rgb(249 250 251);
+  background: linear-gradient(135deg, rgb(249 250 251) 0%, rgb(243 244 246) 100%);
   color: rgb(17 24 39);
+  border-left: 3px solid rgb(156 163 175);
 }
 
 .dark .user {
-  background-color: rgb(31 41 55);
+  background: linear-gradient(135deg, rgb(31 41 55) 0%, rgb(55 65 81) 100%);
   color: rgb(243 244 246);
+  border-left: 3px solid rgb(107 114 128);
+}
+
+/* Glassmorphism effects */
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.dark .glass {
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Smooth scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(215 16.3% 46.9% / 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(215 16.3% 46.9% / 0.5);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: hsl(215 20.2% 65.1% / 0.3);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: hsl(215 20.2% 65.1% / 0.5);
+}
+
+/* Interactive hover effects */
+.card-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+}
+
+/* Gradient backgrounds */
+.gradient-bg {
+  background: linear-gradient(135deg, hsl(221.2 83.2% 53.3%) 0%, hsl(217.2 91.2% 59.8%) 100%);
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, hsl(221.2 83.2% 53.3%) 0%, hsl(217.2 91.2% 59.8%) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Loading skeleton */
+.skeleton {
+  background: linear-gradient(90deg, hsl(210 40% 96%) 25%, hsl(214.3 31.8% 91.4%) 50%, hsl(210 40% 96%) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+.dark .skeleton {
+  background: linear-gradient(90deg, hsl(217.2 32.6% 17.5%) 25%, hsl(222.2 84% 4.9%) 50%, hsl(217.2 32.6% 17.5%) 75%);
+  background-size: 200% 100%;
 }
