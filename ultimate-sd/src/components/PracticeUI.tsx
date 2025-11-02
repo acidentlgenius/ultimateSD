@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import ChatInterface from './ChatInterface';
+import StepByStepChat from './StepByStepChat';
 import DiagramCanvas from './DiagramCanvas';
 import FeedbackModal from './FeedbackModal';
 import { Button } from './ui/button';
@@ -105,13 +105,13 @@ export default function PracticeUI({ problem }: { problem: SystemDesignProblem }
           </div>
         </div>
 
-        {/* Main content area - Chat */}
-        <div className={`transition-all duration-300 animate-fade-in ${diagramCollapsed ? 'h-[calc(100vh-16rem)]' : 'h-[calc(50vh-8rem)]'} min-h-[400px]`} style={{ animationDelay: '100ms' }}>
-          <ChatInterface problem={problem} />
+        {/* Main content area - Chat (now expands vertically) */}
+        <div className="w-full animate-fade-in" style={{ animationDelay: '100ms' }}>
+          <StepByStepChat problem={problem} />
         </div>
 
         {/* Diagram Section - Full Width Below */}
-        <div className={`mt-6 transition-all duration-300 animate-fade-in ${diagramCollapsed ? 'h-0 opacity-0 overflow-hidden' : 'h-[calc(50vh-4rem)] opacity-100'}`} style={{ animationDelay: '200ms' }}>
+        <div className={`mt-6 transition-all duration-300 animate-fade-in ${diagramCollapsed ? 'h-0 opacity-0 overflow-hidden' : 'min-h-[600px] h-[calc(100vh-200px)] opacity-100'}`} style={{ animationDelay: '200ms' }}>
           <div className="relative h-full">
             <Button
               variant="outline"

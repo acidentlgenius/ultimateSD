@@ -231,8 +231,14 @@ function SystemDesignCanvas() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawGrid(ctx, canvas.width, canvas.height);
+    // Clear with white background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw grid only if enabled
+    if (showGrid) {
+      drawGrid(ctx, canvas.width, canvas.height);
+    }
     
     elements.forEach(el => {
       drawElement(ctx, el, el.id === selectedElement);
@@ -595,18 +601,20 @@ function SystemDesignCanvas() {
       </div>
 
       {/* Canvas */}
-      <div className="flex-1 overflow-auto bg-gradient-to-br from-background to-muted/10 p-4">
-        <canvas
-          ref={canvasRef}
-          width={2000}
-          height={1000}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-          className="border-2 border-border/50 rounded-lg bg-white dark:bg-slate-950 shadow-xl cursor-crosshair"
-          style={{ cursor: currentTool === 'select' ? 'default' : 'crosshair' }}
-        />
+      <div className="flex-1 overflow-auto bg-gradient-to-br from-muted/10 to-muted/5 p-4">
+        <div className="w-full h-full flex items-start justify-center">
+          <canvas
+            ref={canvasRef}
+            width={2000}
+            height={1200}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+            className="border-2 border-border/50 rounded-lg bg-white shadow-xl"
+            style={{ cursor: currentTool === 'select' ? 'default' : 'crosshair' }}
+          />
+        </div>
       </div>
     </div>
   );
@@ -622,10 +630,30 @@ export default function DiagramCanvas() {
   const exportPNG = useCallback(() => {
     const canvas = document.querySelector('canvas');
     if (canvas) {
-      const link = document.createElement('a');
-      link.download = 'system-diagram.png';
-      link.href = canvas.toDataURL();
-      link.click();
+      // Save current state
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      
+      // Create a temporary canvas with white background and no grid
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = canvas.width;
+      tempCanvas.height = canvas.height;
+      const tempCtx = tempCanvas.getContext('2d');
+      
+      if (tempCtx) {
+        // Fill with white background
+        tempCtx.fillStyle = '#ffffff';
+        tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+        
+        // Copy the current canvas content (without grid)
+        tempCtx.drawImage(canvas, 0, 0);
+        
+        // Download
+        const link = document.createElement('a');
+        link.download = 'system-diagram.png';
+        link.href = tempCanvas.toDataURL('image/png');
+        link.click();
+      }
     }
   }, []);
 
