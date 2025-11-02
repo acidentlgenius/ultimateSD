@@ -55,10 +55,9 @@ export default function Home() {
                 Master System Design
               </h1>
               <p className="text-xl text-muted-foreground max-w-2xl">
-                AI-powered practice platform with 100+ real-world problems from top tech companies
+                AI-powered practice platform with 80+ real-world problems from top tech companies
               </p>
             </div>
-            <ThemeToggle />
           </div>
 
           {/* Stats Cards */}

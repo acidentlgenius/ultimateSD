@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import StepByStepChat from './StepByStepChat';
 import DiagramCanvas from './DiagramCanvas';
 import FeedbackModal from './FeedbackModal';
+import { HelpAssistant } from './HelpAssistant';
 import { Button } from './ui/button';
 import { ThemeToggle } from './ui/theme-toggle';
 import { Download, ChevronsDown, ChevronsUp, Home, Sparkles, Layout, Pencil } from 'lucide-react';
@@ -16,6 +17,8 @@ const PHASES = ['Requirements', 'HLD', 'LLD', 'Trade-offs', 'Scalability', 'Feed
 export default function PracticeUI({ problem }: { problem: SystemDesignProblem }) {
   const [phase, setPhase] = useState<string>('Requirements');
   const [diagramCollapsed, setDiagramCollapsed] = useState(false);
+  const [completedSteps, setCompletedSteps] = useState<string[]>([]);
+  const [savedStepData, setSavedStepData] = useState<Map<string, any>>(new Map());
 
   // Diagram is only relevant for HLD and LLD phases
   const isDiagramRelevant = phase === 'HLD' || phase === 'LLD';
@@ -28,11 +31,15 @@ export default function PracticeUI({ problem }: { problem: SystemDesignProblem }
   useEffect(() => {
     const handler = (e: any) => {
       if (e?.detail?.phase) setPhase(e.detail.phase);
+      if (e?.detail?.completedSteps) setCompletedSteps(e.detail.completedSteps);
+      if (e?.detail?.savedStepData) setSavedStepData(e.detail.savedStepData);
     };
     window.addEventListener('sd-phase-change', handler as EventListener);
+    window.addEventListener('sd-progress-update', handler as EventListener);
 
     return () => {
       window.removeEventListener('sd-phase-change', handler as EventListener);
+      window.removeEventListener('sd-progress-update', handler as EventListener);
     };
   }, []);
 
@@ -166,6 +173,14 @@ export default function PracticeUI({ problem }: { problem: SystemDesignProblem }
           </>
         )}
       </div>
+
+      {/* Help Assistant */}
+      <HelpAssistant 
+        problem={problem} 
+        currentPhase={phase}
+        completedSteps={completedSteps}
+        savedStepData={savedStepData}
+      />
     </div>
   );
 }

@@ -145,26 +145,6 @@ export const PROBLEMS: SystemDesignProblem[] = [
   },
   {
     id: '15',
-    title: 'Design a Chat System',
-    slug: 'design-chat-system',
-    description: 'Real-time chat with multiple rooms.',
-    difficulty: 'Medium',
-    category: 'Core Services',
-    companies: ['Slack', 'Discord'],
-    requirements: ['Real-time delivery', 'Persistence', 'User management']
-  },
-  {
-    id: '16',
-    title: 'Design a News Feed',
-    slug: 'design-news-feed',
-    description: 'Aggregated content feed with personalization.',
-    difficulty: 'Hard',
-    category: 'Advanced',
-    companies: ['Meta', 'Reddit'],
-    requirements: ['Content aggregation', 'Personalization', 'Real-time updates']
-  },
-  {
-    id: '17',
     title: 'Design a Unique ID Generator',
     slug: 'design-unique-id-generator',
     description: 'Generate unique IDs at scale.',
@@ -174,7 +154,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Uniqueness', 'Scalability', 'Distribution']
   },
   {
-    id: '18',
+    id: '16',
     title: 'Design a Leaderboard',
     slug: 'design-leaderboard',
     description: 'Real-time ranking system.',
@@ -184,7 +164,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Ranking updates', 'Real-time', 'Scalability']
   },
   {
-    id: '19',
+    id: '17',
     title: 'Design a Rate Limiter',
     slug: 'design-rate-limiter',
     description: 'Limit requests per user/time.',
@@ -194,17 +174,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Request tracking', 'Throttling', 'Distributed']
   },
   {
-    id: '20',
-    title: 'Design an API Rate Limiter',
-    slug: 'design-api-rate-limiter',
-    description: 'Rate limiting for APIs.',
-    difficulty: 'Medium',
-    category: 'Edge Cases',
-    companies: ['Stripe', 'Twilio'],
-    requirements: ['Per-user limits', 'Sliding window', 'Caching']
-  },
-  {
-    id: '21',
+    id: '18',
     title: 'Design a Recommendation Engine',
     slug: 'design-recommendation-engine',
     description: 'Personalized content recommendations.',
@@ -214,7 +184,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['User profiling', 'Content similarity', 'Real-time updates']
   },
   {
-    id: '22',
+    id: '19',
     title: 'Design Fraud Detection System',
     slug: 'design-fraud-detection',
     description: 'Detect fraudulent transactions.',
@@ -224,7 +194,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Pattern recognition', 'Real-time processing', 'False positives']
   },
   {
-    id: '23',
+    id: '20',
     title: 'Design Personalized Search Ranking',
     slug: 'design-personalized-search',
     description: 'Search results tailored to user.',
@@ -234,7 +204,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['User intent', 'Personalization', 'A/B testing']
   },
   {
-    id: '24',
+    id: '21',
     title: 'Design A/B Testing Framework',
     slug: 'design-ab-testing',
     description: 'Experimentation platform for features.',
@@ -244,7 +214,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Traffic splitting', 'Statistical significance', 'Rollbacks']
   },
   {
-    id: '25',
+    id: '22',
     title: 'Design a Notification System',
     slug: 'design-notification-system',
     description: 'Push notifications with scheduling.',
@@ -254,7 +224,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Scheduling', 'Delivery guarantees', 'User preferences']
   },
   {
-    id: '26',
+    id: '23',
     title: 'Design a File Storage System',
     slug: 'design-file-storage',
     description: 'Cloud storage with versioning.',
@@ -264,7 +234,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['File operations', 'Versioning', 'Access control']
   },
   {
-    id: '27',
+    id: '24',
     title: 'Design a Task Scheduler',
     slug: 'design-task-scheduler',
     description: 'Distributed job scheduling.',
@@ -274,7 +244,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Job dependencies', 'Fault tolerance', 'Scalability']
   },
   {
-    id: '28',
+    id: '25',
     title: 'Design a Video Call System',
     slug: 'design-video-call',
     description: 'Real-time video conferencing.',
@@ -284,7 +254,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Media streaming', 'Signaling', 'Quality adaptation']
   },
   {
-    id: '29',
+    id: '26',
     title: 'Design a Logging System',
     slug: 'design-logging-system',
     description: 'Centralized log aggregation.',
@@ -294,7 +264,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Log collection', 'Search', 'Alerting']
   },
   {
-    id: '30',
+    id: '27',
     title: 'Design a Metrics Monitoring System',
     slug: 'design-metrics-monitoring',
     description: 'System metrics collection and visualization.',
@@ -303,109 +273,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     companies: ['Prometheus', 'Grafana'],
     requirements: ['Data collection', 'Visualization', 'Alerting']
   },
-  // Add more as needed to reach 100
   {
-    id: '31',
-    title: 'Design a Video Streaming Service',
-    slug: 'design-video-streaming-service',
-    description: 'Build a platform for streaming videos with adaptive bitrate.',
-    difficulty: 'Hard',
-    category: 'Core Services',
-    companies: ['Netflix', 'YouTube'],
-    requirements: ['Adaptive streaming', 'CDN integration', 'Content protection']
-  },
-  {
-    id: '32',
-    title: 'Design a Social Media Feed',
-    slug: 'design-social-media-feed',
-    description: 'Algorithmic feed for posts from connections.',
-    difficulty: 'Hard',
-    category: 'Advanced',
-    companies: ['Meta', 'Twitter'],
-    requirements: ['Feed ranking', 'Real-time updates', 'Scalable reads']
-  },
-  {
-    id: '33',
-    title: 'Design a Search Engine',
-    slug: 'design-search-engine',
-    description: 'Web search with indexing and relevance.',
-    difficulty: 'Hard',
-    category: 'Advanced',
-    companies: ['Google', 'Bing'],
-    requirements: ['Crawling', 'Indexing', 'Ranking algorithm']
-  },
-  {
-    id: '34',
-    title: 'Design a File Storage System',
-    slug: 'design-file-storage-system',
-    description: 'Cloud storage with sync and sharing.',
-    difficulty: 'Medium',
-    category: 'Core Services',
-    companies: ['Dropbox', 'Google Drive'],
-    requirements: ['File operations', 'Sync', 'Access control']
-  },
-  {
-    id: '35',
-    title: 'Design a Task Scheduler',
-    slug: 'design-task-scheduler',
-    description: 'Distributed job scheduling system.',
-    difficulty: 'Hard',
-    category: 'Advanced',
-    companies: ['Airflow', 'Kubernetes'],
-    requirements: ['Job dependencies', 'Fault tolerance', 'Scalability']
-  },
-  {
-    id: '36',
-    title: 'Design a Video Call System',
-    slug: 'design-video-call-system',
-    description: 'Real-time video conferencing.',
-    difficulty: 'Hard',
-    category: 'Advanced',
-    companies: ['Zoom', 'Google Meet'],
-    requirements: ['Media streaming', 'Signaling', 'Quality adaptation']
-  },
-  {
-    id: '37',
-    title: 'Design a Logging System',
-    slug: 'design-logging-system',
-    description: 'Centralized log aggregation.',
-    difficulty: 'Medium',
-    category: 'Basics',
-    companies: ['ELK Stack', 'Splunk'],
-    requirements: ['Log collection', 'Search', 'Alerting']
-  },
-  {
-    id: '38',
-    title: 'Design a Metrics Monitoring System',
-    slug: 'design-metrics-monitoring-system',
-    description: 'System metrics collection and visualization.',
-    difficulty: 'Medium',
-    category: 'Basics',
-    companies: ['Prometheus', 'Grafana'],
-    requirements: ['Data collection', 'Visualization', 'Alerting']
-  },
-  {
-    id: '39',
-    title: 'Design a Notification Service',
-    slug: 'design-notification-service',
-    description: 'Push notifications with scheduling.',
-    difficulty: 'Medium',
-    category: 'Core Services',
-    companies: ['Slack', 'Gmail'],
-    requirements: ['Scheduling', 'Delivery guarantees', 'User preferences']
-  },
-  {
-    id: '40',
-    title: 'Design a URL Shortener',
-    slug: 'design-url-shortener',
-    description: 'Shorten URLs with analytics.',
-    difficulty: 'Easy',
-    category: 'Basics',
-    companies: ['Bitly', 'TinyURL'],
-    requirements: ['Unique codes', 'Redirects', 'Analytics']
-  },
-  {
-    id: '41',
+    id: '28',
     title: 'Design a Key-Value Store',
     slug: 'design-key-value-store',
     description: 'Distributed key-value database.',
@@ -415,7 +284,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Partitioning', 'Replication', 'Consistency']
   },
   {
-    id: '42',
+    id: '29',
     title: 'Design a Message Queue',
     slug: 'design-message-queue',
     description: 'Asynchronous message processing.',
@@ -425,7 +294,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Publish-subscribe', 'Scalability', 'Durability']
   },
   {
-    id: '43',
+    id: '30',
     title: 'Design a Load Balancer',
     slug: 'design-load-balancer',
     description: 'Distribute traffic across servers.',
@@ -435,7 +304,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Traffic distribution', 'Health checks', 'Scalability']
   },
   {
-    id: '44',
+    id: '31',
     title: 'Design a CDN',
     slug: 'design-cdn',
     description: 'Content delivery network.',
@@ -445,7 +314,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Edge caching', 'Global distribution', 'Performance']
   },
   {
-    id: '45',
+    id: '32',
     title: 'Design a Web Crawler',
     slug: 'design-web-crawler',
     description: 'Crawl and index web pages.',
@@ -455,7 +324,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['URL frontier', 'Politeness', 'Scalability']
   },
   {
-    id: '46',
+    id: '33',
     title: 'Design a Distributed File System',
     slug: 'design-distributed-file-system',
     description: 'Store files across multiple nodes.',
@@ -465,17 +334,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Replication', 'Fault tolerance', 'Scalability']
   },
   {
-    id: '47',
-    title: 'Design a Rate Limiting System',
-    slug: 'design-rate-limiting-system',
-    description: 'Limit requests per user/time.',
-    difficulty: 'Medium',
-    category: 'Edge Cases',
-    companies: ['Stripe', 'Twilio'],
-    requirements: ['Request tracking', 'Throttling', 'Distributed']
-  },
-  {
-    id: '48',
+    id: '34',
     title: 'Design a Leader Election System',
     slug: 'design-leader-election-system',
     description: 'Elect a leader in distributed systems.',
@@ -485,7 +344,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Consensus', 'Fault tolerance', 'Scalability']
   },
   {
-    id: '49',
+    id: '35',
     title: 'Design a Configuration Management System',
     slug: 'design-configuration-management-system',
     description: 'Manage application configurations.',
@@ -495,7 +354,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Versioning', 'Distribution', 'Security']
   },
   {
-    id: '50',
+    id: '36',
     title: 'Design a Secret Management System',
     slug: 'design-secret-management-system',
     description: 'Store and manage secrets securely.',
@@ -505,7 +364,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Encryption', 'Access control', 'Rotation']
   },
   {
-    id: '51',
+    id: '37',
     title: 'Design a CI/CD Pipeline',
     slug: 'design-ci-cd-pipeline',
     description: 'Continuous integration and deployment.',
@@ -515,7 +374,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Automation', 'Testing', 'Deployment']
   },
   {
-    id: '52',
+    id: '38',
     title: 'Design a Microservices Architecture',
     slug: 'design-microservices-architecture',
     description: 'Break down monolithic app into services.',
@@ -525,7 +384,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Service discovery', 'Communication', 'Monitoring']
   },
   {
-    id: '53',
+    id: '39',
     title: 'Design a GraphQL API',
     slug: 'design-graphql-api',
     description: 'Flexible API with schema.',
@@ -535,7 +394,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Schema design', 'Resolvers', 'Caching']
   },
   {
-    id: '54',
+    id: '40',
     title: 'Design a REST API',
     slug: 'design-rest-api',
     description: 'RESTful web service.',
@@ -545,7 +404,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Resources', 'HTTP methods', 'Status codes']
   },
   {
-    id: '55',
+    id: '41',
     title: 'Design a WebSocket System',
     slug: 'design-websocket-system',
     description: 'Real-time bidirectional communication.',
@@ -555,7 +414,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Connection management', 'Scalability', 'Security']
   },
   {
-    id: '56',
+    id: '42',
     title: 'Design a Collaborative Editor',
     slug: 'design-collaborative-editor',
     description: 'Real-time document editing.',
@@ -565,27 +424,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Conflict resolution', 'Operational transform', 'Scalability']
   },
   {
-    id: '57',
-    title: 'Design a Recommendation System',
-    slug: 'design-recommendation-system',
-    description: 'Personalized content recommendations.',
-    difficulty: 'Hard',
-    category: 'ML-Infused',
-    companies: ['Netflix', 'Amazon'],
-    requirements: ['User profiling', 'Similarity', 'Real-time']
-  },
-  {
-    id: '58',
-    title: 'Design a Fraud Detection System',
-    slug: 'design-fraud-detection-system',
-    description: 'Detect fraudulent activities.',
-    difficulty: 'Hard',
-    category: 'ML-Infused',
-    companies: ['PayPal', 'Stripe'],
-    requirements: ['Pattern recognition', 'Real-time processing', 'Accuracy']
-  },
-  {
-    id: '59',
+    id: '43',
     title: 'Design an Ad Serving System',
     slug: 'design-ad-serving-system',
     description: 'Serve ads with targeting.',
@@ -595,7 +434,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Targeting', 'Auction', 'Real-time bidding']
   },
   {
-    id: '60',
+    id: '44',
     title: 'Design a Personalized Feed',
     slug: 'design-personalized-feed',
     description: 'Tailored content feed.',
@@ -605,17 +444,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['User modeling', 'Content ranking', 'Engagement']
   },
   {
-    id: '61',
-    title: 'Design an A/B Testing Platform',
-    slug: 'design-ab-testing-platform',
-    description: 'Experimentation framework.',
-    difficulty: 'Medium',
-    category: 'Edge Cases',
-    companies: ['Optimizely', 'Google Optimize'],
-    requirements: ['Traffic splitting', 'Statistics', 'Rollbacks']
-  },
-  {
-    id: '62',
+    id: '45',
     title: 'Design a Feature Flag System',
     slug: 'design-feature-flag-system',
     description: 'Toggle features dynamically.',
@@ -625,7 +454,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Dynamic toggles', 'Targeting', 'Monitoring']
   },
   {
-    id: '63',
+    id: '46',
     title: 'Design a Service Mesh',
     slug: 'design-service-mesh',
     description: 'Manage service-to-service communication.',
@@ -635,7 +464,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Traffic management', 'Observability', 'Security']
   },
   {
-    id: '64',
+    id: '47',
     title: 'Design a Distributed Tracing System',
     slug: 'design-distributed-tracing-system',
     description: 'Trace requests across services.',
@@ -645,7 +474,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Span collection', 'Visualization', 'Performance']
   },
   {
-    id: '65',
+    id: '48',
     title: 'Design a Compliance Auditing System',
     slug: 'design-compliance-auditing-system',
     description: 'Audit for regulatory compliance.',
@@ -655,7 +484,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Log auditing', 'Reporting', 'Alerts']
   },
   {
-    id: '66',
+    id: '49',
     title: 'Design a GDPR Compliant System',
     slug: 'design-gdpr-compliant-system',
     description: 'Data privacy and compliance.',
@@ -665,7 +494,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Data minimization', 'Consent', 'Right to erasure']
   },
   {
-    id: '67',
+    id: '50',
     title: 'Design a Blockchain System',
     slug: 'design-blockchain-system',
     description: 'Decentralized ledger.',
@@ -675,7 +504,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Consensus', 'Immutability', 'Scalability']
   },
   {
-    id: '68',
+    id: '51',
     title: 'Design an IoT Platform',
     slug: 'design-iot-platform',
     description: 'Manage Internet of Things devices.',
@@ -685,7 +514,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Device management', 'Data ingestion', 'Analytics']
   },
   {
-    id: '69',
+    id: '52',
     title: 'Design an AR/VR System',
     slug: 'design-ar-vr-system',
     description: 'Augmented/Virtual reality platform.',
@@ -695,7 +524,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['3D rendering', 'Tracking', 'Networking']
   },
   {
-    id: '70',
+    id: '53',
     title: 'Design a Quantum Computing System',
     slug: 'design-quantum-computing-system',
     description: 'Harness quantum mechanics for computation.',
@@ -705,7 +534,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Qubits', 'Error correction', 'Algorithms']
   },
   {
-    id: '71',
+    id: '54',
     title: 'Design a Metaverse Platform',
     slug: 'design-metaverse-platform',
     description: 'Virtual shared space.',
@@ -715,7 +544,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Virtual worlds', 'Avatars', 'Economy']
   },
   {
-    id: '72',
+    id: '55',
     title: 'Design a Brain-Computer Interface',
     slug: 'design-brain-computer-interface',
     description: 'Direct brain-to-computer communication.',
@@ -725,7 +554,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Signal processing', 'Safety', 'Privacy']
   },
   {
-    id: '73',
+    id: '56',
     title: 'Design a Space Debris Tracking System',
     slug: 'design-space-debris-tracking-system',
     description: 'Track and manage space junk.',
@@ -735,7 +564,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Orbital mechanics', 'Collision prediction', 'Mitigation']
   },
   {
-    id: '74',
+    id: '57',
     title: 'Design a Personalized Learning Platform',
     slug: 'design-personalized-learning-platform',
     description: 'Adaptive education system.',
@@ -745,7 +574,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Learner modeling', 'Content adaptation', 'Assessment']
   },
   {
-    id: '75',
+    id: '58',
     title: 'Design a Climate Model Simulator',
     slug: 'design-climate-model-simulator',
     description: 'Simulate climate change.',
@@ -755,7 +584,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Data processing', 'Modeling', 'Visualization']
   },
   {
-    id: '76',
+    id: '59',
     title: 'Design a Global Supply Chain Optimizer',
     slug: 'design-global-supply-chain-optimizer',
     description: 'Optimize logistics worldwide.',
@@ -765,7 +594,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Routing', 'Inventory', 'Risk management']
   },
   {
-    id: '77',
+    id: '60',
     title: 'Design a Zero-Trust Network',
     slug: 'design-zero-trust-network',
     description: 'Security model with no implicit trust.',
@@ -775,7 +604,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Identity verification', 'Micro-segmentation', 'Monitoring']
   },
   {
-    id: '78',
+    id: '61',
     title: 'Design a Carbon Footprint Tracker',
     slug: 'design-carbon-footprint-tracker',
     description: 'Track environmental impact.',
@@ -785,7 +614,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Data collection', 'Calculation', 'Reporting']
   },
   {
-    id: '79',
+    id: '62',
     title: 'Design a Sustainable Data Center',
     slug: 'design-sustainable-data-center',
     description: 'Energy-efficient computing infrastructure.',
@@ -795,7 +624,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Cooling', 'Renewable energy', 'Efficiency']
   },
   {
-    id: '80',
+    id: '63',
     title: 'Design a Federated Learning System',
     slug: 'design-federated-learning-system',
     description: 'Train ML models without sharing data.',
@@ -805,7 +634,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Privacy', 'Aggregation', 'Security']
   },
   {
-    id: '81',
+    id: '64',
     title: 'Design an Explainable AI System',
     slug: 'design-explainable-ai-system',
     description: 'Make AI decisions interpretable.',
@@ -815,7 +644,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Model interpretability', 'Transparency', 'Trust']
   },
   {
-    id: '82',
+    id: '65',
     title: 'Design a Vector Database',
     slug: 'design-vector-database',
     description: 'Store and query vector embeddings.',
@@ -825,7 +654,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Similarity search', 'Scalability', 'Indexing']
   },
   {
-    id: '83',
+    id: '66',
     title: 'Design a Multi-Modal Search Engine',
     slug: 'design-multi-modal-search-engine',
     description: 'Search across text, images, audio.',
@@ -835,7 +664,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Feature extraction', 'Fusion', 'Ranking']
   },
   {
-    id: '84',
+    id: '67',
     title: 'Design an Autonomous Agent Orchestrator',
     slug: 'design-autonomous-agent-orchestrator',
     description: 'Coordinate AI agents.',
@@ -845,7 +674,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Task allocation', 'Communication', 'Safety']
   },
   {
-    id: '85',
+    id: '68',
     title: 'Design a Generative AI Content Moderator',
     slug: 'design-generative-ai-content-moderator',
     description: 'Moderate AI-generated content.',
@@ -855,7 +684,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Content detection', 'Filtering', 'Feedback']
   },
   {
-    id: '86',
+    id: '69',
     title: 'Design a RAG System',
     slug: 'design-rag-system',
     description: 'Retrieval-Augmented Generation.',
@@ -865,7 +694,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Retrieval', 'Generation', 'Integration']
   },
   {
-    id: '87',
+    id: '70',
     title: 'Design a Conversational AI Platform',
     slug: 'design-conversational-ai-platform',
     description: 'Build chatbots and virtual assistants.',
@@ -875,7 +704,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['NLP', 'Dialog management', 'Integration']
   },
   {
-    id: '88',
+    id: '71',
     title: 'Design a Real-Time Analytics System',
     slug: 'design-real-time-analytics-system',
     description: 'Process and analyze streaming data.',
@@ -885,7 +714,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Stream processing', 'Aggregation', 'Visualization']
   },
   {
-    id: '89',
+    id: '72',
     title: 'Design a Data Lake',
     slug: 'design-data-lake',
     description: 'Store diverse data for analytics.',
@@ -895,7 +724,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Data ingestion', 'Storage', 'Querying']
   },
   {
-    id: '90',
+    id: '73',
     title: 'Design a Data Warehouse',
     slug: 'design-data-warehouse',
     description: 'Centralized data repository.',
@@ -905,7 +734,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['ETL', 'Schema design', 'Query optimization']
   },
   {
-    id: '91',
+    id: '74',
     title: 'Design a ETL Pipeline',
     slug: 'design-etl-pipeline',
     description: 'Extract, Transform, Load data.',
@@ -915,7 +744,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Data extraction', 'Transformation', 'Loading']
   },
   {
-    id: '92',
+    id: '75',
     title: 'Design a Backup and Recovery System',
     slug: 'design-backup-recovery-system',
     description: 'Ensure data durability.',
@@ -925,7 +754,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Backup strategies', 'Recovery', 'Testing']
   },
   {
-    id: '93',
+    id: '76',
     title: 'Design a Disaster Recovery System',
     slug: 'design-disaster-recovery-system',
     description: 'Recover from catastrophic failures.',
@@ -935,7 +764,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Failover', 'Replication', 'Testing']
   },
   {
-    id: '94',
+    id: '77',
     title: 'Design a High-Availability System',
     slug: 'design-high-availability-system',
     description: 'Minimize downtime.',
@@ -945,7 +774,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Redundancy', 'Failover', 'Monitoring']
   },
   {
-    id: '95',
+    id: '78',
     title: 'Design a Scalable API Gateway',
     slug: 'design-scalable-api-gateway',
     description: 'Manage API traffic.',
@@ -955,7 +784,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Routing', 'Authentication', 'Rate limiting']
   },
   {
-    id: '96',
+    id: '79',
     title: 'Design a Event-Driven Architecture',
     slug: 'design-event-driven-architecture',
     description: 'Decouple services with events.',
@@ -965,7 +794,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Event sourcing', 'Pub/sub', 'Scalability']
   },
   {
-    id: '97',
+    id: '80',
     title: 'Design a Saga Pattern Implementation',
     slug: 'design-saga-pattern-implementation',
     description: 'Manage distributed transactions.',
@@ -975,7 +804,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Compensation', 'Orchestration', 'Consistency']
   },
   {
-    id: '98',
+    id: '81',
     title: 'Design a Circuit Breaker Pattern',
     slug: 'design-circuit-breaker-pattern',
     description: 'Prevent cascading failures.',
@@ -985,7 +814,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Failure detection', 'Fallback', 'Recovery']
   },
   {
-    id: '99',
+    id: '82',
     title: 'Design a Strangler Fig Migration',
     slug: 'design-strangler-fig-migration',
     description: 'Migrate legacy systems incrementally.',
@@ -995,7 +824,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     requirements: ['Incremental migration', 'Compatibility', 'Testing']
   },
   {
-    id: '100',
+    id: '83',
     title: 'Design a Blue-Green Deployment',
     slug: 'design-blue-green-deployment',
     description: 'Zero-downtime deployments.',

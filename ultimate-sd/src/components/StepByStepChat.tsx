@@ -212,6 +212,18 @@ export default function StepByStepChat({ problem }: Props) {
     window.dispatchEvent(evt);
   }, [currentStep.phase]);
 
+  // Dispatch progress updates
+  useEffect(() => {
+    const evt = new CustomEvent('sd-progress-update', {
+      detail: {
+        phase: currentStep.phase,
+        completedSteps: Array.from(completedSteps),
+        savedStepData: savedStepData
+      }
+    });
+    window.dispatchEvent(evt);
+  }, [currentStep.phase, completedSteps, savedStepData]);
+
   const addListItem = () => {
     if (newItemInput.trim()) {
       setListItems([...listItems, newItemInput.trim()]);
