@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,6 +9,13 @@ import { Card } from '@/components/ui/card';
 import { SystemDesignProblem } from '@/types';
 import { tokens } from '@/styles/tokens';
 import SchemaBuilder from '@/components/SchemaBuilder';
+import { 
+  saveSessionState, 
+  loadSessionState, 
+  clearSessionState,
+  formatStorageSize,
+  getStorageInfo
+} from '@/lib/session-storage';
 import { 
   Sparkles, 
   Plus, 
@@ -19,7 +26,9 @@ import {
   SkipForward,
   Loader2,
   ArrowLeft,
-  Eye
+  Eye,
+  RotateCcw,
+  Info
 } from 'lucide-react';
 
 interface StepData {
@@ -177,6 +186,18 @@ export default function StepByStepChat({ problem }: Props) {
   // Store all step data
   const [savedStepData, setSavedStepData] = useState<Map<string, SavedStepData>>(new Map());
 
+  // Session restoration state
+  const [sessionRestored, setSessionRestored] = useState(false);
+  const [showRestorationBanner, setShowRestorationBanner] = useState(false);
+  const [restoredDate, setRestoredDate] = useState<Date | null>(null);
+
+  // Diagram tracking
+  const [diagramData, setDiagramData] = useState<{
+    imageData?: string;
+    elements?: any[];
+    description?: string;
+  } | null>(null);
+
   const phases = Object.keys(PHASE_STEPS);
   const currentSteps = PHASE_STEPS[currentPhase];
   const currentStep = currentSteps[currentStepIndex];
@@ -184,6 +205,84 @@ export default function StepByStepChat({ problem }: Props) {
   // Get step key for storage
   const getStepKey = (phase: string, stepIdx: number) => `${phase}-${stepIdx}`;
   const currentStepKey = getStepKey(currentPhase, currentStepIndex);
+
+  // Load session from localStorage on mount
+  useEffect(() => {
+    const restored = loadSessionState(problem.slug);
+    if (restored) {
+      setCurrentPhase(restored.currentPhase);
+      setCurrentStepIndex(restored.currentStepIndex);
+      setSavedStepData(restored.savedStepData);
+      setCompletedSteps(restored.completedSteps);
+      setSessionRestored(true);
+      setShowRestorationBanner(true);
+      setRestoredDate(restored.lastUpdated);
+      
+      // Auto-hide banner after 5 seconds
+      setTimeout(() => setShowRestorationBanner(false), 5000);
+      
+      console.log('Session restored from', restored.lastUpdated);
+    }
+  }, [problem.slug]);
+
+  // Save session to localStorage whenever state changes
+  useEffect(() => {
+    if (sessionRestored || savedStepData.size > 0) {
+      const saved = saveSessionState(problem.slug, {
+        currentPhase,
+        currentStepIndex,
+        savedStepData,
+        completedSteps,
+      });
+      
+      if (saved) {
+        console.log('Session saved to localStorage');
+      }
+    }
+  }, [problem.slug, currentPhase, currentStepIndex, savedStepData, completedSteps, sessionRestored]);
+
+  // Clear session handler
+  const handleClearSession = useCallback(() => {
+    if (confirm('Are you sure you want to clear all progress for this problem? This cannot be undone.')) {
+      clearSessionState(problem.slug);
+      
+      // Reset all state
+      setCurrentPhase('requirements');
+      setCurrentStepIndex(0);
+      setListItems([]);
+      setTextInput('');
+      setSchemaData([]);
+      setFeedback(null);
+      setShowFeedback(false);
+      setCompletedSteps(new Set());
+      setSavedStepData(new Map());
+      setSessionRestored(false);
+      setShowRestorationBanner(false);
+      setRestoredDate(null);
+      setDiagramData(null);
+      
+      alert('✅ Session cleared! Starting fresh.');
+    }
+  }, [problem.slug]);
+
+  // Listen for diagram sharing events
+  useEffect(() => {
+    const handleDiagramShared = (e: any) => {
+      if (e?.detail) {
+        setDiagramData({
+          imageData: e.detail.imageData,
+          elements: e.detail.elements,
+          description: e.detail.description
+        });
+        console.log('Diagram captured:', e.detail.description);
+      }
+    };
+
+    window.addEventListener('sd-diagram-shared', handleDiagramShared as EventListener);
+    return () => {
+      window.removeEventListener('sd-diagram-shared', handleDiagramShared as EventListener);
+    };
+  }, []);
 
   // Load saved data when step changes
   useEffect(() => {
@@ -244,20 +343,39 @@ export default function StepByStepChat({ problem }: Props) {
 
     if (!userAnswer.trim() || (currentStep.inputType === 'schema' && schemaData.length === 0)) return;
 
+    // Check if diagram should be included (for HLD/LLD architecture steps)
+    const shouldIncludeDiagram = (currentStep.phase === 'HLD' || currentStep.phase === 'LLD') && 
+                                  currentStep.subStep === 'architecture' || currentStep.subStep === 'components';
+
     setLoading(true);
     setShowFeedback(false);
 
     try {
+      const requestBody: any = {
+        problem: problem.slug,
+        phase: currentStep.phase,
+        subStep: currentStep.subStep,
+        userAnswer,
+        problemDetails: problem
+      };
+
+      // Add diagram data if available and relevant
+      if (shouldIncludeDiagram && diagramData) {
+        requestBody.diagramData = {
+          description: diagramData.description,
+          elementCount: diagramData.elements?.length || 0,
+          components: diagramData.elements?.map((el: any) => el.type).filter((t: string) => t !== 'arrow' && t !== 'line')
+        };
+        requestBody.userAnswer = `${userAnswer}\n\n[Diagram included with ${diagramData.elements?.length || 0} components: ${diagramData.description}]`;
+      } else if (shouldIncludeDiagram && !diagramData) {
+        // Warn if diagram is expected but not provided
+        requestBody.userAnswer = `${userAnswer}\n\n[Note: No diagram was created for this architecture description]`;
+      }
+
       const res = await fetch('/api/ai/evaluate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          problem: problem.slug,
-          phase: currentStep.phase,
-          subStep: currentStep.subStep,
-          userAnswer,
-          problemDetails: problem
-        })
+        body: JSON.stringify(requestBody)
       });
 
       const data = await res.json();
@@ -356,6 +474,37 @@ export default function StepByStepChat({ problem }: Props) {
 
   return (
     <div className="w-full flex flex-col gap-6">
+      {/* Session Restoration Banner */}
+      {showRestorationBanner && restoredDate && (
+        <Card className="border-2 border-green-500/50 bg-green-500/10 animate-fade-in">
+          <div className="p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-green-500/20">
+                <Info className="h-5 w-5 text-green-600 dark:text-green-400" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-sm text-green-900 dark:text-green-100">
+                  Session Restored!
+                </h3>
+                <p className="text-xs text-green-700 dark:text-green-300">
+                  Your progress from{' '}
+                  {restoredDate.toLocaleDateString()} at {restoredDate.toLocaleTimeString()}{' '}
+                  has been restored. Continue where you left off!
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowRestorationBanner(false)}
+              className="shrink-0"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </Card>
+      )}
+
       {/* Navigation Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         {phases.map((phase, phaseIdx) => {
@@ -399,12 +548,26 @@ export default function StepByStepChat({ problem }: Props) {
                 </p>
               </div>
             </div>
-            <Badge
-              style={{ backgroundColor: getPhaseColor(currentStep.phase), color: 'white' }}
-              className="text-sm font-semibold shadow-sm"
-            >
-              {currentStep.title}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge
+                style={{ backgroundColor: getPhaseColor(currentStep.phase), color: 'white' }}
+                className="text-sm font-semibold shadow-sm"
+              >
+                {currentStep.title}
+              </Badge>
+              {savedStepData.size > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleClearSession}
+                  className="text-muted-foreground hover:text-destructive"
+                  title="Clear all progress and start fresh"
+                >
+                  <RotateCcw className="h-4 w-4 mr-1" />
+                  Clear
+                </Button>
+              )}
+            </div>
           </div>
 
           {/* Progress bar */}
@@ -430,6 +593,44 @@ export default function StepByStepChat({ problem }: Props) {
               {currentStep.prompt}
             </p>
           </div>
+
+          {/* Diagram Status Indicator - Show for HLD/LLD architecture steps */}
+          {(currentStep.phase === 'HLD' || currentStep.phase === 'LLD') && 
+           (currentStep.subStep === 'architecture' || currentStep.subStep === 'components') && (
+            <div className={`p-3 rounded-lg border-2 ${
+              diagramData 
+                ? 'bg-green-500/10 border-green-500/30' 
+                : 'bg-orange-500/10 border-orange-500/30'
+            }`}>
+              <div className="flex items-center gap-2">
+                {diagramData ? (
+                  <>
+                    <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-green-900 dark:text-green-100">
+                        Diagram Captured! ✓
+                      </p>
+                      <p className="text-xs text-green-700 dark:text-green-300">
+                        {diagramData.description} • Will be included in AI evaluation
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <AlertCircle className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-orange-900 dark:text-orange-100">
+                        Tip: Create a Diagram
+                      </p>
+                      <p className="text-xs text-orange-700 dark:text-orange-300">
+                        Draw your architecture in the diagram canvas below, then click "Share with AI" before submitting
+                      </p>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Input Area - Always show, but make read-only when feedback is available */}
           <div className="space-y-4">
@@ -781,6 +982,22 @@ export default function StepByStepChat({ problem }: Props) {
           />
         ))}
       </div>
+
+      {/* Session Info Footer */}
+      {savedStepData.size > 0 && (
+        <div className="text-center text-xs text-muted-foreground">
+          <p>
+            💾 Session auto-saved • {savedStepData.size} step{savedStepData.size !== 1 ? 's' : ''} completed
+            {(() => {
+              const info = getStorageInfo();
+              return info.available ? ` • ${formatStorageSize(info.used)} used` : '';
+            })()}
+          </p>
+          <p className="mt-1 opacity-60">
+            Your progress is automatically saved and will be restored if you refresh or close the page
+          </p>
+        </div>
+      )}
     </div>
   );
 }

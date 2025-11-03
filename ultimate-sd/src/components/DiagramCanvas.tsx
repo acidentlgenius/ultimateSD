@@ -976,8 +976,83 @@ export default function DiagramCanvas() {
     };
   }, []);
 
-  const handleShareWithAI = useCallback(() => {
-    alert('💬 Describe your diagram in the chat and the AI will provide feedback!');
+  const handleShareWithAI = useCallback(async () => {
+    const canvas = document.querySelector('canvas');
+    if (!canvas) {
+      alert('❌ No diagram found. Please draw something first!');
+      return;
+    }
+
+    // Get diagram elements
+    const elements = (window as any).sd_getDiagramElements?.();
+    if (!elements || elements.length === 0) {
+      alert('❌ Your diagram is empty! Please add some components first.');
+      return;
+    }
+
+    try {
+      // Convert canvas to base64 image
+      const imageData = canvas.toDataURL('image/png');
+      
+      // Create a description of the diagram
+      const componentTypes = elements.map((el: any) => el.type).filter((t: string) => t !== 'arrow' && t !== 'line');
+      const uniqueComponents = [...new Set(componentTypes)];
+      const description = `Diagram contains ${elements.length} elements including: ${uniqueComponents.join(', ')}`;
+
+      // Dispatch custom event with diagram data
+      const event = new CustomEvent('sd-diagram-shared', {
+        detail: {
+          imageData,
+          elements,
+          description,
+          timestamp: new Date().toISOString()
+        }
+      });
+      window.dispatchEvent(event);
+
+      // Show success message
+      const modal = document.createElement('div');
+      modal.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm';
+      modal.innerHTML = `
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md shadow-xl border-2 border-primary/30">
+          <div class="flex items-start gap-3">
+            <div class="p-2 rounded-full bg-green-500/10">
+              <svg class="h-6 w-6 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <div class="flex-1">
+              <h3 class="text-lg font-semibold mb-2">Diagram Captured!</h3>
+              <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">
+                Your diagram has been saved. Now describe your architecture in the chat, 
+                and the AI will provide feedback on both your description and diagram!
+              </p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
+                <strong>Components detected:</strong> ${uniqueComponents.join(', ')}
+              </p>
+              <button 
+                onclick="this.closest('.fixed').remove()" 
+                class="w-full px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+              >
+                Got it!
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+
+      // Auto-close after 8 seconds
+      setTimeout(() => {
+        if (modal.parentElement) {
+          modal.remove();
+        }
+      }, 8000);
+
+    } catch (error) {
+      console.error('Error sharing diagram:', error);
+      alert('❌ Failed to capture diagram. Please try again.');
+    }
   }, []);
 
   if (!mounted) {
