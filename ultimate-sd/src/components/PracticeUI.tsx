@@ -7,10 +7,11 @@ import FeedbackModal from './FeedbackModal';
 import { HelpAssistant } from './HelpAssistant';
 import { Button } from './ui/button';
 import { ThemeToggle } from './ui/theme-toggle';
-import { Download, ChevronsDown, ChevronsUp, Home, Sparkles, Layout, Pencil } from 'lucide-react';
+import { Download, ChevronsDown, ChevronsUp, Home, Sparkles, Layout, Pencil, Loader2 } from 'lucide-react';
 import { SystemDesignProblem } from '@/types';
 import { tokens } from '@/styles/tokens';
 import Link from 'next/link';
+import { exportPracticeSession } from '@/lib/pdf-export-compact';
 
 const PHASES = ['Requirements', 'HLD', 'LLD', 'Trade-offs', 'Scalability', 'Feedback'];
 
@@ -19,6 +20,7 @@ export default function PracticeUI({ problem }: { problem: SystemDesignProblem }
   const [diagramCollapsed, setDiagramCollapsed] = useState(false);
   const [completedSteps, setCompletedSteps] = useState<string[]>([]);
   const [savedStepData, setSavedStepData] = useState<Map<string, any>>(new Map());
+  const [isExporting, setIsExporting] = useState(false);
 
   // Diagram is only relevant for HLD and LLD phases
   const isDiagramRelevant = phase === 'HLD' || phase === 'LLD';
@@ -43,19 +45,23 @@ export default function PracticeUI({ problem }: { problem: SystemDesignProblem }
     };
   }, []);
 
-  const exportTranscript = () => {
-    const getter = (window as any).sd_getMessages;
-    const messages = typeof getter === 'function' ? getter() : [];
-    const lines = messages.map((m: any) => `[${new Date(m.timestamp).toLocaleString()}] ${m.role.toUpperCase()}: ${m.content}`);
-    const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${problem.slug || 'session'}-transcript.txt`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+  const exportTranscript = async () => {
+    setIsExporting(true);
+    
+    try {
+      await exportPracticeSession({
+        problem,
+        savedStepData,
+      });
+      
+      // Show success message (simple alert for now, can be replaced with toast)
+      alert('✅ PDF exported successfully! Check your downloads folder.');
+    } catch (error) {
+      console.error('Export error:', error);
+      alert('❌ Failed to export PDF. Please try again or contact support if the issue persists.');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
@@ -84,10 +90,20 @@ export default function PracticeUI({ problem }: { problem: SystemDesignProblem }
                 variant="outline" 
                 size="sm" 
                 onClick={exportTranscript}
+                disabled={isExporting}
                 className="hover:bg-muted transition-all"
               >
-                <Download className="h-4 w-4 mr-2" />
-                Export
+                {isExporting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Exporting...
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4 mr-2" />
+                    Export PDF
+                  </>
+                )}
               </Button>
               <ThemeToggle />
             </div>

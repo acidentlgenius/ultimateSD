@@ -431,19 +431,23 @@ export default function StepByStepChat({ problem }: Props) {
             </p>
           </div>
 
-          {/* Input Area */}
-          {!showFeedback && (
-            <div className="space-y-4">
-              {currentStep.inputType === 'list' ? (
-                <div className="space-y-3">
-                  {/* List items */}
-                  {listItems.map((item, index) => (
-                    <div
-                      key={index}
-                      className="flex items-start gap-2 p-3 bg-muted/30 rounded-lg border border-border group hover:border-primary/50 transition-colors"
-                    >
-                      <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5 shrink-0" />
-                      <p className="flex-1 text-sm">{item}</p>
+          {/* Input Area - Always show, but make read-only when feedback is available */}
+          <div className="space-y-4">
+            {currentStep.inputType === 'list' ? (
+              <div className="space-y-3">
+                {/* List items */}
+                {listItems.map((item, index) => (
+                  <div
+                    key={index}
+                    className={`flex items-start gap-2 p-3 rounded-lg border group transition-colors ${
+                      showFeedback 
+                        ? 'bg-muted/50 border-muted-foreground/20' 
+                        : 'bg-muted/30 border-border hover:border-primary/50'
+                    }`}
+                  >
+                    <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5 shrink-0" />
+                    <p className="flex-1 text-sm">{item}</p>
+                    {!showFeedback && (
                       <Button
                         variant="ghost"
                         size="sm"
@@ -452,10 +456,12 @@ export default function StepByStepChat({ problem }: Props) {
                       >
                         <X className="h-4 w-4" />
                       </Button>
-                    </div>
-                  ))}
+                    )}
+                  </div>
+                ))}
 
-                  {/* Add new item */}
+                {/* Add new item - only show if not showing feedback */}
+                {!showFeedback && (
                   <div className="flex gap-2">
                     <Input
                       value={newItemInput}
@@ -479,35 +485,41 @@ export default function StepByStepChat({ problem }: Props) {
                       Add
                     </Button>
                   </div>
+                )}
 
-                  {listItems.length === 0 && (
-                    <p className="text-xs text-muted-foreground text-center py-4">
-                      Add at least one item to continue
-                    </p>
-                  )}
-                </div>
-              ) : currentStep.inputType === 'schema' ? (
-                <div>
-                  <SchemaBuilder 
-                    value={schemaData} 
-                    onChange={setSchemaData}
-                  />
-                  {schemaData.length === 0 && (
-                    <p className="text-xs text-muted-foreground text-center py-4 mt-4">
-                      Add at least one entity with fields to continue
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <Textarea
-                  value={textInput}
-                  onChange={(e) => setTextInput(e.target.value)}
-                  placeholder={currentStep.placeholder}
-                  className="min-h-[200px] resize-none"
+                {listItems.length === 0 && !showFeedback && (
+                  <p className="text-xs text-muted-foreground text-center py-4">
+                    Add at least one item to continue
+                  </p>
+                )}
+              </div>
+            ) : currentStep.inputType === 'schema' ? (
+              <div>
+                <SchemaBuilder 
+                  value={schemaData} 
+                  onChange={setSchemaData}
+                  readOnly={showFeedback}
                 />
-              )}
+                {schemaData.length === 0 && !showFeedback && (
+                  <p className="text-xs text-muted-foreground text-center py-4 mt-4">
+                    Add at least one entity with fields to continue
+                  </p>
+                )}
+              </div>
+            ) : (
+              <Textarea
+                value={textInput}
+                onChange={(e) => setTextInput(e.target.value)}
+                placeholder={currentStep.placeholder}
+                className={`min-h-[200px] resize-none ${
+                  showFeedback ? 'bg-muted/50 cursor-not-allowed' : ''
+                }`}
+                readOnly={showFeedback}
+              />
+            )}
 
-              {/* Action buttons */}
+            {/* Action buttons - only show if not showing feedback */}
+            {!showFeedback && (
               <div className="flex justify-between items-center pt-4 border-t border-border">
                 <div className="flex gap-2">
                   {canGoBack && (
@@ -553,8 +565,8 @@ export default function StepByStepChat({ problem }: Props) {
                   )}
                 </Button>
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* Feedback Display */}
           {showFeedback && feedback && (
