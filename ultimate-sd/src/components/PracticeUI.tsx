@@ -18,6 +18,7 @@ const PHASES = ['Requirements', 'HLD', 'LLD', 'Trade-offs', 'Scalability', 'Feed
 export default function PracticeUI({ problem }: { problem: SystemDesignProblem }) {
   const [phase, setPhase] = useState<string>('Requirements');
   const [currentSubStep, setCurrentSubStep] = useState<string>('');
+  const [currentStepKey, setCurrentStepKey] = useState<string>('');
   const [diagramCollapsed, setDiagramCollapsed] = useState(false);
   const [completedSteps, setCompletedSteps] = useState<string[]>([]);
   const [savedStepData, setSavedStepData] = useState<Map<string, any>>(new Map());
@@ -35,6 +36,7 @@ export default function PracticeUI({ problem }: { problem: SystemDesignProblem }
     const handler = (e: any) => {
       if (e?.detail?.phase) setPhase(e.detail.phase);
       if (e?.detail?.subStep) setCurrentSubStep(e.detail.subStep);
+      if (e?.detail?.stepKey) setCurrentStepKey(e.detail.stepKey);
       if (e?.detail?.completedSteps) setCompletedSteps(e.detail.completedSteps);
       if (e?.detail?.savedStepData) setSavedStepData(e.detail.savedStepData);
     };
@@ -171,7 +173,7 @@ export default function PracticeUI({ problem }: { problem: SystemDesignProblem }
                   {diagramCollapsed ? 'Show Diagram' : 'Hide Diagram'}
                   {diagramCollapsed ? <ChevronsDown className="h-4 w-4 ml-2" /> : <ChevronsUp className="h-4 w-4 ml-2" />}
                 </Button>
-                <DiagramCanvas />
+                <DiagramCanvas stepKey={currentStepKey} />
               </div>
             </div>
 

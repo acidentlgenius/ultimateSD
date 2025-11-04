@@ -66,8 +66,22 @@ function SystemDesignCanvas() {
   // Expose elements data to parent component
   useEffect(() => {
     (window as any).sd_getDiagramElements = () => elements;
+    (window as any).sd_loadDiagramElements = (newElements: DiagramElement[]) => {
+      setElements(newElements);
+      setHistory([newElements]);
+      setHistoryIndex(0);
+      setSelectedElement(null);
+    };
+    (window as any).sd_clearDiagram = () => {
+      setElements([]);
+      setHistory([[]]);
+      setHistoryIndex(0);
+      setSelectedElement(null);
+    };
     return () => {
       (window as any).sd_getDiagramElements = undefined;
+      (window as any).sd_loadDiagramElements = undefined;
+      (window as any).sd_clearDiagram = undefined;
     };
   }, [elements]);
 
@@ -924,12 +938,35 @@ function SystemDesignCanvas() {
   );
 }
 
-export default function DiagramCanvas() {
+export default function DiagramCanvas({ stepKey }: { stepKey: string }) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Load diagram data for this step when stepKey changes
+  useEffect(() => {
+    if (stepKey && mounted) {
+      const savedData = localStorage.getItem(`diagram-${stepKey}`);
+      if (savedData) {
+        try {
+          const diagramData = JSON.parse(savedData);
+          // Load the diagram data into the canvas
+          if ((window as any).sd_loadDiagramElements) {
+            (window as any).sd_loadDiagramElements(diagramData.elements || []);
+          }
+        } catch (error) {
+          console.error('Error loading diagram data:', error);
+        }
+      } else {
+        // Clear canvas for new step
+        if ((window as any).sd_clearDiagram) {
+          (window as any).sd_clearDiagram();
+        }
+      }
+    }
+  }, [stepKey, mounted]);
 
   const exportPNG = useCallback(() => {
     const canvas = document.querySelector('canvas');
@@ -998,6 +1035,17 @@ export default function DiagramCanvas() {
       const componentTypes = elements.map((el: any) => el.type).filter((t: string) => t !== 'arrow' && t !== 'line');
       const uniqueComponents = [...new Set(componentTypes)];
       const description = `Diagram contains ${elements.length} elements including: ${uniqueComponents.join(', ')}`;
+
+      // Save diagram data to localStorage for this step
+      if (stepKey) {
+        const diagramData = {
+          imageData,
+          elements,
+          description,
+          timestamp: new Date().toISOString()
+        };
+        localStorage.setItem(`diagram-${stepKey}`, JSON.stringify(diagramData));
+      }
 
       // Dispatch custom event with diagram data
       const event = new CustomEvent('sd-diagram-shared', {

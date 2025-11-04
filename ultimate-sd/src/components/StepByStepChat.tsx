@@ -165,6 +165,11 @@ interface SavedStepData {
   schemaData: any[];
   feedback: FeedbackResult | null;
   completed: boolean;
+  diagramData?: {
+    imageData?: string;
+    elements?: any[];
+    description?: string;
+  } | null;
 }
 
 interface Props {
@@ -191,7 +196,7 @@ export default function StepByStepChat({ problem }: Props) {
   const [showRestorationBanner, setShowRestorationBanner] = useState(false);
   const [restoredDate, setRestoredDate] = useState<Date | null>(null);
 
-  // Diagram tracking
+  // Diagram tracking - now per step
   const [diagramData, setDiagramData] = useState<{
     imageData?: string;
     elements?: any[];
@@ -246,6 +251,13 @@ export default function StepByStepChat({ problem }: Props) {
     if (confirm('Are you sure you want to clear all progress for this problem? This cannot be undone.')) {
       clearSessionState(problem.slug);
       
+      // Clear diagram data from localStorage
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('diagram-')) {
+          localStorage.removeItem(key);
+        }
+      });
+      
       // Reset all state
       setCurrentPhase('requirements');
       setCurrentStepIndex(0);
@@ -269,12 +281,29 @@ export default function StepByStepChat({ problem }: Props) {
   useEffect(() => {
     const handleDiagramShared = (e: any) => {
       if (e?.detail) {
-        setDiagramData({
+        const newDiagramData = {
           imageData: e.detail.imageData,
           elements: e.detail.elements,
           description: e.detail.description
+        };
+        setDiagramData(newDiagramData);
+
+        // Save diagram data to current step
+        const newSavedData = new Map(savedStepData);
+        const currentSaved = newSavedData.get(currentStepKey) || {
+          listItems: [],
+          textInput: '',
+          schemaData: [],
+          feedback: null,
+          completed: false
+        };
+        newSavedData.set(currentStepKey, {
+          ...currentSaved,
+          diagramData: newDiagramData
         });
-        console.log('Diagram captured:', e.detail.description);
+        setSavedStepData(newSavedData);
+
+        console.log('Diagram captured for step:', currentStepKey, e.detail.description);
       }
     };
 
@@ -282,7 +311,7 @@ export default function StepByStepChat({ problem }: Props) {
     return () => {
       window.removeEventListener('sd-diagram-shared', handleDiagramShared as EventListener);
     };
-  }, []);
+  }, [currentStepKey, savedStepData]);
 
   // Load saved data when step changes
   useEffect(() => {
@@ -293,12 +322,14 @@ export default function StepByStepChat({ problem }: Props) {
       setSchemaData(saved.schemaData || []);
       setFeedback(saved.feedback);
       setShowFeedback(saved.feedback !== null);
+      setDiagramData(saved.diagramData || null);
     } else {
       setListItems([]);
       setTextInput('');
       setSchemaData([]);
       setFeedback(null);
       setShowFeedback(false);
+      setDiagramData(null);
     }
     setNewItemInput('');
   }, [currentStepKey, savedStepData]);
@@ -306,10 +337,10 @@ export default function StepByStepChat({ problem }: Props) {
   // Dispatch phase change events
   useEffect(() => {
     const evt = new CustomEvent('sd-phase-change', {
-      detail: { phase: currentStep.phase, subStep: currentStep.subStep }
+      detail: { phase: currentStep.phase, subStep: currentStep.subStep, stepKey: currentStepKey }
     });
     window.dispatchEvent(evt);
-  }, [currentStep.phase, currentStep.subStep]);
+  }, [currentStep.phase, currentStep.subStep, currentStepKey]);
 
   // Dispatch progress updates
   useEffect(() => {
@@ -388,7 +419,8 @@ export default function StepByStepChat({ problem }: Props) {
         textInput,
         schemaData: [...schemaData],
         feedback: data.feedback,
-        completed: data.feedback.isAcceptable
+        completed: data.feedback.isAcceptable,
+        diagramData: diagramData
       });
       setSavedStepData(newSavedData);
 
@@ -450,7 +482,8 @@ export default function StepByStepChat({ problem }: Props) {
         textInput: '',
         schemaData: [],
         feedback: null,
-        completed: false
+        completed: false,
+        diagramData: diagramData
       });
       setSavedStepData(newSavedData);
       handleNext();
