@@ -305,11 +305,11 @@ export default function StepByStepChat({ problem }: Props) {
 
   // Dispatch phase change events
   useEffect(() => {
-    const evt = new CustomEvent('sd-phase-change', { 
-      detail: { phase: currentStep.phase } 
+    const evt = new CustomEvent('sd-phase-change', {
+      detail: { phase: currentStep.phase, subStep: currentStep.subStep }
     });
     window.dispatchEvent(evt);
-  }, [currentStep.phase]);
+  }, [currentStep.phase, currentStep.subStep]);
 
   // Dispatch progress updates
   useEffect(() => {
@@ -343,9 +343,8 @@ export default function StepByStepChat({ problem }: Props) {
 
     if (!userAnswer.trim() || (currentStep.inputType === 'schema' && schemaData.length === 0)) return;
 
-    // Check if diagram should be included (for HLD/LLD architecture steps)
-    const shouldIncludeDiagram = (currentStep.phase === 'HLD' || currentStep.phase === 'LLD') && 
-                                  currentStep.subStep === 'architecture' || currentStep.subStep === 'components';
+    // Check if diagram should be included (for High Level Architecture and Data Flow steps)
+    const shouldIncludeDiagram = currentStep.subStep === 'architecture' || currentStep.subStep === 'data-flow';
 
     setLoading(true);
     setShowFeedback(false);
@@ -594,9 +593,8 @@ export default function StepByStepChat({ problem }: Props) {
             </p>
           </div>
 
-          {/* Diagram Status Indicator - Show for HLD/LLD architecture steps */}
-          {(currentStep.phase === 'HLD' || currentStep.phase === 'LLD') && 
-           (currentStep.subStep === 'architecture' || currentStep.subStep === 'components') && (
+          {/* Diagram Status Indicator - Show for High Level Architecture and Data Flow steps */}
+          {(currentStep.subStep === 'architecture' || currentStep.subStep === 'data-flow') && (
             <div className={`p-3 rounded-lg border-2 ${
               diagramData 
                 ? 'bg-green-500/10 border-green-500/30' 

@@ -17,13 +17,14 @@ const PHASES = ['Requirements', 'HLD', 'LLD', 'Trade-offs', 'Scalability', 'Feed
 
 export default function PracticeUI({ problem }: { problem: SystemDesignProblem }) {
   const [phase, setPhase] = useState<string>('Requirements');
+  const [currentSubStep, setCurrentSubStep] = useState<string>('');
   const [diagramCollapsed, setDiagramCollapsed] = useState(false);
   const [completedSteps, setCompletedSteps] = useState<string[]>([]);
   const [savedStepData, setSavedStepData] = useState<Map<string, any>>(new Map());
   const [isExporting, setIsExporting] = useState(false);
 
-  // Diagram is only relevant for HLD and LLD phases
-  const isDiagramRelevant = phase === 'HLD' || phase === 'LLD';
+  // Diagram is only relevant for High Level Architecture and Data Flow steps
+  const isDiagramRelevant = currentSubStep === 'architecture' || currentSubStep === 'data-flow';
 
   const getPhaseColor = (currentPhase: string) => {
     const phaseKey = currentPhase.toLowerCase().replace(' ', '') as keyof typeof tokens.colors.phase;
@@ -33,6 +34,7 @@ export default function PracticeUI({ problem }: { problem: SystemDesignProblem }
   useEffect(() => {
     const handler = (e: any) => {
       if (e?.detail?.phase) setPhase(e.detail.phase);
+      if (e?.detail?.subStep) setCurrentSubStep(e.detail.subStep);
       if (e?.detail?.completedSteps) setCompletedSteps(e.detail.completedSteps);
       if (e?.detail?.savedStepData) setSavedStepData(e.detail.savedStepData);
     };
@@ -139,7 +141,7 @@ export default function PracticeUI({ problem }: { problem: SystemDesignProblem }
           <StepByStepChat problem={problem} />
         </div>
 
-        {/* Diagram Section - Only show for HLD and LLD phases */}
+        {/* Diagram Section - Only show for High Level Architecture and Data Flow steps */}
         {isDiagramRelevant && (
           <>
             {/* Diagram available notification */}
@@ -151,7 +153,7 @@ export default function PracticeUI({ problem }: { problem: SystemDesignProblem }
                 <div>
                   <h3 className="font-semibold text-sm">System Diagram Now Available!</h3>
                   <p className="text-xs text-muted-foreground">
-                    Use the diagram canvas below to visualize your {phase} architecture
+                    Use the diagram canvas below to visualize your system design
                   </p>
                 </div>
               </div>
