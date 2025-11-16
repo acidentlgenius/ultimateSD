@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Home, Download, Image as ImageIcon, Layers, Workflow, Maximize, Minimize, X } from 'lucide-react';
@@ -13,41 +13,119 @@ type DiagramType = 'HLD' | 'LLD' | null;
 export default function DrawPage() {
   const [diagramType, setDiagramType] = useState<DiagramType>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const fullscreenRef = useRef<HTMLDivElement>(null);
 
-  // Handle fullscreen toggle
-  const toggleFullscreen = () => {
+  // Handle fullscreen toggle with native Fullscreen API
+  const toggleFullscreen = async () => {
     if (!isFullscreen && diagramType) {
       // Before entering fullscreen, save current state to localStorage
       if ((window as any).sd_saveToLocalStorage) {
         (window as any).sd_saveToLocalStorage(`free-draw-${diagramType.toLowerCase()}`);
       }
-    } else if (isFullscreen && diagramType) {
-      // When exiting fullscreen, trigger a reload of the canvas
-      setTimeout(() => {
-        const savedData = localStorage.getItem(`diagram-free-draw-${diagramType.toLowerCase()}`);
-        if (savedData && (window as any).sd_loadDiagramElements) {
-          try {
-            const diagramData = JSON.parse(savedData);
-            (window as any).sd_loadDiagramElements(diagramData.elements || []);
-          } catch (error) {
-            console.error('Error reloading diagram:', error);
+
+      // First show the fullscreen container
+      setIsFullscreen(true);
+
+      // Wait for React to render the fullscreen div before requesting fullscreen
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      // Enter native fullscreen
+      if (fullscreenRef.current) {
+        try {
+          if (fullscreenRef.current.requestFullscreen) {
+            await fullscreenRef.current.requestFullscreen();
+          } else if ((fullscreenRef.current as any).webkitRequestFullscreen) {
+            await (fullscreenRef.current as any).webkitRequestFullscreen();
+          } else if ((fullscreenRef.current as any).mozRequestFullScreen) {
+            await (fullscreenRef.current as any).mozRequestFullScreen();
+          } else if ((fullscreenRef.current as any).msRequestFullscreen) {
+            await (fullscreenRef.current as any).msRequestFullscreen();
           }
+        } catch (err) {
+          console.error('Error entering fullscreen:', err);
+          // If fullscreen fails, stay in the overlay mode
         }
-      }, 100);
+      }
+    } else if (isFullscreen) {
+      // Exit native fullscreen
+      try {
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        } else if ((document as any).webkitExitFullscreen) {
+          await (document as any).webkitExitFullscreen();
+        } else if ((document as any).mozCancelFullScreen) {
+          await (document as any).mozCancelFullScreen();
+        } else if ((document as any).msExitFullscreen) {
+          await (document as any).msExitFullscreen();
+        }
+        setIsFullscreen(false);
+
+        // When exiting fullscreen, trigger a reload of the canvas
+        setTimeout(() => {
+          const savedData = localStorage.getItem(`diagram-free-draw-${diagramType?.toLowerCase()}`);
+          if (savedData && (window as any).sd_loadDiagramElements) {
+            try {
+              const diagramData = JSON.parse(savedData);
+              (window as any).sd_loadDiagramElements(diagramData.elements || []);
+            } catch (error) {
+              console.error('Error reloading diagram:', error);
+            }
+          }
+        }, 100);
+      } catch (err) {
+        console.error('Error exiting fullscreen:', err);
+      }
     }
-    setIsFullscreen(!isFullscreen);
   };
 
   // Handle ESC key to exit fullscreen
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isFullscreen) {
-        setIsFullscreen(false);
+        toggleFullscreen();
       }
     };
+
+    const handleFullscreenChange = () => {
+      // Detect when user exits fullscreen via browser controls (ESC or F11)
+      const isCurrentlyFullscreen = !!(
+        document.fullscreenElement ||
+        (document as any).webkitFullscreenElement ||
+        (document as any).mozFullScreenElement ||
+        (document as any).msFullscreenElement
+      );
+      
+      if (!isCurrentlyFullscreen && isFullscreen) {
+        setIsFullscreen(false);
+        // Reload canvas state when exiting
+        setTimeout(() => {
+          const savedData = localStorage.getItem(`diagram-free-draw-${diagramType?.toLowerCase()}`);
+          if (savedData && (window as any).sd_loadDiagramElements) {
+            try {
+              const diagramData = JSON.parse(savedData);
+              (window as any).sd_loadDiagramElements(diagramData.elements || []);
+            } catch (error) {
+              console.error('Error reloading diagram:', error);
+            }
+          }
+        }, 100);
+      }
+    };
+
     window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
-  }, [isFullscreen]);
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('msfullscreenchange', handleFullscreenChange);
+
+    return () => {
+      window.removeEventListener('keydown', handleEsc);
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('msfullscreenchange', handleFullscreenChange);
+    };
+  }, [isFullscreen, diagramType]);
 
   const exportPNG = () => {
     const canvas = document.querySelector('canvas');
@@ -130,58 +208,51 @@ export default function DrawPage() {
     <>
       {/* Fullscreen Mode */}
       {isFullscreen && diagramType && (
-        <div className="fixed inset-0 z-50 bg-background">
-          {/* Fullscreen Header */}
-          <div className="absolute top-0 left-0 right-0 z-10 glass border-b border-border">
-            <div className="flex items-center justify-between p-4">
+        <div 
+          ref={fullscreenRef}
+          className="fixed inset-0 z-50 bg-background flex flex-col"
+        >
+          {/* Minimal Fullscreen Header */}
+          <div className="flex-shrink-0 bg-background/95 backdrop-blur-sm border-b border-border/50 px-4 py-2">
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className={`px-3 py-1.5 rounded-lg font-semibold text-sm ${
+                <div className={`px-2 py-1 rounded text-xs font-semibold ${
                   diagramType === 'HLD' 
-                    ? 'bg-blue-500/10 text-blue-600 border border-blue-500/20' 
-                    : 'bg-green-500/10 text-green-600 border border-green-500/20'
+                    ? 'bg-blue-500/10 text-blue-600' 
+                    : 'bg-green-500/10 text-green-600'
                 }`}>
-                  {diagramType === 'HLD' ? (
-                    <div className="flex items-center gap-2">
-                      <Layers className="h-3.5 w-3.5" />
-                      <span>High-Level Design</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Workflow className="h-3.5 w-3.5" />
-                      <span>Low-Level Design</span>
-                    </div>
-                  )}
+                  {diagramType === 'HLD' ? 'HLD' : 'LLD'}
                 </div>
-                <div className="text-xs text-muted-foreground hidden md:block">
-                  Press <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">ESC</kbd> to exit fullscreen
+                <div className="text-xs text-muted-foreground">
+                  Press <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">ESC</kbd> or <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">F11</kbd> to exit
                 </div>
               </div>
               
               <div className="flex items-center gap-2">
                 <Button 
-                  variant="outline" 
+                  variant="ghost" 
                   size="sm" 
                   onClick={exportPNG}
-                  className="h-8"
+                  className="h-7 text-xs"
                 >
-                  <Download className="h-3.5 w-3.5 mr-1.5" />
+                  <Download className="h-3 w-3 mr-1" />
                   Download
                 </Button>
                 <Button 
-                  variant="outline" 
+                  variant="ghost" 
                   size="sm" 
                   onClick={toggleFullscreen}
-                  className="h-8"
+                  className="h-7 text-xs"
                 >
-                  <X className="h-3.5 w-3.5 mr-1.5" />
-                  Exit Fullscreen
+                  <X className="h-3 w-3 mr-1" />
+                  Exit
                 </Button>
               </div>
             </div>
           </div>
 
-          {/* Fullscreen Canvas - same key to maintain state */}
-          <div className="h-full pt-[73px]">
+          {/* Fullscreen Canvas - Takes full remaining space */}
+          <div className="flex-1 overflow-hidden">
             <DiagramCanvas key={`free-draw-${diagramType.toLowerCase()}`} stepKey={`free-draw-${diagramType.toLowerCase()}`} />
           </div>
         </div>
