@@ -61,11 +61,58 @@ function SystemDesignCanvas() {
   const [showGrid, setShowGrid] = useState(true);
   const [history, setHistory] = useState<DiagramElement[][]>([[]]);
   const [historyIndex, setHistoryIndex] = useState(0);
+  const [isResizing, setIsResizing] = useState(false);
+  const [resizeHandle, setResizeHandle] = useState<'se' | 'ne' | 'sw' | 'nw' | null>(null);
   const { theme } = useTheme();
 
-  // Expose elements data to parent component
+  // Calculate bounding box of all elements with padding
+  const getBoundingBox = useCallback(() => {
+    if (elements.length === 0) {
+      return { minX: 0, minY: 0, maxX: 800, maxY: 600 }; // Default size if empty
+    }
+
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+
+    elements.forEach(el => {
+      if (el.type === 'arrow' || el.type === 'line') {
+        // For lines and arrows, consider both start and end points
+        minX = Math.min(minX, el.x, el.endX || el.x);
+        minY = Math.min(minY, el.y, el.endY || el.y);
+        maxX = Math.max(maxX, el.x, el.endX || el.x);
+        maxY = Math.max(maxY, el.y, el.endY || el.y);
+      } else if (el.type === 'text') {
+        // For text, estimate width based on text length
+        const textWidth = (el.text?.length || 0) * 8;
+        minX = Math.min(minX, el.x);
+        minY = Math.min(minY, el.y - 20); // Text baseline offset
+        maxX = Math.max(maxX, el.x + textWidth);
+        maxY = Math.max(maxY, el.y);
+      } else {
+        // For shapes
+        minX = Math.min(minX, el.x);
+        minY = Math.min(minY, el.y);
+        maxX = Math.max(maxX, el.x + el.width);
+        maxY = Math.max(maxY, el.y + el.height);
+      }
+    });
+
+    // Add padding around the content
+    const padding = 40;
+    return {
+      minX: Math.max(0, minX - padding),
+      minY: Math.max(0, minY - padding),
+      maxX: maxX + padding,
+      maxY: maxY + padding
+    };
+  }, [elements]);
+
+  // Expose elements data and export function to parent component
   useEffect(() => {
     (window as any).sd_getDiagramElements = () => elements;
+    (window as any).sd_getBoundingBox = getBoundingBox;
     (window as any).sd_loadDiagramElements = (newElements: DiagramElement[]) => {
       setElements(newElements);
       setHistory([newElements]);
@@ -78,12 +125,24 @@ function SystemDesignCanvas() {
       setHistoryIndex(0);
       setSelectedElement(null);
     };
+    (window as any).sd_saveToLocalStorage = (stepKey: string) => {
+      // Save current elements to localStorage
+      if (stepKey && elements.length > 0) {
+        const diagramData = {
+          elements,
+          timestamp: new Date().toISOString()
+        };
+        localStorage.setItem(`diagram-${stepKey}`, JSON.stringify(diagramData));
+      }
+    };
     return () => {
       (window as any).sd_getDiagramElements = undefined;
+      (window as any).sd_getBoundingBox = undefined;
       (window as any).sd_loadDiagramElements = undefined;
       (window as any).sd_clearDiagram = undefined;
+      (window as any).sd_saveToLocalStorage = undefined;
     };
-  }, [elements]);
+  }, [elements, getBoundingBox]);
 
   const saveHistory = (newElements: DiagramElement[]) => {
     const newHistory = history.slice(0, historyIndex + 1);
@@ -472,6 +531,27 @@ function SystemDesignCanvas() {
     }
     
     ctx.setLineDash([]);
+
+    // Draw resize handles for selected element
+    if (isSelected && element.type !== 'arrow' && element.type !== 'line' && element.type !== 'text') {
+      const handleSize = 8;
+      const handles = [
+        { x: element.x, y: element.y }, // nw
+        { x: element.x + element.width, y: element.y }, // ne
+        { x: element.x, y: element.y + element.height }, // sw
+        { x: element.x + element.width, y: element.y + element.height }, // se
+      ];
+
+      ctx.fillStyle = '#3b82f6'; // Blue color for handles
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([]);
+
+      handles.forEach(handle => {
+        ctx.fillRect(handle.x - handleSize / 2, handle.y - handleSize / 2, handleSize, handleSize);
+        ctx.strokeRect(handle.x - handleSize / 2, handle.y - handleSize / 2, handleSize, handleSize);
+      });
+    }
   };
 
   const redraw = useCallback(() => {
@@ -515,12 +595,48 @@ function SystemDesignCanvas() {
           const dist = pointToLineDistance(x, y, el.x, el.y, el.endX, el.endY);
           if (dist < 10) return el;
         }
+      } else if (el.type === 'text') {
+        // For text elements, check a rectangular area around the text
+        // Text baseline is at el.y, so check from y-20 (above) to y+5 (below)
+        const textHeight = 25; // Text height with some padding
+        if (x >= el.x && x <= el.x + el.width && y >= el.y - 20 && y <= el.y + 5) {
+          return el;
+        }
       } else {
         if (x >= el.x && x <= el.x + el.width && y >= el.y && y <= el.y + el.height) {
           return el;
         }
       }
     }
+    return null;
+  };
+
+  // Check if mouse is on a resize handle
+  const getResizeHandle = (x: number, y: number, element: DiagramElement): 'se' | 'ne' | 'sw' | 'nw' | null => {
+    if (element.type === 'arrow' || element.type === 'line' || element.type === 'text') {
+      return null; // These types are not resizable
+    }
+
+    const handleSize = 8;
+    const ex = element.x;
+    const ey = element.y;
+    const ew = element.width;
+    const eh = element.height;
+
+    // Check corner handles
+    if (Math.abs(x - (ex + ew)) < handleSize && Math.abs(y - (ey + eh)) < handleSize) {
+      return 'se'; // Southeast (bottom-right)
+    }
+    if (Math.abs(x - (ex + ew)) < handleSize && Math.abs(y - ey) < handleSize) {
+      return 'ne'; // Northeast (top-right)
+    }
+    if (Math.abs(x - ex) < handleSize && Math.abs(y - (ey + eh)) < handleSize) {
+      return 'sw'; // Southwest (bottom-left)
+    }
+    if (Math.abs(x - ex) < handleSize && Math.abs(y - ey) < handleSize) {
+      return 'nw'; // Northwest (top-left)
+    }
+
     return null;
   };
 
@@ -556,9 +672,19 @@ function SystemDesignCanvas() {
     if (currentTool === 'select') {
       const element = findElementAt(pos.x, pos.y);
       if (element) {
-        setSelectedElement(element.id);
-        setDragOffset({ x: pos.x - element.x, y: pos.y - element.y });
-        setIsDrawing(true);
+        // Check if clicking on a resize handle
+        const handle = getResizeHandle(pos.x, pos.y, element);
+        if (handle) {
+          setIsResizing(true);
+          setResizeHandle(handle);
+          setSelectedElement(element.id);
+          setStartPos(pos);
+        } else {
+          // Normal drag
+          setSelectedElement(element.id);
+          setDragOffset({ x: pos.x - element.x, y: pos.y - element.y });
+          setIsDrawing(true);
+        }
       } else {
         setSelectedElement(null);
       }
@@ -568,11 +694,112 @@ function SystemDesignCanvas() {
     }
   };
 
+  const handleDoubleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const pos = getMousePos(e);
+    const element = findElementAt(pos.x, pos.y);
+    
+    if (element) {
+      if (element.type === 'text') {
+        // Edit text element
+        const newText = prompt('Edit text:', element.text || '');
+        if (newText !== null) { // Allow empty string
+          const newElements = elements.map(el => {
+            if (el.id === element.id) {
+              return { 
+                ...el, 
+                text: newText,
+                width: newText.length * 8 || 20 // Minimum width
+              };
+            }
+            return el;
+          });
+          setElements(newElements);
+          saveHistory(newElements);
+        }
+      } else {
+        // Edit label for other elements
+        const currentText = element.text || '';
+        const newText = prompt('Edit label:', currentText);
+        if (newText !== null) {
+          const newElements = elements.map(el => {
+            if (el.id === element.id) {
+              return { ...el, text: newText };
+            }
+            return el;
+          });
+          setElements(newElements);
+          saveHistory(newElements);
+        }
+      }
+    }
+  };
+
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDrawing) return;
     const pos = getMousePos(e);
 
-    if (currentTool === 'select' && selectedElement && dragOffset) {
+    // Update cursor based on hover state
+    if (currentTool === 'select' && !isDrawing && !isResizing) {
+      const element = findElementAt(pos.x, pos.y);
+      if (element) {
+        const handle = getResizeHandle(pos.x, pos.y, element);
+        const canvas = canvasRef.current;
+        if (canvas) {
+          if (handle === 'se' || handle === 'nw') {
+            canvas.style.cursor = 'nwse-resize';
+          } else if (handle === 'ne' || handle === 'sw') {
+            canvas.style.cursor = 'nesw-resize';
+          } else {
+            canvas.style.cursor = 'move';
+          }
+        }
+      } else if (canvasRef.current) {
+        canvasRef.current.style.cursor = 'default';
+      }
+    }
+
+    if (!isDrawing && !isResizing) return;
+
+    if (isResizing && selectedElement && startPos && resizeHandle) {
+      // Handle resizing
+      const newElements = elements.map(el => {
+        if (el.id === selectedElement) {
+          const dx = pos.x - startPos.x;
+          const dy = pos.y - startPos.y;
+          let newX = el.x;
+          let newY = el.y;
+          let newWidth = el.width;
+          let newHeight = el.height;
+
+          switch (resizeHandle) {
+            case 'se': // Bottom-right
+              newWidth = Math.max(20, el.width + dx);
+              newHeight = Math.max(20, el.height + dy);
+              break;
+            case 'sw': // Bottom-left
+              newWidth = Math.max(20, el.width - dx);
+              newHeight = Math.max(20, el.height + dy);
+              newX = el.x + (el.width - newWidth);
+              break;
+            case 'ne': // Top-right
+              newWidth = Math.max(20, el.width + dx);
+              newHeight = Math.max(20, el.height - dy);
+              newY = el.y + (el.height - newHeight);
+              break;
+            case 'nw': // Top-left
+              newWidth = Math.max(20, el.width - dx);
+              newHeight = Math.max(20, el.height - dy);
+              newX = el.x + (el.width - newWidth);
+              newY = el.y + (el.height - newHeight);
+              break;
+          }
+
+          return { ...el, x: newX, y: newY, width: newWidth, height: newHeight };
+        }
+        return el;
+      });
+      setElements(newElements);
+      setStartPos(pos); // Update start position for continuous resizing
+    } else if (currentTool === 'select' && selectedElement && dragOffset) {
       const newElements = elements.map(el => {
         if (el.id === selectedElement) {
           return { ...el, x: pos.x - dragOffset.x, y: pos.y - dragOffset.y };
@@ -608,9 +835,15 @@ function SystemDesignCanvas() {
   };
 
   const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDrawing) return;
+    if (!isDrawing && !isResizing) return;
     
-    if (currentTool !== 'select' && startPos) {
+    if (isResizing) {
+      // Save history after resizing
+      saveHistory(elements);
+      setIsResizing(false);
+      setResizeHandle(null);
+      setStartPos(null);
+    } else if (currentTool !== 'select' && startPos) {
       const pos = getMousePos(e);
       const newElement: DiagramElement = {
         id: Date.now().toString(),
@@ -635,8 +868,17 @@ function SystemDesignCanvas() {
         const text = prompt('Enter text:');
         if (text) {
           newElement.text = text;
+          newElement.x = startPos.x; // Use exact click position for text
+          newElement.y = startPos.y; // Text baseline position
           newElement.width = text.length * 8;
           newElement.height = 20;
+        } else {
+          // Don't create element if text is cancelled
+          setIsDrawing(false);
+          setStartPos(null);
+          setDragOffset(null);
+          setCurrentTool('select');
+          return;
         }
       }
 
@@ -914,7 +1156,7 @@ function SystemDesignCanvas() {
         </div>
 
         <div className="ml-auto text-xs text-muted-foreground">
-          {selectedElement ? 'Selected • Drag to move' : `${currentTool === 'select' ? 'Select mode' : `Draw ${currentTool}`} • Click and drag`}
+          {selectedElement ? 'Selected • Drag to move • Drag corners to resize • Double-click to edit' : `${currentTool === 'select' ? 'Select mode • Double-click to edit text' : `Draw ${currentTool}`} • Click and drag`}
         </div>
       </div>
 
@@ -929,6 +1171,7 @@ function SystemDesignCanvas() {
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
+            onDoubleClick={handleDoubleClick}
             className="border-2 border-border/50 rounded-lg bg-white shadow-xl"
             style={{ cursor: currentTool === 'select' ? 'default' : 'crosshair' }}
           />
@@ -944,6 +1187,24 @@ export default function DiagramCanvas({ stepKey }: { stepKey: string }) {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Auto-save to localStorage whenever elements change
+  useEffect(() => {
+    if (stepKey && mounted) {
+      const saveInterval = setInterval(() => {
+        const elements = (window as any).sd_getDiagramElements?.();
+        if (elements && elements.length > 0) {
+          const diagramData = {
+            elements,
+            timestamp: new Date().toISOString()
+          };
+          localStorage.setItem(`diagram-${stepKey}`, JSON.stringify(diagramData));
+        }
+      }, 1000); // Auto-save every second
+
+      return () => clearInterval(saveInterval);
+    }
+  }, [stepKey, mounted]);
 
   // Load diagram data for this step when stepKey changes
   useEffect(() => {
@@ -970,31 +1231,61 @@ export default function DiagramCanvas({ stepKey }: { stepKey: string }) {
 
   const exportPNG = useCallback(() => {
     const canvas = document.querySelector('canvas');
-    if (canvas) {
-      // Save current state
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-      
-      // Create a temporary canvas with white background and no grid
-      const tempCanvas = document.createElement('canvas');
-      tempCanvas.width = canvas.width;
-      tempCanvas.height = canvas.height;
-      const tempCtx = tempCanvas.getContext('2d');
-      
-      if (tempCtx) {
-        // Fill with white background
-        tempCtx.fillStyle = '#ffffff';
-        tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-        
-        // Copy the current canvas content (without grid)
-        tempCtx.drawImage(canvas, 0, 0);
-        
-        // Download
-        const link = document.createElement('a');
-        link.download = 'system-diagram.png';
-        link.href = tempCanvas.toDataURL('image/png');
-        link.click();
-      }
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Get bounding box of all elements
+    const getBoundingBox = (window as any).sd_getBoundingBox;
+    const elements = (window as any).sd_getDiagramElements?.();
+    
+    if (!getBoundingBox || !elements || elements.length === 0) {
+      alert('❌ Your diagram is empty! Please add some components first.');
+      return;
+    }
+
+    const bounds = getBoundingBox();
+    const cropWidth = Math.ceil(bounds.maxX - bounds.minX);
+    const cropHeight = Math.ceil(bounds.maxY - bounds.minY);
+
+    // Create a temporary canvas with the cropped size
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = cropWidth;
+    tempCanvas.height = cropHeight;
+    const tempCtx = tempCanvas.getContext('2d');
+
+    if (tempCtx) {
+      // Fill with white background
+      tempCtx.fillStyle = '#ffffff';
+      tempCtx.fillRect(0, 0, cropWidth, cropHeight);
+
+      // Copy only the relevant portion of the canvas
+      tempCtx.drawImage(
+        canvas,
+        bounds.minX, bounds.minY, cropWidth, cropHeight, // Source rectangle
+        0, 0, cropWidth, cropHeight // Destination rectangle
+      );
+
+      // Download
+      const link = document.createElement('a');
+      link.download = 'system-diagram.png';
+      link.href = tempCanvas.toDataURL('image/png');
+      link.click();
+
+      // Show success message with dimensions
+      const toast = document.createElement('div');
+      toast.className = 'fixed bottom-4 right-4 z-50 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg animate-fade-in';
+      toast.innerHTML = `
+        <div class="flex items-center gap-2">
+          <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+          <span>Diagram exported! (${cropWidth}×${cropHeight}px)</span>
+        </div>
+      `;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
     }
   }, []);
 

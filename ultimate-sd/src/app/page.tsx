@@ -4,7 +4,9 @@ import { PROBLEMS } from '@/lib/problems';
 import ProblemCard from '@/components/ProblemCard';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useState, useMemo } from 'react';
-import { Search, Filter, TrendingUp, Award, Zap } from 'lucide-react';
+import { Search, Filter, TrendingUp, Award, Zap, Pencil } from 'lucide-react';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 export default function Home() {
   const [search, setSearch] = useState('');
@@ -58,6 +60,15 @@ export default function Home() {
                 AI-powered practice platform with 80+ real-world problems from top tech companies
               </p>
             </div>
+            <div className="flex items-center gap-3">
+              <Link href="/draw">
+                <Button className="gradient-bg shadow-lg hover:shadow-xl transition-all">
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Free Draw
+                </Button>
+              </Link>
+              <ThemeToggle />
+            </div>
           </div>
 
           {/* Stats Cards */}
@@ -80,6 +91,43 @@ export default function Home() {
               </div>
             ))}
           </div>
+
+          {/* Free Draw Feature Banner */}
+          <Link href="/draw">
+            <div className="mb-12 glass rounded-xl p-8 border-2 border-primary/30 bg-gradient-to-br from-primary/5 via-transparent to-primary/10 card-hover animate-fade-in cursor-pointer group">
+              <div className="flex items-center gap-6">
+                <div className="p-4 rounded-xl bg-gradient-to-br from-primary to-primary/70 shadow-lg group-hover:scale-110 transition-transform">
+                  <Pencil className="h-8 w-8 text-primary-foreground" />
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-2xl font-bold mb-2 gradient-text">Free Drawing Canvas</h2>
+                  <p className="text-muted-foreground mb-3">
+                    Create custom HLD or LLD diagrams with our powerful drawing tools. Perfect for practicing or planning your own system designs.
+                  </p>
+                  <div className="flex items-center gap-4 text-sm">
+                    <span className="flex items-center gap-1 text-muted-foreground">
+                      <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                      No practice problem required
+                    </span>
+                    <span className="flex items-center gap-1 text-muted-foreground">
+                      <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                      Export as PNG
+                    </span>
+                    <span className="flex items-center gap-1 text-muted-foreground">
+                      <span className="w-2 h-2 rounded-full bg-purple-500"></span>
+                      Full component library
+                    </span>
+                  </div>
+                </div>
+                <div className="hidden lg:block">
+                  <Button size="lg" className="gradient-bg shadow-lg group-hover:shadow-xl">
+                    Start Drawing
+                    <Pencil className="h-4 w-4 ml-2" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </Link>
 
           {/* Enhanced Search/Filter */}
           <div className="glass rounded-xl p-6 mb-8 animate-fade-in">
