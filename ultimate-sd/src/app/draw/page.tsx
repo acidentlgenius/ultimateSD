@@ -3,10 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Home, Download, Image as ImageIcon, Layers, Workflow, Maximize, Minimize, X } from 'lucide-react';
-import Link from 'next/link';
+import { Download, Layers, Workflow, X } from 'lucide-react';
 import DiagramCanvas from '@/components/DiagramCanvas';
-import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 type DiagramType = 'HLD' | 'LLD' | null;
 
@@ -260,51 +258,23 @@ export default function DrawPage() {
 
       {/* Normal Mode - hide when fullscreen */}
       <div className={`min-h-screen bg-gradient-to-br from-background via-background to-muted/20 ${isFullscreen ? 'hidden' : ''}`}>
-        <div className="container mx-auto p-4">
-        {/* Header */}
-        <div className="mb-6 glass rounded-xl p-6 border-2 border-border shadow-lg animate-fade-in">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4 flex-1 min-w-0">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-primary to-primary/70 shadow-md">
-                <Workflow className="h-6 w-6 text-primary-foreground" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h1 className="text-2xl font-bold gradient-text mb-1">Free Drawing Canvas</h1>
-                <p className="text-sm text-muted-foreground">
-                  Create High-Level Design (HLD) or Low-Level Design (LLD) diagrams and export them
-                </p>
-              </div>
+        <div className="w-full p-4">
+        {/* Minimal Header */}
+        <div className="mb-4 glass rounded-lg px-4 py-3 border border-border shadow-sm animate-fade-in">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-gradient-to-br from-primary to-primary/70">
+              <Workflow className="h-5 w-5 text-primary-foreground" />
             </div>
-            <div className="flex items-center gap-2 ml-4 shrink-0">
-              <Link href="/">
-                <Button variant="outline" size="sm" className="hover:bg-muted transition-all">
-                  <Home className="h-4 w-4 mr-2" />
-                  Home
-                </Button>
-              </Link>
-              {diagramType && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={toggleFullscreen}
-                  className="hover:bg-muted transition-all"
-                >
-                  <Maximize className="h-4 w-4 mr-2" />
-                  Fullscreen
-                </Button>
-              )}
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={exportPNG}
-                disabled={!diagramType}
-                className="hover:bg-muted transition-all"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Download PNG
-              </Button>
-              <ThemeToggle />
-            </div>
+            <h1 className="text-lg font-bold gradient-text">Free Drawing Canvas</h1>
+            {diagramType && (
+              <div className={`ml-2 px-3 py-1 rounded text-xs font-semibold ${
+                diagramType === 'HLD' 
+                  ? 'bg-blue-500/10 text-blue-600 border border-blue-500/20' 
+                  : 'bg-green-500/10 text-green-600 border border-green-500/20'
+              }`}>
+                {diagramType}
+              </div>
+            )}
           </div>
         </div>
 
@@ -366,83 +336,32 @@ export default function DrawPage() {
         {/* Canvas Area */}
         {diagramType && (
           <div className="animate-fade-in">
-            {/* Type indicator and controls */}
-            <div className="mb-4 flex items-center justify-between flex-wrap gap-4">
-              <div className="flex items-center gap-2">
-                <div className={`px-4 py-2 rounded-lg font-semibold ${
-                  diagramType === 'HLD' 
-                    ? 'bg-blue-500/10 text-blue-600 border border-blue-500/20' 
-                    : 'bg-green-500/10 text-green-600 border border-green-500/20'
-                }`}>
-                  {diagramType === 'HLD' ? (
-                    <div className="flex items-center gap-2">
-                      <Layers className="h-4 w-4" />
-                      <span>High-Level Design</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Workflow className="h-4 w-4" />
-                      <span>Low-Level Design</span>
-                    </div>
-                  )}
-                </div>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => {
-                    if (confirm('Switch diagram type? This will clear the current canvas.')) {
-                      // Clear the canvas
-                      if ((window as any).sd_clearDiagram) {
-                        (window as any).sd_clearDiagram();
-                      }
-                      setDiagramType(null);
-                    }
-                  }}
-                >
-                  Switch Type
-                </Button>
-                <Button 
-                  variant="default" 
-                  size="sm"
-                  onClick={toggleFullscreen}
-                  className="gradient-bg"
-                >
-                  <Maximize className="h-4 w-4 mr-2" />
-                  Fullscreen Mode
-                </Button>
-              </div>
-              
+            {/* Compact controls */}
+            <div className="mb-3 flex items-center justify-between">
               <div className="text-sm text-muted-foreground">
                 {diagramType === 'HLD' 
-                  ? 'Draw your system architecture with high-level components'
-                  : 'Draw detailed component designs with classes and methods'
-                }
+                  ? 'Create system architecture with components & services' 
+                  : 'Design detailed components with classes & methods'}
               </div>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  if (confirm('Switch diagram type? This will clear the current canvas.')) {
+                    if ((window as any).sd_clearDiagram) {
+                      (window as any).sd_clearDiagram();
+                    }
+                    setDiagramType(null);
+                  }
+                }}
+              >
+                Switch Type
+              </Button>
             </div>
 
             {/* Canvas */}
-            <div className="min-h-[600px] h-[calc(100vh-280px)]">
+            <div className="min-h-[700px] h-[calc(100vh-180px)]">
               <DiagramCanvas key={`free-draw-${diagramType.toLowerCase()}`} stepKey={`free-draw-${diagramType.toLowerCase()}`} />
-            </div>
-
-            {/* Tips */}
-            <div className="mt-6 p-4 glass rounded-lg border border-border">
-              <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
-                <ImageIcon className="h-4 w-4 text-primary" />
-                Quick Tips
-              </h3>
-              <ul className="text-xs text-muted-foreground space-y-1">
-                <li>• Use the toolbar to select different components (servers, databases, clients, etc.)</li>
-                <li>• Click and drag to draw shapes, or click to place them</li>
-                <li>• <strong>Resize elements:</strong> Select any shape and drag the blue corner handles to resize</li>
-                <li>• Select mode (Move icon) to move or select existing elements</li>
-                <li>• <strong>Double-click</strong> any element to edit its text or label</li>
-                <li>• Add labels to components by selecting them and clicking "Label"</li>
-                <li>• Use arrows to show data flow between components</li>
-                <li>• Toggle grid on/off for easier alignment</li>
-                <li>• <strong>Click "Fullscreen Mode"</strong> for distraction-free designing</li>
-                <li>• Click "Download PNG" when done to save your diagram</li>
-              </ul>
             </div>
           </div>
         )}

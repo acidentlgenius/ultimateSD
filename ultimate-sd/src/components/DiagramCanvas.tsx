@@ -44,11 +44,17 @@ import {
   Maximize,
   Minimize,
   Upload,
-  Save
+  Save,
+  Diamond,
+  Octagon,
+  Play,
+  Hexagon,
+  Triangle
 } from 'lucide-react';
 
 type Tool = 'select' | 'rectangle' | 'circle' | 'database' | 'server' | 'cloud' | 'text' | 'arrow' | 'line' | 
-  'loadbalancer' | 'cache' | 'queue' | 'client' | 'api' | 'microservice' | 'cdn';
+  'loadbalancer' | 'cache' | 'queue' | 'client' | 'api' | 'microservice' | 'cdn' |
+  'diamond' | 'parallelogram' | 'hexagon' | 'oval' | 'document' | 'cylinder';
 
 interface DiagramElement {
   id: string;
@@ -63,7 +69,7 @@ interface DiagramElement {
   endY?: number;
 }
 
-function SystemDesignCanvas() {
+function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fullscreenRef = useRef<HTMLDivElement>(null);
   const [currentTool, setCurrentTool] = useState<Tool>('select');
@@ -143,11 +149,15 @@ function SystemDesignCanvas() {
       setHistoryIndex(0);
       setSelectedElement(null);
     };
-    (window as any).sd_clearDiagram = () => {
+    (window as any).sd_clearDiagram = (clearStorage = false, storageKey?: string) => {
       setElements([]);
       setHistory([[]]);
       setHistoryIndex(0);
       setSelectedElement(null);
+      // Clear localStorage if requested
+      if (clearStorage && storageKey) {
+        localStorage.removeItem(`diagram-${storageKey}`);
+      }
     };
     (window as any).sd_saveToLocalStorage = (stepKey: string) => {
       // Save current elements to localStorage
@@ -507,6 +517,112 @@ function SystemDesignCanvas() {
         ctx.arc(cdnCx - cdnW * 0.3, cdnTop + element.height * 0.175, 3, 0, Math.PI * 2);
         ctx.fillStyle = element.color;
         ctx.fill();
+        break;
+      
+      case 'diamond':
+        // Decision diamond (flowchart)
+        ctx.beginPath();
+        ctx.moveTo(element.x + element.width / 2, element.y); // Top
+        ctx.lineTo(element.x + element.width, element.y + element.height / 2); // Right
+        ctx.lineTo(element.x + element.width / 2, element.y + element.height); // Bottom
+        ctx.lineTo(element.x, element.y + element.height / 2); // Left
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        break;
+      
+      case 'parallelogram':
+        // Parallelogram (data/input-output in flowchart)
+        const paraOffset = element.width * 0.15;
+        ctx.beginPath();
+        ctx.moveTo(element.x + paraOffset, element.y); // Top left
+        ctx.lineTo(element.x + element.width, element.y); // Top right
+        ctx.lineTo(element.x + element.width - paraOffset, element.y + element.height); // Bottom right
+        ctx.lineTo(element.x, element.y + element.height); // Bottom left
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        break;
+      
+      case 'hexagon':
+        // Hexagon (preparation/subroutine in flowchart)
+        const hexOffset = element.width * 0.2;
+        ctx.beginPath();
+        ctx.moveTo(element.x + hexOffset, element.y); // Top left
+        ctx.lineTo(element.x + element.width - hexOffset, element.y); // Top right
+        ctx.lineTo(element.x + element.width, element.y + element.height / 2); // Right
+        ctx.lineTo(element.x + element.width - hexOffset, element.y + element.height); // Bottom right
+        ctx.lineTo(element.x + hexOffset, element.y + element.height); // Bottom left
+        ctx.lineTo(element.x, element.y + element.height / 2); // Left
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        break;
+      
+      case 'oval':
+        // Oval (start/end in flowchart)
+        ctx.beginPath();
+        ctx.ellipse(
+          element.x + element.width / 2,
+          element.y + element.height / 2,
+          element.width / 2,
+          element.height / 2,
+          0,
+          0,
+          Math.PI * 2
+        );
+        ctx.fill();
+        ctx.stroke();
+        break;
+      
+      case 'document':
+        // Document shape (wavy bottom)
+        ctx.beginPath();
+        ctx.moveTo(element.x, element.y);
+        ctx.lineTo(element.x + element.width, element.y);
+        ctx.lineTo(element.x + element.width, element.y + element.height * 0.85);
+        
+        // Wavy bottom
+        const waveHeight = element.height * 0.15;
+        const waveWidth = element.width / 4;
+        for (let i = 0; i < 4; i++) {
+          const startX = element.x + element.width - (i * waveWidth);
+          const endX = startX - waveWidth;
+          const controlY = i % 2 === 0 ? element.y + element.height : element.y + element.height - waveHeight;
+          ctx.quadraticCurveTo(startX - waveWidth / 2, controlY, endX, element.y + element.height * 0.85);
+        }
+        
+        ctx.lineTo(element.x, element.y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        break;
+      
+      case 'cylinder':
+        // Cylinder (database in flowchart style)
+        const cylHeight = element.height;
+        const cylWidth = element.width;
+        const cylEllipseHeight = cylHeight * 0.15;
+        
+        ctx.beginPath();
+        ctx.ellipse(element.x + cylWidth/2, element.y + cylEllipseHeight, cylWidth/2, cylEllipseHeight, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        
+        ctx.fillRect(element.x, element.y + cylEllipseHeight, cylWidth, cylHeight - cylEllipseHeight * 2);
+        ctx.beginPath();
+        ctx.moveTo(element.x, element.y + cylEllipseHeight);
+        ctx.lineTo(element.x, element.y + cylHeight - cylEllipseHeight);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(element.x + cylWidth, element.y + cylEllipseHeight);
+        ctx.lineTo(element.x + cylWidth, element.y + cylHeight - cylEllipseHeight);
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.ellipse(element.x + cylWidth/2, element.y + cylHeight - cylEllipseHeight, cylWidth/2, cylEllipseHeight, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
         break;
       
       case 'arrow':
@@ -957,6 +1073,11 @@ function SystemDesignCanvas() {
     saveHistory([]);
     setSelectedElement(null);
     setShowClearDialog(false);
+    
+    // Immediately clear localStorage for this step
+    if (stepKey) {
+      localStorage.removeItem(`diagram-${stepKey}`);
+    }
   };
 
   const addTextToSelected = () => {
@@ -1438,6 +1559,66 @@ function SystemDesignCanvas() {
 
         <div className="h-8 w-px bg-border" />
 
+        {/* Flowchart Components */}
+        <div className="flex items-center gap-1 p-1 bg-background rounded-lg border border-border">
+          <Button
+            size="sm"
+            variant={currentTool === 'diamond' ? 'default' : 'ghost'}
+            onClick={() => setCurrentTool('diamond')}
+            className="h-8 w-8 p-0"
+            title="Diamond - Decision (Flowchart)"
+          >
+            <Diamond className="h-4 w-4" />
+          </Button>
+          <Button
+            size="sm"
+            variant={currentTool === 'oval' ? 'default' : 'ghost'}
+            onClick={() => setCurrentTool('oval')}
+            className="h-8 w-8 p-0"
+            title="Oval - Start/End (Flowchart)"
+          >
+            <Circle className="h-4 w-4" />
+          </Button>
+          <Button
+            size="sm"
+            variant={currentTool === 'parallelogram' ? 'default' : 'ghost'}
+            onClick={() => setCurrentTool('parallelogram')}
+            className="h-8 w-8 p-0"
+            title="Parallelogram - Input/Output (Flowchart)"
+          >
+            <Hexagon className="h-4 w-4" style={{ transform: 'skew(-10deg)' }} />
+          </Button>
+          <Button
+            size="sm"
+            variant={currentTool === 'hexagon' ? 'default' : 'ghost'}
+            onClick={() => setCurrentTool('hexagon')}
+            className="h-8 w-8 p-0"
+            title="Hexagon - Preparation (Flowchart)"
+          >
+            <Hexagon className="h-4 w-4" />
+          </Button>
+          <Button
+            size="sm"
+            variant={currentTool === 'document' ? 'default' : 'ghost'}
+            onClick={() => setCurrentTool('document')}
+            className="h-8 w-8 p-0"
+            title="Document - Report/Document (Flowchart)"
+          >
+            <Square className="h-4 w-4" style={{ borderRadius: '0 0 8px 8px' }} />
+          </Button>
+          <Button
+            size="sm"
+            variant={currentTool === 'cylinder' ? 'default' : 'ghost'}
+            onClick={() => setCurrentTool('cylinder')}
+            className="h-8 w-8 p-0"
+            title="Cylinder - Database (Flowchart)"
+          >
+            <Database className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <div className="h-8 w-px bg-border" />
+
         <div className="flex items-center gap-1">
           <Button
             size="sm"
@@ -1578,12 +1759,18 @@ export default function DiagramCanvas({ stepKey }: { stepKey: string }) {
     if (stepKey && mounted) {
       const saveInterval = setInterval(() => {
         const elements = (window as any).sd_getDiagramElements?.();
-        if (elements && elements.length > 0) {
-          const diagramData = {
-            elements,
-            timestamp: new Date().toISOString()
-          };
-          localStorage.setItem(`diagram-${stepKey}`, JSON.stringify(diagramData));
+        if (elements) {
+          if (elements.length > 0) {
+            // Save diagram data if there are elements
+            const diagramData = {
+              elements,
+              timestamp: new Date().toISOString()
+            };
+            localStorage.setItem(`diagram-${stepKey}`, JSON.stringify(diagramData));
+          } else {
+            // Clear localStorage if diagram is empty (user cleared it)
+            localStorage.removeItem(`diagram-${stepKey}`);
+          }
         }
       }, 1000); // Auto-save every second
 
@@ -1874,7 +2061,7 @@ export default function DiagramCanvas({ stepKey }: { stepKey: string }) {
         </div>
       </div>
       <div className="flex-1 overflow-hidden">
-        <SystemDesignCanvas />
+        <SystemDesignCanvas stepKey={stepKey} />
       </div>
     </Card>
   );
