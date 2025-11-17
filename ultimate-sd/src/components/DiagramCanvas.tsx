@@ -77,7 +77,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
   const [elements, setElements] = useState<DiagramElement[]>([]);
   const [isDrawing, setIsDrawing] = useState(false);
   const [startPos, setStartPos] = useState<{ x: number; y: number } | null>(null);
-  const [selectedElement, setSelectedElement] = useState<string | null>(null);
+  const [selectedElements, setSelectedElements] = useState<Set<string>>(new Set());
   const [dragOffset, setDragOffset] = useState<{ x: number; y: number } | null>(null);
   const [showGrid, setShowGrid] = useState(true);
   const [history, setHistory] = useState<DiagramElement[][]>([[]]);
@@ -148,13 +148,13 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
       setElements(newElements);
       setHistory([newElements]);
       setHistoryIndex(0);
-      setSelectedElement(null);
+      setSelectedElements(new Set());
     };
     (window as any).sd_clearDiagram = (clearStorage = false, storageKey?: string) => {
       setElements([]);
       setHistory([[]]);
       setHistoryIndex(0);
-      setSelectedElement(null);
+      setSelectedElements(new Set());
       // Clear localStorage if requested
       if (clearStorage && storageKey) {
         localStorage.removeItem(`diagram-${storageKey}`);
@@ -719,9 +719,9 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
     }
     
     elements.forEach(el => {
-      drawElement(ctx, el, el.id === selectedElement);
+      drawElement(ctx, el, selectedElements.has(el.id));
     });
-  }, [elements, selectedElement, showGrid, theme]);
+  }, [elements, selectedElements, showGrid, theme]);
 
   useEffect(() => {
     redraw();
@@ -820,21 +820,41 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
     if (currentTool === 'select') {
       const element = findElementAt(pos.x, pos.y);
       if (element) {
-        // Check if clicking on a resize handle
-        const handle = getResizeHandle(pos.x, pos.y, element);
-        if (handle) {
-          setIsResizing(true);
-          setResizeHandle(handle);
-          setSelectedElement(element.id);
-          setStartPos(pos);
+        const isMultiSelect = e.shiftKey || e.metaKey || e.ctrlKey;
+        
+        // Check if clicking on a resize handle (only for single selection)
+        if (!isMultiSelect && selectedElements.size === 1) {
+          const handle = getResizeHandle(pos.x, pos.y, element);
+          if (handle) {
+            setIsResizing(true);
+            setResizeHandle(handle);
+            setStartPos(pos);
+            return;
+          }
+        }
+        
+        // Multi-select logic
+        if (isMultiSelect) {
+          const newSelected = new Set(selectedElements);
+          if (newSelected.has(element.id)) {
+            newSelected.delete(element.id);
+          } else {
+            newSelected.add(element.id);
+          }
+          setSelectedElements(newSelected);
         } else {
-          // Normal drag
-          setSelectedElement(element.id);
+          // Single selection or start dragging
+          if (!selectedElements.has(element.id)) {
+            setSelectedElements(new Set([element.id]));
+          }
           setDragOffset({ x: pos.x - element.x, y: pos.y - element.y });
           setIsDrawing(true);
         }
       } else {
-        setSelectedElement(null);
+        // Clicked on empty space - clear selection
+        if (!e.shiftKey && !e.metaKey && !e.ctrlKey) {
+          setSelectedElements(new Set());
+        }
       }
     } else {
       setIsDrawing(true);
@@ -922,10 +942,11 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
 
     if (!isDrawing && !isResizing) return;
 
-    if (isResizing && selectedElement && startPos && resizeHandle) {
-      // Handle resizing
+    if (isResizing && selectedElements.size === 1 && startPos && resizeHandle) {
+      // Handle resizing (only for single selection)
+      const selectedId = Array.from(selectedElements)[0];
       const newElements = elements.map(el => {
-        if (el.id === selectedElement) {
+        if (el.id === selectedId) {
           const dx = pos.x - startPos.x;
           const dy = pos.y - startPos.y;
           let newX = el.x;
@@ -962,14 +983,30 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
       });
       setElements(newElements);
       setStartPos(pos); // Update start position for continuous resizing
-    } else if (currentTool === 'select' && selectedElement && dragOffset) {
-      const newElements = elements.map(el => {
-        if (el.id === selectedElement) {
-          return { ...el, x: pos.x - dragOffset.x, y: pos.y - dragOffset.y };
-        }
-        return el;
-      });
-      setElements(newElements);
+    } else if (currentTool === 'select' && selectedElements.size > 0 && dragOffset) {
+      // Drag multiple selected elements together
+      const firstSelectedElement = elements.find(el => selectedElements.has(el.id));
+      if (firstSelectedElement) {
+        const dx = pos.x - dragOffset.x - firstSelectedElement.x;
+        const dy = pos.y - dragOffset.y - firstSelectedElement.y;
+        
+        const newElements = elements.map(el => {
+          if (selectedElements.has(el.id)) {
+            if (el.type === 'arrow' || el.type === 'line') {
+              return { 
+                ...el, 
+                x: el.x + dx, 
+                y: el.y + dy,
+                endX: (el.endX || el.x) + dx,
+                endY: (el.endY || el.y) + dy
+              };
+            }
+            return { ...el, x: el.x + dx, y: el.y + dy };
+          }
+          return el;
+        });
+        setElements(newElements);
+      }
     } else if (startPos && (currentTool === 'arrow' || currentTool === 'line')) {
       const canvas = canvasRef.current;
       if (!canvas) return;
@@ -1042,7 +1079,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
       setElements(newElements);
       saveHistory(newElements);
       setCurrentTool('select');
-    } else if (currentTool === 'select' && selectedElement) {
+    } else if (currentTool === 'select' && selectedElements.size > 0) {
       saveHistory(elements);
     }
 
@@ -1081,11 +1118,11 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
   };
 
   const deleteSelected = () => {
-    if (selectedElement) {
-      const newElements = elements.filter(el => el.id !== selectedElement);
+    if (selectedElements.size > 0) {
+      const newElements = elements.filter(el => !selectedElements.has(el.id));
       setElements(newElements);
       saveHistory(newElements);
-      setSelectedElement(null);
+      setSelectedElements(new Set());
     }
   };
 
@@ -1096,7 +1133,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
   const handleClearConfirm = () => {
     setElements([]);
     saveHistory([]);
-    setSelectedElement(null);
+    setSelectedElements(new Set());
     setShowClearDialog(false);
     
     // Immediately clear localStorage for this step
@@ -1106,10 +1143,11 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
   };
 
   const addTextToSelected = () => {
-    if (selectedElement) {
-      const element = elements.find(el => el.id === selectedElement);
+    if (selectedElements.size === 1) {
+      const selectedId = Array.from(selectedElements)[0];
+      const element = elements.find(el => el.id === selectedId);
       if (element) {
-        setEditingElementId(selectedElement);
+        setEditingElementId(selectedId);
         setTextInput(element.text || '');
         setShowLabelDialog(true);
       }
@@ -1247,7 +1285,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
         // Load elements
         setElements(diagramData.elements);
         saveHistory(diagramData.elements);
-        setSelectedElement(null);
+        setSelectedElements(new Set());
 
         // Load settings if available
         if (diagramData.settings && typeof diagramData.settings.showGrid === 'boolean') {
@@ -1721,7 +1759,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
             size="sm"
             variant="ghost"
             onClick={addTextToSelected}
-            disabled={!selectedElement}
+            disabled={selectedElements.size !== 1}
             className="h-8 px-2"
             title="Add Label"
           >
@@ -1732,7 +1770,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
             size="sm"
             variant="ghost"
             onClick={deleteSelected}
-            disabled={!selectedElement}
+            disabled={selectedElements.size === 0}
             className="h-8 w-8 p-0"
             title="Delete (Del)"
           >
@@ -1751,7 +1789,9 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
         </div>
 
         <div className="ml-auto text-xs text-muted-foreground">
-          {selectedElement ? 'Selected • Drag to move • Drag corners to resize • Double-click to edit' : `${currentTool === 'select' ? 'Select mode • Double-click to edit text' : `Draw ${currentTool}`} • Click and drag`}
+          {selectedElements.size > 0 
+            ? `${selectedElements.size} selected • ${selectedElements.size === 1 ? 'Drag to move • Drag corners to resize • Double-click to edit' : 'Drag to move all • Shift/Cmd+Click to multi-select'}`
+            : `${currentTool === 'select' ? 'Select mode • Shift/Cmd+Click for multi-select' : `Draw ${currentTool}`} • Click and drag`}
         </div>
       </div>
 
