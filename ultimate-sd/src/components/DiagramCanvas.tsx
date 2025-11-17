@@ -13,6 +13,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import { 
   Download, 
   Share, 
@@ -657,7 +658,15 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
       case 'text':
         ctx.font = '14px Inter, system-ui, sans-serif';
         ctx.fillStyle = theme === 'dark' ? '#e2e8f0' : '#1e293b';
-        ctx.fillText(element.text || 'Text', element.x, element.y);
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        const textLines = (element.text || 'Text').split('\n');
+        const lineHeight = 18;
+        const totalHeight = textLines.length * lineHeight;
+        const startY = element.y + element.height / 2 - totalHeight / 2 + lineHeight / 2;
+        textLines.forEach((line, index) => {
+          ctx.fillText(line, element.x, startY + (index * lineHeight));
+        });
         break;
     }
 
@@ -737,9 +746,8 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
         }
       } else if (el.type === 'text') {
         // For text elements, check a rectangular area around the text
-        // Text baseline is at el.y, so check from y-20 (above) to y+5 (below)
-        const textHeight = 25; // Text height with some padding
-        if (x >= el.x && x <= el.x + el.width && y >= el.y - 20 && y <= el.y + 5) {
+        // Use the actual height stored in the element (which accounts for multiple lines)
+        if (x >= el.x && x <= el.x + el.width && y >= el.y - 5 && y <= el.y + el.height + 5) {
           return el;
         }
       } else {
@@ -853,10 +861,22 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
     if (editingElementId) {
       const newElements = elements.map(el => {
         if (el.id === editingElementId) {
+          // Calculate dimensions for multiline text
+          if (el.type === 'text') {
+            const lines = textInput.split('\n');
+            const maxLineLength = Math.max(...lines.map(line => line.length));
+            const lineHeight = 18;
+            
+            return { 
+              ...el, 
+              text: textInput,
+              width: maxLineLength * 8 || 20,
+              height: lines.length * lineHeight
+            };
+          }
           return { 
             ...el, 
-            text: textInput,
-            width: el.type === 'text' ? (textInput.length * 8 || 20) : el.width
+            text: textInput
           };
         }
         return el;
@@ -1033,13 +1053,18 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
 
   const handleCreateTextElement = () => {
     if (textInput && pendingTextPos) {
+      // Calculate dimensions for multiline text
+      const lines = textInput.split('\n');
+      const maxLineLength = Math.max(...lines.map(line => line.length));
+      const lineHeight = 18;
+      
       const newElement: DiagramElement = {
         id: Date.now().toString(),
         type: 'text',
         x: pendingTextPos.x,
         y: pendingTextPos.y,
-        width: textInput.length * 8,
-        height: 20,
+        width: maxLineLength * 8, // Width based on longest line
+        height: lines.length * lineHeight, // Height based on number of lines
         color: getColor(),
         text: textInput,
       };
@@ -1311,19 +1336,23 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            <Input
-              placeholder="Enter text..."
+            <Textarea
+              placeholder="Enter text... (Shift+Enter for new line)"
               value={textInput}
               onChange={(e) => setTextInput(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
                   if (editingElementId) {
                     handleTextDialogSubmit();
                   } else {
                     handleCreateTextElement();
                   }
                 }
+                // Shift+Enter will naturally create a new line in textarea
               }}
+              rows={4}
+              className="resize-none"
               autoFocus
             />
           </div>
