@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -91,7 +92,11 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
   const [showTextDialog, setShowTextDialog] = useState(false);
   const [showLabelDialog, setShowLabelDialog] = useState(false);
   const [showClearDialog, setShowClearDialog] = useState(false);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [showLoadDialog, setShowLoadDialog] = useState(false);
   const [textInput, setTextInput] = useState('');
+  const [designName, setDesignName] = useState('Untitled Design');
+  const [savedDesigns, setSavedDesigns] = useState<Array<{name: string, timestamp: string}>>([]);
   const [editingElementId, setEditingElementId] = useState<string | null>(null);
   const [pendingTextPos, setPendingTextPos] = useState<{ x: number; y: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -144,6 +149,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
   useEffect(() => {
     (window as any).sd_getDiagramElements = () => elements;
     (window as any).sd_getBoundingBox = getBoundingBox;
+    (window as any).sd_getDesignName = () => designName;
     (window as any).sd_loadDiagramElements = (newElements: DiagramElement[]) => {
       setElements(newElements);
       setHistory([newElements]);
@@ -173,11 +179,12 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
     return () => {
       (window as any).sd_getDiagramElements = undefined;
       (window as any).sd_getBoundingBox = undefined;
+      (window as any).sd_getDesignName = undefined;
       (window as any).sd_loadDiagramElements = undefined;
       (window as any).sd_clearDiagram = undefined;
       (window as any).sd_saveToLocalStorage = undefined;
     };
-  }, [elements, getBoundingBox]);
+  }, [elements, getBoundingBox, designName]);
 
   const saveHistory = (newElements: DiagramElement[]) => {
     const newHistory = history.slice(0, historyIndex + 1);
@@ -1217,6 +1224,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
     const diagramData = {
       version: '1.0',
       type: 'system-design-diagram',
+      name: designName,
       timestamp: new Date().toISOString(),
       elements: elements,
       settings: {
@@ -1229,7 +1237,8 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
     const url = URL.createObjectURL(dataBlob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `system-diagram-${Date.now()}.sdd`;
+    const fileName = designName.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+    link.download = `${fileName}-${Date.now()}.sdd`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -1287,6 +1296,11 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
         saveHistory(diagramData.elements);
         setSelectedElements(new Set());
 
+        // Load design name if available
+        if (diagramData.name) {
+          setDesignName(diagramData.name);
+        }
+
         // Load settings if available
         if (diagramData.settings && typeof diagramData.settings.showGrid === 'boolean') {
           setShowGrid(diagramData.settings.showGrid);
@@ -1329,6 +1343,129 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
     }
   };
 
+  // Save design to localStorage
+  const saveDesignToLocalStorage = () => {
+    if (elements.length === 0) {
+      const toast = document.createElement('div');
+      toast.className = 'fixed bottom-4 right-4 z-50 bg-yellow-500 text-white px-4 py-3 rounded-lg shadow-lg animate-fade-in';
+      toast.innerHTML = `<div class="flex items-center gap-2">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span>Your diagram is empty! Nothing to save.</span>
+      </div>`;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+      return;
+    }
+
+    const diagramData = {
+      version: '1.0',
+      type: 'system-design-diagram',
+      name: designName,
+      timestamp: new Date().toISOString(),
+      elements: elements,
+      settings: { showGrid }
+    };
+
+    // Save to localStorage with design name as key
+    const storageKey = `saved-design-${designName.replace(/[^a-z0-9]/gi, '-').toLowerCase()}`;
+    localStorage.setItem(storageKey, JSON.stringify(diagramData));
+
+    // Update saved designs list
+    const savedDesignsList = JSON.parse(localStorage.getItem('saved-designs-list') || '[]');
+    const existingIndex = savedDesignsList.findIndex((d: any) => d.name === designName);
+    
+    if (existingIndex >= 0) {
+      savedDesignsList[existingIndex].timestamp = diagramData.timestamp;
+    } else {
+      savedDesignsList.push({ name: designName, timestamp: diagramData.timestamp });
+    }
+    
+    localStorage.setItem('saved-designs-list', JSON.stringify(savedDesignsList));
+    loadSavedDesignsList();
+
+    const toast = document.createElement('div');
+    toast.className = 'fixed bottom-4 right-4 z-50 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg animate-fade-in';
+    toast.innerHTML = `<div class="flex items-center gap-2">
+      <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+      </svg>
+      <span>"${designName}" saved successfully!</span>
+    </div>`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+    setShowSaveDialog(false);
+  };
+
+  // Load design from localStorage
+  const loadDesignFromLocalStorage = (name: string) => {
+    const storageKey = `saved-design-${name.replace(/[^a-z0-9]/gi, '-').toLowerCase()}`;
+    const savedData = localStorage.getItem(storageKey);
+    
+    if (!savedData) {
+      const toast = document.createElement('div');
+      toast.className = 'fixed bottom-4 right-4 z-50 bg-red-500 text-white px-4 py-3 rounded-lg shadow-lg animate-fade-in';
+      toast.innerHTML = `<div class="flex items-center gap-2">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span>Design not found!</span>
+      </div>`;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+      return;
+    }
+
+    try {
+      const diagramData = JSON.parse(savedData);
+      setElements(diagramData.elements);
+      saveHistory(diagramData.elements);
+      setSelectedElements(new Set());
+      setDesignName(diagramData.name || name);
+      
+      if (diagramData.settings && typeof diagramData.settings.showGrid === 'boolean') {
+        setShowGrid(diagramData.settings.showGrid);
+      }
+
+      const toast = document.createElement('div');
+      toast.className = 'fixed bottom-4 right-4 z-50 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg animate-fade-in';
+      toast.innerHTML = `<div class="flex items-center gap-2">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+        <span>"${name}" loaded successfully!</span>
+      </div>`;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+      setShowLoadDialog(false);
+    } catch (error) {
+      console.error('Error loading design:', error);
+    }
+  };
+
+  // Load saved designs list
+  const loadSavedDesignsList = () => {
+    const savedDesignsList = JSON.parse(localStorage.getItem('saved-designs-list') || '[]');
+    setSavedDesigns(savedDesignsList);
+  };
+
+  // Delete design from localStorage
+  const deleteDesignFromLocalStorage = (name: string) => {
+    const storageKey = `saved-design-${name.replace(/[^a-z0-9]/gi, '-').toLowerCase()}`;
+    localStorage.removeItem(storageKey);
+    
+    const savedDesignsList = JSON.parse(localStorage.getItem('saved-designs-list') || '[]');
+    const filtered = savedDesignsList.filter((d: any) => d.name !== name);
+    localStorage.setItem('saved-designs-list', JSON.stringify(filtered));
+    loadSavedDesignsList();
+  };
+
+  // Load designs list on mount
+  useEffect(() => {
+    loadSavedDesignsList();
+  }, []);
+
   // Handle fullscreen change events
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -1357,11 +1494,54 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
     };
   }, [isFullscreen]);
 
+  // Portal for design name section to render in parent component
+  const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    const container = document.getElementById('design-name-portal');
+    setPortalContainer(container);
+  }, []);
+
+  const designNameSection = (
+    <div className="flex items-center gap-1.5">
+      <Input
+        value={designName}
+        onChange={(e) => setDesignName(e.target.value)}
+        className="h-7 text-xs w-40"
+        placeholder="Design name..."
+      />
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={() => setShowSaveDialog(true)}
+        className="h-7 w-7 p-0"
+        title="Save to Browser"
+      >
+        <Save className="h-3.5 w-3.5" />
+      </Button>
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={() => {
+          loadSavedDesignsList();
+          setShowLoadDialog(true);
+        }}
+        className="h-7 w-7 p-0"
+        title="Load Saved Design"
+      >
+        <Upload className="h-3.5 w-3.5" />
+      </Button>
+    </div>
+  );
+
   return (
     <div 
       ref={fullscreenRef}
       className={`${isFullscreen ? 'fixed inset-0 z-50 bg-background' : 'relative w-full h-full'} flex flex-col`}
     >
+      {/* Render design name section in portal (parent component's header) */}
+      {portalContainer && !isFullscreen && createPortal(designNameSection, portalContainer)}
+
       {/* Text Input Dialog */}
       <Dialog open={showTextDialog} onOpenChange={(open) => {
         if (!open) handleTextDialogCancel();
@@ -1455,6 +1635,95 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
             </Button>
             <Button variant="destructive" onClick={handleClearConfirm}>
               Clear All
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Save Design Dialog */}
+      <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Save Design</DialogTitle>
+            <DialogDescription>
+              Save "{designName}" to your browser's local storage for quick access.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-muted-foreground mb-2">Design will be saved as:</p>
+            <p className="text-sm font-semibold">{designName}</p>
+            <p className="text-xs text-muted-foreground mt-2">
+              You can change the name above before saving.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSaveDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={saveDesignToLocalStorage}>
+              Save to Browser
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Load Design Dialog */}
+      <Dialog open={showLoadDialog} onOpenChange={setShowLoadDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Load Saved Design</DialogTitle>
+            <DialogDescription>
+              Choose a previously saved design from your browser's local storage.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 max-h-96 overflow-auto">
+            {savedDesigns.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <p className="text-sm">No saved designs found.</p>
+                <p className="text-xs mt-1">Create and save a design to see it here.</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {savedDesigns.map((design) => (
+                  <div
+                    key={design.name}
+                    className="flex items-center justify-between p-3 border border-border rounded-lg hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">{design.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Saved: {new Date(design.timestamp).toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => loadDesignFromLocalStorage(design.name)}
+                      >
+                        Load
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (confirm(`Delete "${design.name}"?`)) {
+                            deleteDesignFromLocalStorage(design.name);
+                          }
+                        }}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowLoadDialog(false)}>
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1717,20 +1986,20 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
             variant="ghost"
             onClick={saveDiagramFile}
             className="h-8 px-2"
-            title="Save Diagram File (.sdd)"
+            title="Download as File (.sdd)"
           >
-            <Save className="h-4 w-4 mr-1" />
-            Save
+            <Download className="h-4 w-4 mr-1" />
+            Export
           </Button>
           <Button
             size="sm"
             variant="ghost"
             onClick={() => fileInputRef.current?.click()}
             className="h-8 px-2"
-            title="Load Diagram File (.sdd)"
+            title="Import from File (.sdd)"
           >
             <Upload className="h-4 w-4 mr-1" />
-            Load
+            Import
           </Button>
         </div>
 
@@ -1922,7 +2191,10 @@ export default function DiagramCanvas({ stepKey }: { stepKey: string }) {
 
       // Download
       const link = document.createElement('a');
-      link.download = 'system-diagram.png';
+      const getDesignName = (window as any).sd_getDesignName;
+      const currentDesignName = getDesignName ? getDesignName() : 'system-diagram';
+      const fileName = currentDesignName.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+      link.download = `${fileName}-${Date.now()}.png`;
       link.href = tempCanvas.toDataURL('image/png');
       link.click();
 
@@ -2099,32 +2371,34 @@ export default function DiagramCanvas({ stepKey }: { stepKey: string }) {
 
   return (
     <Card className="h-full flex flex-col bg-card/50 backdrop-blur-sm border-2 overflow-hidden">
-      <div className="glass p-3 border-b border-border shrink-0">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-primary/10">
+      <div className="glass p-2 border-b border-border shrink-0">
+        <div className="flex justify-between items-center gap-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="p-1.5 rounded-lg bg-primary/10 shrink-0">
               <Sparkles className="h-4 w-4 text-primary" />
             </div>
-            <div>
+            <div className="min-w-0">
               <h3 className="text-sm font-semibold">System Design Diagram</h3>
-              <p className="text-xs text-muted-foreground">Create your architecture diagram with system components</p>
+              <p className="text-xs text-muted-foreground truncate">Create your architecture diagram with system components</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          {/* Design Name Management - inline with buttons */}
+          <div id="design-name-portal" className="flex items-center gap-2 shrink-0" />
+          <div className="flex items-center gap-2 shrink-0">
             <Button 
               variant="outline" 
               size="sm" 
               onClick={exportPNG}
-              className="h-8 px-3 text-xs"
+              className="h-7 px-2 text-xs"
             >
-              <ImageIcon className="h-3 w-3 mr-1.5" /> Export PNG
+              <ImageIcon className="h-3 w-3 mr-1" /> Export PNG
             </Button>
             <Button 
               size="sm" 
               onClick={handleShareWithAI}
-              className="h-8 px-3 text-xs gradient-bg"
+              className="h-7 px-2 text-xs gradient-bg"
             >
-              <Share className="h-3 w-3 mr-1.5" /> Share with AI
+              <Share className="h-3 w-3 mr-1" /> Share with AI
             </Button>
           </div>
         </div>
