@@ -51,7 +51,11 @@ import {
   Octagon,
   Play,
   Hexagon,
-  Triangle
+  Triangle,
+  ArrowUp,
+  ArrowDown,
+  ChevronsUp,
+  ChevronsDown
 } from 'lucide-react';
 
 type Tool = 'select' | 'rectangle' | 'circle' | 'database' | 'server' | 'cloud' | 'text' | 'arrow' | 'line' | 
@@ -1133,6 +1137,66 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
     }
   };
 
+  const bringForward = () => {
+    if (selectedElements.size !== 1) return;
+    
+    const selectedId = Array.from(selectedElements)[0];
+    const currentIndex = elements.findIndex(el => el.id === selectedId);
+    
+    if (currentIndex < elements.length - 1) {
+      const newElements = [...elements];
+      // Swap with next element (move forward)
+      [newElements[currentIndex], newElements[currentIndex + 1]] = 
+        [newElements[currentIndex + 1], newElements[currentIndex]];
+      setElements(newElements);
+      saveHistory(newElements);
+    }
+  };
+
+  const sendBackward = () => {
+    if (selectedElements.size !== 1) return;
+    
+    const selectedId = Array.from(selectedElements)[0];
+    const currentIndex = elements.findIndex(el => el.id === selectedId);
+    
+    if (currentIndex > 0) {
+      const newElements = [...elements];
+      // Swap with previous element (move backward)
+      [newElements[currentIndex], newElements[currentIndex - 1]] = 
+        [newElements[currentIndex - 1], newElements[currentIndex]];
+      setElements(newElements);
+      saveHistory(newElements);
+    }
+  };
+
+  const bringToFront = () => {
+    if (selectedElements.size !== 1) return;
+    
+    const selectedId = Array.from(selectedElements)[0];
+    const selectedElement = elements.find(el => el.id === selectedId);
+    
+    if (selectedElement) {
+      const newElements = elements.filter(el => el.id !== selectedId);
+      newElements.push(selectedElement); // Add to end (top)
+      setElements(newElements);
+      saveHistory(newElements);
+    }
+  };
+
+  const sendToBack = () => {
+    if (selectedElements.size !== 1) return;
+    
+    const selectedId = Array.from(selectedElements)[0];
+    const selectedElement = elements.find(el => el.id === selectedId);
+    
+    if (selectedElement) {
+      const newElements = elements.filter(el => el.id !== selectedId);
+      newElements.unshift(selectedElement); // Add to beginning (bottom)
+      setElements(newElements);
+      saveHistory(newElements);
+    }
+  };
+
   const clearCanvas = () => {
     setShowClearDialog(true);
   };
@@ -1493,6 +1557,48 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
       document.removeEventListener('msfullscreenchange', handleFullscreenChange);
     };
   }, [isFullscreen]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if typing in input fields
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+      const cmdOrCtrl = isMac ? e.metaKey : e.ctrlKey;
+
+      // Delete selected elements
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault();
+        deleteSelected();
+      }
+      // Bring forward: Cmd/Ctrl + ]
+      else if (cmdOrCtrl && e.key === ']') {
+        e.preventDefault();
+        bringForward();
+      }
+      // Send backward: Cmd/Ctrl + [
+      else if (cmdOrCtrl && e.key === '[') {
+        e.preventDefault();
+        sendBackward();
+      }
+      // Bring to front: Cmd/Ctrl + Shift + ]
+      else if (cmdOrCtrl && e.shiftKey && e.key === ']') {
+        e.preventDefault();
+        bringToFront();
+      }
+      // Send to back: Cmd/Ctrl + Shift + [
+      else if (cmdOrCtrl && e.shiftKey && e.key === '[') {
+        e.preventDefault();
+        sendToBack();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedElements, elements]);
 
   // Portal for design name section to render in parent component
   const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null);
@@ -2035,6 +2141,57 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
             <Type className="h-4 w-4 mr-1" />
             Label
           </Button>
+        </div>
+
+        <div className="h-8 w-px bg-border" />
+
+        {/* Z-Order Controls */}
+        <div className="flex items-center gap-1">
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={bringToFront}
+            disabled={selectedElements.size !== 1}
+            className="h-8 w-8 p-0"
+            title="Bring to Front (Cmd+Shift+])"
+          >
+            <ChevronsUp className="h-4 w-4" />
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={bringForward}
+            disabled={selectedElements.size !== 1}
+            className="h-8 w-8 p-0"
+            title="Bring Forward (Cmd+])"
+          >
+            <ArrowUp className="h-4 w-4" />
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={sendBackward}
+            disabled={selectedElements.size !== 1}
+            className="h-8 w-8 p-0"
+            title="Send Backward (Cmd+[)"
+          >
+            <ArrowDown className="h-4 w-4" />
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={sendToBack}
+            disabled={selectedElements.size !== 1}
+            className="h-8 w-8 p-0"
+            title="Send to Back (Cmd+Shift+[)"
+          >
+            <ChevronsDown className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <div className="h-8 w-px bg-border" />
+
+        <div className="flex items-center gap-1">
           <Button
             size="sm"
             variant="ghost"
