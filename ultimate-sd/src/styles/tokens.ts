@@ -35,6 +35,13 @@ export const tokens = {
       tradeoffs: '#ef4444',   // red
       scalability: '#8b5cf6', // violet
       feedback: '#06b6d4',    // cyan
+      // Custom phases
+      algorithm: '#ec4899',   // pink
+      database: '#14b8a6',    // teal
+      deepdive: '#6366f1',    // indigo
+      cleanup: '#64748b',
+      'fan-out': '#f472b6',
+      videoprocessing: '#8b5cf6',
     },
     // Difficulty colors
     difficulty: {

@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
@@ -9,18 +10,18 @@ import { Card } from '@/components/ui/card';
 import { SystemDesignProblem } from '@/types';
 import { tokens } from '@/styles/tokens';
 import SchemaBuilder from '@/components/SchemaBuilder';
-import { 
-  saveSessionState, 
-  loadSessionState, 
+import {
+  saveSessionState,
+  loadSessionState,
   clearSessionState,
   formatStorageSize,
   getStorageInfo
 } from '@/lib/session-storage';
-import { 
-  Sparkles, 
-  Plus, 
-  X, 
-  CheckCircle2, 
+import {
+  Sparkles,
+  Plus,
+  X,
+  CheckCircle2,
   AlertCircle,
   ArrowRight,
   SkipForward,
@@ -30,125 +31,97 @@ import {
   RotateCcw,
   Info
 } from 'lucide-react';
+import EncodingVisualizer from './widgets/EncodingVisualizer';
+import CapacityCalculator from './widgets/CapacityCalculator';
+import FanoutVisualizer from './widgets/FanoutVisualizer';
+import FeedRankingSimulator from './widgets/FeedRankingSimulator';
+import QuadTreeVisualizer from './widgets/QuadTreeVisualizer';
+import ABRSimulator from './widgets/ABRSimulator';
+import E2EEncryptionDemo from './widgets/E2EEncryptionDemo';
+import FeedArchitect from './widgets/FeedArchitect';
+import InvertedIndexVisualizer from './widgets/InvertedIndexVisualizer';
+import ChunkingDedupeDemo from './widgets/ChunkingDedupeDemo';
+import RateLimiterDemo from './widgets/RateLimiterDemo';
+import CacheVisualizer from './widgets/CacheVisualizer';
+import TrieVisualizer from './widgets/TrieVisualizer';
+import SnowflakeDemo from './widgets/SnowflakeDemo';
+import LeaderboardSimulation from './widgets/LeaderboardSimulation';
+import NotificationSystemDemo from './widgets/NotificationSystemDemo';
+import MetricsDashboard from './widgets/MetricsDashboard';
+import ConsistentHashingDemo from './widgets/ConsistentHashingDemo';
+import LoadBalancerVisualizer from './widgets/LoadBalancerVisualizer';
+import MessageQueueVisualizer from './widgets/MessageQueueVisualizer';
+import CDNMap from './widgets/CDNMap';
+import CrawlerFrontier from './widgets/CrawlerFrontier';
+import DFSVisualizer from './widgets/DFSVisualizer';
+import LeaderElectionDemo from './widgets/LeaderElectionDemo';
+import ConfigPropagator from './widgets/ConfigPropagator';
+import SecretVault from './widgets/SecretVault';
+import PipelineVisualizer from './widgets/PipelineVisualizer';
+import ServiceMeshViz from './widgets/ServiceMeshViz';
+import GraphQLPlayground from './widgets/GraphQLPlayground';
+import RESTExplorer from './widgets/RESTExplorer';
+import SocketPulse from './widgets/SocketPulse';
+import OTVisualizer from './widgets/OTVisualizer';
+import RTBSimulator from './widgets/RTBSimulator';
+import FeedRanker from './widgets/FeedRanker';
+import FeatureToggleDemo from './widgets/FeatureToggleDemo';
+import SidecarVisualizer from './widgets/SidecarVisualizer';
+import TraceWaterfall from './widgets/TraceWaterfall';
+import AuditLogVisualizer from './widgets/AuditLogVisualizer';
+import PrivacyRequestManager from './widgets/PrivacyRequestManager';
+import BlockchainDemo from './widgets/BlockchainDemo';
+import VectorDBVisualizer from './widgets/VectorDBVisualizer';
+import RAGArchitect from './widgets/RAGArchitect';
+import AgentOrchestrator from './widgets/AgentOrchestrator';
 
-interface StepData {
-  phase: string;
-  subStep: string;
-  title: string;
-  prompt: string;
-  inputType: 'list' | 'textarea' | 'schema';
-  placeholder?: string;
-}
-
-// Define all steps for each phase
-const PHASE_STEPS: { [key: string]: StepData[] } = {
-  requirements: [
-    {
-      phase: 'Requirements',
-      subStep: 'functional',
-      title: 'Functional Requirements',
-      prompt: 'What are the core features your system must provide? List the key functionalities users will interact with.',
-      inputType: 'list',
-      placeholder: 'e.g., User can post tweets'
-    },
-    {
-      phase: 'Requirements',
-      subStep: 'non-functional',
-      title: 'Non-Functional Requirements',
-      prompt: 'What are the quality attributes? Consider scalability, availability, latency, consistency, etc.',
-      inputType: 'list',
-      placeholder: 'e.g., System should handle 100M DAU'
-    },
-    {
-      phase: 'Requirements',
-      subStep: 'constraints',
-      title: 'Constraints & Assumptions',
-      prompt: 'What are the constraints and assumptions? Consider traffic estimates, data size, limitations.',
-      inputType: 'list',
-      placeholder: 'e.g., Average tweet size is 280 characters'
-    }
-  ],
-  hld: [
-    {
-      phase: 'HLD',
-      subStep: 'api',
-      title: 'API Design',
-      prompt: 'Define the key APIs/endpoints your system will expose. What operations will clients perform?',
-      inputType: 'list',
-      placeholder: 'e.g., POST /api/v1/tweets - Create a new tweet'
-    },
-    {
-      phase: 'HLD',
-      subStep: 'data-model',
-      title: 'Data Model',
-      prompt: 'What are your main entities and their relationships? Design your database schema with tables, fields, and relationships.',
-      inputType: 'schema',
-      placeholder: 'Build your schema using the visual builder below'
-    },
-    {
-      phase: 'HLD',
-      subStep: 'architecture',
-      title: 'High-Level Architecture',
-      prompt: 'Describe your system architecture. What are the major components and how do they interact?',
-      inputType: 'textarea',
-      placeholder: 'Describe load balancers, app servers, databases, caches, etc...'
-    }
-  ],
-  lld: [
-    {
-      phase: 'LLD',
-      subStep: 'components',
-      title: 'Component Deep-Dive',
-      prompt: 'Detail the internal design of critical components. How do they work internally?',
-      inputType: 'textarea',
-      placeholder: 'Explain algorithms, data structures, internal workflows...'
-    },
-    {
-      phase: 'LLD',
-      subStep: 'data-flow',
-      title: 'Data Flow',
-      prompt: 'Trace a typical request through your system. What happens at each step?',
-      inputType: 'textarea',
-      placeholder: 'Walk through a complete flow from user action to response...'
-    }
-  ],
-  tradeoffs: [
-    {
-      phase: 'Trade-offs',
-      subStep: 'decisions',
-      title: 'Key Decisions & Trade-offs',
-      prompt: 'What major technical decisions did you make? What were the alternatives and why did you choose this approach?',
-      inputType: 'list',
-      placeholder: 'e.g., Chose NoSQL over SQL for horizontal scalability'
-    },
-    {
-      phase: 'Trade-offs',
-      subStep: 'bottlenecks',
-      title: 'Bottlenecks & Solutions',
-      prompt: 'What are potential bottlenecks in your design? How would you address them?',
-      inputType: 'list',
-      placeholder: 'e.g., Database writes - use write-through cache'
-    }
-  ],
-  scalability: [
-    {
-      phase: 'Scalability',
-      subStep: 'scaling',
-      title: 'Scaling Strategy',
-      prompt: 'How will your system scale to millions of users? Describe horizontal/vertical scaling approaches.',
-      inputType: 'textarea',
-      placeholder: 'Explain sharding, replication, load balancing strategies...'
-    },
-    {
-      phase: 'Scalability',
-      subStep: 'monitoring',
-      title: 'Monitoring & Reliability',
-      prompt: 'How will you monitor and ensure reliability? What metrics matter?',
-      inputType: 'list',
-      placeholder: 'e.g., Monitor API latency, error rates, database load'
-    }
-  ]
+const WIDGETS: Record<string, React.ComponentType> = {
+  'encoding-visualizer': EncodingVisualizer,
+  'capacity-calculator': CapacityCalculator,
+  'fanout-visualizer': FanoutVisualizer,
+  'feed-ranking-simulator': FeedRankingSimulator,
+  'quadtree-visualizer': QuadTreeVisualizer,
+  'abr-simulator': ABRSimulator,
+  'e2e-encryption-demo': E2EEncryptionDemo,
+  'feed-architect': FeedArchitect,
+  'inverted-index-visualizer': InvertedIndexVisualizer,
+  'chunking-dedupe-demo': ChunkingDedupeDemo,
+  'rate-limiter-demo': RateLimiterDemo,
+  'cache-visualizer': CacheVisualizer,
+  'trie-visualizer': TrieVisualizer,
+  'snowflake-demo': SnowflakeDemo,
+  'leaderboard-simulation': LeaderboardSimulation,
+  'notification-system-demo': NotificationSystemDemo,
+  'metrics-dashboard': MetricsDashboard,
+  'consistent-hashing-demo': ConsistentHashingDemo,
+  'load-balancer-visualizer': LoadBalancerVisualizer,
+  'message-queue-visualizer': MessageQueueVisualizer,
+  'cdn-map': CDNMap,
+  'crawler-frontier': CrawlerFrontier,
+  'dfs-visualizer': DFSVisualizer,
+  'leader-election-demo': LeaderElectionDemo,
+  'config-propagator': ConfigPropagator,
+  'secret-vault': SecretVault,
+  'pipeline-visualizer': PipelineVisualizer,
+  'service-mesh-viz': ServiceMeshViz,
+  'graphql-playground': GraphQLPlayground,
+  'rest-explorer': RESTExplorer,
+  'socket-pulse': SocketPulse,
+  'ot-visualizer': OTVisualizer,
+  'rtb-simulator': RTBSimulator,
+  'feed-ranker': FeedRanker,
+  'feature-toggle-demo': FeatureToggleDemo,
+  'sidecar-visualizer': SidecarVisualizer,
+  'trace-waterfall': TraceWaterfall,
+  'audit-log-visualizer': AuditLogVisualizer,
+  'privacy-request-manager': PrivacyRequestManager,
+  'blockchain-demo': BlockchainDemo,
+  'vector-db-visualizer': VectorDBVisualizer,
+  'rag-architect': RAGArchitect,
+  'agent-orchestrator': AgentOrchestrator,
 };
+
+import { DEFAULT_PHASE_STEPS } from '@/lib/steps';
 
 interface FeedbackResult {
   score: number;
@@ -187,7 +160,7 @@ export default function StepByStepChat({ problem }: Props) {
   const [feedback, setFeedback] = useState<FeedbackResult | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
-  
+
   // Store all step data
   const [savedStepData, setSavedStepData] = useState<Map<string, SavedStepData>>(new Map());
 
@@ -203,8 +176,20 @@ export default function StepByStepChat({ problem }: Props) {
     description?: string;
   } | null>(null);
 
+  const PHASE_STEPS = problem.steps || DEFAULT_PHASE_STEPS;
   const phases = Object.keys(PHASE_STEPS);
-  const currentSteps = PHASE_STEPS[currentPhase];
+  // Ensure currentPhase is valid for this problem, fallback to first phase if not
+  const validCurrentPhase = phases.includes(currentPhase) ? currentPhase : phases[0];
+
+  // If we had to correct the phase, update state effectively
+  if (currentPhase !== validCurrentPhase && phases.length > 0) {
+    // This side effect in render is not ideal but prevents crashing.
+    // Better would be a useEffect, but let's just use the valid one for now.
+    // We can't call setCurrentPhase here directly.
+  }
+
+  const effectivePhase = phases.includes(currentPhase) ? currentPhase : phases[0];
+  const currentSteps = PHASE_STEPS[effectivePhase];
   const currentStep = currentSteps[currentStepIndex];
 
   // Get step key for storage
@@ -222,10 +207,10 @@ export default function StepByStepChat({ problem }: Props) {
       setSessionRestored(true);
       setShowRestorationBanner(true);
       setRestoredDate(restored.lastUpdated);
-      
+
       // Auto-hide banner after 5 seconds
       setTimeout(() => setShowRestorationBanner(false), 5000);
-      
+
       console.log('Session restored from', restored.lastUpdated);
     }
   }, [problem.slug]);
@@ -239,7 +224,7 @@ export default function StepByStepChat({ problem }: Props) {
         savedStepData,
         completedSteps,
       });
-      
+
       if (saved) {
         console.log('Session saved to localStorage');
       }
@@ -248,33 +233,31 @@ export default function StepByStepChat({ problem }: Props) {
 
   // Clear session handler
   const handleClearSession = useCallback(() => {
-    if (confirm('Are you sure you want to clear all progress for this problem? This cannot be undone.')) {
-      clearSessionState(problem.slug);
-      
-      // Clear diagram data from localStorage
-      Object.keys(localStorage).forEach(key => {
-        if (key.startsWith('diagram-')) {
-          localStorage.removeItem(key);
-        }
-      });
-      
-      // Reset all state
-      setCurrentPhase('requirements');
-      setCurrentStepIndex(0);
-      setListItems([]);
-      setTextInput('');
-      setSchemaData([]);
-      setFeedback(null);
-      setShowFeedback(false);
-      setCompletedSteps(new Set());
-      setSavedStepData(new Map());
-      setSessionRestored(false);
-      setShowRestorationBanner(false);
-      setRestoredDate(null);
-      setDiagramData(null);
-      
-      alert('✅ Session cleared! Starting fresh.');
-    }
+    clearSessionState(problem.slug);
+
+    // Clear diagram data from localStorage
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('diagram-')) {
+        localStorage.removeItem(key);
+      }
+    });
+
+    // Reset all state
+    setCurrentPhase('requirements');
+    setCurrentStepIndex(0);
+    setListItems([]);
+    setTextInput('');
+    setSchemaData([]);
+    setFeedback(null);
+    setShowFeedback(false);
+    setCompletedSteps(new Set());
+    setSavedStepData(new Map());
+    setSessionRestored(false);
+    setShowRestorationBanner(false);
+    setRestoredDate(null);
+    setDiagramData(null);
+
+    toast.success('Session cleared! Starting fresh.');
   }, [problem.slug]);
 
   // Listen for diagram sharing events
@@ -366,11 +349,11 @@ export default function StepByStepChat({ problem }: Props) {
   };
 
   const handleSubmit = async () => {
-    const userAnswer = currentStep.inputType === 'list' 
-      ? listItems.join('\n') 
+    const userAnswer = currentStep.inputType === 'list'
+      ? listItems.join('\n')
       : currentStep.inputType === 'schema'
-      ? JSON.stringify(schemaData, null, 2)
-      : textInput;
+        ? JSON.stringify(schemaData, null, 2)
+        : textInput;
 
     if (!userAnswer.trim() || (currentStep.inputType === 'schema' && schemaData.length === 0)) return;
 
@@ -454,7 +437,7 @@ export default function StepByStepChat({ problem }: Props) {
         setCurrentStepIndex(0);
       } else {
         // All done
-        alert('🎉 Congratulations! You have completed all sections!');
+        toast.success('🎉 Congratulations! You have completed all sections!');
       }
     }
   };
@@ -474,20 +457,19 @@ export default function StepByStepChat({ problem }: Props) {
   };
 
   const handleSkip = () => {
-    if (confirm('Are you sure you want to skip this step?')) {
-      // Save as skipped
-      const newSavedData = new Map(savedStepData);
-      newSavedData.set(currentStepKey, {
-        listItems: [],
-        textInput: '',
-        schemaData: [],
-        feedback: null,
-        completed: false,
-        diagramData: diagramData
-      });
-      setSavedStepData(newSavedData);
-      handleNext();
-    }
+    // Save as skipped
+    const newSavedData = new Map(savedStepData);
+    newSavedData.set(currentStepKey, {
+      listItems: [],
+      textInput: '',
+      schemaData: [],
+      feedback: null,
+      completed: false,
+      diagramData: diagramData
+    });
+    setSavedStepData(newSavedData);
+    handleNext();
+    toast.info('Step skipped');
   };
 
   const handleRetry = () => {
@@ -544,7 +526,7 @@ export default function StepByStepChat({ problem }: Props) {
           const isCurrentPhase = phase === currentPhase;
           const phaseIndex = phases.indexOf(phase);
           const currentPhaseIdx = phases.indexOf(currentPhase);
-          
+
           return (
             <div key={phase} className="flex items-center gap-2">
               <div className="flex items-center gap-1">
@@ -626,13 +608,19 @@ export default function StepByStepChat({ problem }: Props) {
             </p>
           </div>
 
+          {/* Interactive Widget Section */}
+          {currentStep.widgetId && WIDGETS[currentStep.widgetId] && (
+            <div className="my-4">
+              {React.createElement(WIDGETS[currentStep.widgetId])}
+            </div>
+          )}
+
           {/* Diagram Status Indicator - Show for High Level Architecture and Data Flow steps */}
           {(currentStep.subStep === 'architecture' || currentStep.subStep === 'data-flow') && (
-            <div className={`p-3 rounded-lg border-2 ${
-              diagramData 
-                ? 'bg-green-500/10 border-green-500/30' 
-                : 'bg-orange-500/10 border-orange-500/30'
-            }`}>
+            <div className={`p-3 rounded-lg border-2 ${diagramData
+              ? 'bg-green-500/10 border-green-500/30'
+              : 'bg-orange-500/10 border-orange-500/30'
+              }`}>
               <div className="flex items-center gap-2">
                 {diagramData ? (
                   <>
@@ -671,11 +659,10 @@ export default function StepByStepChat({ problem }: Props) {
                 {listItems.map((item, index) => (
                   <div
                     key={index}
-                    className={`flex items-start gap-2 p-3 rounded-lg border group transition-colors ${
-                      showFeedback 
-                        ? 'bg-muted/50 border-muted-foreground/20' 
-                        : 'bg-muted/30 border-border hover:border-primary/50'
-                    }`}
+                    className={`flex items-start gap-2 p-3 rounded-lg border group transition-colors ${showFeedback
+                      ? 'bg-muted/50 border-muted-foreground/20'
+                      : 'bg-muted/30 border-border hover:border-primary/50'
+                      }`}
                   >
                     <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5 shrink-0" />
                     <p className="flex-1 text-sm">{item}</p>
@@ -727,8 +714,8 @@ export default function StepByStepChat({ problem }: Props) {
               </div>
             ) : currentStep.inputType === 'schema' ? (
               <div>
-                <SchemaBuilder 
-                  value={schemaData} 
+                <SchemaBuilder
+                  value={schemaData}
                   onChange={setSchemaData}
                   readOnly={showFeedback}
                 />
@@ -743,9 +730,8 @@ export default function StepByStepChat({ problem }: Props) {
                 value={textInput}
                 onChange={(e) => setTextInput(e.target.value)}
                 placeholder={currentStep.placeholder}
-                className={`min-h-[200px] resize-none ${
-                  showFeedback ? 'bg-muted/50 cursor-not-allowed' : ''
-                }`}
+                className={`min-h-[200px] resize-none ${showFeedback ? 'bg-muted/50 cursor-not-allowed' : ''
+                  }`}
                 readOnly={showFeedback}
               />
             )}
@@ -776,11 +762,11 @@ export default function StepByStepChat({ problem }: Props) {
                 <Button
                   onClick={handleSubmit}
                   disabled={loading || (
-                    currentStep.inputType === 'list' 
-                      ? listItems.length === 0 
+                    currentStep.inputType === 'list'
+                      ? listItems.length === 0
                       : currentStep.inputType === 'schema'
-                      ? schemaData.length === 0
-                      : !textInput.trim()
+                        ? schemaData.length === 0
+                        : !textInput.trim()
                   )}
                   className="gradient-bg"
                 >
@@ -918,7 +904,7 @@ export default function StepByStepChat({ problem }: Props) {
                     </Button>
                   )}
                 </div>
-                
+
                 <Button
                   onClick={handleNext}
                   className="gradient-bg"
@@ -951,9 +937,15 @@ export default function StepByStepChat({ problem }: Props) {
               {Array.from(savedStepData.entries()).map(([key, data]) => {
                 const [phase, stepIdx] = key.split('-');
                 const stepIndex = parseInt(stepIdx);
+
+                // Safety check for invalid/legacy phases from saved state
+                if (!PHASE_STEPS[phase] || !PHASE_STEPS[phase][stepIndex]) {
+                  return null;
+                }
+
                 const step = PHASE_STEPS[phase][stepIndex];
                 const isCurrent = key === currentStepKey;
-                
+
                 return (
                   <button
                     key={key}
@@ -962,13 +954,12 @@ export default function StepByStepChat({ problem }: Props) {
                       setCurrentPhase(targetPhase);
                       setCurrentStepIndex(parseInt(targetIdx));
                     }}
-                    className={`p-3 rounded-lg border text-left transition-all hover:shadow-md ${
-                      isCurrent
-                        ? 'border-primary bg-primary/10'
-                        : data.completed
+                    className={`p-3 rounded-lg border text-left transition-all hover:shadow-md ${isCurrent
+                      ? 'border-primary bg-primary/10'
+                      : data.completed
                         ? 'border-green-500/30 bg-green-500/5'
                         : 'border-border bg-muted/30'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-xs font-medium text-muted-foreground">
@@ -1000,11 +991,10 @@ export default function StepByStepChat({ problem }: Props) {
         {currentSteps.map((_, index) => (
           <div
             key={index}
-            className={`h-2 rounded-full transition-all duration-300 ${
-              index === currentStepIndex
-                ? 'w-8'
-                : 'w-2'
-            }`}
+            className={`h-2 rounded-full transition-all duration-300 ${index === currentStepIndex
+              ? 'w-8'
+              : 'w-2'
+              }`}
             style={{
               backgroundColor: index <= currentStepIndex
                 ? getPhaseColor(currentStep.phase)

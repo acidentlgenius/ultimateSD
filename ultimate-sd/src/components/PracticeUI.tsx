@@ -12,11 +12,32 @@ import { SystemDesignProblem } from '@/types';
 import { tokens } from '@/styles/tokens';
 import Link from 'next/link';
 import { exportPracticeSession } from '@/lib/pdf-export-compact';
+import { getThemeForProblem } from '@/lib/themes';
+import { toast } from 'sonner';
 
-const PHASES = ['Requirements', 'HLD', 'LLD', 'Trade-offs', 'Scalability', 'Feedback'];
+import { DEFAULT_PHASE_STEPS } from '@/lib/steps';
+
+// const PHASES = ['Requirements', 'HLD', 'LLD', 'Trade-offs', 'Scalability', 'Feedback'];
 
 export default function PracticeUI({ problem }: { problem: SystemDesignProblem }) {
-  const [phase, setPhase] = useState<string>('Requirements');
+  const activeSteps = problem.steps || DEFAULT_PHASE_STEPS;
+  // Get unique phase titles from the steps configuration
+  const PHASES = Object.keys(activeSteps).map(key => {
+    const steps = activeSteps[key];
+    return steps.length > 0 ? steps[0].phase : key;
+  });
+  // Add Feedback phase if not present (logic implies it's usually separate, but let's see)
+  // The original PHASES had 'Feedback' at the end. 
+  // StepByStepChat doesn't seem to have a 'feedback' phase key in DEFAULT_PHASE_STEPS.
+  // It handles completion differently.
+  // Actually, let's keep it if it was there for visual consistency, or just rely on the step configuration.
+  // The original code had 'Feedback' in PHASES array, but StepByStepChat only had keys: requirements, hld, lld, tradeoffs, scalability.
+  // So 'Feedback' was likely a visual-only phase or handled specially?
+  // Looking at StepByStepChat: "handleNext" -> alert "Congratulations". It doesn't switch to a Feedback phase state.
+  // But PracticeUI has a FeedbackModal?
+  // Let's keep PHASES as derived from steps. If we want 'Feedback' visually we can append it.
+
+  const [phase, setPhase] = useState<string>(PHASES[0] || 'Requirements');
   const [currentSubStep, setCurrentSubStep] = useState<string>('');
   const [currentStepKey, setCurrentStepKey] = useState<string>('');
   const [diagramCollapsed, setDiagramCollapsed] = useState(false);
@@ -49,20 +70,24 @@ export default function PracticeUI({ problem }: { problem: SystemDesignProblem }
     };
   }, []);
 
+
+  const theme = getThemeForProblem(problem.slug);
+  const Icon = theme.icon;
+
   const exportTranscript = async () => {
     setIsExporting(true);
-    
+
     try {
       await exportPracticeSession({
         problem,
         savedStepData,
       });
-      
+
       // Show success message (simple alert for now, can be replaced with toast)
-      alert('✅ PDF exported successfully! Check your downloads folder.');
+      toast.success('PDF exported successfully! Check your downloads folder.');
     } catch (error) {
       console.error('Export error:', error);
-      alert('❌ Failed to export PDF. Please try again or contact support if the issue persists.');
+      toast.error('Failed to export PDF. Please try again or contact support if the issue persists.');
     } finally {
       setIsExporting(false);
     }
@@ -72,15 +97,21 @@ export default function PracticeUI({ problem }: { problem: SystemDesignProblem }
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       <div className="container mx-auto p-4">
         {/* Enhanced header with glassmorphism */}
-        <div className="mb-6 glass rounded-xl p-6 border-2 border-border shadow-lg animate-fade-in">
-          <div className="flex items-center justify-between mb-4">
+        <div className="mb-6 glass rounded-xl p-6 border-2 border-border shadow-lg animate-fade-in relative overflow-hidden">
+          {/* Subtle background glow based on theme */}
+          <div className={`absolute top-0 right-0 w-64 h-64 bg-gradient-to-br ${theme.gradient} opacity-10 blur-3xl rounded-full -mr-20 -mt-20`} />
+          <div className={`absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr ${theme.gradient} opacity-10 blur-2xl rounded-full -ml-16 -mb-16`} />
+
+          <div className="flex items-center justify-between mb-4 relative z-10">
             <div className="flex items-center gap-4 flex-1 min-w-0">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-primary to-primary/70 shadow-md">
-                <Sparkles className="h-6 w-6 text-primary-foreground" />
+              <div className={`p-4 rounded-xl bg-gradient-to-br ${theme.gradient} shadow-md text-white`}>
+                <Icon className="h-8 w-8" />
               </div>
               <div className="flex-1 min-w-0">
-                <h1 className="text-2xl font-bold gradient-text mb-1">{problem.title}</h1>
-                <p className="text-sm text-muted-foreground">{problem.description}</p>
+                <h1 className={`text-3xl font-bold bg-gradient-to-r ${theme.gradient} bg-clip-text text-transparent mb-1`}>
+                  {problem.title}
+                </h1>
+                <p className="text-sm text-muted-foreground font-medium">{problem.description}</p>
               </div>
             </div>
             <div className="flex items-center gap-2 ml-4 shrink-0">
@@ -90,9 +121,9 @@ export default function PracticeUI({ problem }: { problem: SystemDesignProblem }
                   Home
                 </Button>
               </Link>
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={exportTranscript}
                 disabled={isExporting}
                 className="hover:bg-muted transition-all"
@@ -118,12 +149,11 @@ export default function PracticeUI({ problem }: { problem: SystemDesignProblem }
             {PHASES.map((p, idx) => (
               <div key={p} className="flex items-center">
                 <div
-                  className={`text-xs px-4 py-2 rounded-full font-semibold transition-all duration-300 whitespace-nowrap flex items-center gap-2 ${
-                    p === phase
-                      ? 'text-white shadow-lg scale-105'
-                      : 'bg-muted/50 text-muted-foreground hover:bg-muted/70'
-                  }`}
-                  style={p === phase ? { backgroundColor: getPhaseColor(p) } : {}}
+                  className={`text-xs px-4 py-2 rounded-full font-semibold transition-all duration-300 whitespace-nowrap flex items-center gap-2 ${p === phase
+                    ? `text-white shadow-lg scale-105 ${theme.accent}`
+                    : 'bg-muted/50 text-muted-foreground hover:bg-muted/70'
+                    }`}
+                  style={p === phase ? { backgroundColor: getPhaseColor(p), backgroundImage: p === phase ? `linear-gradient(135deg, ${theme.gradient})` : undefined } : {}}
                 >
                   {p}
                   {(p === 'HLD' || p === 'LLD') && (
@@ -195,8 +225,8 @@ export default function PracticeUI({ problem }: { problem: SystemDesignProblem }
       </div>
 
       {/* Help Assistant */}
-      <HelpAssistant 
-        problem={problem} 
+      <HelpAssistant
+        problem={problem}
         currentPhase={phase}
         completedSteps={completedSteps}
         savedStepData={savedStepData}
