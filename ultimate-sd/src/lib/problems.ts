@@ -1501,6 +1501,78 @@ export const TRACING_STEPS: Record<string, StepData[]> = {
   ]
 };
 
+const TASK_SCHEDULER_STEPS: Record<string, StepData[]> = {
+  requirements: [
+    {
+      phase: 'Requirements',
+      subStep: 'functional',
+      title: 'Functional Specs',
+      prompt: 'Distributed cron jobs. Dependency management (DAG). Retries & Alerts.',
+      inputType: 'list',
+      placeholder: 'Features...'
+    }
+  ],
+  "scheduler-logic": [
+    {
+      phase: 'Scheduler',
+      subStep: 'execution',
+      title: 'Job Execution Flow',
+      prompt: 'Visualize the Task execution flow. Workers pick up ready tasks. Scheduler manages dependencies (DAG).',
+      inputType: 'textarea',
+      placeholder: 'Run the scheduler...',
+      widgetId: 'job-scheduler-viz'
+    }
+  ]
+};
+
+const FLASH_SALE_STEPS: Record<string, StepData[]> = {
+  requirements: [
+    {
+      phase: 'Requirements',
+      subStep: 'functional',
+      title: 'Functional Specs',
+      prompt: 'High concurrency (1M active users). Limited inventory. No overselling allowed.',
+      inputType: 'list',
+      placeholder: 'Features...'
+    }
+  ],
+  "concurrency": [
+    {
+      phase: 'Concurrency',
+      subStep: 'race-conditions',
+      title: 'Inventory Race Conditions',
+      prompt: 'Simulate high concurrency. Without locking, inventory goes negative (overselling). With locking, it is safe but slower.',
+      inputType: 'textarea',
+      placeholder: 'Start the sale...',
+      widgetId: 'flash-sale-demo'
+    }
+  ]
+};
+
+const PAYMENT_STEPS: Record<string, StepData[]> = {
+  requirements: [
+    {
+      phase: 'Requirements',
+      subStep: 'functional',
+      title: 'Functional Specs',
+      prompt: 'Money transfer between accounts. ACID compliance. Idempotency (Exactly-once delivery).',
+      inputType: 'list',
+      placeholder: 'Features...'
+    }
+  ],
+  "ledger": [
+    {
+      phase: 'Ledger',
+      subStep: 'transaction',
+      title: 'Double-Entry Ledger',
+      prompt: 'Every transaction has a debit and credit. Idempotency keys prevent duplicate payments.',
+      inputType: 'textarea',
+      placeholder: 'Make a transfer...',
+      widgetId: 'payment-ledger'
+    }
+  ]
+};
+
 export const PROBLEMS: SystemDesignProblem[] = [
   {
     id: '1',
@@ -1758,7 +1830,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Hard',
     category: 'Advanced',
     companies: ['Airflow', 'Kubernetes'],
-    requirements: ['Job dependencies', 'Fault tolerance', 'Scalability']
+    requirements: ['Job dependencies', 'Fault tolerance', 'Scalability'],
+    steps: TASK_SCHEDULER_STEPS
   },
   {
     id: '25',
@@ -2376,5 +2449,27 @@ export const PROBLEMS: SystemDesignProblem[] = [
     category: 'Basics',
     companies: ['Deployment strategies'],
     requirements: ['Environment switching', 'Rollback', 'Testing']
+  },
+  {
+    id: '84',
+    title: 'Design a Flash Sale System',
+    slug: 'design-flash-sale-system',
+    description: 'High concurrency ticket booking.',
+    difficulty: 'Hard',
+    category: 'Advanced',
+    companies: ['Ticketmaster', 'Amazon'],
+    requirements: ['High concurrency', 'Inventory management', 'Fairness'],
+    steps: FLASH_SALE_STEPS
+  },
+  {
+    id: '85',
+    title: 'Design a Payment System',
+    slug: 'design-payment-system',
+    description: 'Financial transaction processing.',
+    difficulty: 'Hard',
+    category: 'Core Services',
+    companies: ['Stripe', 'PayPal'],
+    requirements: ['ACID transactions', 'Idempotency', 'Reconciliation'],
+    steps: PAYMENT_STEPS
   }
 ];

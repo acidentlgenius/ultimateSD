@@ -74,6 +74,9 @@ import BlockchainDemo from './widgets/BlockchainDemo';
 import VectorDBVisualizer from './widgets/VectorDBVisualizer';
 import RAGArchitect from './widgets/RAGArchitect';
 import AgentOrchestrator from './widgets/AgentOrchestrator';
+import JobSchedulerViz from './widgets/JobSchedulerViz';
+import FlashSaleDemo from './widgets/FlashSaleDemo';
+import PaymentLedger from './widgets/PaymentLedger';
 
 const WIDGETS: Record<string, React.ComponentType> = {
   'encoding-visualizer': EncodingVisualizer,
@@ -119,6 +122,9 @@ const WIDGETS: Record<string, React.ComponentType> = {
   'vector-db-visualizer': VectorDBVisualizer,
   'rag-architect': RAGArchitect,
   'agent-orchestrator': AgentOrchestrator,
+  'job-scheduler-viz': JobSchedulerViz,
+  'flash-sale-demo': FlashSaleDemo,
+  'payment-ledger': PaymentLedger,
 };
 
 import { DEFAULT_PHASE_STEPS } from '@/lib/steps';

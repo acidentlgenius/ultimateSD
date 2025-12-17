@@ -22,15 +22,15 @@ export default function ProblemCard({ problem }: ProblemCardProps) {
   };
 
   return (
-    <Link 
-      href={`/practice/${problem.slug}`} 
-      aria-label={`Practice ${problem.title}`} 
+    <Link
+      href={`/practice/${problem.slug}`}
+      aria-label={`Practice ${problem.title}`}
       className="block group"
     >
       <Card className="h-full p-6 card-hover border-2 border-border hover:border-primary/50 bg-card/50 backdrop-blur-sm transition-all duration-300 relative overflow-hidden">
         {/* Decorative gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-        
+
         <div className="relative z-10">
           <CardHeader className="pb-3 px-0">
             <div className="flex items-start justify-between gap-3">
@@ -46,12 +46,12 @@ export default function ProblemCard({ problem }: ProblemCardProps) {
               </Badge>
             </div>
           </CardHeader>
-          
+
           <CardContent className="pt-0 px-0">
             <p className="text-sm text-muted-foreground mb-4 line-clamp-2 leading-relaxed">
               {problem.description}
             </p>
-            
+
             {/* Companies section */}
             {problem.companies.length > 0 && (
               <div className="flex items-center gap-2 mb-4">
@@ -70,7 +70,7 @@ export default function ProblemCard({ problem }: ProblemCardProps) {
                 </div>
               </div>
             )}
-            
+
             {/* Footer with category and CTA */}
             <div className="flex items-center justify-between pt-3 border-t border-border/50">
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
