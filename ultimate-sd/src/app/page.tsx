@@ -7,6 +7,7 @@ import { Search, Filter, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Hero } from '@/components/landing/Hero';
 import { FeatureShowcase } from '@/components/landing/FeatureShowcase';
+import { RoadmapPreview } from '@/components/landing/RoadmapPreview';
 import Link from 'next/link';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 
@@ -49,6 +50,9 @@ export default function Home() {
 
       {/* 2. Interactive Feature Showcase */}
       <FeatureShowcase />
+
+      {/* 2.5 Roadmap Preview */}
+      <RoadmapPreview />
 
       {/* 3. Problem Explorer (Existing Logic, Refined UI) */}
       <div id="problems" className="container mx-auto px-4 py-24 relative z-10">
