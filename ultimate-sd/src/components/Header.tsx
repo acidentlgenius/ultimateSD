@@ -5,6 +5,7 @@ import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { auth } from "@/auth";
 import { UserMenu } from "@/components/UserMenu";
 import { cn } from "@/lib/utils";
+import { MobileMenu } from "@/components/MobileMenu";
 
 export async function Header() {
   const session = await auth();
@@ -51,6 +52,7 @@ export async function Header() {
           <div className="h-6 w-px bg-border/50 mx-1" />
           <ThemeToggle />
           <UserMenu user={session?.user} />
+          <MobileMenu user={session?.user} />
         </div>
       </div>
     </header>

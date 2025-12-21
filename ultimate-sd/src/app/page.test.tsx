@@ -5,6 +5,7 @@ import Home from './page';
 describe('Home', () => {
   it('renders the home page', () => {
     render(<Home />);
-    expect(screen.getByText('Master System Design')).toBeDefined();
+    // Use accessible name which combines text across child elements
+    expect(screen.getByRole('heading', { level: 1, name: /Master Systems/i })).toBeDefined();
   });
 });
