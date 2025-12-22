@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Server, ArrowRight, ShieldCheck, ShieldAlert, Activity } from 'lucide-react';
+import { Server, ShieldCheck, ShieldAlert, Activity } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 type ServerNode = {
@@ -38,11 +37,16 @@ export default function LoadBalancerVisualizer() {
         // Generate 5 requests
         const newReqs: Request[] = [];
         let currentRr = rrIndex;
-        const healthy = servers.filter(s => s.status === 'healthy');
 
-        if (healthy.length === 0) return; // Drop if all down
+        // Optimization: Create a local copy of servers to track load changes within the loop
+        // This prevents 5 separate state updates and ensures least-connections logic sees the updated load immediately
+        let currentServers = [...servers];
+
+        // Check if we have any healthy servers initially
+        if (!currentServers.some(s => s.status === 'healthy')) return;
 
         for (let i = 0; i < 5; i++) {
+            const healthy = currentServers.filter(s => s.status === 'healthy');
             let targetId = '';
 
             if (algorithm === 'random') {
@@ -58,12 +62,16 @@ export default function LoadBalancerVisualizer() {
                 targetId = sorted[0].id;
             }
 
-            newReqs.push({ id: Math.random().toString(36).substr(2, 5), targetId });
+            newReqs.push({ id: Math.random().toString(36).substring(2, 7), targetId });
 
-            // Simulate load increase
-            setServers(prev => prev.map(s => s.id === targetId ? { ...s, load: Math.min(100, s.load + 15) } : s));
+            // Update local state instead of triggering re-render
+            currentServers = currentServers.map(s =>
+                s.id === targetId ? { ...s, load: Math.min(100, s.load + 15) } : s
+            );
         }
 
+        // Batch updates
+        setServers(currentServers);
         setRrIndex(currentRr);
         setRequests(prev => [...prev, ...newReqs]);
 

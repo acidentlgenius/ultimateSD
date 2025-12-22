@@ -24,7 +24,7 @@ export default function CacheVisualizer() {
         if (!keyInput || !valInput) return;
 
         const existingIndex = cache.findIndex(item => item.key === keyInput);
-        let newCache = [...cache];
+        const newCache = [...cache];
 
         if (existingIndex !== -1) {
             // Update existing

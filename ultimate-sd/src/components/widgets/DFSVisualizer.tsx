@@ -52,8 +52,8 @@ export default function DFSVisualizer() {
     };
 
     const replicateBlocks = (currentBlocks: Block[]) => {
-        let updatedNodes = [...dataNodes];
-        let updatedBlocks = [...currentBlocks];
+        const updatedNodes = [...dataNodes];
+        const updatedBlocks = [...currentBlocks];
 
         updatedBlocks.forEach(block => {
             // Replication Strategy: 3 Replicas
