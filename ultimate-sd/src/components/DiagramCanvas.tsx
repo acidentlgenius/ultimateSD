@@ -219,19 +219,21 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
     ctx.lineWidth = 0.5;
     const gridSize = 20;
     
+    // Batch all vertical lines
+    ctx.beginPath();
     for (let x = 0; x <= width; x += gridSize) {
-      ctx.beginPath();
       ctx.moveTo(x, 0);
       ctx.lineTo(x, height);
-      ctx.stroke();
     }
+    ctx.stroke();
     
+    // Batch all horizontal lines
+    ctx.beginPath();
     for (let y = 0; y <= height; y += gridSize) {
-      ctx.beginPath();
       ctx.moveTo(0, y);
       ctx.lineTo(width, y);
-      ctx.stroke();
     }
+    ctx.stroke();
   };
 
   const drawElement = (ctx: CanvasRenderingContext2D, element: DiagramElement, isSelected: boolean = false) => {
