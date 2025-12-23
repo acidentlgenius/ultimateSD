@@ -90,7 +90,7 @@ export default function SecretVault() {
                         )}
                     </div>
 
-                    <div className="flex gap-4 items-center justify-center min-h-[160px]">
+                    <div className="flex flex-col md:flex-row gap-8 md:gap-4 items-center justify-center min-h-[160px]">
 
                         {/* The Vault */}
                         <div className="relative">

@@ -139,7 +139,7 @@ const FlashSaleDemo: React.FC = () => {
                     </div>
 
                     {/* Visuals */}
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Queue */}
                         <div className="p-4 bg-slate-950 rounded-lg border border-slate-800">
                             <div className="flex items-center justify-between mb-4">

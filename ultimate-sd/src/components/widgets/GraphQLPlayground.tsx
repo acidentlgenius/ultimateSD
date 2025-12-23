@@ -87,7 +87,7 @@ export default function GraphQLPlayground() {
                         </Button>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Query Builder */}
                         <div className="border rounded-lg p-3 bg-slate-900/50 font-mono text-xs">
                             <div className="text-pink-400 mb-2">query GetUser {'{'}</div>
