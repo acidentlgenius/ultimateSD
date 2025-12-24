@@ -190,6 +190,31 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
     };
   }, [elements, getBoundingBox, designName]);
 
+  // Debounced auto-save to localStorage
+  // Optimization: Only save when elements change and after a delay, instead of polling every second
+  useEffect(() => {
+    if (!stepKey) return;
+
+    const saveToStorage = () => {
+      if (elements.length > 0) {
+        const diagramData = {
+          elements,
+          timestamp: new Date().toISOString()
+        };
+        localStorage.setItem(`diagram-${stepKey}`, JSON.stringify(diagramData));
+      } else {
+        // If explicitly cleared (empty array), we remove it
+        // Note: Initial empty state is handled by not saving if empty, but if user deletes all...
+        // We only clear if we had something before?
+        // To be safe and consistent with previous logic:
+        localStorage.removeItem(`diagram-${stepKey}`);
+      }
+    };
+
+    const timer = setTimeout(saveToStorage, 1000);
+    return () => clearTimeout(timer);
+  }, [elements, stepKey]);
+
   const saveHistory = (newElements: DiagramElement[]) => {
     const newHistory = history.slice(0, historyIndex + 1);
     newHistory.push([...newElements]);
@@ -2249,29 +2274,6 @@ export default function DiagramCanvas({ stepKey }: { stepKey: string }) {
     setMounted(true);
   }, []);
 
-  // Auto-save to localStorage whenever elements change
-  useEffect(() => {
-    if (stepKey && mounted) {
-      const saveInterval = setInterval(() => {
-        const elements = (window as any).sd_getDiagramElements?.();
-        if (elements) {
-          if (elements.length > 0) {
-            // Save diagram data if there are elements
-            const diagramData = {
-              elements,
-              timestamp: new Date().toISOString()
-            };
-            localStorage.setItem(`diagram-${stepKey}`, JSON.stringify(diagramData));
-          } else {
-            // Clear localStorage if diagram is empty (user cleared it)
-            localStorage.removeItem(`diagram-${stepKey}`);
-          }
-        }
-      }, 1000); // Auto-save every second
-
-      return () => clearInterval(saveInterval);
-    }
-  }, [stepKey, mounted]);
 
   // Load diagram data for this step when stepKey changes
   useEffect(() => {
@@ -2510,7 +2512,7 @@ export default function DiagramCanvas({ stepKey }: { stepKey: string }) {
       document.body.appendChild(toast);
       setTimeout(() => toast.remove(), 4000);
     }
-  }, []);
+  }, [stepKey]);
 
   if (!mounted) {
     return (
