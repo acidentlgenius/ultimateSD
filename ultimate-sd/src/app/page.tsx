@@ -1,6 +1,6 @@
 'use client';
 
-import { PROBLEMS } from '@/lib/problems';
+import { PROBLEMS } from '@/lib/problems-list';
 import ProblemCard from '@/components/ProblemCard';
 import { useState, useMemo } from 'react';
 import { Search, Filter, ArrowRight } from 'lucide-react';
