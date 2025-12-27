@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
@@ -26,16 +26,17 @@ const INITIAL_POSTS: Post[] = [
 ];
 
 const FeedRanker: React.FC = () => {
-    const [posts, setPosts] = useState<Post[]>(INITIAL_POSTS);
+    // Optimization: Removed redundant state 'posts' and useEffect.
+    // Instead, deriving rankedPosts directly from weights using useMemo.
+    // This prevents double renders on weight changes.
     const [weights, setWeights] = useState({
         freshness: 0.3,
         relevance: 0.5,
         engagement: 0.2
     });
 
-    useEffect(() => {
-        // Re-rank posts whenever weights change
-        const ranked = [...INITIAL_POSTS].map(post => ({
+    const rankedPosts = useMemo(() => {
+        return [...INITIAL_POSTS].map(post => ({
             ...post,
             score: (
                 post.features.freshness * weights.freshness +
@@ -43,8 +44,6 @@ const FeedRanker: React.FC = () => {
                 post.features.engagement * weights.engagement
             )
         })).sort((a, b) => (b.score || 0) - (a.score || 0));
-
-        setPosts(ranked);
     }, [weights]);
 
     return (
@@ -127,7 +126,7 @@ const FeedRanker: React.FC = () => {
                 <div className="lg:col-span-2 space-y-3">
                     <h3 className="font-semibold text-white mb-4 pl-1">Your Personalized Feed</h3>
                     <AnimatePresence mode='popLayout'>
-                        {posts.map((post, index) => (
+                        {rankedPosts.map((post) => (
                             <motion.div
                                 layout
                                 key={post.id}
