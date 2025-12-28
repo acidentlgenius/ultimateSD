@@ -2281,8 +2281,16 @@ export default function DiagramCanvas({ stepKey }: { stepKey: string }) {
   // Auto-save to localStorage whenever elements change
   useEffect(() => {
     if (stepKey && mounted) {
+      let lastSavedElements: any[] | null = null; // Optimization: Track last saved state
+
       const saveInterval = setInterval(() => {
         const elements = (window as any).sd_getDiagramElements?.();
+
+        // Optimization: Skip if elements haven't changed since last check
+        if (elements === lastSavedElements) {
+          return;
+        }
+
         if (elements) {
           if (elements.length > 0) {
             // Save diagram data if there are elements
@@ -2296,6 +2304,8 @@ export default function DiagramCanvas({ stepKey }: { stepKey: string }) {
             // Clear localStorage if diagram is empty (user cleared it)
             localStorage.removeItem(`diagram-${stepKey}`);
           }
+          // Update reference to avoid redundant saves
+          lastSavedElements = elements;
         }
       }, 1000); // Auto-save every second
 
