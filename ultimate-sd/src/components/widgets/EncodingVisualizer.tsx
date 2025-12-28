@@ -28,11 +28,26 @@ export default function EncodingVisualizer() {
     const generateHash = async (text: string) => {
         // Simple mock hash for visualization if crypto not available or sync needed
         // In real app use window.crypto.subtle
-        const msgBuffer = new TextEncoder().encode(text);
-        const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
-        const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-        return hashHex.slice(0, 7); // First 7 chars
+        if (typeof window !== 'undefined' && window.crypto && window.crypto.subtle) {
+            try {
+                const msgBuffer = new TextEncoder().encode(text);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+                return hashHex.slice(0, 7); // First 7 chars
+            } catch (e) {
+                console.warn('Crypto subtle mismatch or error, falling back to mock', e);
+            }
+        }
+
+        // Fallback mock hash (not secure, just for visual)
+        let hash = 0;
+        for (let i = 0; i < text.length; i++) {
+            const char = text.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash; // Convert to 32bit integer
+        }
+        return Math.abs(hash).toString(16).substring(0, 7);
     };
 
     useEffect(() => {

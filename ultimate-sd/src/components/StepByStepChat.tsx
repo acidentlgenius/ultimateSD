@@ -13,10 +13,11 @@ import SchemaBuilder from '@/components/SchemaBuilder';
 import {
   saveSessionState,
   loadSessionState,
-  clearSessionState,
-  formatStorageSize,
-  getStorageInfo
+  clearSessionState
 } from '@/lib/session-storage';
+import { updateProgress } from '@/app/actions/gamification';
+import { updateProblemProgress } from '@/app/actions/progress';
+import FeedbackModal from './FeedbackModal';
 import {
   Sparkles,
   Plus,
@@ -172,7 +173,6 @@ export default function StepByStepChat({ problem }: Props) {
 
   // Session restoration state
   const [sessionRestored, setSessionRestored] = useState(false);
-  const [showRestorationBanner, setShowRestorationBanner] = useState(false);
   const [restoredDate, setRestoredDate] = useState<Date | null>(null);
 
   // Diagram tracking - now per step
@@ -211,13 +211,11 @@ export default function StepByStepChat({ problem }: Props) {
       setSavedStepData(restored.savedStepData);
       setCompletedSteps(restored.completedSteps);
       setSessionRestored(true);
-      setShowRestorationBanner(true);
       setRestoredDate(restored.lastUpdated);
 
-      // Auto-hide banner after 5 seconds
-      setTimeout(() => setShowRestorationBanner(false), 5000);
-
       console.log('Session restored from', restored.lastUpdated);
+
+
     }
   }, [problem.slug]);
 
@@ -236,6 +234,24 @@ export default function StepByStepChat({ problem }: Props) {
       }
     }
   }, [problem.slug, currentPhase, currentStepIndex, savedStepData, completedSteps, sessionRestored]);
+
+  // Listen for navigation events from Sidebar
+  useEffect(() => {
+    const handleNavigation = (e: any) => {
+      const { phase, stepIndex } = e.detail;
+      if (phase && phases.includes(phase)) {
+        setCurrentPhase(phase);
+        if (typeof stepIndex === 'number') {
+          setCurrentStepIndex(stepIndex);
+        }
+      }
+    };
+
+    window.addEventListener('sd-navigate-step', handleNavigation as EventListener);
+    return () => {
+      window.removeEventListener('sd-navigate-step', handleNavigation as EventListener);
+    };
+  }, [phases]);
 
   // Clear session handler
   const handleClearSession = useCallback(() => {
@@ -259,7 +275,6 @@ export default function StepByStepChat({ problem }: Props) {
     setCompletedSteps(new Set());
     setSavedStepData(new Map());
     setSessionRestored(false);
-    setShowRestorationBanner(false);
     setRestoredDate(null);
     setDiagramData(null);
 
@@ -379,14 +394,32 @@ export default function StepByStepChat({ problem }: Props) {
       };
 
       // Add diagram data if available and relevant
-      if (shouldIncludeDiagram && diagramData) {
+      // Add diagram data if available and relevant
+      // Try to get live data from global helpers first
+      const getElements = (window as any).sd_getDiagramElements;
+      const getDescription = (window as any).sd_getDiagramDescription;
+      let usedDiagramData = diagramData;
+
+      if (getElements && getDescription) {
+        const elements = getElements();
+        const description = getDescription();
+        if (elements && elements.length > 0) {
+          usedDiagramData = {
+            elements,
+            description,
+            // imageData not needed for evaluation
+          };
+        }
+      }
+
+      if (shouldIncludeDiagram && usedDiagramData) {
         requestBody.diagramData = {
-          description: diagramData.description,
-          elementCount: diagramData.elements?.length || 0,
-          components: diagramData.elements?.map((el: any) => el.type).filter((t: string) => t !== 'arrow' && t !== 'line')
+          description: usedDiagramData.description,
+          elementCount: usedDiagramData.elements?.length || 0,
+          components: usedDiagramData.elements?.map((el: any) => el.type).filter((t: string) => t !== 'arrow' && t !== 'line')
         };
-        requestBody.userAnswer = `${userAnswer}\n\n[Diagram included with ${diagramData.elements?.length || 0} components: ${diagramData.description}]`;
-      } else if (shouldIncludeDiagram && !diagramData) {
+        requestBody.userAnswer = `${userAnswer}\n\n[Diagram included with ${usedDiagramData.elements?.length || 0} components: ${usedDiagramData.description}]`;
+      } else if (shouldIncludeDiagram && !usedDiagramData) {
         // Warn if diagram is expected but not provided
         requestBody.userAnswer = `${userAnswer}\n\n[Note: No diagram was created for this architecture description]`;
       }
@@ -414,7 +447,39 @@ export default function StepByStepChat({ problem }: Props) {
       setSavedStepData(newSavedData);
 
       if (data.feedback.isAcceptable) {
-        setCompletedSteps(prev => new Set(prev).add(currentStepKey));
+        const newCompleted = new Set(completedSteps).add(currentStepKey);
+        setCompletedSteps(newCompleted);
+
+        // Check if ALL steps are completed
+        let totalStepsCount = 0;
+        Object.values(PHASE_STEPS).forEach(steps => totalStepsCount += steps.length);
+
+        if (newCompleted.size >= totalStepsCount) {
+          // Calculate average score (simplified for now, just using last acceptable score)
+          // In a real app we might average all step scores
+          await updateProblemProgress(problem.id, 'COMPLETED', Math.round(data.feedback.score));
+          toast.success('🎉 Problem Completed! You have finished all steps!');
+        }
+
+        // Award XP for completing the step
+        try {
+          const result = await updateProgress(20);
+          if (result.success) {
+            toast.success('Step Complete! +20 XP', {
+              icon: '⚡',
+              className: 'bg-blue-500/10 border-blue-500/20 text-blue-600'
+            });
+
+            if (result.levelUp) {
+              toast.success(`Level Up! You are now Level ${result.level}!`, {
+                icon: '🎓',
+                className: 'bg-purple-500/10 border-purple-500/20 text-purple-600 font-bold'
+              });
+            }
+          }
+        } catch (error) {
+          console.error('Failed to update XP:', error);
+        }
       }
     } catch (error) {
       console.error('Error evaluating answer:', error);
@@ -494,114 +559,9 @@ export default function StepByStepChat({ problem }: Props) {
 
   return (
     <div className="w-full flex flex-col gap-6">
-      {/* Session Restoration Banner */}
-      {showRestorationBanner && restoredDate && (
-        <Card className="border-2 border-green-500/50 bg-green-500/10 animate-fade-in">
-          <div className="p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-green-500/20">
-                <Info className="h-5 w-5 text-green-600 dark:text-green-400" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-sm text-green-900 dark:text-green-100">
-                  Session Restored!
-                </h3>
-                <p className="text-xs text-green-700 dark:text-green-300">
-                  Your progress from{' '}
-                  {restoredDate.toLocaleDateString()} at {restoredDate.toLocaleTimeString()}{' '}
-                  has been restored. Continue where you left off!
-                </p>
-              </div>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowRestorationBanner(false)}
-              className="shrink-0"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        </Card>
-      )}
+      {/* Session Restoration Banner Removed */}
 
-      {/* Navigation Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        {phases.map((phase, phaseIdx) => {
-          const phaseSteps = PHASE_STEPS[phase];
-          const isCurrentPhase = phase === currentPhase;
-          const phaseIndex = phases.indexOf(phase);
-          const currentPhaseIdx = phases.indexOf(currentPhase);
-
-          return (
-            <div key={phase} className="flex items-center gap-2">
-              <div className="flex items-center gap-1">
-                <span className={`font-medium ${isCurrentPhase ? 'text-primary' : phaseIndex < currentPhaseIdx ? 'text-green-600 dark:text-green-400' : ''}`}>
-                  {phase.charAt(0).toUpperCase() + phase.slice(1).replace('-', ' ')}
-                </span>
-                {isCurrentPhase && (
-                  <Badge variant="secondary" className="text-xs">
-                    {currentStepIndex + 1}/{phaseSteps.length}
-                  </Badge>
-                )}
-              </div>
-              {phaseIdx < phases.length - 1 && (
-                <ArrowRight className="h-3 w-3" />
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Header */}
-      <Card className="glass border-2 border-border">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <Sparkles className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold">{currentStep.phase}</h2>
-                <p className="text-sm text-muted-foreground">
-                  Step {currentStepIndex + 1} of {currentSteps.length}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge
-                style={{ backgroundColor: getPhaseColor(currentStep.phase), color: 'white' }}
-                className="text-sm font-semibold shadow-sm"
-              >
-                {currentStep.title}
-              </Badge>
-              {savedStepData.size > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleClearSession}
-                  className="text-muted-foreground hover:text-destructive"
-                  title="Clear all progress and start fresh"
-                >
-                  <RotateCcw className="h-4 w-4 mr-1" />
-                  Clear
-                </Button>
-              )}
-            </div>
-          </div>
-
-          {/* Progress bar */}
-          <div className="w-full bg-muted/30 rounded-full h-2 overflow-hidden">
-            <div
-              className="h-full transition-all duration-500 rounded-full"
-              style={{
-                width: `${progress}%`,
-                backgroundColor: getPhaseColor(currentStep.phase)
-              }}
-            />
-          </div>
-        </div>
-      </Card>
+      {/* Navigation and Header removed for Sidebar Layout Refactor */}
 
       {/* Step Content */}
       <Card className="glass border-2 border-border">
@@ -792,239 +752,22 @@ export default function StepByStepChat({ problem }: Props) {
             )}
           </div>
 
-          {/* Feedback Display */}
-          {showFeedback && feedback && (
-            <div className="space-y-4 animate-fade-in">
-              {/* Accuracy Score */}
-              <div className="p-4 rounded-lg border-2" style={{
-                borderColor: feedback.isAcceptable ? '#22c55e' : '#ef4444',
-                backgroundColor: feedback.isAcceptable ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)'
-              }}>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    {feedback.isAcceptable ? (
-                      <CheckCircle2 className="h-6 w-6 text-green-500" />
-                    ) : (
-                      <AlertCircle className="h-6 w-6 text-red-500" />
-                    )}
-                    <h4 className="font-semibold text-lg">
-                      {feedback.isAcceptable ? 'Great Work!' : 'Needs Improvement'}
-                    </h4>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold">{feedback.score}/10</div>
-                    <div className="text-xs text-muted-foreground">Score</div>
-                  </div>
-                </div>
-
-                {/* Accuracy bar */}
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Accuracy</span>
-                    <span className="font-semibold">{feedback.accuracy}%</span>
-                  </div>
-                  <div className="w-full bg-muted/30 rounded-full h-3 overflow-hidden">
-                    <div
-                      className="h-full transition-all duration-500 rounded-full"
-                      style={{
-                        width: `${feedback.accuracy}%`,
-                        backgroundColor: feedback.accuracy >= 70 ? '#22c55e' : feedback.accuracy >= 50 ? '#f59e0b' : '#ef4444'
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Strengths */}
-              {feedback.strengths.length > 0 && (
-                <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
-                  <h5 className="font-semibold text-sm mb-2 flex items-center gap-2 text-green-700 dark:text-green-400">
-                    <CheckCircle2 className="h-4 w-4" />
-                    What You Did Well
-                  </h5>
-                  <ul className="space-y-1 text-sm">
-                    {feedback.strengths.map((strength, i) => (
-                      <li key={i} className="flex gap-2">
-                        <span className="text-green-600 dark:text-green-500">•</span>
-                        <span>{strength}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* Weaknesses */}
-              {feedback.weaknesses.length > 0 && (
-                <div className="p-4 bg-orange-500/10 border border-orange-500/30 rounded-lg">
-                  <h5 className="font-semibold text-sm mb-2 flex items-center gap-2 text-orange-700 dark:text-orange-400">
-                    <AlertCircle className="h-4 w-4" />
-                    Areas to Improve
-                  </h5>
-                  <ul className="space-y-1 text-sm">
-                    {feedback.weaknesses.map((weakness, i) => (
-                      <li key={i} className="flex gap-2">
-                        <span className="text-orange-600 dark:text-orange-500">•</span>
-                        <span>{weakness}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* Missed points */}
-              {feedback.missed.length > 0 && (
-                <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-                  <h5 className="font-semibold text-sm mb-2 flex items-center gap-2 text-blue-700 dark:text-blue-400">
-                    <Sparkles className="h-4 w-4" />
-                    Key Points You Missed
-                  </h5>
-                  <ul className="space-y-1 text-sm">
-                    {feedback.missed.map((miss, i) => (
-                      <li key={i} className="flex gap-2">
-                        <span className="text-blue-600 dark:text-blue-500">•</span>
-                        <span>{miss}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* Action buttons */}
-              <div className="flex justify-between items-center pt-4 border-t border-border">
-                <div className="flex gap-2">
-                  {canGoBack && (
-                    <Button
-                      variant="outline"
-                      onClick={handlePrevious}
-                    >
-                      <ArrowLeft className="h-4 w-4 mr-2" />
-                      Previous
-                    </Button>
-                  )}
-                  {!feedback.isAcceptable && (
-                    <Button
-                      variant="outline"
-                      onClick={handleRetry}
-                    >
-                      Try Again
-                    </Button>
-                  )}
-                </div>
-
-                <Button
-                  onClick={handleNext}
-                  className="gradient-bg"
-                  disabled={!feedback.isAcceptable}
-                >
-                  {feedback.isAcceptable ? (
-                    <>
-                      Continue to Next Step
-                      <ArrowRight className="h-4 w-4 ml-2" />
-                    </>
-                  ) : (
-                    <>Must pass to continue</>
-                  )}
-                </Button>
-              </div>
-            </div>
+          {/* Feedback Modal */}
+          {feedback && (
+            <FeedbackModal
+              isOpen={showFeedback}
+              onClose={() => setShowFeedback(false)}
+              onContinue={handleNext}
+              feedback={feedback}
+              xpEarned={feedback.isAcceptable ? 20 : 0}
+            />
           )}
         </div>
       </Card>
 
-      {/* Step History - Show completed/visited steps */}
-      {savedStepData.size > 0 && (
-        <Card className="glass border border-border/50">
-          <div className="p-4">
-            <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
-              <Eye className="h-4 w-4" />
-              Your Progress History
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-              {Array.from(savedStepData.entries()).map(([key, data]) => {
-                const [phase, stepIdx] = key.split('-');
-                const stepIndex = parseInt(stepIdx);
+      {/* Progress History and Mini Indicator removed for clean Sidebar layout */}
 
-                // Safety check for invalid/legacy phases from saved state
-                if (!PHASE_STEPS[phase] || !PHASE_STEPS[phase][stepIndex]) {
-                  return null;
-                }
-
-                const step = PHASE_STEPS[phase][stepIndex];
-                const isCurrent = key === currentStepKey;
-
-                return (
-                  <button
-                    key={key}
-                    onClick={() => {
-                      const [targetPhase, targetIdx] = key.split('-');
-                      setCurrentPhase(targetPhase);
-                      setCurrentStepIndex(parseInt(targetIdx));
-                    }}
-                    className={`p-3 rounded-lg border text-left transition-all hover:shadow-md ${isCurrent
-                      ? 'border-primary bg-primary/10'
-                      : data.completed
-                        ? 'border-green-500/30 bg-green-500/5'
-                        : 'border-border bg-muted/30'
-                      }`}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-medium text-muted-foreground">
-                        {phase.replace('-', ' ').toUpperCase()}
-                      </span>
-                      {data.completed && (
-                        <CheckCircle2 className="h-4 w-4 text-green-500" />
-                      )}
-                      {isCurrent && (
-                        <Badge variant="default" className="text-xs">Current</Badge>
-                      )}
-                    </div>
-                    <div className="text-sm font-medium">{step.title}</div>
-                    {data.feedback && (
-                      <div className="text-xs text-muted-foreground mt-1">
-                        Score: {data.feedback.score}/10 • {data.feedback.accuracy}%
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {/* Mini progress indicator */}
-      <div className="flex justify-center gap-2">
-        {currentSteps.map((_, index) => (
-          <div
-            key={index}
-            className={`h-2 rounded-full transition-all duration-300 ${index === currentStepIndex
-              ? 'w-8'
-              : 'w-2'
-              }`}
-            style={{
-              backgroundColor: index <= currentStepIndex
-                ? getPhaseColor(currentStep.phase)
-                : '#e5e7eb'
-            }}
-          />
-        ))}
-      </div>
-
-      {/* Session Info Footer */}
-      {savedStepData.size > 0 && (
-        <div className="text-center text-xs text-muted-foreground">
-          <p>
-            💾 Session auto-saved • {savedStepData.size} step{savedStepData.size !== 1 ? 's' : ''} completed
-            {(() => {
-              const info = getStorageInfo();
-              return info.available ? ` • ${formatStorageSize(info.used)} used` : '';
-            })()}
-          </p>
-          <p className="mt-1 opacity-60">
-            Your progress is automatically saved and will be restored if you refresh or close the page
-          </p>
-        </div>
-      )}
+      {/* Session Info Footer Removed */}
     </div>
   );
 }

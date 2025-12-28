@@ -27,3 +27,10 @@ export interface ChatMessage {
   timestamp: Date;
   feedback?: { score: number; tips: string[] };
 }
+
+export interface ProblemWithStatus extends SystemDesignProblem {
+  status?: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'REVIEW_NEEDED';
+  lastPracticed?: Date;
+  nextRepetitionDate?: Date;
+  progress?: number;
+}

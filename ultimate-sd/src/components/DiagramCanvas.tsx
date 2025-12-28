@@ -6,7 +6,7 @@ import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { 
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -15,13 +15,13 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { 
-  Download, 
-  Share, 
-  Sparkles, 
-  Eraser, 
-  Square, 
-  Circle, 
+import {
+  Download,
+  Share,
+  Sparkles,
+  Eraser,
+  Square,
+  Circle,
   Database,
   Server,
   Cloud,
@@ -58,7 +58,7 @@ import {
   ChevronsDown
 } from 'lucide-react';
 
-type Tool = 'select' | 'rectangle' | 'circle' | 'database' | 'server' | 'cloud' | 'text' | 'arrow' | 'line' | 
+type Tool = 'select' | 'rectangle' | 'circle' | 'database' | 'server' | 'cloud' | 'text' | 'arrow' | 'line' |
   'loadbalancer' | 'cache' | 'queue' | 'client' | 'api' | 'microservice' | 'cdn' |
   'diamond' | 'parallelogram' | 'hexagon' | 'oval' | 'document' | 'cylinder';
 
@@ -100,7 +100,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
   const [showLoadDialog, setShowLoadDialog] = useState(false);
   const [textInput, setTextInput] = useState('');
   const [designName, setDesignName] = useState('Untitled Design');
-  const [savedDesigns, setSavedDesigns] = useState<Array<{name: string, timestamp: string}>>([]);
+  const [savedDesigns, setSavedDesigns] = useState<Array<{ name: string, timestamp: string }>>([]);
   const [editingElementId, setEditingElementId] = useState<string | null>(null);
   const [pendingTextPos, setPendingTextPos] = useState<{ x: number; y: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -177,8 +177,32 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
           elements,
           timestamp: new Date().toISOString()
         };
+
         localStorage.setItem(`diagram-${stepKey}`, JSON.stringify(diagramData));
       }
+    };
+    (window as any).sd_getDiagramDescription = () => {
+      if (elements.length === 0) return null;
+
+      const componentsWithText = elements
+        .filter((el: any) => el.type !== 'arrow' && el.type !== 'line')
+        .map((el: any) => {
+          const type = el.type.charAt(0).toUpperCase() + el.type.slice(1);
+          return el.text ? `${type}("${el.text}")` : type;
+        });
+
+      const componentCounts = elements.reduce((acc: any, el: any) => {
+        if (el.type !== 'arrow' && el.type !== 'line') {
+          acc[el.type] = (acc[el.type] || 0) + 1;
+        }
+        return acc;
+      }, {});
+
+      const summary = Object.entries(componentCounts)
+        .map(([type, count]) => `${count} ${type}(s)`)
+        .join(', ');
+
+      return `Diagram contains ${elements.length} elements. Summary: ${summary}. Components: ${componentsWithText.join(', ')}`;
     };
     return () => {
       (window as any).sd_getDiagramElements = undefined;
@@ -218,14 +242,14 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
     ctx.strokeStyle = theme === 'dark' ? '#333' : '#e5e5e5';
     ctx.lineWidth = 0.5;
     const gridSize = 20;
-    
+
     for (let x = 0; x <= width; x += gridSize) {
       ctx.beginPath();
       ctx.moveTo(x, 0);
       ctx.lineTo(x, height);
       ctx.stroke();
     }
-    
+
     for (let y = 0; y <= height; y += gridSize) {
       ctx.beginPath();
       ctx.moveTo(0, y);
@@ -238,7 +262,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
     ctx.strokeStyle = element.color;
     ctx.fillStyle = theme === 'dark' ? 'rgba(30, 41, 59, 0.8)' : 'rgba(248, 250, 252, 0.9)';
     ctx.lineWidth = isSelected ? 3 : 2;
-    
+
     if (isSelected) {
       ctx.setLineDash([5, 5]);
     } else {
@@ -250,7 +274,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
         ctx.fillRect(element.x, element.y, element.width, element.height);
         ctx.strokeRect(element.x, element.y, element.width, element.height);
         break;
-      
+
       case 'circle':
         ctx.beginPath();
         const radiusX = element.width / 2;
@@ -259,18 +283,18 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
         ctx.fill();
         ctx.stroke();
         break;
-      
+
       case 'database':
         // Cylinder shape
         const dbHeight = element.height;
         const dbWidth = element.width;
         const ellipseHeight = dbHeight * 0.15;
-        
+
         ctx.beginPath();
-        ctx.ellipse(element.x + dbWidth/2, element.y + ellipseHeight, dbWidth/2, ellipseHeight, 0, 0, Math.PI * 2);
+        ctx.ellipse(element.x + dbWidth / 2, element.y + ellipseHeight, dbWidth / 2, ellipseHeight, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.stroke();
-        
+
         ctx.fillRect(element.x, element.y + ellipseHeight, dbWidth, dbHeight - ellipseHeight * 2);
         ctx.beginPath();
         ctx.moveTo(element.x, element.y + ellipseHeight);
@@ -280,13 +304,13 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
         ctx.moveTo(element.x + dbWidth, element.y + ellipseHeight);
         ctx.lineTo(element.x + dbWidth, element.y + dbHeight - ellipseHeight);
         ctx.stroke();
-        
+
         ctx.beginPath();
-        ctx.ellipse(element.x + dbWidth/2, element.y + dbHeight - ellipseHeight, dbWidth/2, ellipseHeight, 0, 0, Math.PI * 2);
+        ctx.ellipse(element.x + dbWidth / 2, element.y + dbHeight - ellipseHeight, dbWidth / 2, ellipseHeight, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.stroke();
         break;
-      
+
       case 'server':
         // Server rack shape
         ctx.fillRect(element.x, element.y, element.width, element.height);
@@ -300,7 +324,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
           ctx.stroke();
         }
         break;
-      
+
       case 'cloud':
         // Cloud shape (simplified)
         ctx.beginPath();
@@ -313,21 +337,21 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
         ctx.fill();
         ctx.stroke();
         break;
-      
+
       case 'loadbalancer':
         // Load Balancer - Gauge icon style (semi-circle with needle)
         ctx.fillRect(element.x, element.y, element.width, element.height);
         ctx.strokeRect(element.x, element.y, element.width, element.height);
-        
+
         const lbCx = element.x + element.width / 2;
         const lbCy = element.y + element.height / 2;
         const lbRadius = Math.min(element.width, element.height) * 0.35;
-        
+
         // Draw semi-circle gauge
         ctx.beginPath();
         ctx.arc(lbCx, lbCy + lbRadius * 0.3, lbRadius, Math.PI, 0, false);
         ctx.stroke();
-        
+
         // Draw tick marks
         for (let i = 0; i <= 4; i++) {
           const angle = Math.PI + (i / 4) * Math.PI;
@@ -338,7 +362,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
           ctx.lineTo(lbCx + Math.cos(angle) * endR, lbCy + lbRadius * 0.3 + Math.sin(angle) * endR);
           ctx.stroke();
         }
-        
+
         // Draw needle pointing up-right
         const needleAngle = Math.PI * 1.25;
         ctx.beginPath();
@@ -348,17 +372,17 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
         ctx.stroke();
         ctx.lineWidth = isSelected ? 3 : 2;
         break;
-      
+
       case 'cache':
         // Cache - Lightning bolt (Zap icon)
         ctx.fillRect(element.x, element.y, element.width, element.height);
         ctx.strokeRect(element.x, element.y, element.width, element.height);
-        
+
         const cacheCx = element.x + element.width / 2;
         const cacheCy = element.y + element.height / 2;
         const zW = element.width * 0.25;
         const zH = element.height * 0.35;
-        
+
         // Lightning bolt shape matching Zap icon
         ctx.beginPath();
         ctx.moveTo(cacheCx + zW * 0.3, cacheCy - zH);
@@ -372,41 +396,41 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
         ctx.stroke();
         ctx.lineWidth = isSelected ? 3 : 2;
         break;
-      
+
       case 'queue':
         // Message Queue - Binary icon style (1s and 0s pattern)
         ctx.fillRect(element.x, element.y, element.width, element.height);
         ctx.strokeRect(element.x, element.y, element.width, element.height);
-        
+
         const qCx = element.x + element.width / 2;
         const qCy = element.y + element.height / 2;
-        
+
         // Draw binary pattern
         ctx.font = 'bold 14px monospace';
         ctx.fillStyle = element.color;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        
+
         const binaryText = ['1 0', '0 1', '1 1'];
         binaryText.forEach((text, i) => {
           const yOffset = (i - 1) * 12;
           ctx.fillText(text, qCx, qCy + yOffset);
         });
-        
+
         ctx.textAlign = 'left';
         ctx.textBaseline = 'alphabetic';
         break;
-      
+
       case 'client':
         // Client - Users icon (two overlapping circles with bodies)
         ctx.fillRect(element.x, element.y, element.width, element.height);
         ctx.strokeRect(element.x, element.y, element.width, element.height);
-        
+
         const clientCx = element.x + element.width / 2;
         const clientCy = element.y + element.height / 2;
         const headR = element.height * 0.12;
         const offset = element.width * 0.12;
-        
+
         // Left person
         ctx.beginPath();
         ctx.arc(clientCx - offset, clientCy - headR * 1.5, headR, 0, Math.PI * 2);
@@ -415,7 +439,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
         ctx.beginPath();
         ctx.arc(clientCx - offset, clientCy + headR * 2, headR * 1.8, Math.PI * 1.2, Math.PI * 1.8);
         ctx.stroke();
-        
+
         // Right person (overlapping)
         ctx.beginPath();
         ctx.arc(clientCx + offset, clientCy - headR * 1.5, headR, 0, Math.PI * 2);
@@ -425,17 +449,17 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
         ctx.arc(clientCx + offset, clientCy + headR * 2, headR * 1.8, Math.PI * 1.2, Math.PI * 1.8);
         ctx.stroke();
         break;
-      
+
       case 'api':
         // API Gateway - Cable icon (plug with connector)
         ctx.fillRect(element.x, element.y, element.width, element.height);
         ctx.strokeRect(element.x, element.y, element.width, element.height);
-        
+
         const apiCx = element.x + element.width / 2;
         const apiCy = element.y + element.height / 2;
         const cableW = element.width * 0.15;
         const cableH = element.height * 0.3;
-        
+
         // Cable connector top
         ctx.beginPath();
         ctx.moveTo(apiCx - cableW, apiCy - cableH);
@@ -443,7 +467,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
         ctx.lineTo(apiCx + cableW, apiCy - cableH * 0.5);
         ctx.lineTo(apiCx + cableW, apiCy - cableH);
         ctx.stroke();
-        
+
         // Pins
         const pinSpacing = cableW * 0.6;
         [-pinSpacing, 0, pinSpacing].forEach(xOff => {
@@ -452,7 +476,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
           ctx.lineTo(apiCx + xOff, apiCy);
           ctx.stroke();
         });
-        
+
         // Cable line
         ctx.beginPath();
         ctx.moveTo(apiCx, apiCy);
@@ -461,21 +485,21 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
         ctx.stroke();
         ctx.lineWidth = isSelected ? 3 : 2;
         break;
-      
+
       case 'microservice':
         // Microservice - Box icon (cube in 3D)
         ctx.fillRect(element.x, element.y, element.width, element.height);
         ctx.strokeRect(element.x, element.y, element.width, element.height);
-        
+
         const msInset = Math.min(element.width, element.height) * 0.15;
         const msX = element.x + msInset;
         const msY = element.y + msInset;
         const msW = element.width - msInset * 2;
         const msH = element.height - msInset * 2;
-        
+
         // Front face
         ctx.strokeRect(msX, msY, msW, msH);
-        
+
         // 3D effect - connect corners
         ctx.beginPath();
         ctx.moveTo(element.x + msInset * 0.5, element.y + msInset * 0.5);
@@ -485,7 +509,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
         ctx.moveTo(element.x + msInset * 0.5, element.y + element.height - msInset * 0.5);
         ctx.lineTo(msX, msY + msH);
         ctx.stroke();
-        
+
         // Back edges
         ctx.beginPath();
         ctx.moveTo(element.x + msInset * 0.5, element.y + msInset * 0.5);
@@ -495,22 +519,22 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
         ctx.closePath();
         ctx.stroke();
         break;
-      
+
       case 'cdn':
         // CDN - HardDrive icon (disk with lines)
         ctx.fillRect(element.x, element.y, element.width, element.height);
         ctx.strokeRect(element.x, element.y, element.width, element.height);
-        
+
         const cdnCx = element.x + element.width / 2;
         const cdnW = element.width * 0.6;
         const cdnH = element.height * 0.15;
         const cdnTop = element.y + element.height * 0.25;
-        
+
         // Top ellipse
         ctx.beginPath();
         ctx.ellipse(cdnCx, cdnTop, cdnW / 2, cdnH, 0, 0, Math.PI * 2);
         ctx.stroke();
-        
+
         // Vertical lines (sides)
         ctx.beginPath();
         ctx.moveTo(cdnCx - cdnW / 2, cdnTop);
@@ -518,19 +542,19 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
         ctx.moveTo(cdnCx + cdnW / 2, cdnTop);
         ctx.lineTo(cdnCx + cdnW / 2, cdnTop + element.height * 0.35);
         ctx.stroke();
-        
+
         // Bottom ellipse
         ctx.beginPath();
         ctx.ellipse(cdnCx, cdnTop + element.height * 0.35, cdnW / 2, cdnH, 0, 0, Math.PI * 2);
         ctx.stroke();
-        
+
         // Indicator light
         ctx.beginPath();
         ctx.arc(cdnCx - cdnW * 0.3, cdnTop + element.height * 0.175, 3, 0, Math.PI * 2);
         ctx.fillStyle = element.color;
         ctx.fill();
         break;
-      
+
       case 'diamond':
         // Decision diamond (flowchart)
         ctx.beginPath();
@@ -542,7 +566,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
         ctx.fill();
         ctx.stroke();
         break;
-      
+
       case 'parallelogram':
         // Parallelogram (data/input-output in flowchart)
         const paraOffset = element.width * 0.15;
@@ -555,7 +579,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
         ctx.fill();
         ctx.stroke();
         break;
-      
+
       case 'hexagon':
         // Hexagon (preparation/subroutine in flowchart)
         const hexOffset = element.width * 0.2;
@@ -570,7 +594,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
         ctx.fill();
         ctx.stroke();
         break;
-      
+
       case 'oval':
         // Oval (start/end in flowchart)
         ctx.beginPath();
@@ -586,14 +610,14 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
         ctx.fill();
         ctx.stroke();
         break;
-      
+
       case 'document':
         // Document shape (wavy bottom)
         ctx.beginPath();
         ctx.moveTo(element.x, element.y);
         ctx.lineTo(element.x + element.width, element.y);
         ctx.lineTo(element.x + element.width, element.y + element.height * 0.85);
-        
+
         // Wavy bottom
         const waveHeight = element.height * 0.15;
         const waveWidth = element.width / 4;
@@ -603,24 +627,24 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
           const controlY = i % 2 === 0 ? element.y + element.height : element.y + element.height - waveHeight;
           ctx.quadraticCurveTo(startX - waveWidth / 2, controlY, endX, element.y + element.height * 0.85);
         }
-        
+
         ctx.lineTo(element.x, element.y);
         ctx.closePath();
         ctx.fill();
         ctx.stroke();
         break;
-      
+
       case 'cylinder':
         // Cylinder (database in flowchart style)
         const cylHeight = element.height;
         const cylWidth = element.width;
         const cylEllipseHeight = cylHeight * 0.15;
-        
+
         ctx.beginPath();
-        ctx.ellipse(element.x + cylWidth/2, element.y + cylEllipseHeight, cylWidth/2, cylEllipseHeight, 0, 0, Math.PI * 2);
+        ctx.ellipse(element.x + cylWidth / 2, element.y + cylEllipseHeight, cylWidth / 2, cylEllipseHeight, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.stroke();
-        
+
         ctx.fillRect(element.x, element.y + cylEllipseHeight, cylWidth, cylHeight - cylEllipseHeight * 2);
         ctx.beginPath();
         ctx.moveTo(element.x, element.y + cylEllipseHeight);
@@ -630,13 +654,13 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
         ctx.moveTo(element.x + cylWidth, element.y + cylEllipseHeight);
         ctx.lineTo(element.x + cylWidth, element.y + cylHeight - cylEllipseHeight);
         ctx.stroke();
-        
+
         ctx.beginPath();
-        ctx.ellipse(element.x + cylWidth/2, element.y + cylHeight - cylEllipseHeight, cylWidth/2, cylEllipseHeight, 0, 0, Math.PI * 2);
+        ctx.ellipse(element.x + cylWidth / 2, element.y + cylHeight - cylEllipseHeight, cylWidth / 2, cylEllipseHeight, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.stroke();
         break;
-      
+
       case 'arrow':
       case 'line':
         if (element.endX !== undefined && element.endY !== undefined) {
@@ -645,7 +669,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
           ctx.moveTo(element.x, element.y);
           ctx.lineTo(element.endX, element.endY);
           ctx.stroke();
-          
+
           if (element.type === 'arrow') {
             // Draw arrowhead
             const angle = Math.atan2(element.endY - element.y, element.endX - element.x);
@@ -665,7 +689,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
           }
         }
         break;
-      
+
       case 'text':
         ctx.font = '14px Inter, system-ui, sans-serif';
         ctx.fillStyle = theme === 'dark' ? '#e2e8f0' : '#1e293b';
@@ -689,7 +713,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
       ctx.textAlign = 'center';
       ctx.fillText(element.text, element.x + element.width / 2, element.y + element.height / 2 + 4);
     }
-    
+
     ctx.setLineDash([]);
 
     // Draw resize handles for selected element
@@ -723,12 +747,12 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
     // Clear with white background
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
+
     // Draw grid only if enabled
     if (showGrid) {
       drawGrid(ctx, canvas.width, canvas.height);
     }
-    
+
     elements.forEach(el => {
       drawElement(ctx, el, selectedElements.has(el.id));
     });
@@ -807,7 +831,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
     const dot = A * C + B * D;
     const lenSq = C * C + D * D;
     const param = lenSq !== 0 ? dot / lenSq : -1;
-    
+
     let xx, yy;
     if (param < 0) {
       xx = x1;
@@ -819,7 +843,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
       xx = x1 + param * C;
       yy = y1 + param * D;
     }
-    
+
     const dx = px - xx;
     const dy = py - yy;
     return Math.sqrt(dx * dx + dy * dy);
@@ -827,12 +851,12 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const pos = getMousePos(e);
-    
+
     if (currentTool === 'select') {
       const element = findElementAt(pos.x, pos.y);
       if (element) {
         const isMultiSelect = e.shiftKey || e.metaKey || e.ctrlKey;
-        
+
         // Check if clicking on a resize handle (only for single selection)
         if (!isMultiSelect && selectedElements.size === 1) {
           const handle = getResizeHandle(pos.x, pos.y, element);
@@ -843,7 +867,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
             return;
           }
         }
-        
+
         // Multi-select logic
         if (isMultiSelect) {
           const newSelected = new Set(selectedElements);
@@ -876,7 +900,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
   const handleDoubleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const pos = getMousePos(e);
     const element = findElementAt(pos.x, pos.y);
-    
+
     if (element) {
       setEditingElementId(element.id);
       setTextInput(element.text || '');
@@ -897,18 +921,20 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
             const lines = textInput.split('\n');
             const maxLineLength = Math.max(...lines.map(line => line.length));
             const lineHeight = 18;
-            
-            return { 
-              ...el, 
+
+            return {
+              ...el,
               text: textInput,
               width: maxLineLength * 8 || 20,
               height: lines.length * lineHeight
             };
+
           }
-          return { 
-            ...el, 
+          return {
+            ...el,
             text: textInput
           };
+
         }
         return el;
       });
@@ -1000,17 +1026,18 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
       if (firstSelectedElement) {
         const dx = pos.x - dragOffset.x - firstSelectedElement.x;
         const dy = pos.y - dragOffset.y - firstSelectedElement.y;
-        
+
         const newElements = elements.map(el => {
           if (selectedElements.has(el.id)) {
             if (el.type === 'arrow' || el.type === 'line') {
-              return { 
-                ...el, 
-                x: el.x + dx, 
+              return {
+                ...el,
+                x: el.x + dx,
                 y: el.y + dy,
                 endX: (el.endX || el.x) + dx,
                 endY: (el.endY || el.y) + dy
               };
+
             }
             return { ...el, x: el.x + dx, y: el.y + dy };
           }
@@ -1031,7 +1058,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
       ctx.moveTo(startPos.x, startPos.y);
       ctx.lineTo(pos.x, pos.y);
       ctx.stroke();
-      
+
       if (currentTool === 'arrow') {
         const angle = Math.atan2(pos.y - startPos.y, pos.x - startPos.x);
         const headLength = 15;
@@ -1047,7 +1074,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
 
   const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!isDrawing && !isResizing) return;
-    
+
     if (isResizing) {
       // Save history after resizing
       saveHistory(elements);
@@ -1065,6 +1092,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
         height: Math.abs(pos.y - startPos.y) || 60,
         color: getColor(),
       };
+
 
       if (currentTool === 'arrow' || currentTool === 'line') {
         newElement.x = startPos.x;
@@ -1105,7 +1133,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
       const lines = textInput.split('\n');
       const maxLineLength = Math.max(...lines.map(line => line.length));
       const lineHeight = 18;
-      
+
       const newElement: DiagramElement = {
         id: Date.now().toString(),
         type: 'text',
@@ -1117,11 +1145,12 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
         text: textInput,
       };
 
+
       const newElements = [...elements, newElement];
       setElements(newElements);
       saveHistory(newElements);
     }
-    
+
     setShowTextDialog(false);
     setTextInput('');
     setPendingTextPos(null);
@@ -1139,14 +1168,14 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
 
   const bringForward = () => {
     if (selectedElements.size !== 1) return;
-    
+
     const selectedId = Array.from(selectedElements)[0];
     const currentIndex = elements.findIndex(el => el.id === selectedId);
-    
+
     if (currentIndex < elements.length - 1) {
       const newElements = [...elements];
       // Swap with next element (move forward)
-      [newElements[currentIndex], newElements[currentIndex + 1]] = 
+      [newElements[currentIndex], newElements[currentIndex + 1]] =
         [newElements[currentIndex + 1], newElements[currentIndex]];
       setElements(newElements);
       saveHistory(newElements);
@@ -1155,14 +1184,14 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
 
   const sendBackward = () => {
     if (selectedElements.size !== 1) return;
-    
+
     const selectedId = Array.from(selectedElements)[0];
     const currentIndex = elements.findIndex(el => el.id === selectedId);
-    
+
     if (currentIndex > 0) {
       const newElements = [...elements];
       // Swap with previous element (move backward)
-      [newElements[currentIndex], newElements[currentIndex - 1]] = 
+      [newElements[currentIndex], newElements[currentIndex - 1]] =
         [newElements[currentIndex - 1], newElements[currentIndex]];
       setElements(newElements);
       saveHistory(newElements);
@@ -1171,10 +1200,10 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
 
   const bringToFront = () => {
     if (selectedElements.size !== 1) return;
-    
+
     const selectedId = Array.from(selectedElements)[0];
     const selectedElement = elements.find(el => el.id === selectedId);
-    
+
     if (selectedElement) {
       const newElements = elements.filter(el => el.id !== selectedId);
       newElements.push(selectedElement); // Add to end (top)
@@ -1185,10 +1214,10 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
 
   const sendToBack = () => {
     if (selectedElements.size !== 1) return;
-    
+
     const selectedId = Array.from(selectedElements)[0];
     const selectedElement = elements.find(el => el.id === selectedId);
-    
+
     if (selectedElement) {
       const newElements = elements.filter(el => el.id !== selectedId);
       newElements.unshift(selectedElement); // Add to beginning (bottom)
@@ -1206,7 +1235,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
     saveHistory([]);
     setSelectedElements(new Set());
     setShowClearDialog(false);
-    
+
     // Immediately clear localStorage for this step
     if (stepKey) {
       localStorage.removeItem(`diagram-${stepKey}`);
@@ -1228,7 +1257,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
   const toggleFullscreen = async () => {
     if (!isFullscreen) {
       setIsFullscreen(true);
-      
+
       // Wait for React to render the fullscreen div
       await new Promise(resolve => setTimeout(resolve, 50));
 
@@ -1439,13 +1468,13 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
     // Update saved designs list
     const savedDesignsList = JSON.parse(localStorage.getItem('saved-designs-list') || '[]');
     const existingIndex = savedDesignsList.findIndex((d: any) => d.name === designName);
-    
+
     if (existingIndex >= 0) {
       savedDesignsList[existingIndex].timestamp = diagramData.timestamp;
     } else {
       savedDesignsList.push({ name: designName, timestamp: diagramData.timestamp });
     }
-    
+
     localStorage.setItem('saved-designs-list', JSON.stringify(savedDesignsList));
     loadSavedDesignsList();
 
@@ -1466,7 +1495,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
   const loadDesignFromLocalStorage = (name: string) => {
     const storageKey = `saved-design-${name.replace(/[^a-z0-9]/gi, '-').toLowerCase()}`;
     const savedData = localStorage.getItem(storageKey);
-    
+
     if (!savedData) {
       const toast = document.createElement('div');
       toast.className = 'fixed bottom-4 right-4 z-50 bg-red-500 text-white px-4 py-3 rounded-lg shadow-lg animate-fade-in';
@@ -1487,7 +1516,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
       saveHistory(diagramData.elements);
       setSelectedElements(new Set());
       setDesignName(diagramData.name || name);
-      
+
       if (diagramData.settings && typeof diagramData.settings.showGrid === 'boolean') {
         setShowGrid(diagramData.settings.showGrid);
       }
@@ -1518,7 +1547,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
   const deleteDesignFromLocalStorage = (name: string) => {
     const storageKey = `saved-design-${name.replace(/[^a-z0-9]/gi, '-').toLowerCase()}`;
     localStorage.removeItem(storageKey);
-    
+
     const savedDesignsList = JSON.parse(localStorage.getItem('saved-designs-list') || '[]');
     const filtered = savedDesignsList.filter((d: any) => d.name !== name);
     localStorage.setItem('saved-designs-list', JSON.stringify(filtered));
@@ -1539,7 +1568,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
         (document as any).mozFullScreenElement ||
         (document as any).msFullscreenElement
       );
-      
+
       if (!isCurrentlyFullscreen && isFullscreen) {
         setIsFullscreen(false);
       }
@@ -1641,7 +1670,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
   );
 
   return (
-    <div 
+    <div
       ref={fullscreenRef}
       className={`${isFullscreen ? 'fixed inset-0 z-50 bg-background' : 'relative w-full h-full'} flex flex-col`}
     >
@@ -2215,7 +2244,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
         </div>
 
         <div className="ml-auto text-xs text-muted-foreground">
-          {selectedElements.size > 0 
+          {selectedElements.size > 0
             ? `${selectedElements.size} selected • ${selectedElements.size === 1 ? 'Drag to move • Drag corners to resize • Double-click to edit' : 'Drag to move all • Shift/Cmd+Click to multi-select'}`
             : `${currentTool === 'select' ? 'Select mode • Shift/Cmd+Click for multi-select' : `Draw ${currentTool}`} • Click and drag`}
         </div>
@@ -2261,6 +2290,7 @@ export default function DiagramCanvas({ stepKey }: { stepKey: string }) {
               elements,
               timestamp: new Date().toISOString()
             };
+
             localStorage.setItem(`diagram-${stepKey}`, JSON.stringify(diagramData));
           } else {
             // Clear localStorage if diagram is empty (user cleared it)
@@ -2306,7 +2336,7 @@ export default function DiagramCanvas({ stepKey }: { stepKey: string }) {
     // Get bounding box of all elements
     const getBoundingBox = (window as any).sd_getBoundingBox;
     const elements = (window as any).sd_getDiagramElements?.();
-    
+
     if (!getBoundingBox || !elements || elements.length === 0) {
       // Show empty diagram notification
       const toast = document.createElement('div');
@@ -2427,11 +2457,29 @@ export default function DiagramCanvas({ stepKey }: { stepKey: string }) {
     try {
       // Convert canvas to base64 image
       const imageData = canvas.toDataURL('image/png');
-      
-      // Create a description of the diagram
-      const componentTypes = elements.map((el: any) => el.type).filter((t: string) => t !== 'arrow' && t !== 'line');
-      const uniqueComponents = [...new Set(componentTypes)];
-      const description = `Diagram contains ${elements.length} elements including: ${uniqueComponents.join(', ')}`;
+
+      // Create a description of the diagram including text labels
+      const componentsWithText = elements
+        .filter((el: any) => el.type !== 'arrow' && el.type !== 'line')
+        .map((el: any) => {
+          const type = el.type.charAt(0).toUpperCase() + el.type.slice(1);
+          return el.text ? `${type}("${el.text}")` : type;
+        });
+
+      const componentCounts = elements.reduce((acc: any, el: any) => {
+        if (el.type !== 'arrow' && el.type !== 'line') {
+          acc[el.type] = (acc[el.type] || 0) + 1;
+        }
+        return acc;
+      }, {});
+
+      const summary = Object.entries(componentCounts)
+        .map(([type, count]) => `${count} ${type}(s)`)
+        .join(', ');
+
+      const description = `Diagram contains ${elements.length} elements. Summary: ${summary}. Components: ${componentsWithText.join(', ')}`;
+
+      const uniqueComponents = [...new Set(elements.map((el: any) => el.type).filter((t: string) => t !== 'arrow' && t !== 'line'))];
 
       // Save diagram data to localStorage for this step
       if (stepKey) {
@@ -2441,6 +2489,7 @@ export default function DiagramCanvas({ stepKey }: { stepKey: string }) {
           description,
           timestamp: new Date().toISOString()
         };
+
         localStorage.setItem(`diagram-${stepKey}`, JSON.stringify(diagramData));
       }
 
@@ -2542,16 +2591,16 @@ export default function DiagramCanvas({ stepKey }: { stepKey: string }) {
           {/* Design Name Management - inline with buttons */}
           <div id="design-name-portal" className="flex items-center gap-2 shrink-0" />
           <div className="flex items-center gap-2 shrink-0">
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               onClick={exportPNG}
               className="h-7 px-2 text-xs"
             >
               <ImageIcon className="h-3 w-3 mr-1" /> Export PNG
             </Button>
-            <Button 
-              size="sm" 
+            <Button
+              size="sm"
               onClick={handleShareWithAI}
               className="h-7 px-2 text-xs gradient-bg"
             >

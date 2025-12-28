@@ -134,7 +134,7 @@ export default function LoginPage() {
                             <Button
                                 type="submit"
                                 className="w-full"
-                                variant="premium"
+                                variant="default"
                                 disabled={isLoading}
                             >
                                 {isLoading ? (

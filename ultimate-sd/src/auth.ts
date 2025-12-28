@@ -7,7 +7,7 @@ import bcrypt from "bcryptjs"
 import { prisma } from "@/lib/prisma"
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-    adapter: PrismaAdapter(prisma),
+    adapter: PrismaAdapter(prisma) as any,
     providers: [
         Google,
         Credentials({
@@ -45,12 +45,47 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                     email: user.email,
                     name: user.name,
                     image: user.image,
+                    xp: user.xp ?? 0,
+                    level: user.level ?? 1,
+                    streak: user.streak ?? 0,
                 };
             }
         })
     ],
     session: {
         strategy: "jwt",
+    },
+    callbacks: {
+        async jwt({ token, user }) {
+            if (user) {
+                token.id = user.id;
+            }
+
+            // Always fetch fresh user data to ensure xp/etc are up to date
+            if (token.id) {
+                const freshUser = await prisma.user.findUnique({
+                    where: { id: token.id as string },
+                    select: { xp: true, level: true, streak: true }
+                });
+
+                if (freshUser) {
+                    token.xp = freshUser.xp ?? 0;
+                    token.level = freshUser.level ?? 1;
+                    token.streak = freshUser.streak ?? 0;
+                }
+            }
+
+            return token;
+        },
+        async session({ session, token }) {
+            if (token && session.user) {
+                session.user.id = token.id as string;
+                session.user.xp = token.xp as number;
+                session.user.level = token.level as number;
+                session.user.streak = token.streak as number;
+            }
+            return session;
+        }
     },
     pages: {
         signIn: '/login',

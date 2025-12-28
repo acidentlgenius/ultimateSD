@@ -65,6 +65,28 @@ export function Hero() {
                     </Button>
                 </motion.div>
 
+                {/* Trust Signals */}
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.6, delay: 0.8 }}
+                    className="mt-12 flex flex-col items-center gap-4"
+                >
+                    <p className="text-sm text-muted-foreground font-medium">Trusted by engineers from</p>
+                    <div className="flex items-center justify-center gap-8 grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all duration-300">
+                        {/* Simple text-based logos for now, can replace with SVGs later */}
+                        <span className="font-bold text-lg text-slate-400">Google</span>
+                        <span className="font-bold text-lg text-slate-400">Meta</span>
+                        <span className="font-bold text-lg text-slate-400">Amazon</span>
+                        <span className="font-bold text-lg text-slate-400">Netflix</span>
+                        <span className="font-bold text-lg text-slate-400">Uber</span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-4 text-xs text-muted-foreground/80 bg-secondary/30 px-3 py-1 rounded-full border border-secondary/50">
+                        <span className="flex h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
+                        128 engineers practicing right now
+                    </div>
+                </motion.div>
+
                 {/* Abstract 3D-like Visual Representation */}
                 <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}

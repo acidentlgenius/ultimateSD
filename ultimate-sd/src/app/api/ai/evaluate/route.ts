@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import { HumanMessage } from '@langchain/core/messages';
+import { getSolution } from '@/lib/solutions';
 
 const llm = process.env.GOOGLE_API_KEY ? new ChatGoogleGenerativeAI({
   model: 'gemini-2.0-flash-exp',
@@ -258,6 +259,24 @@ export async function POST(req: NextRequest) {
 
     const problemTitle = problemDetails?.title || problem;
     const problemDesc = problemDetails?.description || '';
+    const problemSlug = problemDetails?.slug || '';
+    const expertSolution = getSolution(problemSlug);
+
+    // Dynamic Context Builder
+    let expertContext = '';
+    if (expertSolution) {
+      if (phase.toLowerCase().includes('requirement') && expertSolution.requirements) {
+        const type = subStep.toLowerCase().includes('non') ? 'nonFunctional' : 'functional';
+        const reqs = expertSolution.requirements[type] || expertSolution.requirements.functional;
+        expertContext = `\n**Expert Solution Context (Reference):**\n- ${reqs.join('\n- ')}`;
+      } else if (phase.toLowerCase().includes('architecture') || phase.toLowerCase().includes('hld')) {
+        const comps = expertSolution.components.map(c => `${c.name}: ${c.description}`).join('\n');
+        expertContext = `\n**Expert Solution Components (Reference):**\n${comps}`;
+        if (expertSolution.architectureMermaid) {
+          expertContext += `\n(The expert solution uses a diagram with nodes like: ${expertSolution.components.map(c => c.name).join(', ')})`;
+        }
+      }
+    }
 
     const evaluationPrompt = `You are an expert FAANG system design interviewer (ex-Meta, Google, Amazon). 
 You are evaluating a candidate's answer for the problem: "${problemTitle}" - ${problemDesc}
@@ -269,7 +288,7 @@ You are evaluating a candidate's answer for the problem: "${problemTitle}" - ${p
 ${guide?.criteria ? JSON.stringify(guide.criteria, null, 2) : 'General system design principles'}
 
 **Expected Elements (Examples):**
-${guide?.examples?.[problemTitle] ? guide.examples[problemTitle].join('\n') : 'Use your expertise for this problem'}
+${expertContext ? expertContext : (guide?.examples?.[problemTitle] ? guide.examples[problemTitle].join('\n') : 'Use your expertise for this problem')}
 
 **Candidate's Answer:**
 ${userAnswer}
@@ -331,10 +350,10 @@ Be constructive, encouraging, but honest. This is practice for a real interview.
 
     const response = await llm.invoke([new HumanMessage(evaluationPrompt)]);
     let content = response.content as string;
-    
+
     // Remove markdown code blocks if present
     content = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-    
+
     const feedback = JSON.parse(content);
 
     return NextResponse.json({ feedback });

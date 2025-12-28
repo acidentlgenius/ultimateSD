@@ -18,7 +18,29 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Ultimate SD - AI System Design Practice",
-  description: "AI-powered system design interview practice platform",
+  description: "Master system design interviews with AI-powered interactive practice, real-world simulations, and expert feedback.",
+  openGraph: {
+    title: "Ultimate SD - AI System Design Practice",
+    description: "Master system design interviews with AI-powered interactive practice.",
+    url: "https://ultimatesd.ai",
+    siteName: "Ultimate SD",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Ultimate SD - System Design Practice",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Ultimate SD - AI System Design Practice",
+    description: "AI-powered system design interview practice platform",
+    images: ["/og-image.png"],
+  },
 };
 
 export default function RootLayout({

@@ -93,7 +93,7 @@ export default function SignupPage() {
                     <div className="text-center space-y-2">
                         <h2 className="text-3xl font-bold tracking-tight">Create an account</h2>
                         <p className="text-muted-foreground">
-                            Get started with your free account today
+                            Get started with your account today
                         </p>
                     </div>
 
@@ -152,7 +152,7 @@ export default function SignupPage() {
                             <Button
                                 type="submit"
                                 className="w-full"
-                                variant="premium"
+                                variant="default"
                                 disabled={isLoading}
                             >
                                 {isLoading ? (

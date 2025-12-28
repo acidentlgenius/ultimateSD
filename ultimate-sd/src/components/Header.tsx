@@ -40,6 +40,16 @@ export async function Header() {
             <Home className="h-4 w-4" />
             <span>Home</span>
           </Link>
+          <Link
+            href="/pricing"
+            className={cn(
+              "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300",
+              "hover:bg-primary/10 hover:text-primary",
+              "text-muted-foreground"
+            )}
+          >
+            <span>Pricing</span>
+          </Link>
           {/* Placeholder for future links like "Practice", "Resources" etc. */}
         </nav>
 
@@ -49,12 +59,14 @@ export async function Header() {
             <span className="hidden lg:inline">AI Powered Practice</span>
             <span className="lg:hidden">AI Beta</span>
           </div>
+
+
           <div className="h-6 w-px bg-border/50 mx-1" />
           <ThemeToggle />
           <UserMenu user={session?.user} />
           <MobileMenu user={session?.user} />
         </div>
       </div>
-    </header>
+    </header >
   );
 }

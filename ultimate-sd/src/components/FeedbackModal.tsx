@@ -1,77 +1,122 @@
- 'use client';
+'use client';
 
-import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { useState, useEffect, useRef } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle, AlertCircle, Lightbulb, TrendingUp, Award } from 'lucide-react';
+import { CheckCircle, AlertCircle, Lightbulb, TrendingUp, Award, Trophy, Sparkles, Zap, Target } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { updateStreak } from '@/app/actions/gamification';
 
 interface FeedbackData {
-  structure: number;
-  clarity: number;
-  tradeoffs: number;
-  scalability: number;
-  overall: number;
+  score: number;
+  accuracy: number;
   strengths: string[];
   weaknesses: string[];
-  tips: string[];
+  tips?: string[];
+  missed?: string[];
+  isAcceptable: boolean;
 }
 
-const mockFeedback: FeedbackData = {
-  structure: 8,
-  clarity: 7,
-  tradeoffs: 6,
-  scalability: 8,
-  overall: 7,
-  strengths: ['Good understanding of core concepts', 'Clear explanation of components'],
-  weaknesses: ['Missed some edge cases', 'Could improve on trade-off analysis'],
-  tips: ['Consider fault tolerance in distributed systems', 'Practice explaining CAP theorem applications']
-};
+interface FeedbackModalProps {
+  feedback: FeedbackData;
+  isOpen: boolean;
+  onClose: () => void;
+  onContinue?: () => void;
+  xpEarned?: number;
+}
 
-export default function FeedbackModal() {
-  const feedback = mockFeedback;
-  const [animatedScores, setAnimatedScores] = useState({
-    structure: 0,
-    clarity: 0,
-    tradeoffs: 0,
-    scalability: 0,
-    overall: 0
-  });
-  const [isOpen, setIsOpen] = useState(false);
+// Confetti component for celebrations
+function Confetti({ show }: { show: boolean }) {
+  if (!show) return null;
+  
+  return (
+    <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
+      {Array.from({ length: 50 }).map((_, i) => (
+        <div
+          key={i}
+          className="absolute animate-confetti"
+          style={{
+            left: `${Math.random() * 100}%`,
+            animationDelay: `${Math.random() * 2}s`,
+            animationDuration: `${2 + Math.random() * 2}s`,
+            backgroundColor: ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#a855f7'][Math.floor(Math.random() * 5)],
+            width: '8px',
+            height: '8px',
+            borderRadius: '50%',
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+export default function FeedbackModal({ feedback, isOpen, onClose, onContinue, xpEarned = 0 }: FeedbackModalProps) {
+  const [animatedScore, setAnimatedScore] = useState(0);
+  const [animatedAccuracy, setAnimatedAccuracy] = useState(0);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const accuracyBarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isOpen) {
-      // Animate scores when modal opens
-      const timer = setTimeout(() => {
-        setAnimatedScores({
-          structure: feedback.structure,
-          clarity: feedback.clarity,
-          tradeoffs: feedback.tradeoffs,
-          scalability: feedback.scalability,
-          overall: feedback.overall
-        });
-      }, 100);
-      return () => clearTimeout(timer);
+      if (feedback.isAcceptable) {
+        // If passed, update streak!
+        updateStreak().catch(console.error);
+        // Show confetti for successful evaluations
+        setShowConfetti(true);
+        setTimeout(() => setShowConfetti(false), 3000);
+      }
+
+      // Animate score counting up
+      let startTime: number;
+      const duration = 1500;
+      const startScore = 0;
+      const endScore = feedback.score;
+
+      const animateScore = (timestamp: number) => {
+        if (!startTime) startTime = timestamp;
+        const progress = Math.min((timestamp - startTime) / duration, 1);
+        const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+        setAnimatedScore(Math.floor(startScore + (endScore - startScore) * easeOutQuart));
+
+        if (progress < 1) {
+          requestAnimationFrame(animateScore);
+        }
+      };
+
+      // Animate accuracy percentage
+      let accuracyStartTime: number;
+      const accuracyDuration = 1200;
+      const startAccuracy = 0;
+      const endAccuracy = feedback.accuracy;
+
+      const animateAccuracy = (timestamp: number) => {
+        if (!accuracyStartTime) accuracyStartTime = timestamp;
+        const progress = Math.min((timestamp - accuracyStartTime) / accuracyDuration, 1);
+        const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+        setAnimatedAccuracy(Math.floor(startAccuracy + (endAccuracy - startAccuracy) * easeOutQuart));
+
+        if (progress < 1) {
+          requestAnimationFrame(animateAccuracy);
+        }
+      };
+
+      requestAnimationFrame(animateScore);
+      setTimeout(() => requestAnimationFrame(animateAccuracy), 200);
     } else {
-      setAnimatedScores({
-        structure: 0,
-        clarity: 0,
-        tradeoffs: 0,
-        scalability: 0,
-        overall: 0
-      });
+      setAnimatedScore(0);
+      setAnimatedAccuracy(0);
+      setShowConfetti(false);
     }
   }, [isOpen, feedback]);
 
-  const chartData = [
-    { name: 'Structure', value: feedback.structure, color: 'from-blue-500 to-blue-600', bgColor: 'bg-blue-500' },
-    { name: 'Clarity', value: feedback.clarity, color: 'from-green-500 to-green-600', bgColor: 'bg-green-500' },
-    { name: 'Trade-offs', value: feedback.tradeoffs, color: 'from-yellow-500 to-yellow-600', bgColor: 'bg-yellow-500' },
-    { name: 'Scalability', value: feedback.scalability, color: 'from-purple-500 to-purple-600', bgColor: 'bg-purple-500' },
-  ];
+  const handleContinue = () => {
+    if (feedback.isAcceptable && onContinue) {
+      onContinue();
+    }
+    onClose();
+  };
 
   const exportToPDF = async () => {
     const element = document.getElementById('feedback-content');
@@ -97,137 +142,244 @@ export default function FeedbackModal() {
       heightLeft -= pageHeight;
     }
 
-    pdf.save('ultimate-sd-session-feedback.pdf');
+    pdf.save('ultimate-sd-feedback.pdf');
   };
 
+  // Determine color scheme based on score
+  const getScoreColor = () => {
+    if (feedback.score >= 8) return { primary: 'text-green-600', bg: 'bg-green-500/10', border: 'border-green-500/30', gradient: 'from-green-500/20 to-emerald-500/10' };
+    if (feedback.score >= 6) return { primary: 'text-blue-600', bg: 'bg-blue-500/10', border: 'border-blue-500/30', gradient: 'from-blue-500/20 to-cyan-500/10' };
+    if (feedback.score >= 4) return { primary: 'text-yellow-600', bg: 'bg-yellow-500/10', border: 'border-yellow-500/30', gradient: 'from-yellow-500/20 to-amber-500/10' };
+    return { primary: 'text-red-600', bg: 'bg-red-500/10', border: 'border-red-500/30', gradient: 'from-red-500/20 to-orange-500/10' };
+  };
+
+  const scoreColors = getScoreColor();
+  const accuracyColor = feedback.accuracy >= 70 ? 'bg-green-500' : feedback.accuracy >= 50 ? 'bg-yellow-500' : 'bg-red-500';
+
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <button suppressHydrationWarning className="w-full gradient-bg text-white px-6 py-3 rounded-xl hover:opacity-90 transition-all font-semibold shadow-lg flex items-center justify-center gap-2">
-          <Award className="h-5 w-5" />
-          Get Feedback
-        </button>
-      </DialogTrigger>
-      <DialogContent className="max-w-5xl w-full max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-bold flex items-center gap-2">
-            <TrendingUp className="h-6 w-6 text-primary" />
-            Session Feedback
-          </DialogTitle>
-        </DialogHeader>
+    <>
+      <Confetti show={showConfetti} />
+      <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+        <DialogContent className="max-w-5xl w-full max-h-[90vh] overflow-y-auto p-0">
+          <DialogHeader className="px-6 pt-6 pb-4 border-b border-border/50">
+            <DialogTitle className="text-3xl font-bold flex items-center gap-3">
+              <div className={`p-2 rounded-xl ${feedback.isAcceptable ? 'bg-green-500/20' : 'bg-orange-500/20'}`}>
+                {feedback.isAcceptable ? (
+                  <Trophy className="h-7 w-7 text-green-600 dark:text-green-400" />
+                ) : (
+                  <Target className="h-7 w-7 text-orange-600 dark:text-orange-400" />
+                )}
+              </div>
+              <span className={feedback.isAcceptable ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'}>
+                {feedback.isAcceptable ? 'Great Job!' : 'Keep Practicing'}
+              </span>
+            </DialogTitle>
+          </DialogHeader>
 
-        <div id="feedback-content" className="p-6 space-y-6">
-          {/* Overall Score Card with animation */}
-          <Card className="glass border-2 border-primary/20 shadow-xl">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-xl">
-                <Award className="h-6 w-6 text-primary" />
-                Overall Performance
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center mb-6">
-                <div className="relative inline-block">
-                  <div className="text-7xl font-bold gradient-text animate-fade-in">
-                    {animatedScores.overall}
+          <div id="feedback-content" className="p-6 space-y-5">
+            {/* XP Rewards Card - Enhanced */}
+            {xpEarned > 0 && (
+              <Card className={`glass border-2 border-amber-500/30 shadow-2xl bg-gradient-to-br from-amber-500/10 via-yellow-500/5 to-transparent animate-slide-up overflow-hidden relative`}>
+                <div className="absolute inset-0 bg-gradient-to-r from-amber-500/0 via-amber-500/10 to-amber-500/0 animate-shimmer bg-[length:200%_100%]" />
+                <CardHeader className="pb-3 relative z-10">
+                  <CardTitle className="flex items-center gap-2 text-amber-600 dark:text-amber-400 text-xl">
+                    <Sparkles className="h-6 w-6 animate-pulse" />
+                    Step Rewards
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="relative z-10">
+                  <div className="flex items-center gap-6">
+                    <div className="relative">
+                      <div className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center border-4 border-amber-300 dark:border-amber-500 shadow-lg animate-float">
+                        <Zap className="h-10 w-10 text-white" />
+                      </div>
+                      <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center border-2 border-white dark:border-gray-900">
+                        <CheckCircle className="h-4 w-4 text-white" />
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-4xl font-bold bg-gradient-to-r from-amber-600 to-yellow-600 dark:from-amber-400 dark:to-yellow-400 bg-clip-text text-transparent">
+                        +{xpEarned} XP
+                      </div>
+                      <div className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
+                        <TrendingUp className="h-4 w-4" />
+                        Keep up the momentum!
+                      </div>
+                    </div>
                   </div>
-                  <div className="absolute -top-2 -right-2 text-3xl text-primary animate-pulse">✨</div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Performance Score Card - Enhanced */}
+            <Card className={`glass border-2 ${scoreColors.border} shadow-xl bg-gradient-to-br ${scoreColors.gradient} relative overflow-hidden`}>
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-2 text-xl">
+                  <Award className={`h-6 w-6 ${scoreColors.primary}`} />
+                  <span className={scoreColors.primary}>Performance Score</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center mb-8">
+                  <div className="relative inline-block">
+                    {/* Score Circle Background */}
+                    <div className={`absolute inset-0 rounded-full ${scoreColors.bg} blur-2xl opacity-50`} style={{ transform: 'scale(1.5)' }} />
+                    <div className="relative">
+                      <div className={`text-8xl font-extrabold ${scoreColors.primary} transition-all duration-300`} style={{ 
+                        textShadow: `0 0 20px ${scoreColors.primary.replace('text-', 'rgba(')}`
+                      }}>
+                        {animatedScore}
+                      </div>
+                      <div className="text-sm text-muted-foreground mt-2 font-medium">out of 10</div>
+                    </div>
+                  </div>
                 </div>
-                <div className="text-sm text-muted-foreground mt-2">out of 10</div>
-              </div>
 
-              {/* Animated bar charts */}
-              <div className="space-y-4 mt-6">
-                {chartData.map((item, index) => (
-                  <div key={item.name} className="animate-fade-in" style={{ animationDelay: `${index * 100}ms` }}>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium">{item.name}</span>
-                      <Badge variant="secondary" className="font-semibold">{item.value}/10</Badge>
-                    </div>
-                    <div className="h-3 bg-muted rounded-full overflow-hidden">
-                      <div 
-                        className={`h-full bg-gradient-to-r ${item.color} rounded-full transition-all duration-1000 ease-out`}
-                        style={{ 
-                          width: `${(animatedScores[item.name.toLowerCase().replace('-', '') as keyof typeof animatedScores] / 10) * 100}%` 
-                        }}
-                      />
+                {/* Accuracy Section */}
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="font-medium flex items-center gap-2">
+                      <Target className="h-4 w-4" />
+                      Accuracy
+                    </span>
+                    <span className="font-bold text-lg">{animatedAccuracy}%</span>
+                  </div>
+                  <div className="relative w-full bg-muted/40 rounded-full h-4 overflow-hidden shadow-inner">
+                    <div
+                      ref={accuracyBarRef}
+                      className={`h-full ${accuracyColor} rounded-full transition-all duration-1500 ease-out relative overflow-hidden`}
+                      style={{
+                        width: `${feedback.accuracy}%`,
+                      }}
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer bg-[length:200%_100%]" />
                     </div>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                  {/* Accuracy Label */}
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Needs Work</span>
+                    <span>Excellent</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-          {/* Strengths Card */}
-          <Card className="glass border-2 border-green-500/20 shadow-lg animate-fade-in" style={{ animationDelay: '400ms' }}>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-green-600">
-                <CheckCircle className="h-5 w-5" />
-                Strengths
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-3">
-                {feedback.strengths.map((strength, index) => (
-                  <li key={index} className="flex items-start gap-3 p-3 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200/50 dark:border-green-800/50">
-                    <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                    <span className="text-sm leading-relaxed">{strength}</span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
+            {/* Strengths Section - Enhanced */}
+            {feedback.strengths.length > 0 && (
+              <Card className="glass border-2 border-green-500/30 shadow-lg animate-fade-in bg-gradient-to-br from-green-500/5 to-transparent" style={{ animationDelay: '200ms' }}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-green-600 dark:text-green-400 text-lg">
+                    <div className="p-1.5 rounded-lg bg-green-500/20">
+                      <CheckCircle className="h-5 w-5" />
+                    </div>
+                    Strengths
+                    <span className="ml-auto text-xs font-normal text-muted-foreground">
+                      {feedback.strengths.length} {feedback.strengths.length === 1 ? 'point' : 'points'}
+                    </span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-3">
+                    {feedback.strengths.map((s, i) => (
+                      <li key={i} className="flex gap-3 text-sm group">
+                        <div className="mt-0.5 shrink-0">
+                          <div className="w-5 h-5 rounded-full bg-green-500/20 flex items-center justify-center group-hover:bg-green-500/30 transition-colors">
+                            <CheckCircle className="h-3 w-3 text-green-600 dark:text-green-400" />
+                          </div>
+                        </div>
+                        <span className="flex-1 leading-relaxed">{s}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            )}
 
-          {/* Weaknesses Card */}
-          <Card className="glass border-2 border-yellow-500/20 shadow-lg animate-fade-in" style={{ animationDelay: '500ms' }}>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-yellow-600">
-                <AlertCircle className="h-5 w-5" />
-                Areas for Improvement
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-3">
-                {feedback.weaknesses.map((weakness, index) => (
-                  <li key={index} className="flex items-start gap-3 p-3 rounded-lg bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200/50 dark:border-yellow-800/50">
-                    <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
-                    <span className="text-sm leading-relaxed">{weakness}</span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
+            {/* Improvements Section - Enhanced */}
+            {feedback.weaknesses.length > 0 && (
+              <Card className="glass border-2 border-yellow-500/30 shadow-lg animate-fade-in bg-gradient-to-br from-yellow-500/5 to-transparent" style={{ animationDelay: '300ms' }}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-yellow-600 dark:text-yellow-400 text-lg">
+                    <div className="p-1.5 rounded-lg bg-yellow-500/20">
+                      <AlertCircle className="h-5 w-5" />
+                    </div>
+                    Areas for Improvement
+                    <span className="ml-auto text-xs font-normal text-muted-foreground">
+                      {feedback.weaknesses.length} {feedback.weaknesses.length === 1 ? 'point' : 'points'}
+                    </span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-3">
+                    {feedback.weaknesses.map((w, i) => (
+                      <li key={i} className="flex gap-3 text-sm group">
+                        <div className="mt-0.5 shrink-0">
+                          <div className="w-5 h-5 rounded-full bg-yellow-500/20 flex items-center justify-center group-hover:bg-yellow-500/30 transition-colors">
+                            <AlertCircle className="h-3 w-3 text-yellow-600 dark:text-yellow-400" />
+                          </div>
+                        </div>
+                        <span className="flex-1 leading-relaxed">{w}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            )}
 
-          {/* Tips Card */}
-          <Card className="glass border-2 border-blue-500/20 shadow-lg animate-fade-in" style={{ animationDelay: '600ms' }}>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-blue-600">
-                <Lightbulb className="h-5 w-5" />
-                Actionable Tips
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-3">
-                {feedback.tips.map((tip, index) => (
-                  <li key={index} className="flex items-start gap-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200/50 dark:border-blue-800/50">
-                    <Lightbulb className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                    <span className="text-sm leading-relaxed">{tip}</span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-        </div>
+            {/* Missed Points Section - Enhanced */}
+            {feedback.missed && feedback.missed.length > 0 && (
+              <Card className="glass border-2 border-blue-500/30 shadow-lg animate-fade-in bg-gradient-to-br from-blue-500/5 to-transparent" style={{ animationDelay: '400ms' }}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-blue-600 dark:text-blue-400 text-lg">
+                    <div className="p-1.5 rounded-lg bg-blue-500/20">
+                      <Lightbulb className="h-5 w-5" />
+                    </div>
+                    Key Points to Remember
+                    <span className="ml-auto text-xs font-normal text-muted-foreground">
+                      {feedback.missed.length} {feedback.missed.length === 1 ? 'point' : 'points'}
+                    </span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-3">
+                    {feedback.missed.map((m, i) => (
+                      <li key={i} className="flex gap-3 text-sm group">
+                        <div className="mt-0.5 shrink-0">
+                          <div className="w-5 h-5 rounded-full bg-blue-500/20 flex items-center justify-center group-hover:bg-blue-500/30 transition-colors">
+                            <Lightbulb className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+                          </div>
+                        </div>
+                        <span className="flex-1 leading-relaxed">{m}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            )}
+          </div>
 
-        <div className="flex justify-end gap-3 p-6 border-t border-border">
-          <Button variant="outline" onClick={exportToPDF} className="hover:bg-muted">
-            Export PDF
-          </Button>
-          <Button onClick={() => setIsOpen(false)} className="gradient-bg hover:opacity-90">
-            Close
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+          {/* Footer Actions - Enhanced */}
+          <div className="flex justify-between items-center gap-4 px-6 py-4 border-t border-border/50 bg-muted/20">
+            <Button 
+              variant="outline" 
+              onClick={exportToPDF} 
+              className="hover:bg-muted transition-all hover:scale-105"
+            >
+              Export PDF
+            </Button>
+            <Button 
+              onClick={handleContinue} 
+              className={`gradient-bg hover:opacity-90 transition-all hover:scale-105 shadow-lg ${
+                feedback.isAcceptable 
+                  ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700' 
+                  : 'bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700'
+              }`}
+            >
+              {feedback.isAcceptable ? 'Continue to Next Step' : 'Try Again'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
