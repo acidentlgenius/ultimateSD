@@ -27,6 +27,7 @@ model User {
   level                Int      @default(1)
   streak               Int      @default(0)
   completedProblems    Int      @default(0)
+  lastPracticeAt       DateTime?
   
   // Relations
   problemProgress      ProblemProgress[]
