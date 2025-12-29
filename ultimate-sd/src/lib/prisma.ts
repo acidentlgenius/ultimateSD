@@ -1,5 +1,6 @@
 import { Pool } from 'pg'
 import { PrismaPg } from '@prisma/adapter-pg'
+// Force module reload
 import { PrismaClient } from '@prisma/client'
 
 const connectionString = `${process.env.DATABASE_URL}`

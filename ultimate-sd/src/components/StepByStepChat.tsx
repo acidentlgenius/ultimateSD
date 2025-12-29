@@ -15,8 +15,7 @@ import {
   loadSessionState,
   clearSessionState
 } from '@/lib/session-storage';
-import { updateProgress } from '@/app/actions/gamification';
-import { updateProblemProgress } from '@/app/actions/progress';
+import { updateProblemProgress, completeStep } from '@/app/actions/progress';
 import FeedbackModal from './FeedbackModal';
 import {
   Sparkles,
@@ -78,6 +77,8 @@ import AgentOrchestrator from './widgets/AgentOrchestrator';
 import JobSchedulerViz from './widgets/JobSchedulerViz';
 import FlashSaleDemo from './widgets/FlashSaleDemo';
 import PaymentLedger from './widgets/PaymentLedger';
+import SubmissionHistory from './SubmissionHistory';
+import { History } from 'lucide-react';
 
 const WIDGETS: Record<string, React.ComponentType> = {
   'encoding-visualizer': EncodingVisualizer,
@@ -167,6 +168,7 @@ export default function StepByStepChat({ problem }: Props) {
   const [feedback, setFeedback] = useState<FeedbackResult | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   // Store all step data
   const [savedStepData, setSavedStepData] = useState<Map<string, SavedStepData>>(new Map());
@@ -463,17 +465,31 @@ export default function StepByStepChat({ problem }: Props) {
 
         // Award XP for completing the step
         try {
-          const result = await updateProgress(20);
+          const result = await completeStep(problem.id, currentStepKey, {
+            content: userAnswer,
+            feedback: JSON.stringify(data.feedback),
+            score: Math.round(data.feedback.score),
+            isPassing: data.feedback.isAcceptable
+          });
           if (result.success) {
-            toast.success('Step Complete! +20 XP', {
-              icon: '⚡',
-              className: 'bg-blue-500/10 border-blue-500/20 text-blue-600'
-            });
+            const xpAwarded = result.xpAwarded || 0;
 
-            if (result.levelUp) {
-              toast.success(`Level Up! You are now Level ${result.level}!`, {
-                icon: '🎓',
-                className: 'bg-purple-500/10 border-purple-500/20 text-purple-600 font-bold'
+            if (xpAwarded > 0) {
+              toast.success(`Step Complete! +${xpAwarded} XP`, {
+                icon: '⚡',
+                className: 'bg-blue-500/10 border-blue-500/20 text-blue-600'
+              });
+
+              if (result.levelUp) {
+                toast.success(`Level Up! You are now Level ${result.newLevel}!`, {
+                  icon: '🎓',
+                  className: 'bg-purple-500/10 border-purple-500/20 text-purple-600 font-bold'
+                });
+              }
+            } else {
+              toast.info('Step Updated (Already Completed)', {
+                icon: '✓',
+                className: 'bg-muted border-border text-muted-foreground'
               });
             }
           }
@@ -568,7 +584,18 @@ export default function StepByStepChat({ problem }: Props) {
         <div className="p-6 space-y-6">
           {/* Question/Prompt */}
           <div className="space-y-2">
-            <h3 className="text-lg font-semibold">{currentStep.title}</h3>
+            <div className="flex justify-between items-start">
+              <h3 className="text-lg font-semibold">{currentStep.title}</h3>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 gap-2 text-primary border-primary/20 hover:bg-primary/10 hover:border-primary/50 transition-all shadow-sm"
+                onClick={() => setIsHistoryOpen(true)}
+              >
+                <History className="h-4 w-4" />
+                <span className="text-xs font-medium">History</span>
+              </Button>
+            </div>
             <p className="text-muted-foreground leading-relaxed">
               {currentStep.prompt}
             </p>
@@ -743,7 +770,9 @@ export default function StepByStepChat({ problem }: Props) {
                     </>
                   ) : (
                     <>
-                      Submit for Review
+                      {(currentStep.subStep === 'architecture' || currentStep.subStep === 'data-flow')
+                        ? 'Analyze Design'
+                        : 'Submit for Review'}
                       <ArrowRight className="h-4 w-4 ml-2" />
                     </>
                   )}
@@ -762,6 +791,14 @@ export default function StepByStepChat({ problem }: Props) {
               xpEarned={feedback.isAcceptable ? 20 : 0}
             />
           )}
+
+          <SubmissionHistory
+            isOpen={isHistoryOpen}
+            onOpenChange={setIsHistoryOpen}
+            problemId={problem.id}
+            stepId={currentStepKey}
+            stepTitle={currentStep.title}
+          />
         </div>
       </Card>
 

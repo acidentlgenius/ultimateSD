@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import StepByStepChat from './StepByStepChat';
 import DiagramCanvas from './DiagramCanvas';
+import { TimerWidget } from './TimerWidget';
 import { HelpAssistant } from './HelpAssistant';
 import { Button } from './ui/button';
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -19,10 +20,10 @@ import { DEFAULT_PHASE_STEPS } from '@/lib/steps';
 import { SolutionViewer } from './SolutionViewer';
 import { getSolution } from '@/lib/solutions';
 
-import { updateProblemProgress } from '@/app/actions/progress';
+import { updateProblemProgress, startPracticeSession } from '@/app/actions/progress';
 import { CheckCircle } from 'lucide-react';
 
-export default function PracticeUI({ problem }: { problem: SystemDesignProblem }) {
+export default function PracticeUI({ problem, existingProgress }: { problem: SystemDesignProblem, existingProgress?: any }) {
   const { data: session } = useSession();
 
   const activeSteps = problem.steps || DEFAULT_PHASE_STEPS;
@@ -40,16 +41,43 @@ export default function PracticeUI({ problem }: { problem: SystemDesignProblem }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [savedStepData, setSavedStepData] = useState<Map<string, any>>(new Map());
   const [isExporting, setIsExporting] = useState(false);
+  // Timer State
+  const [serverStartedAt, setServerStartedAt] = useState<Date | string | null>((existingProgress as any)?.startedAt ?? null);
+  const [isTimerRunning, setIsTimerRunning] = useState<boolean>((existingProgress as any)?.isTimerRunning ?? true);
+  const [serverPausedSeconds, setServerPausedSeconds] = useState<number>((existingProgress as any)?.totalPausedSeconds ?? 0);
+  const [lastPausedAt, setLastPausedAt] = useState<Date | string | null>((existingProgress as any)?.lastPausedAt ?? null);
+
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const isDiagramRelevant = currentSubStep === 'architecture' || currentSubStep === 'data-flow';
 
 
 
-  // Auto-mark in progress on mount
+  // Auto-mark in progress and START TIMER on mount
   useEffect(() => {
-    if (problem.id) {
-      updateProblemProgress(problem.id, 'IN_PROGRESS').catch(console.error);
-    }
+    const initSession = async () => {
+      if (problem.id) {
+        try {
+          // This starts the timer server-side (if not already started) and returns the timestamp
+          const result = await startPracticeSession(problem.id);
+          console.log('[PracticeUI] startPracticeSession result:', result);
+
+          if (result.success && result.startedAt) {
+            setServerStartedAt(result.startedAt);
+            setIsTimerRunning((result as any).isTimerRunning);
+            setServerPausedSeconds((result as any).totalPausedSeconds);
+            setLastPausedAt((result as any).lastPausedAt);
+          }
+        } catch (error) {
+          console.error("Failed to auto-start session:", error);
+        }
+      }
+    };
+    initSession();
   }, [problem.id]);
 
   useEffect(() => {
@@ -101,7 +129,7 @@ export default function PracticeUI({ problem }: { problem: SystemDesignProblem }
   };
 
   // Reusable Sidebar Content
-  const SidebarContent = () => (
+  const renderSidebar = () => (
     <div className="flex flex-col h-full bg-card/30 backdrop-blur-xl">
       {/* Sidebar Header */}
       <div className="p-6 border-b border-border/50 shrink-0">
@@ -117,6 +145,35 @@ export default function PracticeUI({ problem }: { problem: SystemDesignProblem }
             </h1>
             <p className="text-xs text-muted-foreground truncate">System Design Practice</p>
           </div>
+        </div>
+
+        {/* Interview Timer */}
+        <div className="mb-4">
+          <TimerWidget
+            className="w-full justify-between"
+            problemId={problem.id}
+            initialTimeSeconds={
+              problem.difficulty === 'Easy' ? 1800 :
+                problem.difficulty === 'Medium' ? 2700 :
+                  3600
+            }
+            startedAt={serverStartedAt}
+            isTimerRunning={isTimerRunning}
+            totalPausedSeconds={serverPausedSeconds}
+            lastPausedAt={lastPausedAt}
+            onToggle={async () => {
+              // Call server action to toggle pause/resume
+              const result = await import('@/app/actions/progress').then(mod => mod.togglePracticeTimer(problem.id));
+              if (result.success) {
+                setIsTimerRunning(result.isTimerRunning);
+                setServerPausedSeconds(result.totalPausedSeconds);
+                setLastPausedAt(result.lastPausedAt);
+              }
+            }}
+            onComplete={async () => {
+              toast.warning("Time's up! The practice session has ended.");
+            }}
+          />
         </div>
       </div>
 
@@ -221,16 +278,22 @@ export default function PracticeUI({ problem }: { problem: SystemDesignProblem }
       {/* Mobile Header */}
       <div className="md:hidden h-14 border-b border-border flex items-center px-4 bg-background/80 backdrop-blur-md shrink-0 justify-between">
         <div className="flex items-center gap-3">
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="-ml-2">
-                <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="p-0 w-80 border-r border-border">
-              <SidebarContent />
-            </SheetContent>
-          </Sheet>
+          {isMounted ? (
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="-ml-2">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="p-0 w-80 border-r border-border">
+                {renderSidebar()}
+              </SheetContent>
+            </Sheet>
+          ) : (
+            <Button variant="ghost" size="icon" className="-ml-2">
+              <Menu className="h-5 w-5" />
+            </Button>
+          )}
           <span className="font-semibold text-sm truncate">{problem.title}</span>
         </div>
         <Link href="/">
@@ -242,7 +305,7 @@ export default function PracticeUI({ problem }: { problem: SystemDesignProblem }
 
       {/* Desktop Sidebar - Fixed Left */}
       <aside className="hidden md:flex w-80 border-r border-border flex-col shrink-0">
-        <SidebarContent />
+        {renderSidebar()}
       </aside>
 
       {/* Main Content Area */}
