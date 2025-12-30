@@ -3,7 +3,7 @@
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
-import { calculateLevel } from '@/lib/gamification-logic';
+import { calculateLevel, calculateStreak } from '@/lib/gamification-logic';
 
 // Actions for progress
 
@@ -326,6 +326,12 @@ export async function completeStep(
 
         const currentXp = user.xp || 0;
         const currentLevel = user.level || 1;
+
+        // Calculate Streak
+        const currentStreak = user.streak || 0;
+        const lastPractice = user.lastPracticeAt;
+        const newStreak = calculateStreak(currentStreak, lastPractice, now);
+
         const newXp = currentXp + XP_PER_STEP;
         const newLevel = calculateLevel(newXp);
 
@@ -333,7 +339,9 @@ export async function completeStep(
             where: { email: userEmail },
             data: {
                 xp: newXp,
-                level: newLevel
+                level: newLevel,
+                streak: newStreak,
+                lastPracticeAt: now
             }
         });
 
