@@ -243,19 +243,16 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
     ctx.lineWidth = 0.5;
     const gridSize = 20;
 
+    ctx.beginPath();
     for (let x = 0; x <= width; x += gridSize) {
-      ctx.beginPath();
       ctx.moveTo(x, 0);
       ctx.lineTo(x, height);
-      ctx.stroke();
     }
-
     for (let y = 0; y <= height; y += gridSize) {
-      ctx.beginPath();
       ctx.moveTo(0, y);
       ctx.lineTo(width, y);
-      ctx.stroke();
     }
+    ctx.stroke();
   };
 
   const drawElement = (ctx: CanvasRenderingContext2D, element: DiagramElement, isSelected: boolean = false) => {
@@ -2280,10 +2277,20 @@ export default function DiagramCanvas({ stepKey }: { stepKey: string }) {
 
   // Auto-save to localStorage whenever elements change
   useEffect(() => {
+    let lastSavedElements: any[] | null = null;
+
     if (stepKey && mounted) {
       const saveInterval = setInterval(() => {
         const elements = (window as any).sd_getDiagramElements?.();
+
+        // Skip if elements haven't changed since last save
+        if (elements === lastSavedElements) {
+          return;
+        }
+
         if (elements) {
+          lastSavedElements = elements;
+
           if (elements.length > 0) {
             // Save diagram data if there are elements
             const diagramData = {
