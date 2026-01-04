@@ -59,6 +59,7 @@ export default async function ProfilePage() {
         return {
             id: item.id,
             problemId: item.problemId,
+            problemSlug: problem?.slug || item.problemId,
             problemTitle: problem?.title || `Problem ${item.problemId}`,
             status: item.status,
             score: item.lastScore,

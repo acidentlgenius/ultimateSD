@@ -11,6 +11,7 @@ import { motion } from "framer-motion";
 export interface HistoryItemData {
     id: string;
     problemId: string;
+    problemSlug: string;
     problemTitle: string;
     status: string;
     score: number | null;
@@ -94,13 +95,13 @@ export function HistoryList({ history }: HistoryListProps) {
                             </div>
 
                             <Button asChild variant="outline" size="sm" className="hidden sm:inline-flex shrink-0 gap-2 rounded-full border-primary/20 hover:bg-primary hover:text-primary-foreground transition-all group-hover:translate-x-1 group-hover:shadow-md shadow-sm">
-                                <Link href={`/practice/${item.problemId}`}>
+                                <Link href={`/practice/${item.problemSlug}`}>
                                     {item.status === 'COMPLETED' ? 'Review Solution' : 'Continue Practice'}
                                     <PlayCircle className="w-4 h-4" />
                                 </Link>
                             </Button>
                             {/* Mobile-only Link Overlay */}
-                            <Link href={`/practice/${item.problemId}`} className="absolute inset-0 sm:hidden" aria-label="Open problem" />
+                            <Link href={`/practice/${item.problemSlug}`} className="absolute inset-0 sm:hidden" aria-label="Open problem" />
                         </div>
                     </motion.div>
                 ))}
