@@ -58,6 +58,25 @@ import {
   ChevronsDown
 } from 'lucide-react';
 
+export const drawGrid = (ctx: CanvasRenderingContext2D, width: number, height: number, theme: string, showGrid: boolean) => {
+  if (!showGrid) return;
+  ctx.strokeStyle = theme === 'dark' ? '#333' : '#e5e5e5';
+  ctx.lineWidth = 0.5;
+  const gridSize = 20;
+
+  ctx.beginPath();
+  for (let x = 0; x <= width; x += gridSize) {
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, height);
+  }
+
+  for (let y = 0; y <= height; y += gridSize) {
+    ctx.moveTo(0, y);
+    ctx.lineTo(width, y);
+  }
+  ctx.stroke();
+};
+
 type Tool = 'select' | 'rectangle' | 'circle' | 'database' | 'server' | 'cloud' | 'text' | 'arrow' | 'line' |
   'loadbalancer' | 'cache' | 'queue' | 'client' | 'api' | 'microservice' | 'cdn' |
   'diamond' | 'parallelogram' | 'hexagon' | 'oval' | 'document' | 'cylinder';
@@ -236,27 +255,6 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
   };
 
   const getColor = () => theme === 'dark' ? '#60a5fa' : '#3b82f6';
-
-  const drawGrid = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
-    if (!showGrid) return;
-    ctx.strokeStyle = theme === 'dark' ? '#333' : '#e5e5e5';
-    ctx.lineWidth = 0.5;
-    const gridSize = 20;
-
-    for (let x = 0; x <= width; x += gridSize) {
-      ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, height);
-      ctx.stroke();
-    }
-
-    for (let y = 0; y <= height; y += gridSize) {
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(width, y);
-      ctx.stroke();
-    }
-  };
 
   const drawElement = (ctx: CanvasRenderingContext2D, element: DiagramElement, isSelected: boolean = false) => {
     ctx.strokeStyle = element.color;
@@ -750,7 +748,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
 
     // Draw grid only if enabled
     if (showGrid) {
-      drawGrid(ctx, canvas.width, canvas.height);
+      drawGrid(ctx, canvas.width, canvas.height, theme || 'light', showGrid);
     }
 
     elements.forEach(el => {
