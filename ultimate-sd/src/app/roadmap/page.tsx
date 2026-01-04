@@ -8,11 +8,34 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
+import { useSearchParams, useRouter } from 'next/navigation';
 
 export default function RoadmapPage() {
-    const [selectedTrack, setSelectedTrack] = useState<RoadmapTrack>('se');
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const trackParam = searchParams.get('track');
+
+    // Derived state from URL - Single Source of Truth
+    const isValidTrack = TRACKS.some(t => t.id === trackParam);
+    const selectedTrack = (isValidTrack ? trackParam : 'se') as RoadmapTrack;
+
+    // Only one effect: specific redirection for invalid/missing track
+    useEffect(() => {
+        if (!isValidTrack) {
+            const params = new URLSearchParams(searchParams.toString());
+            params.set('track', 'se');
+            router.replace(`?${params.toString()}`, { scroll: false });
+        }
+    }, [isValidTrack, router, searchParams]);
+
+    const handleTrackSelect = (trackId: string) => {
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('track', trackId);
+        router.replace(`?${params.toString()}`, { scroll: false });
+    };
+
     const roadmapData = getRoadmapData(selectedTrack);
 
     return (
@@ -51,7 +74,7 @@ export default function RoadmapPage() {
                                 return (
                                     <button
                                         key={track.id}
-                                        onClick={() => setSelectedTrack(track.id)}
+                                        onClick={() => handleTrackSelect(track.id)}
                                         className={cn(
                                             "flex items-center px-4 py-2.5 rounded-xl transition-all duration-300 font-medium text-sm relative overflow-hidden",
                                             isSelected ? "bg-background shadow-md text-primary" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"

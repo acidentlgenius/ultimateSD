@@ -79,27 +79,34 @@ export function RoadmapPreview() {
                             viewport={{ once: true }}
                             transition={{ delay: index * 0.1, duration: 0.5 }}
                         >
-                            <Link href={`/roadmap?track=${track.id}`} className="block h-full">
-                                <div className="group relative h-full bg-card hover:bg-muted/50 border border-border/50 rounded-2xl p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 overflow-hidden">
+                            <Link href={`/roadmap?track=${track.id}`} className="block h-full group">
+                                <div className="relative h-full bg-card/40 backdrop-blur-sm border border-border/50 rounded-2xl p-6 transition-all duration-500 hover:shadow-2xl hover:border-primary/20 hover:-translate-y-2 overflow-hidden">
 
-                                    {/* Hover Gradient */}
+                                    {/* Hover Gradient Background */}
                                     <div className={cn(
                                         "absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br",
                                         track.gradient
                                     )} />
 
                                     <div className="relative z-10 flex flex-col h-full">
-                                        <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition-colors", track.bg)}>
-                                            <track.icon className={cn("w-6 h-6", track.color)} />
+                                        <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-transform duration-500 group-hover:scale-110 shadow-inner", track.bg)}>
+                                            <track.icon className={cn("w-7 h-7", track.color)} />
                                         </div>
 
-                                        <h3 className="text-xl font-bold mb-2 group-hover:text-primary transition-colors">{track.label}</h3>
-                                        <p className="text-sm text-muted-foreground mb-4 flex-grow">
+                                        <h3 className="text-xl font-bold mb-3 group-hover:text-primary transition-colors duration-300">{track.label}</h3>
+                                        <p className="text-sm text-muted-foreground mb-6 flex-grow leading-relaxed">
                                             {track.description}
                                         </p>
 
-                                        <div className="flex items-center text-sm font-medium text-primary opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all">
-                                            Start Path <ArrowRight className="ml-1 w-4 h-4" />
+                                        <div className="flex items-center text-sm font-semibold text-primary/80 group-hover:text-primary transition-colors">
+                                            Start Path
+                                            <motion.span
+                                                initial={{ x: 0 }}
+                                                whileHover={{ x: 5 }}
+                                                className="inline-block ml-1"
+                                            >
+                                                <ArrowRight className="w-4 h-4" />
+                                            </motion.span>
                                         </div>
                                     </div>
                                 </div>

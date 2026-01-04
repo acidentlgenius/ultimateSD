@@ -101,7 +101,8 @@ export function DashboardClient({ user, recommendations, onboardingCompleted = f
             {!user && <FeatureShowcase />}
 
             {/* 2.5 Roadmap Preview */}
-            {!user && <RoadmapPreview />}
+            {/* 2.5 Roadmap Preview */}
+            <RoadmapPreview />
 
 
 

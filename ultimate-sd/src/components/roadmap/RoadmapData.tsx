@@ -205,8 +205,9 @@ const SSE_ROADMAP: RoadmapPhase[] = [
                 title: 'Design a Message Queue',
                 description: 'Decouple services with Kafka/RabbitMQ patterns.',
                 problemId: '29',
+                problemSlug: 'design-message-queue',
                 difficulty: 'Advanced',
-                status: 'locked',
+                status: 'unlocked',
                 icon: Activity
             }
         ]
@@ -339,8 +340,9 @@ const MLOPS_ROADMAP: RoadmapPhase[] = [
                 title: 'Design a Vector Database',
                 description: 'Store and query embeddings for similarity search.',
                 problemId: '65',
+                problemSlug: 'design-vector-database',
                 difficulty: 'Advanced',
-                status: 'locked',
+                status: 'unlocked',
                 icon: Database
             },
             {

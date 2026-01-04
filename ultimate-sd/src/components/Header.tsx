@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Home, BookOpen, Sparkles } from 'lucide-react';
+import { Home, BookOpen, Sparkles, Map } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 import { auth } from "@/auth";
@@ -41,6 +41,17 @@ export async function Header() {
             <span>Home</span>
           </Link>
           <Link
+            href="/roadmap"
+            className={cn(
+              "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300",
+              "hover:bg-primary/10 hover:text-primary",
+              "text-muted-foreground"
+            )}
+          >
+            <Map className="h-4 w-4" />
+            <span>Roadmap</span>
+          </Link>
+          <Link
             href="/pricing"
             className={cn(
               "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300",
@@ -50,7 +61,6 @@ export async function Header() {
           >
             <span>Pricing</span>
           </Link>
-          {/* Placeholder for future links like "Practice", "Resources" etc. */}
         </nav>
 
         <div className="flex items-center gap-3">
