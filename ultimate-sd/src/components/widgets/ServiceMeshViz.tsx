@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -30,6 +30,36 @@ export default function ServiceMeshViz() {
         { id: 'payment', name: 'Payment Service', x: 250, y: 50, status: 'healthy' },
     ]);
     const [activeTrace, setActiveTrace] = useState<Trace[]>([]);
+
+    // BOLT OPTIMIZATION: Memoize service lookup for O(1) access
+    // Reduces complexity from O(T*S) to O(T) where T is traces and S is services
+    const serviceMap = useMemo(() => {
+        return services.reduce((acc, svc) => {
+            acc[svc.id] = svc;
+            return acc;
+        }, {} as Record<string, Service>);
+    }, [services]);
+
+    // BOLT OPTIMIZATION: Memoize trace calculations to prevent re-computation on every render
+    const renderedTraces = useMemo(() => {
+        return activeTrace.map(trace => {
+            const fromSvc = serviceMap[trace.from];
+            const toSvc = serviceMap[trace.to];
+
+            if (!fromSvc || !toSvc) return null;
+
+            // Calculate centers
+            const x1 = fromSvc.x * 2.5 + 56; // 56 is half width
+            const y1 = fromSvc.y * 1.5 + 32; // 32 is half height
+            const x2 = toSvc.x * 2.5 + 56;
+            const y2 = toSvc.y * 1.5 + 32;
+
+            return {
+                ...trace,
+                x1, y1, x2, y2
+            };
+        }).filter((t): t is Trace & { x1: number; y1: number; x2: number; y2: number } => t !== null);
+    }, [activeTrace, serviceMap]);
 
     const sendRequest = async () => {
         // Simulate trace: Gateway -> Auth -> Order -> Payment
@@ -102,30 +132,19 @@ export default function ServiceMeshViz() {
                                 </marker>
                             </defs>
                             <AnimatePresence>
-                                {activeTrace.map(trace => {
-                                    const fromSvc = services.find(s => s.id === trace.from)!;
-                                    const toSvc = services.find(s => s.id === trace.to)!;
-
-                                    // Calculate centers
-                                    const x1 = fromSvc.x * 2.5 + 56; // 56 is half width
-                                    const y1 = fromSvc.y * 1.5 + 32; // 32 is half height
-                                    const x2 = toSvc.x * 2.5 + 56;
-                                    const y2 = toSvc.y * 1.5 + 32;
-
-                                    return (
-                                        <motion.line
-                                            key={trace.id}
-                                            initial={{ pathLength: 0, opacity: 0 }}
-                                            animate={{ pathLength: 1, opacity: 1 }}
-                                            exit={{ opacity: 0 }}
-                                            x1={x1} y1={y1} x2={x2} y2={y2}
-                                            stroke="#f97316"
-                                            strokeWidth="2"
-                                            strokeDasharray="5,5"
-                                            markerEnd="url(#arrowhead)"
-                                        />
-                                    );
-                                })}
+                                {renderedTraces.map((trace) => (
+                                    <motion.line
+                                        key={trace.id}
+                                        initial={{ pathLength: 0, opacity: 0 }}
+                                        animate={{ pathLength: 1, opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        x1={trace.x1} y1={trace.y1} x2={trace.x2} y2={trace.y2}
+                                        stroke="#f97316"
+                                        strokeWidth="2"
+                                        strokeDasharray="5,5"
+                                        markerEnd="url(#arrowhead)"
+                                    />
+                                ))}
                             </AnimatePresence>
                         </svg>
 
