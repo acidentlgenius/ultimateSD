@@ -243,19 +243,18 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
     ctx.lineWidth = 0.5;
     const gridSize = 20;
 
+    // Batch all grid line paths into a single stroke call for performance
+    ctx.beginPath();
     for (let x = 0; x <= width; x += gridSize) {
-      ctx.beginPath();
       ctx.moveTo(x, 0);
       ctx.lineTo(x, height);
-      ctx.stroke();
     }
 
     for (let y = 0; y <= height; y += gridSize) {
-      ctx.beginPath();
       ctx.moveTo(0, y);
       ctx.lineTo(width, y);
-      ctx.stroke();
     }
+    ctx.stroke();
   };
 
   const drawElement = (ctx: CanvasRenderingContext2D, element: DiagramElement, isSelected: boolean = false) => {
@@ -2281,20 +2280,26 @@ export default function DiagramCanvas({ stepKey }: { stepKey: string }) {
   // Auto-save to localStorage whenever elements change
   useEffect(() => {
     if (stepKey && mounted) {
+      let lastSavedJSON = '';
+
       const saveInterval = setInterval(() => {
         const elements = (window as any).sd_getDiagramElements?.();
         if (elements) {
-          if (elements.length > 0) {
-            // Save diagram data if there are elements
-            const diagramData = {
-              elements,
-              timestamp: new Date().toISOString()
-            };
+          const currentJSON = JSON.stringify(elements);
 
-            localStorage.setItem(`diagram-${stepKey}`, JSON.stringify(diagramData));
-          } else {
-            // Clear localStorage if diagram is empty (user cleared it)
-            localStorage.removeItem(`diagram-${stepKey}`);
+          if (currentJSON !== lastSavedJSON) {
+            if (elements.length > 0) {
+              // Save diagram data if there are elements
+              const diagramData = {
+                elements,
+                timestamp: new Date().toISOString()
+              };
+              localStorage.setItem(`diagram-${stepKey}`, JSON.stringify(diagramData));
+            } else {
+              // Clear localStorage if diagram is empty (user cleared it)
+              localStorage.removeItem(`diagram-${stepKey}`);
+            }
+            lastSavedJSON = currentJSON;
           }
         }
       }, 1000); // Auto-save every second
