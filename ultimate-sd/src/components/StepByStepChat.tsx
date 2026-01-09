@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
@@ -29,56 +30,63 @@ import {
   ArrowLeft,
   Eye,
   RotateCcw,
-  Info
+  Info,
+  History
 } from 'lucide-react';
-import EncodingVisualizer from './widgets/EncodingVisualizer';
-import CapacityCalculator from './widgets/CapacityCalculator';
-import FanoutVisualizer from './widgets/FanoutVisualizer';
-import FeedRankingSimulator from './widgets/FeedRankingSimulator';
-import QuadTreeVisualizer from './widgets/QuadTreeVisualizer';
-import ABRSimulator from './widgets/ABRSimulator';
-import E2EEncryptionDemo from './widgets/E2EEncryptionDemo';
-import FeedArchitect from './widgets/FeedArchitect';
-import InvertedIndexVisualizer from './widgets/InvertedIndexVisualizer';
-import ChunkingDedupeDemo from './widgets/ChunkingDedupeDemo';
-import RateLimiterDemo from './widgets/RateLimiterDemo';
-import CacheVisualizer from './widgets/CacheVisualizer';
-import TrieVisualizer from './widgets/TrieVisualizer';
-import SnowflakeDemo from './widgets/SnowflakeDemo';
-import LeaderboardSimulation from './widgets/LeaderboardSimulation';
-import NotificationSystemDemo from './widgets/NotificationSystemDemo';
-import MetricsDashboard from './widgets/MetricsDashboard';
-import ConsistentHashingDemo from './widgets/ConsistentHashingDemo';
-import LoadBalancerVisualizer from './widgets/LoadBalancerVisualizer';
-import MessageQueueVisualizer from './widgets/MessageQueueVisualizer';
-import CDNMap from './widgets/CDNMap';
-import CrawlerFrontier from './widgets/CrawlerFrontier';
-import DFSVisualizer from './widgets/DFSVisualizer';
-import LeaderElectionDemo from './widgets/LeaderElectionDemo';
-import ConfigPropagator from './widgets/ConfigPropagator';
-import SecretVault from './widgets/SecretVault';
-import PipelineVisualizer from './widgets/PipelineVisualizer';
-import ServiceMeshViz from './widgets/ServiceMeshViz';
-import GraphQLPlayground from './widgets/GraphQLPlayground';
-import RESTExplorer from './widgets/RESTExplorer';
-import SocketPulse from './widgets/SocketPulse';
-import OTVisualizer from './widgets/OTVisualizer';
-import RTBSimulator from './widgets/RTBSimulator';
-import FeedRanker from './widgets/FeedRanker';
-import FeatureToggleDemo from './widgets/FeatureToggleDemo';
-import SidecarVisualizer from './widgets/SidecarVisualizer';
-import TraceWaterfall from './widgets/TraceWaterfall';
-import AuditLogVisualizer from './widgets/AuditLogVisualizer';
-import PrivacyRequestManager from './widgets/PrivacyRequestManager';
-import BlockchainDemo from './widgets/BlockchainDemo';
-import VectorDBVisualizer from './widgets/VectorDBVisualizer';
-import RAGArchitect from './widgets/RAGArchitect';
-import AgentOrchestrator from './widgets/AgentOrchestrator';
-import JobSchedulerViz from './widgets/JobSchedulerViz';
-import FlashSaleDemo from './widgets/FlashSaleDemo';
-import PaymentLedger from './widgets/PaymentLedger';
 import SubmissionHistory from './SubmissionHistory';
-import { History } from 'lucide-react';
+
+const WidgetSkeleton = () => (
+  <div className="w-full h-64 bg-muted/20 animate-pulse rounded-lg border border-border/50 flex items-center justify-center text-muted-foreground/50 text-sm">
+    Loading widget...
+  </div>
+);
+
+const EncodingVisualizer = dynamic(() => import('./widgets/EncodingVisualizer'), { ssr: false, loading: () => <WidgetSkeleton /> });
+const CapacityCalculator = dynamic(() => import('./widgets/CapacityCalculator'), { ssr: false, loading: () => <WidgetSkeleton /> });
+const FanoutVisualizer = dynamic(() => import('./widgets/FanoutVisualizer'), { ssr: false, loading: () => <WidgetSkeleton /> });
+const FeedRankingSimulator = dynamic(() => import('./widgets/FeedRankingSimulator'), { ssr: false, loading: () => <WidgetSkeleton /> });
+const QuadTreeVisualizer = dynamic(() => import('./widgets/QuadTreeVisualizer'), { ssr: false, loading: () => <WidgetSkeleton /> });
+const ABRSimulator = dynamic(() => import('./widgets/ABRSimulator'), { ssr: false, loading: () => <WidgetSkeleton /> });
+const E2EEncryptionDemo = dynamic(() => import('./widgets/E2EEncryptionDemo'), { ssr: false, loading: () => <WidgetSkeleton /> });
+const FeedArchitect = dynamic(() => import('./widgets/FeedArchitect'), { ssr: false, loading: () => <WidgetSkeleton /> });
+const InvertedIndexVisualizer = dynamic(() => import('./widgets/InvertedIndexVisualizer'), { ssr: false, loading: () => <WidgetSkeleton /> });
+const ChunkingDedupeDemo = dynamic(() => import('./widgets/ChunkingDedupeDemo'), { ssr: false, loading: () => <WidgetSkeleton /> });
+const RateLimiterDemo = dynamic(() => import('./widgets/RateLimiterDemo'), { ssr: false, loading: () => <WidgetSkeleton /> });
+const CacheVisualizer = dynamic(() => import('./widgets/CacheVisualizer'), { ssr: false, loading: () => <WidgetSkeleton /> });
+const TrieVisualizer = dynamic(() => import('./widgets/TrieVisualizer'), { ssr: false, loading: () => <WidgetSkeleton /> });
+const SnowflakeDemo = dynamic(() => import('./widgets/SnowflakeDemo'), { ssr: false, loading: () => <WidgetSkeleton /> });
+const LeaderboardSimulation = dynamic(() => import('./widgets/LeaderboardSimulation'), { ssr: false, loading: () => <WidgetSkeleton /> });
+const NotificationSystemDemo = dynamic(() => import('./widgets/NotificationSystemDemo'), { ssr: false, loading: () => <WidgetSkeleton /> });
+const MetricsDashboard = dynamic(() => import('./widgets/MetricsDashboard'), { ssr: false, loading: () => <WidgetSkeleton /> });
+const ConsistentHashingDemo = dynamic(() => import('./widgets/ConsistentHashingDemo'), { ssr: false, loading: () => <WidgetSkeleton /> });
+const LoadBalancerVisualizer = dynamic(() => import('./widgets/LoadBalancerVisualizer'), { ssr: false, loading: () => <WidgetSkeleton /> });
+const MessageQueueVisualizer = dynamic(() => import('./widgets/MessageQueueVisualizer'), { ssr: false, loading: () => <WidgetSkeleton /> });
+const CDNMap = dynamic(() => import('./widgets/CDNMap'), { ssr: false, loading: () => <WidgetSkeleton /> });
+const CrawlerFrontier = dynamic(() => import('./widgets/CrawlerFrontier'), { ssr: false, loading: () => <WidgetSkeleton /> });
+const DFSVisualizer = dynamic(() => import('./widgets/DFSVisualizer'), { ssr: false, loading: () => <WidgetSkeleton /> });
+const LeaderElectionDemo = dynamic(() => import('./widgets/LeaderElectionDemo'), { ssr: false, loading: () => <WidgetSkeleton /> });
+const ConfigPropagator = dynamic(() => import('./widgets/ConfigPropagator'), { ssr: false, loading: () => <WidgetSkeleton /> });
+const SecretVault = dynamic(() => import('./widgets/SecretVault'), { ssr: false, loading: () => <WidgetSkeleton /> });
+const PipelineVisualizer = dynamic(() => import('./widgets/PipelineVisualizer'), { ssr: false, loading: () => <WidgetSkeleton /> });
+const ServiceMeshViz = dynamic(() => import('./widgets/ServiceMeshViz'), { ssr: false, loading: () => <WidgetSkeleton /> });
+const GraphQLPlayground = dynamic(() => import('./widgets/GraphQLPlayground'), { ssr: false, loading: () => <WidgetSkeleton /> });
+const RESTExplorer = dynamic(() => import('./widgets/RESTExplorer'), { ssr: false, loading: () => <WidgetSkeleton /> });
+const SocketPulse = dynamic(() => import('./widgets/SocketPulse'), { ssr: false, loading: () => <WidgetSkeleton /> });
+const OTVisualizer = dynamic(() => import('./widgets/OTVisualizer'), { ssr: false, loading: () => <WidgetSkeleton /> });
+const RTBSimulator = dynamic(() => import('./widgets/RTBSimulator'), { ssr: false, loading: () => <WidgetSkeleton /> });
+const FeedRanker = dynamic(() => import('./widgets/FeedRanker'), { ssr: false, loading: () => <WidgetSkeleton /> });
+const FeatureToggleDemo = dynamic(() => import('./widgets/FeatureToggleDemo'), { ssr: false, loading: () => <WidgetSkeleton /> });
+const SidecarVisualizer = dynamic(() => import('./widgets/SidecarVisualizer'), { ssr: false, loading: () => <WidgetSkeleton /> });
+const TraceWaterfall = dynamic(() => import('./widgets/TraceWaterfall'), { ssr: false, loading: () => <WidgetSkeleton /> });
+const AuditLogVisualizer = dynamic(() => import('./widgets/AuditLogVisualizer'), { ssr: false, loading: () => <WidgetSkeleton /> });
+const PrivacyRequestManager = dynamic(() => import('./widgets/PrivacyRequestManager'), { ssr: false, loading: () => <WidgetSkeleton /> });
+const BlockchainDemo = dynamic(() => import('./widgets/BlockchainDemo'), { ssr: false, loading: () => <WidgetSkeleton /> });
+const VectorDBVisualizer = dynamic(() => import('./widgets/VectorDBVisualizer'), { ssr: false, loading: () => <WidgetSkeleton /> });
+const RAGArchitect = dynamic(() => import('./widgets/RAGArchitect'), { ssr: false, loading: () => <WidgetSkeleton /> });
+const AgentOrchestrator = dynamic(() => import('./widgets/AgentOrchestrator'), { ssr: false, loading: () => <WidgetSkeleton /> });
+const JobSchedulerViz = dynamic(() => import('./widgets/JobSchedulerViz'), { ssr: false, loading: () => <WidgetSkeleton /> });
+const FlashSaleDemo = dynamic(() => import('./widgets/FlashSaleDemo'), { ssr: false, loading: () => <WidgetSkeleton /> });
+const PaymentLedger = dynamic(() => import('./widgets/PaymentLedger'), { ssr: false, loading: () => <WidgetSkeleton /> });
 
 const WIDGETS: Record<string, React.ComponentType> = {
   'encoding-visualizer': EncodingVisualizer,
