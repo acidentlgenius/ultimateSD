@@ -299,8 +299,6 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
         ctx.beginPath();
         ctx.moveTo(element.x, element.y + ellipseHeight);
         ctx.lineTo(element.x, element.y + dbHeight - ellipseHeight);
-        ctx.stroke();
-        ctx.beginPath();
         ctx.moveTo(element.x + dbWidth, element.y + ellipseHeight);
         ctx.lineTo(element.x + dbWidth, element.y + dbHeight - ellipseHeight);
         ctx.stroke();
@@ -316,13 +314,13 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
         ctx.fillRect(element.x, element.y, element.width, element.height);
         ctx.strokeRect(element.x, element.y, element.width, element.height);
         // Horizontal lines
+        ctx.beginPath();
         for (let i = 1; i < 4; i++) {
           const lineY = element.y + (element.height / 4) * i;
-          ctx.beginPath();
           ctx.moveTo(element.x, lineY);
           ctx.lineTo(element.x + element.width, lineY);
-          ctx.stroke();
         }
+        ctx.stroke();
         break;
 
       case 'cloud':
@@ -353,15 +351,15 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
         ctx.stroke();
 
         // Draw tick marks
+        ctx.beginPath();
         for (let i = 0; i <= 4; i++) {
           const angle = Math.PI + (i / 4) * Math.PI;
           const startR = lbRadius * 0.85;
           const endR = lbRadius;
-          ctx.beginPath();
           ctx.moveTo(lbCx + Math.cos(angle) * startR, lbCy + lbRadius * 0.3 + Math.sin(angle) * startR);
           ctx.lineTo(lbCx + Math.cos(angle) * endR, lbCy + lbRadius * 0.3 + Math.sin(angle) * endR);
-          ctx.stroke();
         }
+        ctx.stroke();
 
         // Draw needle pointing up-right
         const needleAngle = Math.PI * 1.25;
@@ -469,13 +467,13 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
         ctx.stroke();
 
         // Pins
+        ctx.beginPath();
         const pinSpacing = cableW * 0.6;
         [-pinSpacing, 0, pinSpacing].forEach(xOff => {
-          ctx.beginPath();
           ctx.moveTo(apiCx + xOff, apiCy - cableH * 0.5);
           ctx.lineTo(apiCx + xOff, apiCy);
-          ctx.stroke();
         });
+        ctx.stroke();
 
         // Cable line
         ctx.beginPath();
