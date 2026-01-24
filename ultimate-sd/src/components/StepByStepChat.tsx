@@ -31,102 +31,58 @@ import {
   RotateCcw,
   Info
 } from 'lucide-react';
-import EncodingVisualizer from './widgets/EncodingVisualizer';
-import CapacityCalculator from './widgets/CapacityCalculator';
-import FanoutVisualizer from './widgets/FanoutVisualizer';
-import FeedRankingSimulator from './widgets/FeedRankingSimulator';
-import QuadTreeVisualizer from './widgets/QuadTreeVisualizer';
-import ABRSimulator from './widgets/ABRSimulator';
-import E2EEncryptionDemo from './widgets/E2EEncryptionDemo';
-import FeedArchitect from './widgets/FeedArchitect';
-import InvertedIndexVisualizer from './widgets/InvertedIndexVisualizer';
-import ChunkingDedupeDemo from './widgets/ChunkingDedupeDemo';
-import RateLimiterDemo from './widgets/RateLimiterDemo';
-import CacheVisualizer from './widgets/CacheVisualizer';
-import TrieVisualizer from './widgets/TrieVisualizer';
-import SnowflakeDemo from './widgets/SnowflakeDemo';
-import LeaderboardSimulation from './widgets/LeaderboardSimulation';
-import NotificationSystemDemo from './widgets/NotificationSystemDemo';
-import MetricsDashboard from './widgets/MetricsDashboard';
-import ConsistentHashingDemo from './widgets/ConsistentHashingDemo';
-import LoadBalancerVisualizer from './widgets/LoadBalancerVisualizer';
-import MessageQueueVisualizer from './widgets/MessageQueueVisualizer';
-import CDNMap from './widgets/CDNMap';
-import CrawlerFrontier from './widgets/CrawlerFrontier';
-import DFSVisualizer from './widgets/DFSVisualizer';
-import LeaderElectionDemo from './widgets/LeaderElectionDemo';
-import ConfigPropagator from './widgets/ConfigPropagator';
-import SecretVault from './widgets/SecretVault';
-import PipelineVisualizer from './widgets/PipelineVisualizer';
-import ServiceMeshViz from './widgets/ServiceMeshViz';
-import GraphQLPlayground from './widgets/GraphQLPlayground';
-import RESTExplorer from './widgets/RESTExplorer';
-import SocketPulse from './widgets/SocketPulse';
-import OTVisualizer from './widgets/OTVisualizer';
-import RTBSimulator from './widgets/RTBSimulator';
-import FeedRanker from './widgets/FeedRanker';
-import FeatureToggleDemo from './widgets/FeatureToggleDemo';
-import SidecarVisualizer from './widgets/SidecarVisualizer';
-import TraceWaterfall from './widgets/TraceWaterfall';
-import AuditLogVisualizer from './widgets/AuditLogVisualizer';
-import PrivacyRequestManager from './widgets/PrivacyRequestManager';
-import BlockchainDemo from './widgets/BlockchainDemo';
-import VectorDBVisualizer from './widgets/VectorDBVisualizer';
-import RAGArchitect from './widgets/RAGArchitect';
-import AgentOrchestrator from './widgets/AgentOrchestrator';
-import JobSchedulerViz from './widgets/JobSchedulerViz';
-import FlashSaleDemo from './widgets/FlashSaleDemo';
-import PaymentLedger from './widgets/PaymentLedger';
 import SubmissionHistory from './SubmissionHistory';
 import { History } from 'lucide-react';
+import dynamic from 'next/dynamic';
+import WidgetLoader from './WidgetLoader';
 
 const WIDGETS: Record<string, React.ComponentType> = {
-  'encoding-visualizer': EncodingVisualizer,
-  'capacity-calculator': CapacityCalculator,
-  'fanout-visualizer': FanoutVisualizer,
-  'feed-ranking-simulator': FeedRankingSimulator,
-  'quadtree-visualizer': QuadTreeVisualizer,
-  'abr-simulator': ABRSimulator,
-  'e2e-encryption-demo': E2EEncryptionDemo,
-  'feed-architect': FeedArchitect,
-  'inverted-index-visualizer': InvertedIndexVisualizer,
-  'chunking-dedupe-demo': ChunkingDedupeDemo,
-  'rate-limiter-demo': RateLimiterDemo,
-  'cache-visualizer': CacheVisualizer,
-  'trie-visualizer': TrieVisualizer,
-  'snowflake-demo': SnowflakeDemo,
-  'leaderboard-simulation': LeaderboardSimulation,
-  'notification-system-demo': NotificationSystemDemo,
-  'metrics-dashboard': MetricsDashboard,
-  'consistent-hashing-demo': ConsistentHashingDemo,
-  'load-balancer-visualizer': LoadBalancerVisualizer,
-  'message-queue-visualizer': MessageQueueVisualizer,
-  'cdn-map': CDNMap,
-  'crawler-frontier': CrawlerFrontier,
-  'dfs-visualizer': DFSVisualizer,
-  'leader-election-demo': LeaderElectionDemo,
-  'config-propagator': ConfigPropagator,
-  'secret-vault': SecretVault,
-  'pipeline-visualizer': PipelineVisualizer,
-  'service-mesh-viz': ServiceMeshViz,
-  'graphql-playground': GraphQLPlayground,
-  'rest-explorer': RESTExplorer,
-  'socket-pulse': SocketPulse,
-  'ot-visualizer': OTVisualizer,
-  'rtb-simulator': RTBSimulator,
-  'feed-ranker': FeedRanker,
-  'feature-toggle-demo': FeatureToggleDemo,
-  'sidecar-visualizer': SidecarVisualizer,
-  'trace-waterfall': TraceWaterfall,
-  'audit-log-visualizer': AuditLogVisualizer,
-  'privacy-request-manager': PrivacyRequestManager,
-  'blockchain-demo': BlockchainDemo,
-  'vector-db-visualizer': VectorDBVisualizer,
-  'rag-architect': RAGArchitect,
-  'agent-orchestrator': AgentOrchestrator,
-  'job-scheduler-viz': JobSchedulerViz,
-  'flash-sale-demo': FlashSaleDemo,
-  'payment-ledger': PaymentLedger,
+  'encoding-visualizer': dynamic(() => import('./widgets/EncodingVisualizer'), { loading: WidgetLoader }),
+  'capacity-calculator': dynamic(() => import('./widgets/CapacityCalculator'), { loading: WidgetLoader }),
+  'fanout-visualizer': dynamic(() => import('./widgets/FanoutVisualizer'), { loading: WidgetLoader }),
+  'feed-ranking-simulator': dynamic(() => import('./widgets/FeedRankingSimulator'), { loading: WidgetLoader }),
+  'quadtree-visualizer': dynamic(() => import('./widgets/QuadTreeVisualizer'), { loading: WidgetLoader }),
+  'abr-simulator': dynamic(() => import('./widgets/ABRSimulator'), { loading: WidgetLoader }),
+  'e2e-encryption-demo': dynamic(() => import('./widgets/E2EEncryptionDemo'), { loading: WidgetLoader }),
+  'feed-architect': dynamic(() => import('./widgets/FeedArchitect'), { loading: WidgetLoader }),
+  'inverted-index-visualizer': dynamic(() => import('./widgets/InvertedIndexVisualizer'), { loading: WidgetLoader }),
+  'chunking-dedupe-demo': dynamic(() => import('./widgets/ChunkingDedupeDemo'), { loading: WidgetLoader }),
+  'rate-limiter-demo': dynamic(() => import('./widgets/RateLimiterDemo'), { loading: WidgetLoader }),
+  'cache-visualizer': dynamic(() => import('./widgets/CacheVisualizer'), { loading: WidgetLoader }),
+  'trie-visualizer': dynamic(() => import('./widgets/TrieVisualizer'), { loading: WidgetLoader }),
+  'snowflake-demo': dynamic(() => import('./widgets/SnowflakeDemo'), { loading: WidgetLoader }),
+  'leaderboard-simulation': dynamic(() => import('./widgets/LeaderboardSimulation'), { loading: WidgetLoader }),
+  'notification-system-demo': dynamic(() => import('./widgets/NotificationSystemDemo'), { loading: WidgetLoader }),
+  'metrics-dashboard': dynamic(() => import('./widgets/MetricsDashboard'), { loading: WidgetLoader }),
+  'consistent-hashing-demo': dynamic(() => import('./widgets/ConsistentHashingDemo'), { loading: WidgetLoader }),
+  'load-balancer-visualizer': dynamic(() => import('./widgets/LoadBalancerVisualizer'), { loading: WidgetLoader }),
+  'message-queue-visualizer': dynamic(() => import('./widgets/MessageQueueVisualizer'), { loading: WidgetLoader }),
+  'cdn-map': dynamic(() => import('./widgets/CDNMap'), { loading: WidgetLoader }),
+  'crawler-frontier': dynamic(() => import('./widgets/CrawlerFrontier'), { loading: WidgetLoader }),
+  'dfs-visualizer': dynamic(() => import('./widgets/DFSVisualizer'), { loading: WidgetLoader }),
+  'leader-election-demo': dynamic(() => import('./widgets/LeaderElectionDemo'), { loading: WidgetLoader }),
+  'config-propagator': dynamic(() => import('./widgets/ConfigPropagator'), { loading: WidgetLoader }),
+  'secret-vault': dynamic(() => import('./widgets/SecretVault'), { loading: WidgetLoader }),
+  'pipeline-visualizer': dynamic(() => import('./widgets/PipelineVisualizer'), { loading: WidgetLoader }),
+  'service-mesh-viz': dynamic(() => import('./widgets/ServiceMeshViz'), { loading: WidgetLoader }),
+  'graphql-playground': dynamic(() => import('./widgets/GraphQLPlayground'), { loading: WidgetLoader }),
+  'rest-explorer': dynamic(() => import('./widgets/RESTExplorer'), { loading: WidgetLoader }),
+  'socket-pulse': dynamic(() => import('./widgets/SocketPulse'), { loading: WidgetLoader }),
+  'ot-visualizer': dynamic(() => import('./widgets/OTVisualizer'), { loading: WidgetLoader }),
+  'rtb-simulator': dynamic(() => import('./widgets/RTBSimulator'), { loading: WidgetLoader }),
+  'feed-ranker': dynamic(() => import('./widgets/FeedRanker'), { loading: WidgetLoader }),
+  'feature-toggle-demo': dynamic(() => import('./widgets/FeatureToggleDemo'), { loading: WidgetLoader }),
+  'sidecar-visualizer': dynamic(() => import('./widgets/SidecarVisualizer'), { loading: WidgetLoader }),
+  'trace-waterfall': dynamic(() => import('./widgets/TraceWaterfall'), { loading: WidgetLoader }),
+  'audit-log-visualizer': dynamic(() => import('./widgets/AuditLogVisualizer'), { loading: WidgetLoader }),
+  'privacy-request-manager': dynamic(() => import('./widgets/PrivacyRequestManager'), { loading: WidgetLoader }),
+  'blockchain-demo': dynamic(() => import('./widgets/BlockchainDemo'), { loading: WidgetLoader }),
+  'vector-db-visualizer': dynamic(() => import('./widgets/VectorDBVisualizer'), { loading: WidgetLoader }),
+  'rag-architect': dynamic(() => import('./widgets/RAGArchitect'), { loading: WidgetLoader }),
+  'agent-orchestrator': dynamic(() => import('./widgets/AgentOrchestrator'), { loading: WidgetLoader }),
+  'job-scheduler-viz': dynamic(() => import('./widgets/JobSchedulerViz'), { loading: WidgetLoader }),
+  'flash-sale-demo': dynamic(() => import('./widgets/FlashSaleDemo'), { loading: WidgetLoader }),
+  'payment-ledger': dynamic(() => import('./widgets/PaymentLedger'), { loading: WidgetLoader }),
 };
 
 import { DEFAULT_PHASE_STEPS } from '@/lib/steps';
