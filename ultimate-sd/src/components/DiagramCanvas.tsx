@@ -243,19 +243,21 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
     ctx.lineWidth = 0.5;
     const gridSize = 20;
 
+    // Performance optimization: Batch all grid lines into a single path
+    // instead of calling stroke() for each line.
+    ctx.beginPath();
+
     for (let x = 0; x <= width; x += gridSize) {
-      ctx.beginPath();
       ctx.moveTo(x, 0);
       ctx.lineTo(x, height);
-      ctx.stroke();
     }
 
     for (let y = 0; y <= height; y += gridSize) {
-      ctx.beginPath();
       ctx.moveTo(0, y);
       ctx.lineTo(width, y);
-      ctx.stroke();
     }
+
+    ctx.stroke();
   };
 
   const drawElement = (ctx: CanvasRenderingContext2D, element: DiagramElement, isSelected: boolean = false) => {
@@ -296,11 +298,11 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
         ctx.stroke();
 
         ctx.fillRect(element.x, element.y + ellipseHeight, dbWidth, dbHeight - ellipseHeight * 2);
+
+        // Batch vertical lines
         ctx.beginPath();
         ctx.moveTo(element.x, element.y + ellipseHeight);
         ctx.lineTo(element.x, element.y + dbHeight - ellipseHeight);
-        ctx.stroke();
-        ctx.beginPath();
         ctx.moveTo(element.x + dbWidth, element.y + ellipseHeight);
         ctx.lineTo(element.x + dbWidth, element.y + dbHeight - ellipseHeight);
         ctx.stroke();
@@ -316,13 +318,13 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
         ctx.fillRect(element.x, element.y, element.width, element.height);
         ctx.strokeRect(element.x, element.y, element.width, element.height);
         // Horizontal lines
+        ctx.beginPath();
         for (let i = 1; i < 4; i++) {
           const lineY = element.y + (element.height / 4) * i;
-          ctx.beginPath();
           ctx.moveTo(element.x, lineY);
           ctx.lineTo(element.x + element.width, lineY);
-          ctx.stroke();
         }
+        ctx.stroke();
         break;
 
       case 'cloud':
