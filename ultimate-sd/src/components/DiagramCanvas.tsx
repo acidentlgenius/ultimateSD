@@ -243,19 +243,18 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
     ctx.lineWidth = 0.5;
     const gridSize = 20;
 
+    // Batch grid lines into a single path to optimize rendering
+    ctx.beginPath();
     for (let x = 0; x <= width; x += gridSize) {
-      ctx.beginPath();
       ctx.moveTo(x, 0);
       ctx.lineTo(x, height);
-      ctx.stroke();
     }
 
     for (let y = 0; y <= height; y += gridSize) {
-      ctx.beginPath();
       ctx.moveTo(0, y);
       ctx.lineTo(width, y);
-      ctx.stroke();
     }
+    ctx.stroke();
   };
 
   const drawElement = (ctx: CanvasRenderingContext2D, element: DiagramElement, isSelected: boolean = false) => {
@@ -316,13 +315,13 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
         ctx.fillRect(element.x, element.y, element.width, element.height);
         ctx.strokeRect(element.x, element.y, element.width, element.height);
         // Horizontal lines
+        ctx.beginPath();
         for (let i = 1; i < 4; i++) {
           const lineY = element.y + (element.height / 4) * i;
-          ctx.beginPath();
           ctx.moveTo(element.x, lineY);
           ctx.lineTo(element.x + element.width, lineY);
-          ctx.stroke();
         }
+        ctx.stroke();
         break;
 
       case 'cloud':
@@ -353,15 +352,15 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
         ctx.stroke();
 
         // Draw tick marks
+        ctx.beginPath();
         for (let i = 0; i <= 4; i++) {
           const angle = Math.PI + (i / 4) * Math.PI;
           const startR = lbRadius * 0.85;
           const endR = lbRadius;
-          ctx.beginPath();
           ctx.moveTo(lbCx + Math.cos(angle) * startR, lbCy + lbRadius * 0.3 + Math.sin(angle) * startR);
           ctx.lineTo(lbCx + Math.cos(angle) * endR, lbCy + lbRadius * 0.3 + Math.sin(angle) * endR);
-          ctx.stroke();
         }
+        ctx.stroke();
 
         // Draw needle pointing up-right
         const needleAngle = Math.PI * 1.25;
@@ -470,12 +469,12 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
 
         // Pins
         const pinSpacing = cableW * 0.6;
+        ctx.beginPath();
         [-pinSpacing, 0, pinSpacing].forEach(xOff => {
-          ctx.beginPath();
           ctx.moveTo(apiCx + xOff, apiCy - cableH * 0.5);
           ctx.lineTo(apiCx + xOff, apiCy);
-          ctx.stroke();
         });
+        ctx.stroke();
 
         // Cable line
         ctx.beginPath();
