@@ -1,14 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PROBLEMS } from '@/lib/problems';
+import { getStepsForProblem } from '@/lib/problem-steps';
 import { getAIResponse, getFeedback } from '@/lib/langgraph';
 import { ChatMessage } from '@/types';
 
 export async function POST(req: NextRequest) {
   const { input, slug, messages = [], phase = 'init' } = await req.json();
-  const problem = PROBLEMS.find(p => p.slug === slug);
-  if (!problem) {
+  const problemMetadata = PROBLEMS.find(p => p.slug === slug);
+  if (!problemMetadata) {
     return NextResponse.json({ error: 'Problem not found' }, { status: 404 });
   }
+
+  const steps = getStepsForProblem(slug);
+  const problem = { ...problemMetadata, steps };
 
   // Convert messages back to ChatMessage type
   const chatMessages: ChatMessage[] = messages.map((msg: any) => ({
