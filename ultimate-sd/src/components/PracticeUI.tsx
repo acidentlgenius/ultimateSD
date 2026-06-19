@@ -24,7 +24,8 @@ import { updateProblemProgress, startPracticeSession } from '@/app/actions/progr
 import { CheckCircle } from 'lucide-react';
 
 export default function PracticeUI({ problem, existingProgress }: { problem: SystemDesignProblem, existingProgress?: any }) {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
+  const isAuthenticated = status === 'authenticated' && !!session?.user?.id;
 
   const activeSteps = problem.steps || DEFAULT_PHASE_STEPS;
 
@@ -57,28 +58,26 @@ export default function PracticeUI({ problem, existingProgress }: { problem: Sys
 
 
 
-  // Auto-mark in progress and START TIMER on mount
+  // Auto-mark in progress and START TIMER on mount (authenticated users only)
   useEffect(() => {
-    const initSession = async () => {
-      if (problem.id) {
-        try {
-          // This starts the timer server-side (if not already started) and returns the timestamp
-          const result = await startPracticeSession(problem.id);
-          console.log('[PracticeUI] startPracticeSession result:', result);
+    if (!isAuthenticated || !problem.id) return;
 
-          if (result.success && result.startedAt) {
-            setServerStartedAt(result.startedAt);
-            setIsTimerRunning((result as any).isTimerRunning);
-            setServerPausedSeconds((result as any).totalPausedSeconds);
-            setLastPausedAt((result as any).lastPausedAt);
-          }
-        } catch (error) {
-          console.error("Failed to auto-start session:", error);
+    const initSession = async () => {
+      try {
+        const result = await startPracticeSession(problem.id);
+
+        if (result.success && result.startedAt) {
+          setServerStartedAt(result.startedAt);
+          setIsTimerRunning((result as any).isTimerRunning);
+          setServerPausedSeconds((result as any).totalPausedSeconds);
+          setLastPausedAt((result as any).lastPausedAt);
         }
+      } catch (error) {
+        console.error("Failed to auto-start session:", error);
       }
     };
     initSession();
-  }, [problem.id]);
+  }, [problem.id, isAuthenticated]);
 
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -162,7 +161,7 @@ export default function PracticeUI({ problem, existingProgress }: { problem: Sys
             totalPausedSeconds={serverPausedSeconds}
             lastPausedAt={lastPausedAt}
             onToggle={async () => {
-              // Call server action to toggle pause/resume
+              if (!isAuthenticated) return;
               const result = await import('@/app/actions/progress').then(mod => mod.togglePracticeTimer(problem.id));
               if (result.success) {
                 setIsTimerRunning(result.isTimerRunning);

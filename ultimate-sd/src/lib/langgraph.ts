@@ -3,7 +3,7 @@ import { HumanMessage } from '@langchain/core/messages';
 import { SystemDesignProblem, ChatMessage } from '@/types';
 
 const llm = process.env.GOOGLE_API_KEY ? new ChatGoogleGenerativeAI({
-  model: 'gemini-2.0-flash',
+  model: 'gemini-2.5-flash-lite',
   apiKey: process.env.GOOGLE_API_KEY,
 }) : null;
 

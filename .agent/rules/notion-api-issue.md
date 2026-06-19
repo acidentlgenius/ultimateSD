@@ -1,5 +1,5 @@
 ---
-trigger: always_on
+trigger: manual
 ---
 
 # Notion MCP API Issue: Tasks Tracker Database
@@ -63,4 +63,3 @@ Use **Ultimate-SD page** (`2cf8791d-37ad-80d8-936a-e8fa75e838c7`) for all update
 
 - `.agent/rules/request-guidelines.md` - Main guidelines
 - `.agent/rules/notion-update-template.md` - Update templates
-

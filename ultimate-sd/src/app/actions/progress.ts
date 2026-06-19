@@ -105,7 +105,7 @@ export async function saveUserPreferences(targetCompanies: string[], preferredDi
 export async function startPracticeSession(problemId: string) {
     const session = await auth();
     if (!session?.user?.id) {
-        throw new Error('Unauthorized');
+        return { success: false, error: 'Unauthorized' };
     }
 
     try {

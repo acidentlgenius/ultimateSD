@@ -1,5 +1,5 @@
 ---
-trigger: always_on
+trigger: manual
 ---
 
 # Notion Update Template & Format Guide
@@ -241,4 +241,3 @@ Before logging an update, verify:
 - Verify database permissions
 - Test alternative query formats
 - Check if database needs to be shared with integration
-

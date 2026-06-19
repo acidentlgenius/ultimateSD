@@ -1,5 +1,7 @@
-import { Search, Filter, LayoutGrid, List } from 'lucide-react';
+import { Search, Filter, LayoutGrid, List, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 
 interface ProblemFilterBarProps {
     search: string;
@@ -29,54 +31,73 @@ export function ProblemFilterBar({
     user
 }: ProblemFilterBarProps) {
     return (
-        <div className="sticky top-20 z-40 backdrop-blur-xl bg-background/70 rounded-2xl border border-white/20 shadow-2xl shadow-primary/5 mb-12 max-w-5xl mx-auto transition-all duration-300 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary/50">
-            <div className="p-3 flex flex-col md:flex-row gap-3">
-                <div className="relative flex-1 group">
-                    <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center justify-center">
-                        <Search className="h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
+        <div className="sticky top-20 z-40 backdrop-blur-2xl bg-background/60 rounded-3xl border border-white/10 shadow-2xl shadow-primary/5 mb-12 max-w-5xl mx-auto transition-all duration-300 group">
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-purple-500/5 rounded-3xl opacity-50 pointer-events-none" />
+
+            <div className="relative p-2 flex flex-col md:flex-row gap-2">
+                {/* Search Field */}
+                <div className="relative flex-1 group/search">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center justify-center transition-colors duration-300">
+                        <Search className="h-5 w-5 text-muted-foreground group-focus-within/search:text-primary" />
                     </div>
                     <label htmlFor="problem-search" className="sr-only">Search problems</label>
                     <input
                         id="problem-search"
                         type="text"
-                        placeholder="Search problems (e.g., 'Uber', 'Chat', 'Cache')..."
+                        placeholder="Search problems..."
                         value={search}
                         onChange={e => setSearch(e.target.value)}
-                        className="w-full pl-12 pr-4 h-12 bg-transparent outline-none text-foreground placeholder:text-muted-foreground/70 rounded-xl hover:bg-white/5 transition-colors"
+                        className="w-full pl-12 pr-4 h-12 bg-white/5 border border-transparent focus:border-primary/30 rounded-2xl outline-none text-foreground placeholder:text-muted-foreground/60 transition-all duration-300 focus:bg-white/10 focus:shadow-glow-sm"
                         autoFocus={!!user}
                     />
                 </div>
-                <div className="flex gap-3 w-full md:w-auto overflow-x-auto pb-1 md:pb-0 no-scrollbar">
-                    <div className="relative min-w-[140px] md:w-48">
+
+                {/* Filters Row */}
+                <div className="flex gap-2 overflow-x-auto pb-1 md:pb-0 no-scrollbar touch-pan-x">
+
+                    {/* Category Dropdown */}
+                    <div className="relative min-w-[140px] md:w-auto md:min-w-[160px]">
                         <select
                             value={category}
                             onChange={e => setCategory(e.target.value)}
                             aria-label="Filter by Category"
-                            className="w-full h-12 px-4 bg-muted/40 border border-transparent hover:border-border/50 rounded-xl outline-none cursor-pointer hover:bg-muted/60 transition-colors appearance-none text-sm font-medium"
+                            className="w-full h-12 pl-4 pr-10 bg-white/5 border border-white/5 hover:border-sidebar-border rounded-2xl outline-none cursor-pointer text-sm font-medium appearance-none transition-all hover:bg-white/10 focus:ring-2 focus:ring-primary/20 text-muted-foreground focus:text-foreground"
                         >
-                            {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                            {categories.map(cat => <option key={cat} value={cat} className="bg-popover text-popover-foreground">{cat}</option>)}
                         </select>
-                        <Filter className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                     </div>
-                    <div className="relative min-w-[120px] md:w-40">
+
+                    {/* Difficulty Dropdown */}
+                    <div className="relative min-w-[120px] md:w-auto md:min-w-[140px]">
                         <select
                             value={difficulty}
                             onChange={e => setDifficulty(e.target.value)}
                             aria-label="Filter by Difficulty"
-                            className="w-full h-12 px-4 bg-muted/40 border border-transparent hover:border-border/50 rounded-xl outline-none cursor-pointer hover:bg-muted/60 transition-colors appearance-none text-sm font-medium"
+                            className="w-full h-12 pl-4 pr-10 bg-white/5 border border-white/5 hover:border-sidebar-border rounded-2xl outline-none cursor-pointer text-sm font-medium appearance-none transition-all hover:bg-white/10 focus:ring-2 focus:ring-primary/20 text-muted-foreground focus:text-foreground"
                         >
-                            {difficulties.map(diff => <option key={diff} value={diff}>{diff}</option>)}
+                            {difficulties.map(diff => <option key={diff} value={diff} className="bg-popover text-popover-foreground">{diff}</option>)}
                         </select>
-                        <div className="absolute right-3 top-1/2 -translate-y-1/2 h-2 w-2 rounded-full bg-primary pointer-events-none" />
+                        <div className={cn(
+                            "absolute right-3 top-1/2 -translate-y-1/2 h-2 w-2 rounded-full pointer-events-none transition-colors",
+                            difficulty === 'Easy' ? 'bg-green-500' :
+                                difficulty === 'Medium' ? 'bg-amber-500' :
+                                    difficulty === 'Hard' ? 'bg-red-500' : 'bg-muted-foreground/30'
+                        )} />
                     </div>
 
-                    <div className="flex bg-muted/40 p-1.5 rounded-xl h-12 items-center gap-1 shrink-0">
+                    {/* View Toggle */}
+                    <div className="flex bg-white/5 p-1 rounded-2xl h-12 items-center gap-1 shrink-0 border border-white/5">
                         <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => setViewMode('grid')}
-                            aria-label="Grid view"
-                            className={`h-9 px-3 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-background shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                            className={cn(
+                                "h-full px-3 rounded-xl transition-all duration-300",
+                                viewMode === 'grid'
+                                    ? "bg-background shadow-sm text-primary"
+                                    : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                            )}
                         >
                             <LayoutGrid className="h-4 w-4" />
                         </Button>
@@ -84,8 +105,12 @@ export function ProblemFilterBar({
                             variant="ghost"
                             size="sm"
                             onClick={() => setViewMode('list')}
-                            aria-label="List view"
-                            className={`h-9 px-3 rounded-lg transition-all ${viewMode === 'list' ? 'bg-background shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                            className={cn(
+                                "h-full px-3 rounded-xl transition-all duration-300",
+                                viewMode === 'list'
+                                    ? "bg-background shadow-sm text-primary"
+                                    : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                            )}
                         >
                             <List className="h-4 w-4" />
                         </Button>

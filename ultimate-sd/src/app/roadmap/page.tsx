@@ -8,20 +8,43 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { useState, useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { useSearchParams, useRouter } from 'next/navigation';
 
-export default function RoadmapPage() {
+function RoadmapFallback() {
+    return (
+        <div className="min-h-screen bg-background relative">
+            <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[120px]" />
+            </div>
+            <div className="container mx-auto px-4 py-8 relative z-10">
+                <div className="mb-12 md:mb-16">
+                    <Link href="/">
+                        <Button variant="ghost" size="sm" className="mb-6 -ml-2 text-muted-foreground hover:text-foreground">
+                            <ArrowLeft className="w-4 h-4 mr-2" /> Back to Home
+                        </Button>
+                    </Link>
+                    <div className="text-center max-w-2xl mx-auto animate-pulse">
+                        <div className="h-6 w-48 bg-muted rounded-full mx-auto mb-4" />
+                        <div className="h-12 w-full bg-muted rounded-lg mb-6" />
+                        <div className="h-5 w-3/4 bg-muted rounded mx-auto mb-8" />
+                        <div className="h-12 w-96 max-w-full bg-muted rounded-2xl mx-auto" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function RoadmapContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const trackParam = searchParams.get('track');
 
-    // Derived state from URL - Single Source of Truth
     const isValidTrack = TRACKS.some(t => t.id === trackParam);
     const selectedTrack = (isValidTrack ? trackParam : 'se') as RoadmapTrack;
 
-    // Only one effect: specific redirection for invalid/missing track
     useEffect(() => {
         if (!isValidTrack) {
             const params = new URLSearchParams(searchParams.toString());
@@ -40,13 +63,11 @@ export default function RoadmapPage() {
 
     return (
         <div className="min-h-screen bg-background relative selection:bg-primary/20">
-            {/* Background Gradients */}
             <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[120px]" />
             </div>
 
             <div className="container mx-auto px-4 py-8 relative z-10">
-                {/* Header */}
                 <div className="mb-12 md:mb-16">
                     <Link href="/">
                         <Button variant="ghost" size="sm" className="mb-6 -ml-2 text-muted-foreground hover:text-foreground">
@@ -66,7 +87,6 @@ export default function RoadmapPage() {
                             Choose your career path and solve the exact problems needed to level up.
                         </p>
 
-                        {/* Track Selector */}
                         <div className="flex flex-wrap justify-center gap-2 p-1.5 bg-muted/30 backdrop-blur-md rounded-2xl border border-border/50 shadow-sm inline-flex">
                             {TRACKS.map(track => {
                                 const Icon = track.icon;
@@ -96,7 +116,6 @@ export default function RoadmapPage() {
                     </motion.div>
                 </div>
 
-                {/* Roadmap Timeline */}
                 <div className="relative max-w-5xl mx-auto pb-32 min-h-[500px]">
                     <RoadmapPath />
 
@@ -110,7 +129,6 @@ export default function RoadmapPage() {
                         >
                             {roadmapData.map((phase) => (
                                 <div key={phase.id} className="mb-24 relative">
-                                    {/* Phase Header */}
                                     <div className="flex flex-col items-center justify-center mb-12 text-center relative z-10">
                                         <div className="bg-background/80 backdrop-blur border border-primary/20 px-6 py-2 rounded-full shadow-lg shadow-primary/5">
                                             <h2 className="text-xl font-bold bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">{phase.title}</h2>
@@ -118,7 +136,6 @@ export default function RoadmapPage() {
                                         <p className="text-sm text-muted-foreground mt-2 max-w-md">{phase.description}</p>
                                     </div>
 
-                                    {/* Steps */}
                                     <div className="space-y-4">
                                         {phase.steps.map((step, index) => (
                                             <RoadmapNode
@@ -137,5 +154,13 @@ export default function RoadmapPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function RoadmapPage() {
+    return (
+        <Suspense fallback={<RoadmapFallback />}>
+            <RoadmapContent />
+        </Suspense>
     );
 }

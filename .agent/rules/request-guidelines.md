@@ -1,5 +1,5 @@
 ---
-trigger: always_on
+trigger: manual
 ---
 
 # Request Handling Guidelines (RAG + Notion MCP)

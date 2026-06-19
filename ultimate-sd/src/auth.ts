@@ -57,8 +57,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
     callbacks: {
         async jwt({ token, user }) {
-            if (user) {
+            if (user?.id) {
                 token.id = user.id;
+            } else if (!token.id && token.sub) {
+                token.id = token.sub;
             }
 
             // Always fetch fresh user data to ensure xp/etc are up to date
@@ -79,7 +81,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         },
         async session({ session, token }) {
             if (token && session.user) {
-                session.user.id = token.id as string;
+                session.user.id = (token.id ?? token.sub) as string;
                 session.user.xp = token.xp as number;
                 session.user.level = token.level as number;
                 session.user.streak = token.streak as number;

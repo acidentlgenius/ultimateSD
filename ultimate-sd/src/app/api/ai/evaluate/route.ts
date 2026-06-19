@@ -4,7 +4,7 @@ import { HumanMessage } from '@langchain/core/messages';
 import { getSolution } from '@/lib/solutions';
 
 const llm = process.env.GOOGLE_API_KEY ? new ChatGoogleGenerativeAI({
-  model: 'gemini-2.0-flash-exp',
+  model: 'gemini-2.5-flash-lite',
   apiKey: process.env.GOOGLE_API_KEY,
   temperature: 0.3,
 }) : null;

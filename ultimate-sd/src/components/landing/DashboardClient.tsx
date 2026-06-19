@@ -2,7 +2,7 @@
 
 import { PROBLEMS } from '@/lib/problems';
 import ProblemCard from '@/components/ProblemCard';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Search, ArrowRight, Building2, TrendingUp } from 'lucide-react';
 import {
     Table,
@@ -18,12 +18,13 @@ import { Button } from '@/components/ui/button';
 import { Hero } from '@/components/landing/Hero';
 import { FeatureShowcase } from '@/components/landing/FeatureShowcase';
 import { RoadmapPreview } from '@/components/landing/RoadmapPreview';
+import { UserHero } from '@/components/landing/UserHero';
 
 import Link from 'next/link';
 import OnboardingModal from '@/components/OnboardingModal';
 import { ProblemWithStatus } from '@/types';
-import { UserHero } from '@/components/landing/UserHero';
 import { ProblemFilterBar } from '@/components/landing/ProblemFilterBar';
+import { cn } from '@/lib/utils';
 
 interface DashboardClientProps {
     user?: {
@@ -101,16 +102,15 @@ export function DashboardClient({ user, recommendations, onboardingCompleted = f
             {!user && <FeatureShowcase />}
 
             {/* 2.5 Roadmap Preview */}
-            {/* 2.5 Roadmap Preview */}
             <RoadmapPreview />
 
-
-
             {/* 3. Problem Explorer */}
-            <div id="problems" className="container mx-auto px-4 py-12 relative z-10">
-                <div className="text-center mb-16 space-y-4">
-                    <h2 className="text-4xl md:text-5xl font-bold tracking-tight">{user ? 'All Challenges' : 'Start Practicing'}</h2>
-                    <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            <div id="problems" className="container mx-auto px-4 py-24 relative z-10 max-w-7xl">
+                <div className="text-center mb-20 space-y-6">
+                    <h2 className="text-4xl md:text-6xl font-bold tracking-tight bg-gradient-to-br from-foreground to-muted-foreground bg-clip-text text-transparent">
+                        {user ? 'All Challenges' : 'Start Practicing'}
+                    </h2>
+                    <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
                         Pick a real-world problem and start designing. Master the patterns used by top tech companies.
                     </p>
                 </div>
@@ -130,14 +130,14 @@ export function DashboardClient({ user, recommendations, onboardingCompleted = f
                 />
 
                 {/* Problems Grid */}
-                <div className="min-h-[400px]">
+                <div className="min-h-[500px]">
                     {filtered.length > 0 ? (
                         viewMode === 'grid' ? (
-                            <div className="gap-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 xl:gap-10">
                                 {filtered.map((problem, index) => (
                                     <div
                                         key={problem.id}
-                                        className="animate-slide-up"
+                                        className="animate-slide-up h-full"
                                         style={{ animationDelay: `${Math.min(index * 50, 500)}ms` }}
                                     >
                                         <ProblemCard problem={problem} />
@@ -145,60 +145,57 @@ export function DashboardClient({ user, recommendations, onboardingCompleted = f
                                 ))}
                             </div>
                         ) : (
-                            <div className="rounded-2xl border border-white/10 bg-card/50 backdrop-blur-sm text-card-foreground shadow-sm overflow-hidden animate-slide-up">
+                            <div className="rounded-3xl border border-white/10 bg-card/40 backdrop-blur-xl shadow-2xl shadow-black/5 overflow-hidden animate-slide-up">
                                 <Table>
                                     <TableHeader>
-                                        <TableRow className="bg-muted/30 hover:bg-muted/50 border-white/5">
-                                            <TableHead className="w-[40%] font-semibold">Problem</TableHead>
-                                            <TableHead className="font-semibold">Difficulty</TableHead>
-                                            <TableHead className="font-semibold">Category</TableHead>
-                                            <TableHead className="hidden md:table-cell font-semibold">Companies</TableHead>
-                                            <TableHead className="text-right font-semibold">Action</TableHead>
+                                        <TableRow className="border-white/5 hover:bg-transparent">
+                                            <TableHead className="w-[45%] font-semibold pl-6 h-14">Problem</TableHead>
+                                            <TableHead className="font-semibold h-14">Difficulty</TableHead>
+                                            <TableHead className="font-semibold h-14">Category</TableHead>
+                                            <TableHead className="hidden md:table-cell font-semibold h-14">Companies</TableHead>
+                                            <TableHead className="text-right font-semibold pr-6 h-14">Action</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                         {filtered.map((problem) => (
-                                            <TableRow key={problem.id} className="group hover:bg-blue-500/5 transition-colors border-white/5">
-                                                <TableCell className="font-medium">
-                                                    <div className="flex flex-col">
-                                                        <span className="text-base group-hover:text-primary transition-colors">{problem.title}</span>
-                                                        <span className="text-xs text-muted-foreground line-clamp-1 font-normal md:hidden">{problem.category}</span>
+                                            <TableRow key={problem.id} className="group hover:bg-white/5 transition-colors border-white/5">
+                                                <TableCell className="font-medium pl-6 py-4">
+                                                    <div className="flex flex-col gap-1">
+                                                        <span className="text-base font-bold group-hover:text-primary transition-colors">{problem.title}</span>
+                                                        <span className="text-xs text-muted-foreground md:hidden">{problem.category}</span>
                                                     </div>
                                                 </TableCell>
-                                                <TableCell>
+                                                <TableCell className="py-4">
                                                     <Badge
-                                                        variant="secondary"
-                                                        style={{
-                                                            backgroundColor: problem.difficulty === 'Easy' ? tokens.colors.difficulty.easy :
-                                                                problem.difficulty === 'Medium' ? tokens.colors.difficulty.medium :
-                                                                    tokens.colors.difficulty.hard,
-                                                            color: 'white'
-                                                        }}
-                                                        className="font-semibold shadow-sm border-0"
+                                                        variant="outline"
+                                                        className={cn(
+                                                            "font-semibold border bg-opacity-10",
+                                                            problem.difficulty === 'Easy' ? 'border-green-500/30 text-green-500 bg-green-500/10' :
+                                                                problem.difficulty === 'Medium' ? 'border-amber-500/30 text-amber-500 bg-amber-500/10' :
+                                                                    'border-red-500/30 text-red-500 bg-red-500/10'
+                                                        )}
                                                     >
                                                         {problem.difficulty}
                                                     </Badge>
                                                 </TableCell>
-                                                <TableCell>
-                                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                                        <div className="p-1 rounded bg-muted/50">
-                                                            <TrendingUp className="h-3.5 w-3.5" />
-                                                        </div>
+                                                <TableCell className="py-4">
+                                                    <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
+                                                        <TrendingUp className="h-4 w-4 opacity-50" />
                                                         <span>{problem.category}</span>
                                                     </div>
                                                 </TableCell>
-                                                <TableCell className="hidden md:table-cell">
+                                                <TableCell className="hidden md:table-cell py-4">
                                                     {problem.companies.length > 0 && (
-                                                        <div className="flex items-center gap-2">
-                                                            <Building2 className="h-4 w-4 text-muted-foreground/50" />
-                                                            <div className="flex -space-x-2 hover:space-x-0 transition-all duration-300">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <Building2 className="h-4 w-4 text-muted-foreground/40" />
+                                                            <div className="flex -space-x-2 hover:space-x-1 transition-all duration-300">
                                                                 {Array.from(new Set(problem.companies)).slice(0, 3).map(c => (
-                                                                    <div key={c} className="w-7 h-7 rounded-full bg-background border border-border flex items-center justify-center text-[10px] uppercase font-bold text-muted-foreground shadow-sm relative z-10 hover:z-20 hover:scale-110 transition-transform cursor-help" title={c}>
+                                                                    <div key={c} className="w-8 h-8 rounded-full bg-background border border-border flex items-center justify-center text-[10px] uppercase font-bold text-muted-foreground shadow-sm relative z-10 hover:z-20 hover:scale-110 transition-transform cursor-help" title={c}>
                                                                         {c[0]}
                                                                     </div>
                                                                 ))}
                                                                 {Array.from(new Set(problem.companies)).length > 3 && (
-                                                                    <div className="w-7 h-7 rounded-full bg-muted border border-border flex items-center justify-center text-[10px] font-medium text-muted-foreground shadow-sm z-0">
+                                                                    <div className="w-8 h-8 rounded-full bg-muted border border-border flex items-center justify-center text-[10px] font-bold text-muted-foreground shadow-sm z-0">
                                                                         +{Array.from(new Set(problem.companies)).length - 3}
                                                                     </div>
                                                                 )}
@@ -206,10 +203,10 @@ export function DashboardClient({ user, recommendations, onboardingCompleted = f
                                                         </div>
                                                     )}
                                                 </TableCell>
-                                                <TableCell className="text-right">
+                                                <TableCell className="text-right pr-6 py-4">
                                                     <Link href={`/practice/${problem.slug}`}>
-                                                        <Button size="sm" variant="ghost" className="hover:bg-primary/10 hover:text-primary font-medium group-hover:translate-x-1 transition-all rounded-full">
-                                                            Practice <ArrowRight className="ml-1 h-4 w-4" />
+                                                        <Button size="sm" variant="ghost" className="hover:bg-primary/10 hover:text-primary font-bold rounded-full h-9 px-4 group-hover:translate-x-1 transition-all">
+                                                            Practice <ArrowRight className="ml-2 h-4 w-4" />
                                                         </Button>
                                                     </Link>
                                                 </TableCell>
@@ -220,15 +217,13 @@ export function DashboardClient({ user, recommendations, onboardingCompleted = f
                             </div>
                         )
                     ) : (
-                        <div className="text-center py-20 bg-muted/10 rounded-3xl border border-dashed border-border/50">
-                            <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-muted/20 flex items-center justify-center animate-pulse">
-                                <Search className="h-10 w-10 text-muted-foreground/50" />
+                        <div className="text-center py-24 bg-card/30 backdrop-blur-md rounded-3xl border border-dashed border-white/10 flex flex-col items-center justify-center">
+                            <div className="w-24 h-24 mb-6 rounded-full bg-primary/5 flex items-center justify-center animate-pulse">
+                                <Search className="h-10 w-10 text-primary/40" />
                             </div>
-                            <h3 className="text-xl font-semibold mb-2">No problems found</h3>
-                            <p className="text-muted-foreground mb-8 max-w-sm mx-auto">
-                                <p className="text-muted-foreground mb-8 max-w-sm mx-auto">
-                                    We couldn&apos;t find any challenges matching your filters. Try adjusting your search or filters.
-                                </p>
+                            <h3 className="text-2xl font-bold mb-3">No challenges found</h3>
+                            <p className="text-muted-foreground mb-8 max-w-md mx-auto leading-relaxed">
+                                We couldn&apos;t find any design problems matching your criteria. Try adjusting your filters to see more results.
                             </p>
                             <Button
                                 onClick={() => {
@@ -237,7 +232,8 @@ export function DashboardClient({ user, recommendations, onboardingCompleted = f
                                     setDifficulty('All');
                                 }}
                                 variant="outline"
-                                className="border-dashed"
+                                size="lg"
+                                className="border-dashed border-border/60 hover:border-primary/50 hover:bg-primary/5"
                             >
                                 Clear All Filters
                             </Button>
@@ -247,7 +243,7 @@ export function DashboardClient({ user, recommendations, onboardingCompleted = f
 
                 {/* CTA Section - Hide if logged in */}
                 {!user && (
-                    <div className="mt-32 rounded-[2.5rem] relative overflow-hidden bg-gradient-to-br from-primary to-purple-700 px-6 py-24 text-center shadow-2xl shadow-primary/20">
+                    <div className="mt-32 rounded-[3rem] relative overflow-hidden bg-gradient-to-br from-primary to-purple-700 px-6 py-24 text-center shadow-2xl shadow-primary/30">
                         <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-20 mix-blend-overlay" />
                         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-white/10 blur-[120px] rounded-full pointer-events-none" />
 
@@ -258,7 +254,7 @@ export function DashboardClient({ user, recommendations, onboardingCompleted = f
                             </p>
                             <div className="pt-6 flex justify-center gap-4">
                                 <Link href="/draw">
-                                    <Button size="lg" className="bg-white text-primary hover:bg-white/90 shadow-xl shadow-black/10 border-0 h-16 px-10 font-bold text-lg rounded-full transition-transform hover:-translate-y-1">
+                                    <Button size="lg" className="bg-white text-primary hover:bg-white/90 shadow-xl shadow-black/20 border-0 h-16 px-10 font-bold text-lg rounded-full transition-transform hover:-translate-y-1 hover:shadow-2xl">
                                         Launch Canvas <ArrowRight className="ml-2 h-5 w-5" />
                                     </Button>
                                 </Link>
