@@ -2306,7 +2306,8 @@ export default function DiagramCanvas({ stepKey }: { stepKey: string }) {
   // Load diagram data for this step when stepKey changes
   useEffect(() => {
     if (stepKey && mounted) {
-      const savedData = localStorage.getItem(`diagram-${stepKey}`);
+      const storageKey = `diagram-${stepKey}`;
+      const savedData = localStorage.getItem(storageKey);
       if (savedData) {
         try {
           const diagramData = JSON.parse(savedData);
@@ -2315,7 +2316,8 @@ export default function DiagramCanvas({ stepKey }: { stepKey: string }) {
             (window as any).sd_loadDiagramElements(diagramData.elements || []);
           }
         } catch (error) {
-          console.error('Error loading diagram data:', error);
+          console.error(`Error parsing diagram data from localStorage key "${storageKey}". Removing corrupted data.`, error);
+          localStorage.removeItem(storageKey);
         }
       } else {
         // Clear canvas for new step

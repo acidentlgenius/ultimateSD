@@ -7,6 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { SystemDesignProblem, ChatMessage } from '@/types';
 import { tokens } from '@/styles/tokens';
+import { fetchWithRetry } from '@/lib/fetchUtils';
 import { Send, Bot, User, Sparkles } from 'lucide-react';
 
 interface Props {
@@ -66,10 +67,12 @@ export default function ChatInterface({ problem }: Props) {
     setLoading(true);
 
     try {
-      const res = await fetch('/api/ai/chat', {
+      const res = await fetchWithRetry('/api/ai/chat', {
         method: 'POST',
         body: JSON.stringify({ input, slug: problem.slug, messages, phase }),
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
+        retries: 2,
+        timeout: 15000,
       });
       const data = await res.json();
       if (data?.messages) {

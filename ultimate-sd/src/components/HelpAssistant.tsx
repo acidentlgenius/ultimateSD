@@ -8,6 +8,7 @@ import { Input } from './ui/input';
 import { HelpCircle, Send, X, Minimize2, Maximize2 } from 'lucide-react';
 import { SystemDesignProblem } from '@/types';
 import { cn } from '@/lib/utils';
+import { fetchWithRetry } from '@/lib/fetchUtils';
 
 interface Message {
   id: string;
@@ -71,7 +72,7 @@ export function HelpAssistant({ problem, currentPhase, completedSteps = [], save
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/ai/help', {
+      const response = await fetchWithRetry('/api/ai/help', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -81,6 +82,8 @@ export function HelpAssistant({ problem, currentPhase, completedSteps = [], save
           completedSteps,
           savedStepData: savedStepData ? Array.from(savedStepData.entries()) : [],
         }),
+        retries: 2,
+        timeout: 15000,
       });
 
       if (!response.ok) throw new Error('Failed to get help');
