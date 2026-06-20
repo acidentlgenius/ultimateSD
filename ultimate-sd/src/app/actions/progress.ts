@@ -277,50 +277,23 @@ export async function completeStep(
 
         const completedStepIds = existingProgress?.completedStepIds || [];
 
-        // 2. Record Submission History (Always)
-        await prisma.stepSubmission.create({
-            data: {
-                userId,
-                problemId,
-                stepId,
-                content: submissionData.content,
-                feedback: submissionData.feedback || null,
-                score: submissionData.score || null,
-                isPassing: submissionData.isPassing || false
-            }
-        });
-
-        // 3. Idempotency check
+        // 3. Idempotency check before transaction
         if (completedStepIds.includes(stepId)) {
+            // If already completed, just record the submission
+            await prisma.stepSubmission.create({
+                data: {
+                    userId,
+                    problemId,
+                    stepId,
+                    content: submissionData.content,
+                    feedback: submissionData.feedback || null,
+                    score: submissionData.score || null,
+                    isPassing: submissionData.isPassing || false
+                }
+            });
             return { success: true, xpAwarded: 0, message: 'Step already completed' };
         }
 
-        // 3. Update Progress (mark step as complete)
-        await prisma.problemProgress.upsert({
-            where: {
-                userId_problemId: {
-                    userId,
-                    problemId
-                }
-            },
-            update: {
-                completedStepIds: {
-                    push: stepId
-                },
-                lastAttemptAt: now
-            },
-            create: {
-                userId,
-                problemId,
-                status: 'IN_PROGRESS',
-                startedAt: now,
-                completedStepIds: [stepId],
-                lastAttemptAt: now,
-                attempts: 1
-            }
-        });
-
-        // 4. Update User XP
         const user = await prisma.user.findUnique({ where: { email: userEmail } });
         if (!user) throw new Error('User not found');
 
@@ -335,15 +308,54 @@ export async function completeStep(
         const newXp = currentXp + XP_PER_STEP;
         const newLevel = calculateLevel(newXp);
 
-        await prisma.user.update({
-            where: { email: userEmail },
-            data: {
-                xp: newXp,
-                level: newLevel,
-                streak: newStreak,
-                lastPracticeAt: now
-            }
-        });
+        await prisma.$transaction([
+            // Record Submission History (Always)
+            prisma.stepSubmission.create({
+                data: {
+                    userId,
+                    problemId,
+                    stepId,
+                    content: submissionData.content,
+                    feedback: submissionData.feedback || null,
+                    score: submissionData.score || null,
+                    isPassing: submissionData.isPassing || false
+                }
+            }),
+            // Update Progress (mark step as complete)
+            prisma.problemProgress.upsert({
+                where: {
+                    userId_problemId: {
+                        userId,
+                        problemId
+                    }
+                },
+                update: {
+                    completedStepIds: {
+                        push: stepId
+                    },
+                    lastAttemptAt: now
+                },
+                create: {
+                    userId,
+                    problemId,
+                    status: 'IN_PROGRESS',
+                    startedAt: now,
+                    completedStepIds: [stepId],
+                    lastAttemptAt: now,
+                    attempts: 1
+                }
+            }),
+            // Update User XP
+            prisma.user.update({
+                where: { email: userEmail },
+                data: {
+                    xp: newXp,
+                    level: newLevel,
+                    streak: newStreak,
+                    lastPracticeAt: now
+                }
+            })
+        ]);
 
         revalidatePath('/');
         revalidatePath(`/practice/${problemId}`);

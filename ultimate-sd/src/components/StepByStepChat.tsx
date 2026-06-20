@@ -10,6 +10,7 @@ import { Card } from '@/components/ui/card';
 import { SystemDesignProblem } from '@/types';
 import { tokens } from '@/styles/tokens';
 import SchemaBuilder from '@/components/SchemaBuilder';
+import { fetchWithRetry } from '@/lib/fetchUtils';
 import {
   saveSessionState,
   loadSessionState,
@@ -383,10 +384,12 @@ export default function StepByStepChat({ problem }: Props) {
         requestBody.userAnswer = `${userAnswer}\n\n[Note: No diagram was created for this architecture description]`;
       }
 
-      const res = await fetch('/api/ai/evaluate', {
+      const res = await fetchWithRetry('/api/ai/evaluate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify(requestBody),
+        retries: 2,
+        timeout: 15000,
       });
 
       const data = await res.json();

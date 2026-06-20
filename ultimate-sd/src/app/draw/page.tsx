@@ -60,13 +60,15 @@ export default function DrawPage() {
 
         // When exiting fullscreen, trigger a reload of the canvas
         setTimeout(() => {
-          const savedData = localStorage.getItem(`diagram-free-draw-${diagramType?.toLowerCase()}`);
+          const storageKey = `diagram-free-draw-${diagramType?.toLowerCase()}`;
+          const savedData = localStorage.getItem(storageKey);
           if (savedData && (window as any).sd_loadDiagramElements) {
             try {
               const diagramData = JSON.parse(savedData);
               (window as any).sd_loadDiagramElements(diagramData.elements || []);
             } catch (error) {
-              console.error('Error reloading diagram:', error);
+              console.error(`Error parsing diagram data from localStorage key "${storageKey}". Removing corrupted data.`, error);
+              localStorage.removeItem(storageKey);
             }
           }
         }, 100);
@@ -97,13 +99,15 @@ export default function DrawPage() {
         setIsFullscreen(false);
         // Reload canvas state when exiting
         setTimeout(() => {
-          const savedData = localStorage.getItem(`diagram-free-draw-${diagramType?.toLowerCase()}`);
+          const storageKey = `diagram-free-draw-${diagramType?.toLowerCase()}`;
+          const savedData = localStorage.getItem(storageKey);
           if (savedData && (window as any).sd_loadDiagramElements) {
             try {
               const diagramData = JSON.parse(savedData);
               (window as any).sd_loadDiagramElements(diagramData.elements || []);
             } catch (error) {
-              console.error('Error reloading diagram:', error);
+              console.error(`Error parsing diagram data from localStorage key "${storageKey}". Removing corrupted data.`, error);
+              localStorage.removeItem(storageKey);
             }
           }
         }, 100);
