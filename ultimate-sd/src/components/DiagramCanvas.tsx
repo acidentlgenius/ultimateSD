@@ -1462,6 +1462,17 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
   };
 
   // Save design to localStorage
+
+  const getSafeSavedDesignsList = () => {
+    try {
+      return JSON.parse(localStorage.getItem('saved-designs-list') || '[]');
+    } catch (e) {
+      console.error('Corrupted saved-designs-list found in localStorage, clearing it.');
+      localStorage.removeItem('saved-designs-list');
+      return [];
+    }
+  };
+
   const saveDesignToLocalStorage = () => {
     if (elements.length === 0) {
       const toast = document.createElement('div');
@@ -1491,7 +1502,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
     localStorage.setItem(storageKey, JSON.stringify(diagramData));
 
     // Update saved designs list
-    const savedDesignsList = JSON.parse(localStorage.getItem('saved-designs-list') || '[]');
+    const savedDesignsList = getSafeSavedDesignsList();
     const existingIndex = savedDesignsList.findIndex((d: any) => d.name === designName);
 
     if (existingIndex >= 0) {
@@ -1564,7 +1575,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
 
   // Load saved designs list
   const loadSavedDesignsList = () => {
-    const savedDesignsList = JSON.parse(localStorage.getItem('saved-designs-list') || '[]');
+    const savedDesignsList = getSafeSavedDesignsList();
     setSavedDesigns(savedDesignsList);
   };
 
@@ -1573,7 +1584,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
     const storageKey = `saved-design-${name.replace(/[^a-z0-9]/gi, '-').toLowerCase()}`;
     localStorage.removeItem(storageKey);
 
-    const savedDesignsList = JSON.parse(localStorage.getItem('saved-designs-list') || '[]');
+    const savedDesignsList = getSafeSavedDesignsList();
     const filtered = savedDesignsList.filter((d: any) => d.name !== name);
     localStorage.setItem('saved-designs-list', JSON.stringify(filtered));
     loadSavedDesignsList();
