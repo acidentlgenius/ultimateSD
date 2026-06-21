@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
+import { exportPNG } from '@/lib/exportUtils';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
@@ -2339,80 +2340,6 @@ export default function DiagramCanvas({ stepKey }: { stepKey: string }) {
     }
   }, [stepKey, mounted]);
 
-  const exportPNG = useCallback(() => {
-    const canvas = document.querySelector('canvas');
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // Get bounding box of all elements
-    const getBoundingBox = (window as any).sd_getBoundingBox;
-    const elements = (window as any).sd_getDiagramElements?.();
-
-    if (!getBoundingBox || !elements || elements.length === 0) {
-      // Show empty diagram notification
-      const toast = document.createElement('div');
-      toast.className = 'fixed bottom-4 right-4 z-50 bg-red-500 text-white px-4 py-3 rounded-lg shadow-lg animate-fade-in';
-      toast.innerHTML = `
-        <div class="flex items-center gap-2">
-          <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <span>Your diagram is empty! Please add some components first.</span>
-        </div>
-      `;
-      document.body.appendChild(toast);
-      setTimeout(() => toast.remove(), 4000);
-      return;
-    }
-
-    const bounds = getBoundingBox();
-    const cropWidth = Math.ceil(bounds.maxX - bounds.minX);
-    const cropHeight = Math.ceil(bounds.maxY - bounds.minY);
-
-    // Create a temporary canvas with the cropped size
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = cropWidth;
-    tempCanvas.height = cropHeight;
-    const tempCtx = tempCanvas.getContext('2d');
-
-    if (tempCtx) {
-      // Fill with white background
-      tempCtx.fillStyle = '#ffffff';
-      tempCtx.fillRect(0, 0, cropWidth, cropHeight);
-
-      // Copy only the relevant portion of the canvas
-      tempCtx.drawImage(
-        canvas,
-        bounds.minX, bounds.minY, cropWidth, cropHeight, // Source rectangle
-        0, 0, cropWidth, cropHeight // Destination rectangle
-      );
-
-      // Download
-      const link = document.createElement('a');
-      const getDesignName = (window as any).sd_getDesignName;
-      const currentDesignName = getDesignName ? getDesignName() : 'system-diagram';
-      const fileName = currentDesignName.replace(/[^a-z0-9]/gi, '-').toLowerCase();
-      link.download = `${fileName}-${Date.now()}.png`;
-      link.href = tempCanvas.toDataURL('image/png');
-      link.click();
-
-      // Show success message with dimensions
-      const toast = document.createElement('div');
-      toast.className = 'fixed bottom-4 right-4 z-50 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg animate-fade-in';
-      toast.innerHTML = `
-        <div class="flex items-center gap-2">
-          <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-          </svg>
-          <span>Diagram exported! (${cropWidth}×${cropHeight}px)</span>
-        </div>
-      `;
-      document.body.appendChild(toast);
-      setTimeout(() => toast.remove(), 3000);
-    }
-  }, []);
 
   const getDiagramData = useCallback(() => {
     // Get the canvas and extract diagram elements
@@ -2607,7 +2534,7 @@ export default function DiagramCanvas({ stepKey }: { stepKey: string }) {
             <Button
               variant="outline"
               size="sm"
-              onClick={exportPNG}
+              onClick={() => exportPNG()}
               className="h-7 px-2 text-xs"
             >
               <ImageIcon className="h-3 w-3 mr-1" /> Export PNG
