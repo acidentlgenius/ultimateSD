@@ -9,3 +9,9 @@
 **Learning:** When retrieving JSON objects from `localStorage` in React applications, calling `JSON.parse` without a try/catch block creates a critical vulnerability. If the stored data becomes corrupted (e.g., from an interrupted write or browser state manipulation), the component will throw a synchronous exception during render, leading to a complete unhandled crash of the React tree (white screen of death). This is a common and silent failure path for frontends storing complex state locally.
 
 **Action:** Whenever implementing or auditing state persistence via `localStorage`, always wrap `JSON.parse` in a `try...catch` block. The catch block must include a safe fallback mechanism, primarily `localStorage.removeItem(key)` to clear the corrupted state, and returning a valid default value (like an empty array or object) to ensure the application can still boot cleanly. Avoid silent empty catch blocks.
+
+## 2026-06-20 - Floating Promises with Next.js Server Actions
+
+**Learning:** Next.js Server Actions in this project (like `updateStreak`) are designed to return error objects (e.g., `{ error: 'message' }`) rather than throwing exceptions. This means that appending `.catch(console.error)` to them in a `useEffect` will *never* catch the application-level errors, creating silent failures on the client side while appearing handled.
+
+**Action:** Always verify the actual return type of a Next.js Server Action. When calling async functions inside `useEffect`, use an inner `async() => {}` wrapper to properly `await` the result, check for returned error objects (e.g., `result.error`), and wrap the entire call in a `try/catch` block to handle true network or execution failures.

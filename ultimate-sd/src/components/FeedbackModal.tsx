@@ -62,7 +62,18 @@ export default function FeedbackModal({ feedback, isOpen, onClose, onContinue, x
     if (isOpen) {
       if (feedback.isAcceptable) {
         // If passed, update streak!
-        updateStreak().catch(console.error);
+        const handleStreakUpdate = async () => {
+          try {
+            const result = await updateStreak();
+            if (result && 'error' in result && result.error) {
+              console.error('Failed to update streak:', result.error);
+            }
+          } catch (error) {
+            console.error('Error updating streak:', error);
+          }
+        };
+        handleStreakUpdate();
+
         // Show confetti for successful evaluations
         setShowConfetti(true);
         setTimeout(() => setShowConfetti(false), 3000);
