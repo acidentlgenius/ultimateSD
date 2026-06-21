@@ -5,6 +5,8 @@ import { getStepsForProblem } from '@/lib/problem-steps';
 import PracticeUI from '@/components/PracticeUI';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
+import { canAccessProblem } from '@/lib/access';
+import { type PlanType } from '@/lib/plans';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
@@ -31,6 +33,18 @@ export default async function PracticePage({ params }: { params: Promise<{ slug:
   const session = await auth();
   if (!session?.user?.id) {
     redirect(`/login?callbackUrl=/practice/${slug}`);
+  }
+
+  const dbUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { planType: true, planExpiresAt: true },
+  });
+
+  if (!canAccessProblem(dbUser ? {
+    planType: dbUser.planType as PlanType,
+    planExpiresAt: dbUser.planExpiresAt,
+  } : null, slug)) {
+    redirect(`/pricing?locked=${slug}`);
   }
 
   const steps = getStepsForProblem(slug);

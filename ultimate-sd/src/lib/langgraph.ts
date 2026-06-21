@@ -2,17 +2,28 @@ import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import { HumanMessage } from '@langchain/core/messages';
 import { SystemDesignProblem, ChatMessage } from '@/types';
 
-const llm = process.env.GOOGLE_API_KEY ? new ChatGoogleGenerativeAI({
-  model: 'gemini-2.5-flash-lite',
-  apiKey: process.env.GOOGLE_API_KEY,
-}) : null;
+function getDefaultLLM(): ChatGoogleGenerativeAI | null {
+  if (!process.env.GOOGLE_API_KEY) {
+    return null;
+  }
+  return new ChatGoogleGenerativeAI({
+    model: 'gemini-2.5-flash-lite',
+    apiKey: process.env.GOOGLE_API_KEY,
+  });
+}
 
-// Simple AI response function for MVP
-export async function getAIResponse(problem: SystemDesignProblem, userInput: string, phase: string, messages: ChatMessage[]): Promise<ChatMessage> {
+export async function getAIResponse(
+  problem: SystemDesignProblem,
+  userInput: string,
+  phase: string,
+  messages: ChatMessage[],
+  llmOverride?: ChatGoogleGenerativeAI | null
+): Promise<ChatMessage> {
+  const llm = llmOverride ?? getDefaultLLM();
   if (!llm) {
     return {
       role: 'ai',
-      content: 'AI interviewer is not available. Please set GOOGLE_API_KEY environment variable.',
+      content: 'AI interviewer is not available. Upgrade to Platform or AI plan to continue.',
       id: Date.now().toString(),
       timestamp: new Date()
     };
@@ -32,7 +43,6 @@ Keep responses <150 words.`;
       timestamp: new Date()
     };
   } catch (error) {
-    // Log the underlying error for debugging
     console.error('getAIResponse error:', error);
     const errMsg = error instanceof Error ? error.message : String(error);
     return {
@@ -44,12 +54,16 @@ Keep responses <150 words.`;
   }
 }
 
-// Feedback function
-export async function getFeedback(problem: SystemDesignProblem, messages: ChatMessage[]): Promise<{ score: number; tips: string[] }> {
+export async function getFeedback(
+  problem: SystemDesignProblem,
+  messages: ChatMessage[],
+  llmOverride?: ChatGoogleGenerativeAI | null
+): Promise<{ score: number; tips: string[] }> {
+  const llm = llmOverride ?? getDefaultLLM();
   if (!llm) {
     return {
       score: 0,
-      tips: ['AI feedback not available. Please set GOOGLE_API_KEY environment variable.']
+      tips: ['AI feedback not available. Upgrade to Platform or AI plan to continue.']
     };
   }
 

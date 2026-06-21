@@ -1,13 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import { HumanMessage } from '@langchain/core/messages';
+import { auth } from '@/auth';
 import { getSolution } from '@/lib/solutions';
-
-const llm = process.env.GOOGLE_API_KEY ? new ChatGoogleGenerativeAI({
-  model: 'gemini-2.5-flash-lite',
-  apiKey: process.env.GOOGLE_API_KEY,
-  temperature: 0.3,
-}) : null;
+import { getUserLLM, AIAccessError } from '@/lib/user-llm';
 
 // Detailed evaluation prompts for each phase
 const EVALUATION_GUIDES = {
@@ -235,17 +230,28 @@ const EVALUATION_GUIDES = {
 };
 
 export async function POST(req: NextRequest) {
-  if (!llm) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  let llm;
+  try {
+    ({ llm } = await getUserLLM(session.user.id, { temperature: 0.3 }));
+  } catch (error) {
+    const message = error instanceof AIAccessError
+      ? error.message
+      : 'AI evaluation not available.';
     return NextResponse.json({
       feedback: {
         score: 0,
         accuracy: 0,
         strengths: [],
-        weaknesses: ['AI evaluation not available. Please set GOOGLE_API_KEY in your environment.'],
+        weaknesses: [message],
         missed: [],
         isAcceptable: false
       }
-    });
+    }, { status: error instanceof AIAccessError ? 403 : 500 });
   }
 
   try {

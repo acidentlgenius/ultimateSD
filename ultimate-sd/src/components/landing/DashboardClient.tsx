@@ -3,7 +3,7 @@
 import { PROBLEMS } from '@/lib/problems';
 import ProblemCard from '@/components/ProblemCard';
 import { useState, useMemo } from 'react';
-import { Search, ArrowRight, Building2, TrendingUp } from 'lucide-react';
+import { Search, ArrowRight, Building2, TrendingUp, Lock } from 'lucide-react';
 import {
     Table,
     TableBody,
@@ -25,6 +25,9 @@ import OnboardingModal from '@/components/OnboardingModal';
 import { ProblemWithStatus } from '@/types';
 import { ProblemFilterBar } from '@/components/landing/ProblemFilterBar';
 import { cn } from '@/lib/utils';
+import { canAccessProblem } from '@/lib/access';
+import { ProModal } from '@/components/ProModal';
+import { type PlanType } from '@/lib/plans';
 
 interface DashboardClientProps {
     user?: {
@@ -33,6 +36,9 @@ interface DashboardClientProps {
         xp?: number;
         level?: number;
         streak?: number;
+        planType?: PlanType;
+        hasPlatformPlan?: boolean;
+        planExpiresAt?: string | null;
     };
     recommendations?: {
         dailyPick: ProblemWithStatus | null;
@@ -47,8 +53,16 @@ export function DashboardClient({ user, recommendations, onboardingCompleted = f
     const [category, setCategory] = useState('All');
     const [difficulty, setDifficulty] = useState('All');
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+    const [lockedProblem, setLockedProblem] = useState<ProblemWithStatus | null>(null);
 
     const [showOnboarding, setShowOnboarding] = useState(!!(user && !onboardingCompleted));
+
+    const accessUser = user?.id ? {
+        planType: user.planType ?? 'free',
+        planExpiresAt: user.planExpiresAt ? new Date(user.planExpiresAt) : null,
+    } : null;
+
+    const isProblemLocked = (slug: string) => !canAccessProblem(accessUser, slug);
 
 
     const filtered = useMemo(() => {
@@ -79,6 +93,11 @@ export function DashboardClient({ user, recommendations, onboardingCompleted = f
 
     return (
         <div className="min-h-screen bg-background relative overflow-x-hidden selection:bg-primary/20 selection:text-primary">
+            <ProModal
+                isOpen={Boolean(lockedProblem)}
+                onClose={() => setLockedProblem(null)}
+                problemTitle={lockedProblem?.title}
+            />
             {user && (
                 <OnboardingModal
                     isOpen={showOnboarding}
@@ -140,7 +159,11 @@ export function DashboardClient({ user, recommendations, onboardingCompleted = f
                                         className="animate-slide-up h-full"
                                         style={{ animationDelay: `${Math.min(index * 50, 500)}ms` }}
                                     >
-                                        <ProblemCard problem={problem} />
+                                        <ProblemCard
+                                            problem={problem}
+                                            locked={isProblemLocked(problem.slug)}
+                                            onLockedClick={setLockedProblem}
+                                        />
                                     </div>
                                 ))}
                             </div>
@@ -204,11 +227,22 @@ export function DashboardClient({ user, recommendations, onboardingCompleted = f
                                                     )}
                                                 </TableCell>
                                                 <TableCell className="text-right pr-6 py-4">
-                                                    <Link href={`/practice/${problem.slug}`}>
-                                                        <Button size="sm" variant="ghost" className="hover:bg-primary/10 hover:text-primary font-bold rounded-full h-9 px-4 group-hover:translate-x-1 transition-all">
-                                                            Practice <ArrowRight className="ml-2 h-4 w-4" />
+                                                    {isProblemLocked(problem.slug) ? (
+                                                        <Button
+                                                            size="sm"
+                                                            variant="ghost"
+                                                            className="hover:bg-amber-500/10 hover:text-amber-600 font-bold rounded-full h-9 px-4"
+                                                            onClick={() => setLockedProblem(problem)}
+                                                        >
+                                                            Unlock <Lock className="ml-2 h-4 w-4" />
                                                         </Button>
-                                                    </Link>
+                                                    ) : (
+                                                        <Link href={`/practice/${problem.slug}`}>
+                                                            <Button size="sm" variant="ghost" className="hover:bg-primary/10 hover:text-primary font-bold rounded-full h-9 px-4 group-hover:translate-x-1 transition-all">
+                                                                Practice <ArrowRight className="ml-2 h-4 w-4" />
+                                                            </Button>
+                                                        </Link>
+                                                    )}
                                                 </TableCell>
                                             </TableRow>
                                         ))}

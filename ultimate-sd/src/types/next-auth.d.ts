@@ -1,15 +1,21 @@
 import { type DefaultSession } from "next-auth"
+import { type PlanType } from "@/lib/plans"
 
 declare module "next-auth" {
-    /**
-     * Returned by `useSession`, `getSession` and received as a prop on the `SessionProvider` React Context
-     */
     interface Session {
         user: {
             id: string
             xp: number
             level: number
             streak: number
+            planType: PlanType
+            hasActivePlan: boolean
+            hasPlatformPlan: boolean
+            hasAiPlan: boolean
+            hasGeminiKey: boolean
+            hasXaiKey: boolean
+            aiCredits: number
+            planExpiresAt: string | null
         } & DefaultSession["user"]
     }
 
@@ -26,5 +32,13 @@ declare module "next-auth/jwt" {
         xp: number
         level: number
         streak: number
+        planType: PlanType
+        hasActivePlan: boolean
+        hasPlatformPlan: boolean
+        hasAiPlan: boolean
+        hasGeminiKey: boolean
+        hasXaiKey: boolean
+        aiCredits: number
+        planExpiresAt: string | null
     }
 }

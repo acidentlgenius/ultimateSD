@@ -28,6 +28,18 @@ model User {
   streak               Int      @default(0)
   completedProblems    Int      @default(0)
   lastPracticeAt       DateTime?
+
+  // Subscription
+  planType             String    @default("free") // "free" | "platform" | "ai"
+  planExpiresAt        DateTime?
+  planActivatedAt      DateTime?
+  aiCredits            Int       @default(0)
+  aiCreditsResetAt     DateTime?
+
+  // BYOK (stored server-side; never returned to client)
+  geminiApiKey         String?
+  xaiApiKey            String?
+  preferredProvider    String    @default("gemini")
   
   // Relations
   problemProgress      ProblemProgress[]

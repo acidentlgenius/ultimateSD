@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/auth';
 import { PROBLEMS } from '@/lib/problems';
 import { getStepsForProblem } from '@/lib/problem-steps';
 import { getAIResponse, getFeedback } from '@/lib/langgraph';
 import { ChatMessage } from '@/types';
+import { getUserLLM, AIAccessError } from '@/lib/user-llm';
 
 export async function POST(req: NextRequest) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const { input, slug, messages = [], phase = 'init' } = await req.json();
   const problemMetadata = PROBLEMS.find(p => p.slug === slug);
   if (!problemMetadata) {
@@ -14,8 +21,7 @@ export async function POST(req: NextRequest) {
   const steps = getStepsForProblem(slug);
   const problem = { ...problemMetadata, steps };
 
-  // Convert messages back to ChatMessage type
-  const chatMessages: ChatMessage[] = messages.map((msg: any) => ({
+  const chatMessages: ChatMessage[] = messages.map((msg: ChatMessage & { timestamp: string }) => ({
     ...msg,
     timestamp: new Date(msg.timestamp)
   }));
@@ -24,7 +30,6 @@ export async function POST(req: NextRequest) {
   let newPhase = phase;
 
   if (phase === 'init') {
-    // Initial message
     aiResponse = {
       role: 'ai',
       content: `Welcome! Let's design ${problem.title}. Start by clarifying requirements.`,
@@ -33,9 +38,9 @@ export async function POST(req: NextRequest) {
     };
     newPhase = 'requirements';
   } else if (phase === 'done') {
-    // Get feedback
     try {
-      const feedback = await getFeedback(problem, chatMessages);
+      const { llm } = await getUserLLM(session.user.id);
+      const feedback = await getFeedback(problem, chatMessages, llm);
       aiResponse = {
         role: 'ai',
         content: `Session complete. Here's your feedback.`,
@@ -44,26 +49,32 @@ export async function POST(req: NextRequest) {
         feedback
       };
     } catch (error) {
+      const message = error instanceof AIAccessError
+        ? error.message
+        : 'Error generating feedback. Please try again.';
       aiResponse = {
         role: 'ai',
-        content: 'Error generating feedback. Please try again.',
+        content: message,
         id: 'error',
         timestamp: new Date()
       };
     }
   } else {
-    // Get AI response
     try {
-      aiResponse = await getAIResponse(problem, input, phase, chatMessages);
+      const { llm } = await getUserLLM(session.user.id);
+      aiResponse = await getAIResponse(problem, input, phase, chatMessages, llm);
     } catch (error) {
+      const message = error instanceof AIAccessError
+        ? error.message
+        : 'Error generating AI response. Please try again.';
       aiResponse = {
         role: 'ai',
-        content: 'Error generating AI response. Please check your API key and try again.',
+        content: message,
         id: 'error',
         timestamp: new Date()
       };
     }
-    // Simple phase progression (can be improved)
+
     if (phase === 'requirements') newPhase = 'hld';
     else if (phase === 'hld') newPhase = 'lld';
     else if (phase === 'lld') newPhase = 'tradeoffs';

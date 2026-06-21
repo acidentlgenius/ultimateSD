@@ -1,19 +1,12 @@
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
-import { HumanMessage, SystemMessage, AIMessage } from '@langchain/core/messages';
+import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 import { SystemDesignProblem } from '@/types';
-
-const llm = process.env.GOOGLE_API_KEY ? new ChatGoogleGenerativeAI({
-  model: 'gemini-2.5-flash-lite',
-  apiKey: process.env.GOOGLE_API_KEY,
-  temperature: 0.7,
-  maxOutputTokens: 500,
-}) : null;
 
 interface HelpContext {
   problem: SystemDesignProblem;
   currentPhase?: string;
   completedSteps: string[];
-  savedStepData: Array<[string, any]>;
+  savedStepData: Array<[string, unknown]>;
   conversationHistory: Array<{ role: string; content: string }>;
 }
 
@@ -47,38 +40,37 @@ If a user asks for the complete solution, politely decline and instead guide the
 
 function buildProgressContext(context: HelpContext): string {
   const { currentPhase, completedSteps, savedStepData } = context;
-  
+
   let progressContext = '';
-  
+
   if (currentPhase) {
     progressContext += `\nCURRENT PHASE: ${currentPhase}`;
   }
-  
+
   if (completedSteps.length > 0) {
     progressContext += `\n\nCOMPLETED STEPS: ${completedSteps.length} steps completed`;
     progressContext += `\nSteps: ${completedSteps.join(', ')}`;
   } else {
     progressContext += `\n\nJust starting - no steps completed yet.`;
   }
-  
-  // Add details about what they've worked on
+
   if (savedStepData && savedStepData.length > 0) {
     progressContext += `\n\nWORK HISTORY:`;
     savedStepData.forEach(([key, data]) => {
       const [phase, stepIdx] = key.split('-');
-      if (data.completed) {
-        progressContext += `\n- ${phase} step ${stepIdx}: COMPLETED (score: ${data.feedback?.score || 'N/A'}/10)`;
-      } else if (data.feedback) {
-        progressContext += `\n- ${phase} step ${stepIdx}: In progress (last score: ${data.feedback.score}/10)`;
+      const stepData = data as { completed?: boolean; feedback?: { score?: number; weaknesses?: string[] } };
+      if (stepData.completed) {
+        progressContext += `\n- ${phase} step ${stepIdx}: COMPLETED (score: ${stepData.feedback?.score || 'N/A'}/10)`;
+      } else if (stepData.feedback) {
+        progressContext += `\n- ${phase} step ${stepIdx}: In progress (last score: ${stepData.feedback.score}/10)`;
       }
-      
-      // Add specific feedback if available
-      if (data.feedback?.weaknesses && data.feedback.weaknesses.length > 0) {
-        progressContext += `\n  Areas to improve: ${data.feedback.weaknesses.slice(0, 2).join('; ')}`;
+
+      if (stepData.feedback?.weaknesses && stepData.feedback.weaknesses.length > 0) {
+        progressContext += `\n  Areas to improve: ${stepData.feedback.weaknesses.slice(0, 2).join('; ')}`;
       }
     });
   }
-  
+
   return progressContext;
 }
 
@@ -92,21 +84,31 @@ Key Requirements: ${problem.requirements?.join(', ') || 'Not specified'}
 Companies: ${problem.companies?.join(', ') || 'Not specified'}`;
 }
 
-export async function getHelpResponse(context: HelpContext): Promise<string> {
+export async function getHelpResponse(
+  context: HelpContext,
+  llmOverride?: ChatGoogleGenerativeAI | null
+): Promise<string> {
+  const llm = llmOverride ?? (process.env.GOOGLE_API_KEY
+    ? new ChatGoogleGenerativeAI({
+        model: 'gemini-2.5-flash-lite',
+        apiKey: process.env.GOOGLE_API_KEY,
+        temperature: 0.7,
+        maxOutputTokens: 500,
+      })
+    : null);
+
   if (!llm) {
-    return 'Help assistant is not available. Please set GOOGLE_API_KEY environment variable.';
+    return 'Help assistant requires a Platform (BYOK) or AI plan. Upgrade at /pricing.';
   }
 
   const problemContext = buildProblemContext(context.problem);
   const progressContext = buildProgressContext(context);
-  
-  // Build conversation history (last 6 messages for context)
+
   const recentMessages = context.conversationHistory.slice(-6);
   const conversationHistory = recentMessages
     .map(msg => `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`)
     .join('\n');
 
-  // Create the full system prompt with context
   const systemPrompt = `${HELP_SYSTEM_PROMPT}
 
 ${problemContext}
@@ -137,70 +139,5 @@ Respond to the user's latest question helpfully while following all guidelines a
     console.error('Help LangGraph error:', error);
     const errMsg = error instanceof Error ? error.message : 'Unknown error';
     throw new Error(`Failed to get help response: ${errMsg}`);
-  }
-}
-
-// Optional: Create a more sophisticated multi-agent setup with LangGraph
-// This could include separate agents for:
-// 1. Concept Explanation Agent (explains technical concepts)
-// 2. Hint Provider Agent (gives contextual hints)
-// 3. Trade-off Analyst Agent (explains trade-offs)
-// 4. Progress Coach Agent (motivates and guides based on progress)
-
-export async function getConceptExplanation(concept: string, problem: SystemDesignProblem): Promise<string> {
-  if (!llm) {
-    return 'Concept explanation not available. Please set GOOGLE_API_KEY environment variable.';
-  }
-
-  const prompt = `You are a technical concept explainer for system design interviews.
-
-The user is working on: ${problem.title}
-
-They want to understand: ${concept}
-
-Explain this concept clearly and concisely:
-1. What it is
-2. Why it's relevant to system design
-3. When to use it vs alternatives
-4. A simple example in context of their problem
-
-Keep it under 120 words and avoid giving away the solution.`;
-
-  try {
-    const response = await llm.invoke([new HumanMessage(prompt)]);
-    return response.content as string;
-  } catch (error) {
-    console.error('Concept explanation error:', error);
-    throw new Error('Failed to get concept explanation');
-  }
-}
-
-export async function getHint(context: HelpContext, stuckOn: string): Promise<string> {
-  if (!llm) {
-    return 'Hints not available. Please set GOOGLE_API_KEY environment variable.';
-  }
-
-  const progressContext = buildProgressContext(context);
-  
-  const prompt = `You are a hint provider for system design interviews.
-
-Problem: ${context.problem.title}
-User is stuck on: ${stuckOn}
-
-${progressContext}
-
-Provide a gentle hint that guides their thinking without giving away the answer:
-1. Ask a probing question that leads them in the right direction
-2. Mention a relevant concept they should consider
-3. Reference something similar they might know
-
-Keep it brief (under 80 words) and Socratic.`;
-
-  try {
-    const response = await llm.invoke([new HumanMessage(prompt)]);
-    return response.content as string;
-  } catch (error) {
-    console.error('Hint generation error:', error);
-    throw new Error('Failed to generate hint');
   }
 }

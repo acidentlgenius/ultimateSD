@@ -4,8 +4,13 @@ import path from 'path';
 const requiredEnvVars = [
     'DATABASE_URL',
     'AUTH_SECRET',
-    // 'GOOGLE_CLIENT_ID', // Optional for local build
-    // 'GOOGLE_CLIENT_SECRET',
+];
+
+const paymentEnvVars = [
+    'RAZORPAY_KEY_ID',
+    'RAZORPAY_KEY_SECRET',
+    'NEXT_PUBLIC_RAZORPAY_KEY_ID',
+    'RAZORPAY_WEBHOOK_SECRET',
 ];
 
 const envPath = path.resolve(process.cwd(), '.env');
@@ -35,15 +40,20 @@ const main = () => {
     };
 
     const missing = requiredEnvVars.filter(key => !loadedEnv[key]);
+    const missingPayment = paymentEnvVars.filter(key => !loadedEnv[key]);
 
     if (missing.length > 0) {
         console.warn('⚠️  Missing environment variables (functionality may be limited):');
         missing.forEach(key => console.warn(`   - ${key}`));
 
-        // Only fail for DB
         if (missing.includes('DATABASE_URL')) {
             process.exit(1);
         }
+    }
+
+    if (missingPayment.length > 0) {
+        console.warn('⚠️  Payment env vars missing (checkout disabled until set):');
+        missingPayment.forEach(key => console.warn(`   - ${key}`));
     }
 
     console.log('✅ All required environment variables are set.');
