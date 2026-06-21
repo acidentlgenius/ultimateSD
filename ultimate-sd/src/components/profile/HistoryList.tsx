@@ -64,7 +64,7 @@ export function HistoryList({ history }: HistoryListProps) {
                             <div className={`absolute left-0 top-0 bottom-0 w-1 transition-colors duration-300 ${getStatusColor(item.status)}`} />
 
                             <div className="flex-1 min-w-0 flex items-start sm:items-center gap-4">
-                                <div className={`p-3 rounded-full bg-secondary/50 ring-1 ring-border/50 group-hover:bg-primary/5 transition-colors`}>
+                                <div className={`p-3 rounded-full bg-secondary/50 ring-1 ring-border/50 group-hover:bg-primary/5 transition-colors shrink-0`}>
                                     {item.status === 'COMPLETED' ? (
                                         <CheckCircle2 className="w-6 h-6 text-green-500" />
                                     ) : (
@@ -72,7 +72,7 @@ export function HistoryList({ history }: HistoryListProps) {
                                     )}
                                 </div>
 
-                                <div className="space-y-1.5">
+                                <div className="space-y-1.5 flex-1 min-w-0">
                                     <div className="flex items-center gap-3">
                                         <span className="text-lg font-semibold truncate group-hover:text-primary transition-colors">{item.problemTitle}</span>
                                         {getStatusBadge(item.status)}

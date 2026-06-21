@@ -39,8 +39,7 @@ export default function PracticeUI({ problem, existingProgress }: { problem: Sys
   const [currentStepKey, setCurrentStepKey] = useState<string>('');
   const [diagramCollapsed, setDiagramCollapsed] = useState(false);
   const [completedSteps, setCompletedSteps] = useState<string[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [savedStepData, setSavedStepData] = useState<Map<string, any>>(new Map());
+    const [savedStepData, setSavedStepData] = useState<Map<string, any>>(new Map());
   const [isExporting, setIsExporting] = useState(false);
   // Timer State
   const [serverStartedAt, setServerStartedAt] = useState<Date | string | null>((existingProgress as any)?.startedAt ?? null);
@@ -80,8 +79,7 @@ export default function PracticeUI({ problem, existingProgress }: { problem: Sys
   }, [problem.id, isAuthenticated]);
 
   useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const handler = (e: any) => {
+        const handler = (e: any) => {
       if (e?.detail?.phase) setPhase(e.detail.phase);
       if (e?.detail?.subStep) setCurrentSubStep(e.detail.subStep);
       if (e?.detail?.stepKey) {
@@ -132,8 +130,8 @@ export default function PracticeUI({ problem, existingProgress }: { problem: Sys
     <div className="flex flex-col h-full bg-card/30 backdrop-blur-xl">
       {/* Sidebar Header */}
       <div className="p-6 border-b border-border/50 shrink-0">
-        <div className="flex items-center gap-3 mb-6">
-          <Link href="/" className="hover:opacity-80 transition-opacity">
+        <div className="flex items-center gap-3 mb-6 min-w-0">
+          <Link href="/" className="hover:opacity-80 transition-opacity shrink-0">
             <div className={`p-2 rounded-lg bg-gradient-to-br ${theme.gradient} shadow-md text-white`}>
               <Icon className="h-5 w-5" />
             </div>
@@ -276,11 +274,11 @@ export default function PracticeUI({ problem, existingProgress }: { problem: Sys
 
       {/* Mobile Header */}
       <div className="md:hidden h-14 border-b border-border flex items-center px-4 bg-background/80 backdrop-blur-md shrink-0 justify-between">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
           {isMounted ? (
             <Sheet>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="-ml-2" aria-label="Toggle menu">
+                <Button variant="ghost" size="icon" className="-ml-2 shrink-0" aria-label="Toggle menu">
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
@@ -289,13 +287,13 @@ export default function PracticeUI({ problem, existingProgress }: { problem: Sys
               </SheetContent>
             </Sheet>
           ) : (
-            <Button variant="ghost" size="icon" className="-ml-2" aria-label="Toggle menu">
+            <Button variant="ghost" size="icon" className="-ml-2 shrink-0" aria-label="Toggle menu">
               <Menu className="h-5 w-5" />
             </Button>
           )}
-          <span className="font-semibold text-sm truncate">{problem.title}</span>
+          <span className="font-semibold text-sm truncate flex-1">{problem.title}</span>
         </div>
-        <Link href="/">
+        <Link href="/" className="shrink-0 ml-2">
           <div className={`p-1.5 rounded-lg bg-gradient-to-br ${theme.gradient} shadow-sm text-white`}>
             <Icon className="h-4 w-4" />
           </div>

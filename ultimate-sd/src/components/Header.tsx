@@ -21,7 +21,7 @@ export async function Header() {
             <div className="absolute inset-0 rounded-xl bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <Sparkles className="h-3 w-3 absolute -top-1 -right-1 text-yellow-300 animate-pulse" />
           </div>
-          <div className="flex flex-col">
+          <div className="hidden sm:flex flex-col">
             <span className="font-bold text-xl leading-tight tracking-tight bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent group-hover:from-primary group-hover:to-purple-600 transition-all duration-300">
               Ultimate SD
             </span>

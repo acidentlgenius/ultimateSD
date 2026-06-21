@@ -29,8 +29,7 @@ export default function ChatInterface({ problem }: Props) {
       id: 'init',
       timestamp: new Date()
     };
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setMessages([initMsg]);
+        setMessages([initMsg]);
     setPhase('requirements');
   }, [problem]);
 
@@ -111,7 +110,7 @@ export default function ChatInterface({ problem }: Props) {
       <div className="glass p-4 border-b border-border">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 flex-1 min-w-0">
-            <div className="p-2 rounded-lg bg-primary/10">
+            <div className="p-2 rounded-lg bg-primary/10 shrink-0">
               <Sparkles className="h-5 w-5 text-primary" />
             </div>
             <div className="flex-1 min-w-0">

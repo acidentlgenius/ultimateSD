@@ -69,7 +69,7 @@ export function UserMenu({ user }: UserMenuProps) {
     }
 
     return (
-        <div className="flex items-center gap-2">
+        <div className="hidden sm:flex items-center gap-2">
             <Button variant="ghost" size="sm" asChild className="hover:bg-primary/10 hover:text-primary transition-colors">
                 <Link href="/login">Sign in</Link>
             </Button>
