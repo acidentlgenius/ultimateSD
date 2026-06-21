@@ -6,6 +6,10 @@ vi.mock('@/auth', () => ({
   auth: vi.fn(() => Promise.resolve(null)),
 }));
 
+vi.mock('@/components/landing/DashboardClient', () => ({
+  DashboardClient: () => <div data-testid="dashboard-client"><h1>Master Systems</h1></div>,
+}));
+
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     user: {
@@ -20,10 +24,9 @@ vi.mock('@/app/actions/recommendations', () => ({
 
 describe('Home', () => {
   it('renders the home page', async () => {
-    // Since Home is an async server component, we need to await its result before rendering
     const Component = await Home();
     render(Component);
-    // Use accessible name which combines text across child elements
     expect(screen.getByRole('heading', { level: 1, name: /Master Systems/i })).toBeDefined();
+    expect(screen.getByTestId('dashboard-client')).toBeDefined();
   });
 });
