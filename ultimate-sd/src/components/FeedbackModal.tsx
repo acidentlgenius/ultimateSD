@@ -280,11 +280,11 @@ export default function FeedbackModal({ feedback, isOpen, onClose, onContinue, x
               <Card className="glass border-2 border-green-500/30 shadow-lg animate-fade-in bg-gradient-to-br from-green-500/5 to-transparent" style={{ animationDelay: '200ms' }}>
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-2 text-green-600 dark:text-green-400 text-lg">
-                    <div className="p-1.5 rounded-lg bg-green-500/20">
+                    <div className="p-1.5 rounded-lg bg-green-500/20 shrink-0">
                       <CheckCircle className="h-5 w-5" />
                     </div>
-                    Strengths
-                    <span className="ml-auto text-xs font-normal text-muted-foreground">
+                     <span className="flex-1 leading-tight">Strengths</span>
+                    <span className="ml-auto text-xs font-normal text-muted-foreground shrink-0">
                       {feedback.strengths.length} {feedback.strengths.length === 1 ? 'point' : 'points'}
                     </span>
                   </CardTitle>
@@ -311,11 +311,11 @@ export default function FeedbackModal({ feedback, isOpen, onClose, onContinue, x
               <Card className="glass border-2 border-yellow-500/30 shadow-lg animate-fade-in bg-gradient-to-br from-yellow-500/5 to-transparent" style={{ animationDelay: '300ms' }}>
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-2 text-yellow-600 dark:text-yellow-400 text-lg">
-                    <div className="p-1.5 rounded-lg bg-yellow-500/20">
+                    <div className="p-1.5 rounded-lg bg-yellow-500/20 shrink-0">
                       <AlertCircle className="h-5 w-5" />
                     </div>
-                    Areas for Improvement
-                    <span className="ml-auto text-xs font-normal text-muted-foreground">
+                     <span className="flex-1 leading-tight">Areas for Improvement</span>
+                    <span className="ml-auto text-xs font-normal text-muted-foreground shrink-0">
                       {feedback.weaknesses.length} {feedback.weaknesses.length === 1 ? 'point' : 'points'}
                     </span>
                   </CardTitle>
@@ -342,11 +342,11 @@ export default function FeedbackModal({ feedback, isOpen, onClose, onContinue, x
               <Card className="glass border-2 border-blue-500/30 shadow-lg animate-fade-in bg-gradient-to-br from-blue-500/5 to-transparent" style={{ animationDelay: '400ms' }}>
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-2 text-blue-600 dark:text-blue-400 text-lg">
-                    <div className="p-1.5 rounded-lg bg-blue-500/20">
+                    <div className="p-1.5 rounded-lg bg-blue-500/20 shrink-0">
                       <Lightbulb className="h-5 w-5" />
                     </div>
-                    Key Points to Remember
-                    <span className="ml-auto text-xs font-normal text-muted-foreground">
+                     <span className="flex-1 leading-tight">Key Points to Remember</span>
+                    <span className="ml-auto text-xs font-normal text-muted-foreground shrink-0">
                       {feedback.missed.length} {feedback.missed.length === 1 ? 'point' : 'points'}
                     </span>
                   </CardTitle>
@@ -370,17 +370,17 @@ export default function FeedbackModal({ feedback, isOpen, onClose, onContinue, x
           </div>
 
           {/* Footer Actions - Enhanced */}
-          <div className="flex justify-between items-center gap-4 px-6 py-4 border-t border-border/50 bg-muted/20">
+          <div className="flex flex-col-reverse sm:flex-row justify-between items-center gap-4 px-6 py-4 border-t border-border/50 bg-muted/20">
             <Button 
               variant="outline" 
               onClick={exportToPDF} 
-              className="hover:bg-muted transition-all hover:scale-105"
+              className="w-full sm:w-auto hover:bg-muted transition-all hover:scale-105"
             >
               Export PDF
             </Button>
             <Button 
               onClick={handleContinue} 
-              className={`gradient-bg hover:opacity-90 transition-all hover:scale-105 shadow-lg ${
+              className={`w-full sm:w-auto gradient-bg hover:opacity-90 transition-all hover:scale-105 shadow-lg ${
                 feedback.isAcceptable 
                   ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700' 
                   : 'bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700'

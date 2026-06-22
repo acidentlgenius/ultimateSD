@@ -32,7 +32,7 @@ export async function Header() {
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-1 absolute left-1/2 -translate-x-1/2 bg-secondary/30 p-1 rounded-full border border-white/5 backdrop-blur-md shadow-sm">
+        <nav className="hidden lg:flex items-center gap-1 absolute left-1/2 -translate-x-1/2 bg-secondary/30 p-1 rounded-full border border-white/5 backdrop-blur-md shadow-sm">
           <Link
             href="/"
             className={cn(
