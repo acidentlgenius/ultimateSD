@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Download, Layers, Workflow, X } from 'lucide-react';
@@ -15,7 +15,7 @@ export default function DrawPage() {
   const fullscreenRef = useRef<HTMLDivElement>(null);
 
   // Handle fullscreen toggle with native Fullscreen API
-  const toggleFullscreen = async () => {
+  const toggleFullscreen = useCallback(async () => {
     if (!isFullscreen && diagramType) {
       // Before entering fullscreen, save current state to localStorage
       if ((window as any).sd_saveToLocalStorage) {
@@ -77,7 +77,7 @@ export default function DrawPage() {
         console.error('Error exiting fullscreen:', err);
       }
     }
-  };
+  }, [isFullscreen, diagramType]);
 
   // Handle ESC key to exit fullscreen
   useEffect(() => {
@@ -128,7 +128,7 @@ export default function DrawPage() {
       document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
       document.removeEventListener('msfullscreenchange', handleFullscreenChange);
     };
-  }, [isFullscreen, diagramType]);
+  }, [isFullscreen, diagramType, toggleFullscreen]);
 
 
   return (

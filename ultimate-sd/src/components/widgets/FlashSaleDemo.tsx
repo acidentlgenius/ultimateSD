@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -56,9 +56,9 @@ const FlashSaleDemo: React.FC = () => {
         }, 500); // Batch every 500ms
 
         return () => clearInterval(interval);
-    }, [isSaleActive, queue, useLocking]);
+    }, [isSaleActive, queue, useLocking, processPurchase]);
 
-    const processPurchase = (userId: number) => {
+    const processPurchase = useCallback((userId: number) => {
         if (useLocking) {
             // Correct Safe Implementation usually involves DB locks or Redis constraints
             // We simulate it by checking state synchronously in this single-threaded JS environment
@@ -92,6 +92,16 @@ const FlashSaleDemo: React.FC = () => {
                 }
             }
         }
+    }, [useLocking]);
+
+    const resetSale = () => {
+        setInventory(TOTAL_INVENTORY);
+        setSold(0);
+        setOversold(0);
+        setQueue([]);
+        setActiveUsers(0);
+        setIsSaleActive(false);
+        inventoryRef.current = TOTAL_INVENTORY;
     };
 
     return (

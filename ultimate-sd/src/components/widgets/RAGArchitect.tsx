@@ -72,7 +72,7 @@ const RAGArchitect: React.FC = () => {
 
             return () => clearInterval(interval);
         }
-    }, [stage]);
+    }, [stage, retrievedDocs]);
 
     return (
         <div className="p-6 bg-slate-950 text-slate-100 rounded-xl border border-indigo-900/50 shadow-2xl font-sans max-w-5xl mx-auto">

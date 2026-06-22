@@ -39,6 +39,9 @@ export default function CrawlerFrontier() {
         });
     };
 
+    const highPriorityCount = queues['High Priority'].length;
+    const standardCount = queues['Standard'].length;
+
     // Simulate Crawler Loop
     useEffect(() => {
         const interval = setInterval(() => {
@@ -94,7 +97,7 @@ export default function CrawlerFrontier() {
 
         }, 1000);
         return () => clearInterval(interval);
-    }, [queues['High Priority'].length, queues['Standard'].length, activeUrl]);
+    }, [highPriorityCount, standardCount, activeUrl, queues]);
 
     return (
         <div className="space-y-6 animate-fade-in text-sm">

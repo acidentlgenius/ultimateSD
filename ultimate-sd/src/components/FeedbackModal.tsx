@@ -113,8 +113,13 @@ export default function FeedbackModal({ feedback, isOpen, onClose, onContinue, x
         }
       };
 
-      requestAnimationFrame(animateScore);
-      setTimeout(() => requestAnimationFrame(animateAccuracy), 200);
+      const animation1 = requestAnimationFrame(animateScore);
+      const timeout1 = setTimeout(() => requestAnimationFrame(animateAccuracy), 200);
+
+      return () => {
+        cancelAnimationFrame(animation1);
+        clearTimeout(timeout1);
+      };
     } else {
       setAnimatedScore(0);
       setAnimatedAccuracy(0);

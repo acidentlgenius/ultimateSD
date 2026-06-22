@@ -127,22 +127,22 @@ const JobSchedulerViz: React.FC = () => {
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [isRunning, workers, tasks, addLog]);
+    }, [isRunning, workers, tasks, addLog, completeTask]);
 
-    const completeTask = (taskId: string, workerId: number) => {
+    const completeTask = useCallback((taskId: string, workerId: number) => {
         setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: 'completed', workerId: undefined } : t));
         setWorkers(prev => prev.map(w => w.id === workerId ? { ...w, busy: false, taskId: undefined } : w));
         addLog(`Task completed: ${INITIAL_TASKS.find(t => t.id === taskId)?.name}`);
-    };
+    }, [addLog]);
 
-    const reset = () => {
+    const reset = useCallback(() => {
         setTasks(INITIAL_TASKS.map(t => ({ ...t }))); // Deep copy to reset status
         setWorkers(INITIAL_WORKERS.map(w => ({ ...w, busy: false, taskId: undefined })));
         setLogs([]);
         setIsRunning(false);
-    };
+    }, []);
 
-    const getStatusColor = (status: TaskStatus) => {
+    const getStatusColor = useCallback((status: TaskStatus) => {
         switch (status) {
             case 'completed': return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50';
             case 'running': return 'bg-blue-500/20 text-blue-400 border-blue-500/50 animate-pulse';
@@ -150,7 +150,7 @@ const JobSchedulerViz: React.FC = () => {
             case 'failed': return 'bg-red-500/20 text-red-400 border-red-500/50';
             default: return 'bg-slate-800 text-slate-500 border-slate-700';
         }
-    };
+    }, []);
 
     return (
         <div className="space-y-6">

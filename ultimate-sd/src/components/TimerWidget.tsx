@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Play, Pause, RotateCcw, Timer as TimerIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -38,7 +38,7 @@ export function TimerWidget({
     const [isLoading, setIsLoading] = useState(false);
 
     // Helper to calculate server time
-    const calculateServerTime = () => {
+    const calculateServerTime = useCallback(() => {
         if (!startedAt) return { remaining: initialTimeSeconds, shouldBeActive: false };
 
         const start = new Date(startedAt).getTime();
@@ -58,7 +58,7 @@ export function TimerWidget({
         const remaining = Math.max(0, initialTimeSeconds - effectiveElapsed);
 
         return { remaining, shouldBeActive: isTimerRunning && remaining > 0 };
-    };
+    }, [initialTimeSeconds, startedAt, isTimerRunning, totalPausedSeconds, lastPausedAt]);
 
     // Initial load & Server Sync
     useEffect(() => {
@@ -113,7 +113,7 @@ export function TimerWidget({
         };
 
         loadState();
-    }, [problemId, initialTimeSeconds, startedAt, isTimerRunning, totalPausedSeconds, lastPausedAt]);
+    }, [problemId, initialTimeSeconds, startedAt, isTimerRunning, totalPausedSeconds, lastPausedAt, calculateServerTime]);
 
     useEffect(() => {
         if (timeLeft === 0 && isActive && startedAt) {
@@ -162,7 +162,7 @@ export function TimerWidget({
         }
 
         return () => clearInterval(interval);
-    }, [isActive, timeLeft, problemId, isInitialized, startedAt, initialTimeSeconds]);
+    }, [isActive, timeLeft, problemId, isInitialized, startedAt, initialTimeSeconds, calculateServerTime]);
 
     const handleStart = async () => {
         if (onStart && !startedAt) {

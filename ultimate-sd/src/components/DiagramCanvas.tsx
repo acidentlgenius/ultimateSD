@@ -240,12 +240,12 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
     return () => clearTimeout(timer);
   }, [elements, stepKey]);
 
-  const saveHistory = (newElements: DiagramElement[]) => {
+  const saveHistory = useCallback((newElements: DiagramElement[]) => {
     const newHistory = history.slice(0, historyIndex + 1);
     newHistory.push([...newElements]);
     setHistory(newHistory);
     setHistoryIndex(newHistory.length - 1);
-  };
+  }, [history, historyIndex]);
 
   const undo = () => {
     if (historyIndex > 0) {
@@ -263,7 +263,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
 
   const getColor = () => theme === 'dark' ? '#60a5fa' : '#3b82f6';
 
-  const drawGrid = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+  const drawGrid = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number) => {
     if (!showGrid) return;
     ctx.strokeStyle = theme === 'dark' ? '#333' : '#e5e5e5';
     ctx.lineWidth = 0.5;
@@ -282,9 +282,9 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
       ctx.lineTo(width, y);
       ctx.stroke();
     }
-  };
+  }, [showGrid, theme]);
 
-  const drawElement = (ctx: CanvasRenderingContext2D, element: DiagramElement, isSelected: boolean = false) => {
+  const drawElement = useCallback((ctx: CanvasRenderingContext2D, element: DiagramElement, isSelected: boolean = false) => {
     ctx.strokeStyle = element.color;
     ctx.fillStyle = theme === 'dark' ? 'rgba(30, 41, 59, 0.8)' : 'rgba(248, 250, 252, 0.9)';
     ctx.lineWidth = isSelected ? 3 : 2;
@@ -762,7 +762,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
         ctx.strokeRect(handle.x - handleSize / 2, handle.y - handleSize / 2, handleSize, handleSize);
       });
     }
-  };
+  }, [theme]);
 
   const redraw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -782,7 +782,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
     elements.forEach(el => {
       drawElement(ctx, el, selectedElements.has(el.id));
     });
-  }, [elements, selectedElements, showGrid, theme]);
+  }, [elements, selectedElements, showGrid, drawGrid, drawElement]);
 
   useEffect(() => {
     redraw();
@@ -1183,16 +1183,16 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
     setCurrentTool('select');
   };
 
-  const deleteSelected = () => {
+  const deleteSelected = useCallback(() => {
     if (selectedElements.size > 0) {
       const newElements = elements.filter(el => !selectedElements.has(el.id));
       setElements(newElements);
       saveHistory(newElements);
       setSelectedElements(new Set());
     }
-  };
+  }, [elements, selectedElements, saveHistory]);
 
-  const bringForward = () => {
+  const bringForward = useCallback(() => {
     if (selectedElements.size !== 1) return;
 
     const selectedId = Array.from(selectedElements)[0];
@@ -1206,9 +1206,9 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
       setElements(newElements);
       saveHistory(newElements);
     }
-  };
+  }, [elements, selectedElements, saveHistory]);
 
-  const sendBackward = () => {
+  const sendBackward = useCallback(() => {
     if (selectedElements.size !== 1) return;
 
     const selectedId = Array.from(selectedElements)[0];
@@ -1222,9 +1222,9 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
       setElements(newElements);
       saveHistory(newElements);
     }
-  };
+  }, [elements, selectedElements, saveHistory]);
 
-  const bringToFront = () => {
+  const bringToFront = useCallback(() => {
     if (selectedElements.size !== 1) return;
 
     const selectedId = Array.from(selectedElements)[0];
@@ -1236,9 +1236,9 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
       setElements(newElements);
       saveHistory(newElements);
     }
-  };
+  }, [elements, selectedElements, saveHistory]);
 
-  const sendToBack = () => {
+  const sendToBack = useCallback(() => {
     if (selectedElements.size !== 1) return;
 
     const selectedId = Array.from(selectedElements)[0];
@@ -1250,7 +1250,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
       setElements(newElements);
       saveHistory(newElements);
     }
-  };
+  }, [elements, selectedElements, saveHistory]);
 
   const clearCanvas = () => {
     setShowClearDialog(true);
@@ -1575,10 +1575,10 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
   };
 
   // Load saved designs list
-  const loadSavedDesignsList = () => {
+  const loadSavedDesignsList = useCallback(() => {
     const savedDesignsList = getSafeSavedDesignsList();
     setSavedDesigns(savedDesignsList);
-  };
+  }, []);
 
   // Delete design from localStorage
   const deleteDesignFromLocalStorage = (name: string) => {
@@ -1594,7 +1594,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
   // Load designs list on mount
   useEffect(() => {
     loadSavedDesignsList();
-  }, []);
+  }, [loadSavedDesignsList]);
 
   // Handle fullscreen change events
   useEffect(() => {
@@ -1664,7 +1664,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedElements, elements]);
+  }, [selectedElements, elements, deleteSelected, bringForward, sendBackward, bringToFront, sendToBack]);
 
   // Portal for design name section to render in parent component
   const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null);

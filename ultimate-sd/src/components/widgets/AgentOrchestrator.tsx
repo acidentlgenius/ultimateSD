@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Pause, RefreshCw, Terminal, Cpu, Globe, Calculator, Database } from 'lucide-react';
 import { Card } from '@/components/ui/card';
@@ -52,7 +52,7 @@ const AgentOrchestrator: React.FC = () => {
             setIsPlaying(false);
         }
         return () => clearTimeout(timer);
-    }, [isPlaying, currentStepIndex]);
+    }, [isPlaying, currentStepIndex, addNextStep]);
 
     // Auto-scroll to bottom of logs
     useEffect(() => {
@@ -61,7 +61,7 @@ const AgentOrchestrator: React.FC = () => {
         }
     }, [logs]);
 
-    const addNextStep = () => {
+    const addNextStep = useCallback(() => {
         if (currentStepIndex >= SCENARIO.steps.length - 1) {
             setIsPlaying(false);
             return;
@@ -79,7 +79,7 @@ const AgentOrchestrator: React.FC = () => {
         }]);
 
         setCurrentStepIndex(nextIndex);
-    };
+    }, [currentStepIndex]);
 
     const reset = () => {
         setIsPlaying(false);
