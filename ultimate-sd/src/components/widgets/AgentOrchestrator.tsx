@@ -36,6 +36,26 @@ const AgentOrchestrator: React.FC = () => {
     const [logs, setLogs] = useState<LogEntry[]>([]);
     const scrollRef = useRef<HTMLDivElement>(null);
 
+    const addNextStep = useCallback(() => {
+        if (currentStepIndex >= SCENARIO.steps.length - 1) {
+            setIsPlaying(false);
+            return;
+        }
+
+        const nextIndex = currentStepIndex + 1;
+        const stepData = SCENARIO.steps[nextIndex];
+
+        setLogs(prev => [...prev, {
+            id: Math.random().toString(36).substr(2, 9),
+            type: stepData.type as ActionType,
+            content: stepData.content,
+            tool: (stepData as any).tool, // quick cast
+            timestamp: new Date().toISOString().split('T')[1].split('.')[0]
+        }]);
+
+        setCurrentStepIndex(nextIndex);
+    }, [currentStepIndex]);
+
     useEffect(() => {
         let timer: NodeJS.Timeout;
         if (isPlaying && currentStepIndex < SCENARIO.steps.length) {
@@ -60,26 +80,6 @@ const AgentOrchestrator: React.FC = () => {
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
         }
     }, [logs]);
-
-    const addNextStep = useCallback(() => {
-        if (currentStepIndex >= SCENARIO.steps.length - 1) {
-            setIsPlaying(false);
-            return;
-        }
-
-        const nextIndex = currentStepIndex + 1;
-        const stepData = SCENARIO.steps[nextIndex];
-
-        setLogs(prev => [...prev, {
-            id: Math.random().toString(36).substr(2, 9),
-            type: stepData.type as ActionType,
-            content: stepData.content,
-            tool: (stepData as any).tool, // quick cast
-            timestamp: new Date().toISOString().split('T')[1].split('.')[0]
-        }]);
-
-        setCurrentStepIndex(nextIndex);
-    }, [currentStepIndex]);
 
     const reset = () => {
         setIsPlaying(false);
