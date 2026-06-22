@@ -147,7 +147,7 @@ export default function DFSVisualizer() {
                                                 <span className="text-[9px] text-muted-foreground">({node.rack})</span>
                                             </div>
                                             {node.status === 'alive' && (
-                                                <Button size="icon" variant="ghost" className="h-4 w-4 text-red-400" onClick={() => killNode(node.id)} title="Kill Node">
+                                                <Button size="icon" variant="ghost" className="h-4 w-4 text-red-400" aria-label="Kill Node" onClick={() => killNode(node.id)} title="Kill Node">
                                                     <span className="text-[10px]">✕</span>
                                                 </Button>
                                             )}

@@ -167,7 +167,7 @@ export default function SocketPulse() {
                                     onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
                                     disabled={!isConnected}
                                 />
-                                <Button onClick={sendMessage} disabled={!isConnected} size="icon" className="h-6 w-6 shrink-0">
+                                <Button onClick={sendMessage} disabled={!isConnected} size="icon" aria-label="Send message" className="h-6 w-6 shrink-0">
                                     <ArrowUp className="h-3 w-3" />
                                 </Button>
                             </div>

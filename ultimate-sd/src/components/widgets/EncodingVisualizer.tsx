@@ -80,7 +80,7 @@ export default function EncodingVisualizer() {
                                         onChange={(e) => setCounter(parseInt(e.target.value) || 0)}
                                         className="font-mono text-sm"
                                     />
-                                    <Button size="icon" variant="outline" onClick={() => setCounter(c => c + 1)}>
+                                    <Button size="icon" variant="outline" aria-label="Refresh Counter" onClick={() => setCounter(c => c + 1)}>
                                         <RefreshCw className="h-4 w-4" />
                                     </Button>
                                 </div>
