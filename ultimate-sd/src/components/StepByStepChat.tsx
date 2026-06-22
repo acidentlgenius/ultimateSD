@@ -577,8 +577,8 @@ export default function StepByStepChat({ problem }: Props) {
         <div className="p-6 space-y-6">
           {/* Question/Prompt */}
           <div className="space-y-2">
-            <div className="flex justify-between items-start">
-              <h3 className="text-lg font-semibold">{currentStep.title}</h3>
+            <div className="flex justify-between items-start gap-4">
+              <h3 className="text-lg font-semibold flex-1">{currentStep.title}</h3>
               <Button
                 variant="outline"
                 size="sm"
@@ -682,7 +682,7 @@ export default function StepByStepChat({ problem }: Props) {
 
                 {/* Add new item - only show if not showing feedback */}
                 {!showFeedback && (
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <Input
                       value={newItemInput}
                       onChange={(e) => setNewItemInput(e.target.value)}
@@ -699,7 +699,7 @@ export default function StepByStepChat({ problem }: Props) {
                       onClick={addListItem}
                       disabled={!newItemInput.trim()}
                       variant="outline"
-                      className="shrink-0"
+                      className="shrink-0 w-full sm:w-auto"
                     >
                       <Plus className="h-4 w-4 mr-2" />
                       Add
@@ -739,12 +739,13 @@ export default function StepByStepChat({ problem }: Props) {
 
             {/* Action buttons - only show if not showing feedback */}
             {!showFeedback && (
-              <div className="flex justify-between items-center pt-4 border-t border-border">
-                <div className="flex gap-2">
+              <div className="flex flex-col-reverse sm:flex-row justify-between items-center gap-4 pt-4 border-t border-border">
+                <div className="flex flex-col sm:flex-row gap-2">
                   {canGoBack && (
                     <Button
                       variant="outline"
                       onClick={handlePrevious}
+                      className="flex-1 sm:flex-none"
                     >
                       <ArrowLeft className="h-4 w-4 mr-2" />
                       Previous
@@ -753,7 +754,7 @@ export default function StepByStepChat({ problem }: Props) {
                   <Button
                     variant="ghost"
                     onClick={handleSkip}
-                    className="text-muted-foreground"
+                    className="text-muted-foreground flex-1 sm:flex-none"
                   >
                     <SkipForward className="h-4 w-4 mr-2" />
                     Skip
@@ -769,7 +770,7 @@ export default function StepByStepChat({ problem }: Props) {
                         ? schemaData.length === 0
                         : !textInput.trim()
                   )}
-                  className="gradient-bg"
+                  className="gradient-bg w-full sm:w-auto"
                 >
                   {loading ? (
                     <>
