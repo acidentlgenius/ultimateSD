@@ -90,7 +90,7 @@ export async function getHelpResponse(
 ): Promise<string> {
   const llm = llmOverride ?? (process.env.GOOGLE_API_KEY
     ? new ChatGoogleGenerativeAI({
-        model: 'gemini-2.5-flash-lite',
+        model: 'gemini-3.1-flash-lite',
         apiKey: process.env.GOOGLE_API_KEY,
         temperature: 0.7,
         maxOutputTokens: 500,
