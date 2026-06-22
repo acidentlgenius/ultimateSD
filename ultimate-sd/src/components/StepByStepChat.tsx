@@ -213,6 +213,39 @@ export default function StepByStepChat({ problem }: Props) {
     };
   }, [phases]);
 
+
+  // Auto-save drafts
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      if (!loading && !showFeedback && (textInput || listItems.length > 0 || schemaData.length > 0)) {
+        setSavedStepData(prev => {
+          const newSavedData = new Map(prev);
+          const currentSaved = newSavedData.get(currentStepKey) || {
+            listItems: [], textInput: '', schemaData: [], feedback: null, completed: false, diagramData: null
+          };
+
+          // Only update if something changed
+          if (
+            JSON.stringify(currentSaved.listItems) === JSON.stringify(listItems) &&
+            currentSaved.textInput === textInput &&
+            JSON.stringify(currentSaved.schemaData) === JSON.stringify(schemaData)
+          ) {
+            return prev;
+          }
+
+          newSavedData.set(currentStepKey, {
+            ...currentSaved,
+            listItems: listItems,
+            textInput: textInput,
+            schemaData: schemaData,
+          });
+          return newSavedData;
+        });
+      }
+    }, 1000);
+    return () => clearTimeout(handler);
+  }, [textInput, listItems, schemaData, currentStepKey, loading, showFeedback]);
+
   // Clear session handler
   const handleClearSession = useCallback(() => {
     clearSessionState(problem.slug);
@@ -521,7 +554,7 @@ export default function StepByStepChat({ problem }: Props) {
 
   const handleRetry = () => {
     setShowFeedback(false);
-    setFeedback(null);
+    // setFeedback(null); // Retain feedback for user reference
   };
 
   const getPhaseColor = (phase: string) => {
@@ -601,6 +634,21 @@ export default function StepByStepChat({ problem }: Props) {
                   </>
                 )}
               </div>
+            </div>
+          )}
+
+
+          {/* Persistent Retry Feedback Banner */}
+          {!showFeedback && feedback && !feedback.isAcceptable && (
+            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-4 text-sm">
+              <div className="flex items-center gap-2 text-red-600 dark:text-red-400 font-semibold mb-2">
+                <AlertCircle className="h-4 w-4" />
+                <span>Areas for Improvement</span>
+              </div>
+              <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-2">
+                {feedback.weaknesses?.map((w: string, i: number) => <li key={`w-${i}`}>{w}</li>)}
+                {feedback.missed?.map((m: string, i: number) => <li key={`m-${i}`}>{m}</li>)}
+              </ul>
             </div>
           )}
 
