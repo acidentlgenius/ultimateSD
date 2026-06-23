@@ -7,7 +7,7 @@ function getDefaultLLM(): ChatGoogleGenerativeAI | null {
     return null;
   }
   return new ChatGoogleGenerativeAI({
-    model: 'gemini-3.1-flash-lite',
+    model: 'gemini-2.5-flash-lite',
     apiKey: process.env.GOOGLE_API_KEY,
   });
 }
