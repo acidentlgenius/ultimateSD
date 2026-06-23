@@ -175,6 +175,7 @@ export function DashboardClient({ user, recommendations, onboardingCompleted = f
                                             <TableHead className="w-[45%] font-semibold pl-6 h-14">Problem</TableHead>
                                             <TableHead className="font-semibold h-14">Difficulty</TableHead>
                                             <TableHead className="font-semibold h-14">Category</TableHead>
+                                            <TableHead className="hidden md:table-cell font-semibold h-14">Tags</TableHead>
                                             <TableHead className="hidden md:table-cell font-semibold h-14">Companies</TableHead>
                                             <TableHead className="text-right font-semibold pr-6 h-14">Action</TableHead>
                                         </TableRow>
@@ -206,6 +207,17 @@ export function DashboardClient({ user, recommendations, onboardingCompleted = f
                                                         <TrendingUp className="h-4 w-4 opacity-50" />
                                                         <span>{problem.category}</span>
                                                     </div>
+                                                </TableCell>
+                                                <TableCell className="hidden md:table-cell py-4">
+                                                    {(problem.tags && problem.tags.length > 0) && (
+                                                        <div className="flex flex-wrap gap-1.5">
+                                                            {problem.tags.slice(0, 2).map(tag => (
+                                                                <span key={tag} className="text-[10px] font-semibold text-primary/80 bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
+                                                                    #{tag}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    )}
                                                 </TableCell>
                                                 <TableCell className="hidden md:table-cell py-4">
                                                     {problem.companies.length > 0 && (

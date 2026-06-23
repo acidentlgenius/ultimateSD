@@ -9,7 +9,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Easy',
     category: 'Basics',
     companies: ['Amazon', 'Google'],
-    requirements: ['Unique short codes', 'Analytics on clicks']
+    requirements: ['Unique short codes', 'Analytics on clicks'],
+    tags: ['Data Engineering']
   },
   {
     id: '2',
@@ -19,7 +20,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Medium',
     category: 'Core Services',
     companies: ['Netflix', 'YouTube'],
-    requirements: ['Streaming at scale', 'Recommendations', 'Real-time features']
+    requirements: ['Streaming at scale', 'Recommendations', 'Real-time features'],
+    tags: ['Real-time', 'Scalability']
   },
   {
     id: '3',
@@ -29,7 +31,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Medium',
     category: 'Core Services',
     companies: ['Twitter', 'Meta'],
-    requirements: ['Real-time feeds', 'Scalable writes', 'Timeline generation']
+    requirements: ['Real-time feeds', 'Scalable writes', 'Timeline generation'],
+    tags: ['Real-time']
   },
   {
     id: '4',
@@ -39,7 +42,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Medium',
     category: 'Core Services',
     companies: ['Meta', 'Snapchat'],
-    requirements: ['Photo storage', 'Stories expiration', 'Reels algorithm']
+    requirements: ['Photo storage', 'Stories expiration', 'Reels algorithm'],
+    tags: ['System Design']
   },
   {
     id: '5',
@@ -49,7 +53,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Hard',
     category: 'Core Services',
     companies: ['Uber', 'Lyft'],
-    requirements: ['Real-time matching', 'ETA calculation', 'Payment processing']
+    requirements: ['Real-time matching', 'ETA calculation', 'Payment processing'],
+    tags: ['Real-time']
   },
   {
     id: '6',
@@ -59,7 +64,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Hard',
     category: 'Core Services',
     companies: ['Netflix', 'Amazon'],
-    requirements: ['Content delivery', 'Recommendation engine', 'Offline viewing']
+    requirements: ['Content delivery', 'Recommendation engine', 'Offline viewing'],
+    tags: ['System Design']
   },
   {
     id: '7',
@@ -69,7 +75,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Medium',
     category: 'Core Services',
     companies: ['Meta', 'Signal'],
-    requirements: ['Real-time messaging', 'Encryption', 'Group chats']
+    requirements: ['Real-time messaging', 'Encryption', 'Group chats'],
+    tags: ['Real-time']
   },
   {
     id: '8',
@@ -79,7 +86,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Hard',
     category: 'Advanced',
     companies: ['Meta', 'LinkedIn'],
-    requirements: ['Feed ranking', 'Scalable reads', 'Ad integration']
+    requirements: ['Feed ranking', 'Scalable reads', 'Ad integration'],
+    tags: ['Search']
   },
   {
     id: '9',
@@ -89,7 +97,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Hard',
     category: 'Advanced',
     companies: ['Google', 'Bing'],
-    requirements: ['Web crawling', 'Indexing', 'Page ranking']
+    requirements: ['Web crawling', 'Indexing', 'Page ranking'],
+    tags: ['Search']
   },
   {
     id: '10',
@@ -99,7 +108,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Medium',
     category: 'Core Services',
     companies: ['Dropbox', 'Google Drive'],
-    requirements: ['File sync', 'Versioning', 'Sharing']
+    requirements: ['File sync', 'Versioning', 'Sharing'],
+    tags: ['System Design']
   },
   // Add more problems here to reach 100+
   // For brevity, adding a few more
@@ -111,7 +121,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Easy',
     category: 'Basics',
     companies: ['Local Systems'],
-    requirements: ['Entry validation', 'Space allocation', 'Payment']
+    requirements: ['Entry validation', 'Space allocation', 'Payment'],
+    tags: ['System Design']
   },
   {
     id: '12',
@@ -121,7 +132,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Medium',
     category: 'Basics',
     companies: ['Building Systems'],
-    requirements: ['Request handling', 'Optimization', 'Safety']
+    requirements: ['Request handling', 'Optimization', 'Safety'],
+    tags: ['System Design']
   },
   {
     id: '13',
@@ -131,7 +143,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Hard',
     category: 'Advanced',
     companies: ['Redis Labs', 'Amazon'],
-    requirements: ['Data partitioning', 'Replication', 'Consistency']
+    requirements: ['Data partitioning', 'Replication', 'Consistency'],
+    tags: ['Data Engineering', 'Distributed Systems']
   },
   {
     id: '14',
@@ -141,7 +154,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Medium',
     category: 'Advanced',
     companies: ['Google', 'Amazon'],
-    requirements: ['Prefix matching', 'Ranking', 'Scalability']
+    requirements: ['Prefix matching', 'Ranking', 'Scalability'],
+    tags: ['Scalability', 'Search']
   },
   {
     id: '15',
@@ -151,7 +165,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Medium',
     category: 'Basics',
     companies: [],
-    requirements: ['Uniqueness', 'Scalability', 'Distribution']
+    requirements: ['Uniqueness', 'Scalability', 'Distribution'],
+    tags: ['Scalability']
   },
   {
     id: '16',
@@ -161,7 +176,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Medium',
     category: 'Edge Cases',
     companies: ['Gaming', 'Sports'],
-    requirements: ['Ranking updates', 'Real-time', 'Scalability']
+    requirements: ['Ranking updates', 'Real-time', 'Scalability'],
+    tags: ['Real-time', 'Scalability', 'Search']
   },
   {
     id: '17',
@@ -171,7 +187,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Medium',
     category: 'Edge Cases',
     companies: ['API Providers'],
-    requirements: ['Request tracking', 'Throttling', 'Distributed']
+    requirements: ['Request tracking', 'Throttling', 'Distributed'],
+    tags: ['System Design']
   },
   {
     id: '18',
@@ -181,7 +198,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Hard',
     category: 'ML-Infused',
     companies: ['Netflix', 'Amazon'],
-    requirements: ['User profiling', 'Content similarity', 'Real-time updates']
+    requirements: ['User profiling', 'Content similarity', 'Real-time updates'],
+    tags: ['Real-time']
   },
   {
     id: '19',
@@ -191,7 +209,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Hard',
     category: 'ML-Infused',
     companies: ['PayPal', 'Stripe'],
-    requirements: ['Pattern recognition', 'Real-time processing', 'False positives']
+    requirements: ['Pattern recognition', 'Real-time processing', 'False positives'],
+    tags: ['Real-time']
   },
   {
     id: '20',
@@ -201,7 +220,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Hard',
     category: 'ML-Infused',
     companies: ['Google', 'Bing'],
-    requirements: ['User intent', 'Personalization', 'A/B testing']
+    requirements: ['User intent', 'Personalization', 'A/B testing'],
+    tags: ['System Design']
   },
   {
     id: '21',
@@ -211,7 +231,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Medium',
     category: 'Edge Cases',
     companies: ['Google', 'Meta'],
-    requirements: ['Traffic splitting', 'Statistical significance', 'Rollbacks']
+    requirements: ['Traffic splitting', 'Statistical significance', 'Rollbacks'],
+    tags: ['System Design']
   },
   {
     id: '22',
@@ -221,7 +242,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Medium',
     category: 'Core Services',
     companies: ['Slack', 'Gmail'],
-    requirements: ['Scheduling', 'Delivery guarantees', 'User preferences']
+    requirements: ['Scheduling', 'Delivery guarantees', 'User preferences'],
+    tags: ['System Design']
   },
   {
     id: '23',
@@ -231,7 +253,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Medium',
     category: 'Core Services',
     companies: ['AWS S3', 'Google Drive'],
-    requirements: ['File operations', 'Versioning', 'Access control']
+    requirements: ['File operations', 'Versioning', 'Access control'],
+    tags: ['System Design']
   },
   {
     id: '24',
@@ -241,7 +264,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Hard',
     category: 'Advanced',
     companies: ['Airflow', 'Kubernetes'],
-    requirements: ['Job dependencies', 'Fault tolerance', 'Scalability']
+    requirements: ['Job dependencies', 'Fault tolerance', 'Scalability'],
+    tags: ['Scalability']
   },
   {
     id: '25',
@@ -251,7 +275,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Hard',
     category: 'Advanced',
     companies: ['Zoom', 'Google Meet'],
-    requirements: ['Media streaming', 'Signaling', 'Quality adaptation']
+    requirements: ['Media streaming', 'Signaling', 'Quality adaptation'],
+    tags: ['Real-time']
   },
   {
     id: '26',
@@ -261,7 +286,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Medium',
     category: 'Basics',
     companies: ['ELK Stack', 'Splunk'],
-    requirements: ['Log collection', 'Search', 'Alerting']
+    requirements: ['Log collection', 'Search', 'Alerting'],
+    tags: ['Search']
   },
   {
     id: '27',
@@ -271,7 +297,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Medium',
     category: 'Basics',
     companies: ['Prometheus', 'Grafana'],
-    requirements: ['Data collection', 'Visualization', 'Alerting']
+    requirements: ['Data collection', 'Visualization', 'Alerting'],
+    tags: ['Data Engineering']
   },
   {
     id: '28',
@@ -281,7 +308,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Medium',
     category: 'Advanced',
     companies: ['Redis', 'DynamoDB'],
-    requirements: ['Partitioning', 'Replication', 'Consistency']
+    requirements: ['Partitioning', 'Replication', 'Consistency'],
+    tags: ['Distributed Systems']
   },
   {
     id: '29',
@@ -291,7 +319,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Medium',
     category: 'Core Services',
     companies: ['Kafka', 'RabbitMQ'],
-    requirements: ['Publish-subscribe', 'Scalability', 'Durability']
+    requirements: ['Publish-subscribe', 'Scalability', 'Durability'],
+    tags: ['Scalability']
   },
   {
     id: '30',
@@ -301,7 +330,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Medium',
     category: 'Basics',
     companies: ['AWS ELB', 'NGINX'],
-    requirements: ['Traffic distribution', 'Health checks', 'Scalability']
+    requirements: ['Traffic distribution', 'Health checks', 'Scalability'],
+    tags: ['Scalability']
   },
   {
     id: '31',
@@ -311,7 +341,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Hard',
     category: 'Advanced',
     companies: ['Cloudflare', 'Akamai'],
-    requirements: ['Edge caching', 'Global distribution', 'Performance']
+    requirements: ['Edge caching', 'Global distribution', 'Performance'],
+    tags: ['Caching']
   },
   {
     id: '32',
@@ -321,7 +352,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Medium',
     category: 'Advanced',
     companies: ['Google', 'Bing'],
-    requirements: ['URL frontier', 'Politeness', 'Scalability']
+    requirements: ['URL frontier', 'Politeness', 'Scalability'],
+    tags: ['Scalability']
   },
   {
     id: '33',
@@ -331,7 +363,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Hard',
     category: 'Advanced',
     companies: ['HDFS', 'Ceph'],
-    requirements: ['Replication', 'Fault tolerance', 'Scalability']
+    requirements: ['Replication', 'Fault tolerance', 'Scalability'],
+    tags: ['Scalability', 'Distributed Systems']
   },
   {
     id: '34',
@@ -341,7 +374,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Hard',
     category: 'Advanced',
     companies: ['ZooKeeper', 'etcd'],
-    requirements: ['Consensus', 'Fault tolerance', 'Scalability']
+    requirements: ['Consensus', 'Fault tolerance', 'Scalability'],
+    tags: ['Scalability']
   },
   {
     id: '35',
@@ -351,7 +385,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Medium',
     category: 'Basics',
     companies: ['Consul', 'Spring Cloud Config'],
-    requirements: ['Versioning', 'Distribution', 'Security']
+    requirements: ['Versioning', 'Distribution', 'Security'],
+    tags: ['System Design']
   },
   {
     id: '36',
@@ -361,7 +396,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Medium',
     category: 'Basics',
     companies: ['Vault', 'AWS Secrets Manager'],
-    requirements: ['Encryption', 'Access control', 'Rotation']
+    requirements: ['Encryption', 'Access control', 'Rotation'],
+    tags: ['System Design']
   },
   {
     id: '37',
@@ -371,7 +407,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Medium',
     category: 'Basics',
     companies: ['Jenkins', 'GitLab CI'],
-    requirements: ['Automation', 'Testing', 'Deployment']
+    requirements: ['Automation', 'Testing', 'Deployment'],
+    tags: ['System Design']
   },
   {
     id: '38',
@@ -381,7 +418,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Hard',
     category: 'Advanced',
     companies: ['Netflix', 'Uber'],
-    requirements: ['Service discovery', 'Communication', 'Monitoring']
+    requirements: ['Service discovery', 'Communication', 'Monitoring'],
+    tags: ['System Design']
   },
   {
     id: '39',
@@ -391,7 +429,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Medium',
     category: 'Core Services',
     companies: ['GitHub', 'Shopify'],
-    requirements: ['Schema design', 'Resolvers', 'Caching']
+    requirements: ['Schema design', 'Resolvers', 'Caching'],
+    tags: ['Caching']
   },
   {
     id: '40',
@@ -401,7 +440,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Easy',
     category: 'Basics',
     companies: ['Twitter', 'GitHub'],
-    requirements: ['Resources', 'HTTP methods', 'Status codes']
+    requirements: ['Resources', 'HTTP methods', 'Status codes'],
+    tags: ['System Design']
   },
   {
     id: '41',
@@ -411,7 +451,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Medium',
     category: 'Core Services',
     companies: ['Slack', 'Discord'],
-    requirements: ['Connection management', 'Scalability', 'Security']
+    requirements: ['Connection management', 'Scalability', 'Security'],
+    tags: ['Scalability']
   },
   {
     id: '42',
@@ -421,7 +462,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Hard',
     category: 'Advanced',
     companies: ['Google Docs', 'Notion'],
-    requirements: ['Conflict resolution', 'Operational transform', 'Scalability']
+    requirements: ['Conflict resolution', 'Operational transform', 'Scalability'],
+    tags: ['Scalability']
   },
   {
     id: '43',
@@ -431,7 +473,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Hard',
     category: 'Advanced',
     companies: ['Google Ads', 'Meta Ads'],
-    requirements: ['Targeting', 'Auction', 'Real-time bidding']
+    requirements: ['Targeting', 'Auction', 'Real-time bidding'],
+    tags: ['Real-time']
   },
   {
     id: '44',
@@ -441,7 +484,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Hard',
     category: 'ML-Infused',
     companies: ['TikTok', 'Instagram'],
-    requirements: ['User modeling', 'Content ranking', 'Engagement']
+    requirements: ['User modeling', 'Content ranking', 'Engagement'],
+    tags: ['Search']
   },
   {
     id: '45',
@@ -451,7 +495,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Medium',
     category: 'Basics',
     companies: ['LaunchDarkly', 'Split'],
-    requirements: ['Dynamic toggles', 'Targeting', 'Monitoring']
+    requirements: ['Dynamic toggles', 'Targeting', 'Monitoring'],
+    tags: ['System Design']
   },
   {
     id: '46',
@@ -461,7 +506,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Hard',
     category: 'Advanced',
     companies: ['Istio', 'Linkerd'],
-    requirements: ['Traffic management', 'Observability', 'Security']
+    requirements: ['Traffic management', 'Observability', 'Security'],
+    tags: ['System Design']
   },
   {
     id: '47',
@@ -471,7 +517,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Medium',
     category: 'Advanced',
     companies: ['Jaeger', 'Zipkin'],
-    requirements: ['Span collection', 'Visualization', 'Performance']
+    requirements: ['Span collection', 'Visualization', 'Performance'],
+    tags: ['System Design']
   },
   {
     id: '48',
@@ -481,7 +528,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Medium',
     category: 'Basics',
     companies: ['Compliance tools'],
-    requirements: ['Log auditing', 'Reporting', 'Alerts']
+    requirements: ['Log auditing', 'Reporting', 'Alerts'],
+    tags: ['System Design']
   },
   {
     id: '49',
@@ -491,7 +539,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Medium',
     category: 'Basics',
     companies: ['EU regulations'],
-    requirements: ['Data minimization', 'Consent', 'Right to erasure']
+    requirements: ['Data minimization', 'Consent', 'Right to erasure'],
+    tags: ['Data Engineering']
   },
   {
     id: '50',
@@ -501,7 +550,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Hard',
     category: 'Advanced',
     companies: ['Bitcoin', 'Ethereum'],
-    requirements: ['Consensus', 'Immutability', 'Scalability']
+    requirements: ['Consensus', 'Immutability', 'Scalability'],
+    tags: ['Scalability']
   },
   {
     id: '51',
@@ -511,7 +561,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Hard',
     category: 'Advanced',
     companies: ['AWS IoT', 'Google IoT'],
-    requirements: ['Device management', 'Data ingestion', 'Analytics']
+    requirements: ['Device management', 'Data ingestion', 'Analytics'],
+    tags: ['Data Engineering']
   },
   {
     id: '52',
@@ -521,7 +572,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Hard',
     category: 'Advanced',
     companies: ['Oculus', 'Magic Leap'],
-    requirements: ['3D rendering', 'Tracking', 'Networking']
+    requirements: ['3D rendering', 'Tracking', 'Networking'],
+    tags: ['System Design']
   },
   {
     id: '53',
@@ -531,7 +583,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Hard',
     category: 'Advanced',
     companies: ['IBM Quantum', 'Google Quantum'],
-    requirements: ['Qubits', 'Error correction', 'Algorithms']
+    requirements: ['Qubits', 'Error correction', 'Algorithms'],
+    tags: ['System Design']
   },
   {
     id: '54',
@@ -541,7 +594,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Hard',
     category: 'Advanced',
     companies: ['Meta', 'Decentraland'],
-    requirements: ['Virtual worlds', 'Avatars', 'Economy']
+    requirements: ['Virtual worlds', 'Avatars', 'Economy'],
+    tags: ['System Design']
   },
   {
     id: '55',
@@ -551,7 +605,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Hard',
     category: 'Advanced',
     companies: ['Neuralink', 'Kernel'],
-    requirements: ['Signal processing', 'Safety', 'Privacy']
+    requirements: ['Signal processing', 'Safety', 'Privacy'],
+    tags: ['System Design']
   },
   {
     id: '56',
@@ -561,7 +616,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Medium',
     category: 'Edge Cases',
     companies: ['NASA', 'ESA'],
-    requirements: ['Orbital mechanics', 'Collision prediction', 'Mitigation']
+    requirements: ['Orbital mechanics', 'Collision prediction', 'Mitigation'],
+    tags: ['System Design']
   },
   {
     id: '57',
@@ -571,7 +627,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Hard',
     category: 'ML-Infused',
     companies: ['Coursera', 'Khan Academy'],
-    requirements: ['Learner modeling', 'Content adaptation', 'Assessment']
+    requirements: ['Learner modeling', 'Content adaptation', 'Assessment'],
+    tags: ['System Design']
   },
   {
     id: '58',
@@ -581,7 +638,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Hard',
     category: 'ML-Infused',
     companies: ['NOAA', 'IPCC'],
-    requirements: ['Data processing', 'Modeling', 'Visualization']
+    requirements: ['Data processing', 'Modeling', 'Visualization'],
+    tags: ['Data Engineering']
   },
   {
     id: '59',
@@ -591,7 +649,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Hard',
     category: 'Advanced',
     companies: ['DHL', 'Amazon'],
-    requirements: ['Routing', 'Inventory', 'Risk management']
+    requirements: ['Routing', 'Inventory', 'Risk management'],
+    tags: ['System Design']
   },
   {
     id: '60',
@@ -601,7 +660,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Medium',
     category: 'Basics',
     companies: ['Google', 'Microsoft'],
-    requirements: ['Identity verification', 'Micro-segmentation', 'Monitoring']
+    requirements: ['Identity verification', 'Micro-segmentation', 'Monitoring'],
+    tags: ['System Design']
   },
   {
     id: '61',
@@ -611,7 +671,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Medium',
     category: 'Edge Cases',
     companies: ['Green tech'],
-    requirements: ['Data collection', 'Calculation', 'Reporting']
+    requirements: ['Data collection', 'Calculation', 'Reporting'],
+    tags: ['Data Engineering']
   },
   {
     id: '62',
@@ -621,7 +682,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Medium',
     category: 'Basics',
     companies: ['Google', 'Microsoft'],
-    requirements: ['Cooling', 'Renewable energy', 'Efficiency']
+    requirements: ['Cooling', 'Renewable energy', 'Efficiency'],
+    tags: ['System Design']
   },
   {
     id: '63',
@@ -631,7 +693,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Hard',
     category: 'ML-Infused',
     companies: ['Google', 'Apple'],
-    requirements: ['Privacy', 'Aggregation', 'Security']
+    requirements: ['Privacy', 'Aggregation', 'Security'],
+    tags: ['System Design']
   },
   {
     id: '64',
@@ -641,7 +704,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Hard',
     category: 'ML-Infused',
     companies: ['OpenAI', 'Google'],
-    requirements: ['Model interpretability', 'Transparency', 'Trust']
+    requirements: ['Model interpretability', 'Transparency', 'Trust'],
+    tags: ['System Design']
   },
   {
     id: '65',
@@ -651,7 +715,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Medium',
     category: 'Advanced',
     companies: ['Pinecone', 'Weaviate'],
-    requirements: ['Similarity search', 'Scalability', 'Indexing']
+    requirements: ['Similarity search', 'Scalability', 'Indexing'],
+    tags: ['Scalability', 'Search']
   },
   {
     id: '66',
@@ -661,7 +726,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Hard',
     category: 'ML-Infused',
     companies: ['Google', 'Bing'],
-    requirements: ['Feature extraction', 'Fusion', 'Ranking']
+    requirements: ['Feature extraction', 'Fusion', 'Ranking'],
+    tags: ['Search']
   },
   {
     id: '67',
@@ -671,7 +737,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Hard',
     category: 'Advanced',
     companies: ['OpenAI', 'Anthropic'],
-    requirements: ['Task allocation', 'Communication', 'Safety']
+    requirements: ['Task allocation', 'Communication', 'Safety'],
+    tags: ['System Design']
   },
   {
     id: '68',
@@ -681,7 +748,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Hard',
     category: 'ML-Infused',
     companies: ['OpenAI', 'Stability AI'],
-    requirements: ['Content detection', 'Filtering', 'Feedback']
+    requirements: ['Content detection', 'Filtering', 'Feedback'],
+    tags: ['System Design']
   },
   {
     id: '69',
@@ -691,7 +759,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Hard',
     category: 'ML-Infused',
     companies: ['LangChain', 'Pinecone'],
-    requirements: ['Retrieval', 'Generation', 'Integration']
+    requirements: ['Retrieval', 'Generation', 'Integration'],
+    tags: ['System Design']
   },
   {
     id: '70',
@@ -701,7 +770,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Hard',
     category: 'ML-Infused',
     companies: ['Dialogflow', 'Rasa'],
-    requirements: ['NLP', 'Dialog management', 'Integration']
+    requirements: ['NLP', 'Dialog management', 'Integration'],
+    tags: ['System Design']
   },
   {
     id: '71',
@@ -711,7 +781,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Hard',
     category: 'Advanced',
     companies: ['Snowflake', 'Databricks'],
-    requirements: ['Stream processing', 'Aggregation', 'Visualization']
+    requirements: ['Stream processing', 'Aggregation', 'Visualization'],
+    tags: ['System Design']
   },
   {
     id: '72',
@@ -721,7 +792,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Medium',
     category: 'Advanced',
     companies: ['AWS', 'Azure'],
-    requirements: ['Data ingestion', 'Storage', 'Querying']
+    requirements: ['Data ingestion', 'Storage', 'Querying'],
+    tags: ['Data Engineering']
   },
   {
     id: '73',
@@ -731,7 +803,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Medium',
     category: 'Advanced',
     companies: ['Redshift', 'BigQuery'],
-    requirements: ['ETL', 'Schema design', 'Query optimization']
+    requirements: ['ETL', 'Schema design', 'Query optimization'],
+    tags: ['System Design']
   },
   {
     id: '74',
@@ -741,7 +814,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Medium',
     category: 'Basics',
     companies: ['Talend', 'Informatica'],
-    requirements: ['Data extraction', 'Transformation', 'Loading']
+    requirements: ['Data extraction', 'Transformation', 'Loading'],
+    tags: ['Data Engineering']
   },
   {
     id: '75',
@@ -751,7 +825,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Medium',
     category: 'Basics',
     companies: ['Veeam', 'Commvault'],
-    requirements: ['Backup strategies', 'Recovery', 'Testing']
+    requirements: ['Backup strategies', 'Recovery', 'Testing'],
+    tags: ['System Design']
   },
   {
     id: '76',
@@ -761,7 +836,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Hard',
     category: 'Advanced',
     companies: ['AWS DR', 'Azure DR'],
-    requirements: ['Failover', 'Replication', 'Testing']
+    requirements: ['Failover', 'Replication', 'Testing'],
+    tags: ['Distributed Systems']
   },
   {
     id: '77',
@@ -771,7 +847,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Hard',
     category: 'Advanced',
     companies: ['Netflix', 'Amazon'],
-    requirements: ['Redundancy', 'Failover', 'Monitoring']
+    requirements: ['Redundancy', 'Failover', 'Monitoring'],
+    tags: ['System Design']
   },
   {
     id: '78',
@@ -781,7 +858,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Medium',
     category: 'Core Services',
     companies: ['Kong', 'Apigee'],
-    requirements: ['Routing', 'Authentication', 'Rate limiting']
+    requirements: ['Routing', 'Authentication', 'Rate limiting'],
+    tags: ['System Design']
   },
   {
     id: '79',
@@ -791,7 +869,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Medium',
     category: 'Advanced',
     companies: ['Eventbrite', 'Stripe'],
-    requirements: ['Event sourcing', 'Pub/sub', 'Scalability']
+    requirements: ['Event sourcing', 'Pub/sub', 'Scalability'],
+    tags: ['Scalability']
   },
   {
     id: '80',
@@ -801,7 +880,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Hard',
     category: 'Advanced',
     companies: ['Microservices patterns'],
-    requirements: ['Compensation', 'Orchestration', 'Consistency']
+    requirements: ['Compensation', 'Orchestration', 'Consistency'],
+    tags: ['Distributed Systems']
   },
   {
     id: '81',
@@ -811,7 +891,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Medium',
     category: 'Basics',
     companies: ['Netflix Hystrix'],
-    requirements: ['Failure detection', 'Fallback', 'Recovery']
+    requirements: ['Failure detection', 'Fallback', 'Recovery'],
+    tags: ['System Design']
   },
   {
     id: '82',
@@ -821,7 +902,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Medium',
     category: 'Basics',
     companies: ['Migration strategies'],
-    requirements: ['Incremental migration', 'Compatibility', 'Testing']
+    requirements: ['Incremental migration', 'Compatibility', 'Testing'],
+    tags: ['System Design']
   },
   {
     id: '83',
@@ -831,7 +913,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Medium',
     category: 'Basics',
     companies: ['Deployment strategies'],
-    requirements: ['Environment switching', 'Rollback', 'Testing']
+    requirements: ['Environment switching', 'Rollback', 'Testing'],
+    tags: ['System Design']
   },
   {
     id: '84',
@@ -841,7 +924,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Hard',
     category: 'Advanced',
     companies: ['Ticketmaster', 'Amazon'],
-    requirements: ['High concurrency', 'Inventory management', 'Fairness']
+    requirements: ['High concurrency', 'Inventory management', 'Fairness'],
+    tags: ['System Design']
   },
   {
     id: '85',
@@ -851,7 +935,8 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Hard',
     category: 'Core Services',
     companies: ['Stripe', 'PayPal'],
-    requirements: ['ACID transactions', 'Idempotency', 'Reconciliation']
+    requirements: ['ACID transactions', 'Idempotency', 'Reconciliation'],
+    tags: ['System Design']
   },
   {
     id: '86',
@@ -861,6 +946,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     difficulty: 'Medium',
     category: 'Basics',
     companies: ['Google', 'Amazon', 'Meta'],
-    requirements: ['O(1) Get/Put', 'Concurrency control', 'Eviction policy']
+    requirements: ['O(1) Get/Put', 'Concurrency control', 'Eviction policy'],
+    tags: ['System Design']
   }
 ];
