@@ -1619,6 +1619,56 @@ const LRU_CACHE_STEPS: Record<string, StepData[]> = {
   ]
 };
 
+
+export const GENERIC_STEPS: Record<string, StepData[]> = {
+  requirements: [
+    {
+      phase: 'Requirements',
+      subStep: 'functional',
+      title: 'Functional Requirements',
+      prompt: 'List the core features for your custom problem.',
+      inputType: 'list',
+      placeholder: 'e.g., User can do X...'
+    },
+    {
+      phase: 'Requirements',
+      subStep: 'non-functional',
+      title: 'Scale & Constraints',
+      prompt: 'Calculate the traffic (QPS), storage requirements, and list non-functional requirements.',
+      inputType: 'textarea',
+      placeholder: 'Do some back-of-the-envelope calculations...'
+    }
+  ],
+  architecture: [
+    {
+      phase: 'Architecture',
+      subStep: 'high-level',
+      title: 'High-Level Design',
+      prompt: 'Identify the core components and outline the high-level architecture.',
+      inputType: 'textarea',
+      placeholder: 'e.g., Client -> Load Balancer -> App Server -> DB...'
+    }
+  ],
+  deep_dive: [
+    {
+      phase: 'Deep Dive',
+      subStep: 'core_components',
+      title: 'Core Components',
+      prompt: 'Explain the internal logic and design of the critical components in your architecture.',
+      inputType: 'textarea',
+      placeholder: 'Explain data structures, algorithms, etc...'
+    },
+    {
+      phase: 'Deep Dive',
+      subStep: 'data_flow',
+      title: 'Data Flow',
+      prompt: 'Describe step-by-step how data flows through your system for a key operation.',
+      inputType: 'textarea',
+      placeholder: '1. User clicks... 2. Request goes to...'
+    }
+  ]
+};
+
 export const PROBLEM_STEPS: Record<string, Record<string, StepData[]>> = {
   'design-tinyurl': TINYURL_STEPS,
   'design-youtube': YOUTUBE_STEPS,
@@ -1670,5 +1720,8 @@ export const PROBLEM_STEPS: Record<string, Record<string, StepData[]>> = {
 };
 
 export function getStepsForProblem(slug: string): Record<string, StepData[]> | undefined {
+  if (slug.startsWith('custom-')) {
+    return GENERIC_STEPS;
+  }
   return PROBLEM_STEPS[slug];
 }
