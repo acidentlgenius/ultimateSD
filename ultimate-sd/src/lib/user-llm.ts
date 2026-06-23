@@ -75,14 +75,14 @@ async function loadUserAccess(userId: string): Promise<UserAccess | null> {
 
 export async function getUserLLM(
   userId: string,
-  options?: { temperature?: number; consumeCredit?: boolean }
+  options?: { temperature?: number; consumeCredit?: boolean; problemSlug?: string }
 ): Promise<UserLLMResult> {
   const user = await loadUserAccess(userId);
   if (!user) {
     throw new AIAccessError('User not found.');
   }
 
-  const access = canUseAI(user);
+  const access = canUseAI(user, options?.problemSlug);
   if (!access.allowed) {
     throw new AIAccessError(access.reason ?? 'AI access denied.');
   }
@@ -98,13 +98,13 @@ export async function getUserLLM(
     };
   }
 
-  if (access.source === 'platform_credits') {
+  if (access.source === 'platform_credits' || access.source === 'server') {
     const serverKey = process.env.GOOGLE_API_KEY;
     if (!serverKey) {
       throw new AIAccessError('AI service is temporarily unavailable.');
     }
 
-    if (options?.consumeCredit !== false) {
+    if (access.source === 'platform_credits' && options?.consumeCredit !== false) {
       const updated = await prisma.user.updateMany({
         where: { id: userId, aiCredits: { gt: 0 } },
         data: { aiCredits: { decrement: 1 } },
@@ -117,7 +117,7 @@ export async function getUserLLM(
 
     return {
       llm: createGeminiLLM(serverKey, options?.temperature ?? 0.7),
-      source: 'platform_credits',
+      source: access.source,
     };
   }
 

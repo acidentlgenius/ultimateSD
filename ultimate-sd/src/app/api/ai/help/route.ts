@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
       content: msg.content
     }));
 
-    const { llm } = await getUserLLM(session.user.id);
+    const { llm } = await getUserLLM(session.user.id, { problemSlug: problem.slug });
     const response = await getHelpResponse({
       problem,
       currentPhase,

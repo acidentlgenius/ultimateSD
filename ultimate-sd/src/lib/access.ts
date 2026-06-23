@@ -81,16 +81,26 @@ export function canAccessProblem(
   return hasPlatformAccess(user);
 }
 
-export function canUseAI(user: UserAccess | null | undefined): {
+export function canUseAI(
+  user: UserAccess | null | undefined,
+  problemSlug?: string
+): {
   allowed: boolean;
   reason?: string;
-  source?: 'byok' | 'platform_credits';
+  source?: 'byok' | 'platform_credits' | 'server';
 } {
   if (!user) {
     return { allowed: false, reason: 'Sign in to use AI features.' };
   }
 
   const plan = getEffectivePlanType(user);
+
+  if (plan === 'free' && problemSlug && isProblemFree(problemSlug)) {
+    if (hasByokKey(user)) {
+      return { allowed: true, source: 'byok' };
+    }
+    return { allowed: true, source: 'server' };
+  }
 
   if (plan === 'ai') {
     if (user.aiCredits > 0) {

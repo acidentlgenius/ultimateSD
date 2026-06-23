@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
     newPhase = 'requirements';
   } else if (phase === 'done') {
     try {
-      const { llm } = await getUserLLM(session.user.id);
+      const { llm } = await getUserLLM(session.user.id, { problemSlug: slug });
       const feedback = await getFeedback(problem, chatMessages, llm);
       aiResponse = {
         role: 'ai',
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
     }
   } else {
     try {
-      const { llm } = await getUserLLM(session.user.id);
+      const { llm } = await getUserLLM(session.user.id, { problemSlug: slug });
       aiResponse = await getAIResponse(problem, input, phase, chatMessages, llm);
     } catch (error) {
       const message = error instanceof AIAccessError

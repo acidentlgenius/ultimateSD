@@ -235,9 +235,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const body = await req.json();
+  const { problem, phase, subStep, userAnswer, problemDetails } = body;
+
   let llm;
   try {
-    ({ llm } = await getUserLLM(session.user.id, { temperature: 0.3 }));
+    ({ llm } = await getUserLLM(session.user.id, {
+      temperature: 0.3,
+      problemSlug: problemDetails?.slug,
+    }));
   } catch (error) {
     const message = error instanceof AIAccessError
       ? error.message
@@ -255,8 +261,6 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { problem, phase, subStep, userAnswer, problemDetails } = await req.json();
-
     // Get evaluation criteria
     const phaseKey = phase.toLowerCase().replace('-', '').replace(' ', '') as keyof typeof EVALUATION_GUIDES;
     const stepKey = subStep as string;
