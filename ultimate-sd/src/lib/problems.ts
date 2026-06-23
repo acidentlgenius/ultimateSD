@@ -852,5 +852,15 @@ export const PROBLEMS: SystemDesignProblem[] = [
     category: 'Core Services',
     companies: ['Stripe', 'PayPal'],
     requirements: ['ACID transactions', 'Idempotency', 'Reconciliation']
+  },
+  {
+    id: '86',
+    title: 'Design an LRU Cache',
+    slug: 'design-lru-cache',
+    description: 'Design a Least Recently Used (LRU) Cache mechanism.',
+    difficulty: 'Medium',
+    category: 'Basics',
+    companies: ['Google', 'Amazon', 'Meta'],
+    requirements: ['O(1) Get/Put', 'Concurrency control', 'Eviction policy']
   }
 ];
