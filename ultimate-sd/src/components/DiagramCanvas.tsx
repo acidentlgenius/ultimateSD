@@ -1571,6 +1571,19 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
       setShowLoadDialog(false);
     } catch (error) {
       console.error('Error loading design:', error);
+      localStorage.removeItem(storageKey);
+
+      const toast = document.createElement('div');
+      toast.className = 'fixed bottom-4 right-4 z-50 bg-red-500 text-white px-4 py-3 rounded-lg shadow-lg animate-fade-in';
+      toast.innerHTML = `<div class="flex items-center gap-2">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span>Design corrupted! Removed from storage.</span>
+      </div>`;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 4000);
+      setShowLoadDialog(false);
     }
   };
 
