@@ -86,6 +86,16 @@ export default function ProblemCard({ problem, featured, locked, badge, onLocked
             {problem.description}
           </p>
 
+          {(problem.tags && problem.tags.length > 0) && (
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {problem.tags.map(tag => (
+                <span key={tag} className="text-[10px] font-semibold text-primary/80 bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
+                  #{tag}
+                </span>
+              ))}
+            </div>
+          )}
+
           {problem.companies.length > 0 && (
             <div className="flex items-center gap-2">
               <Building2 className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0" />

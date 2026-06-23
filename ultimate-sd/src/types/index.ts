@@ -16,6 +16,7 @@ export interface SystemDesignProblem {
   difficulty: 'Easy' | 'Medium' | 'Hard';
   category: string;
   companies: string[];
+  tags?: string[];
   requirements: string[];
   steps?: Record<string, StepData[]>;
 }
