@@ -25,7 +25,7 @@ export async function updateProblemProgress(problemId: string, status: 'NOT_STAR
     }
 
     try {
-        await prisma.$transaction(async (tx) => {
+        await prisma.$transaction(async (tx: any) => {
             await tx.problemProgress.upsert({
                 where: {
                     userId_problemId: {

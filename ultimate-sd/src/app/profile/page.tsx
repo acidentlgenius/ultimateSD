@@ -43,16 +43,16 @@ export default async function ProfilePage() {
 
     // Calculate stats if they aren't fully tracked on user model yet
     // (Though schema has them, we can double check or rely on schema)
-    const completedCount = progressHistory.filter(p => p.status === 'COMPLETED').length;
+    const completedCount = progressHistory.filter((p: any) => p.status === 'COMPLETED').length;
 
     // Calculate average score
-    const itemsWithScore = progressHistory.filter(p => p.lastScore !== null);
+    const itemsWithScore = progressHistory.filter((p: any) => p.lastScore !== null);
     const avgScore = itemsWithScore.length > 0
-        ? itemsWithScore.reduce((acc, curr) => acc + (curr.lastScore || 0), 0) / itemsWithScore.length
+        ? itemsWithScore.reduce((acc: number, curr: any) => acc + (curr.lastScore || 0), 0) / itemsWithScore.length
         : null;
 
     // Transform to HistoryItemData
-    const historyItems: HistoryItemData[] = progressHistory.map((item) => {
+    const historyItems: HistoryItemData[] = progressHistory.map((item: any) => {
         // Find problem title from static data
         const problem = PROBLEMS.find(p => p.id === item.problemId);
 
