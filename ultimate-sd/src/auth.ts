@@ -93,9 +93,14 @@ function applyAccessToToken(
 }
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+    debug: process.env.AUTH_DEBUG === 'true',
+    trustHost: true,
     adapter: PrismaAdapter(prisma) as any,
     providers: [
-        Google,
+        Google({
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        }),
         Credentials({
             name: "Credentials",
             credentials: {

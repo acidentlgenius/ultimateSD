@@ -45,6 +45,15 @@ Since this project uses `next-auth` v5 (beta), use `AUTH_SECRET` instead of `NEX
 
 ## 4. Troubleshooting
 
+### Auth / Sign-in Failures (`AdapterError`, `error=Configuration`)
+
+Google OAuth reaches `/api/auth/callback/google` then fails when the Prisma adapter reads or writes `User` / `Account` rows. Common causes:
+
+1. **Schema drift** (most common): production DB missing columns added since initial deploy (e.g. `role`, subscription fields, BYOK columns). Run `npx prisma db push` against production — see [Post-Deployment](#5-post-deployment).
+2. **`DATABASE_URL` wrong or unreachable** from Vercel (check SSL: use `?sslmode=require` for Neon/Supabase).
+3. **Missing auth env vars**: `AUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`. Set `AUTH_URL=https://ultimate-sd.vercel.app` for production.
+4. **Google OAuth redirect URI** must include `https://ultimate-sd.vercel.app/api/auth/callback/google` in Google Cloud Console.
+
 ### Database Connection Issues
 If you see errors related to `prisma` or database connection:
 *   Ensure `DATABASE_URL` is correct and allows connections from the internet (or Vercel's IP range).
@@ -57,9 +66,20 @@ If you see errors related to `prisma` or database connection:
 
 ## 5. Post-Deployment
 
-*   After deployment, `prisma migrate deploy` is **NOT** automatically run. You may need to run migrations against your production database locally or via a Vercel Command (if configured).
-*   **Recommended**: connect to your production database locally and run:
-    ```bash
-    npx prisma migrate deploy
-    ```
-    (Make sure `DATABASE_URL` in your local `.env` points to production temporarily, or pass it explicitly).
+**Critical:** Schema changes are **not** applied automatically on deploy. The app uses `prisma db push` (there is no `prisma/migrations` history yet). If sign-in fails with `AdapterError` or `/api/auth/error?error=Configuration` after Google OAuth, the production database is almost certainly out of sync with `prisma/schema.prisma`.
+
+Sync production from your machine (temporarily point at prod, or pass the URL inline):
+
+```bash
+DATABASE_URL="postgres://..." npx prisma db push
+```
+
+To preview what would change without applying:
+
+```bash
+DATABASE_URL="postgres://..." npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script
+```
+
+After syncing, retry Google sign-in. To capture detailed Auth.js adapter logs on Vercel, set `AUTH_DEBUG=true` in project env vars (remove once resolved).
+
+*Do not use `prisma migrate deploy` until migration files exist in `prisma/migrations`.*

@@ -1,15 +1,24 @@
 import { Pool } from 'pg'
 import { PrismaPg } from '@prisma/adapter-pg'
-// Force module reload
 import { PrismaClient } from '@prisma/client'
 
-const connectionString = `${process.env.DATABASE_URL}`
+const connectionString = process.env.DATABASE_URL
 
-const pool = new Pool({ connectionString })
+if (!connectionString) {
+  throw new Error('DATABASE_URL is not set')
+}
+
+const pool = new Pool({
+  connectionString,
+  max: process.env.NODE_ENV === 'production' ? 1 : undefined,
+  ssl: connectionString.includes('sslmode=require') || connectionString.includes('ssl=true')
+    ? { rejectUnauthorized: false }
+    : undefined,
+})
 const adapter = new PrismaPg(pool)
 
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient }
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined }
 
-export const prisma = globalForPrisma.prisma || new PrismaClient({ adapter })
+export const prisma = globalForPrisma.prisma ?? new PrismaClient({ adapter })
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
+globalForPrisma.prisma = prisma
