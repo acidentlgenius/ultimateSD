@@ -15,3 +15,21 @@
 **Learning:** Next.js Server Actions in this project (like `updateStreak`) are designed to return error objects (e.g., `{ error: 'message' }`) rather than throwing exceptions. This means that appending `.catch(console.error)` to them in a `useEffect` will *never* catch the application-level errors, creating silent failures on the client side while appearing handled.
 
 **Action:** Always verify the actual return type of a Next.js Server Action. When calling async functions inside `useEffect`, use an inner `async() => {}` wrapper to properly `await` the result, check for returned error objects (e.g., `result.error`), and wrap the entire call in a `try/catch` block to handle true network or execution failures.
+## 2026-06-23 - [Cloud Synchronization and Local Storage Hydration Race Conditions]
+
+**Learning:** When transitioning from a purely synchronous  hydration pattern to an asynchronous cloud-sync pattern in a React component, relying blindly on `useSession()` and immediate `useEffect` triggers introduces severe race conditions. Specifically, if a component writes to the database whenever its local state changes, and the initial cloud fetch is delayed or skipped because the session is still loading, the component may default to an empty local state and immediately upload that empty state to the cloud, permanently overwriting the user's progress. Furthermore, using slugs instead of CUIDs for foreign key relations in Prisma upsert commands will cause 500 errors.
+
+**Action:**
+1. Always explicitly check `sessionStatus === 'loading'` and return early in initialization `useEffect`s to prevent premature execution.
+2. Ensure cloud write/sync `useEffect`s are strictly guarded by a flag (e.g., `sessionRestored`) that is *only* set to `true` after the asynchronous load attempt has fully resolved.
+3. Always debounce backend writes (e.g., using `setTimeout` within the `useEffect` cleanup pattern) when syncing local interactive state to prevent DDoS-ing the database.
+4. Always verify database schemas (like Prisma relations) to ensure the correct ID type (e.g., CUID vs Slug) is passed to foreign key queries.
+## 2024-06-25 - [Cloud Synchronization and Local Storage Hydration Race Conditions]
+
+**Learning:** When transitioning from a purely synchronous `localStorage` hydration pattern to an asynchronous cloud-sync pattern in a React component, relying blindly on `useSession()` and immediate `useEffect` triggers introduces severe race conditions. Specifically, if a component writes to the database whenever its local state changes, and the initial cloud fetch is delayed or skipped because the session is still loading, the component may default to an empty local state and immediately upload that empty state to the cloud, permanently overwriting the user's progress. Furthermore, using slugs instead of CUIDs for foreign key relations in Prisma upsert commands will cause 500 errors.
+
+**Action:**
+1. Always explicitly check `sessionStatus === 'loading'` and return early in initialization `useEffect`s to prevent premature execution.
+2. Ensure cloud write/sync `useEffect`s are strictly guarded by a flag (e.g., `sessionRestored`) that is *only* set to `true` after the asynchronous load attempt has fully resolved.
+3. Always debounce backend writes (e.g., using `setTimeout` within the `useEffect` cleanup pattern) when syncing local interactive state to prevent DDoS-ing the database.
+4. Always verify database schemas (like Prisma relations) to ensure the correct ID type (e.g., CUID vs Slug) is passed to foreign key queries.

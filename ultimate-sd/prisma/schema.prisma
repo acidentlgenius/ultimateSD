@@ -108,6 +108,7 @@ model ProblemProgress {
 
   // Progress Tracking
   completedStepIds  String[] @default([])
+  sessionState      Json?
   
   user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
