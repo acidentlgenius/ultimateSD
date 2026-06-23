@@ -170,6 +170,7 @@ export function HelpAssistant({ problem, currentPhase, completedSteps = [], save
             size="sm"
             onClick={() => setIsMinimized(true)}
             className="h-8 w-8 p-0 hover:bg-white/20 text-white"
+            aria-label="Minimize Help Assistant"
           >
             <Minimize2 className="h-4 w-4" />
           </Button>
@@ -178,6 +179,7 @@ export function HelpAssistant({ problem, currentPhase, completedSteps = [], save
             size="sm"
             onClick={() => setIsOpen(false)}
             className="h-8 w-8 p-0 hover:bg-white/20 text-white"
+            aria-label="Close Help Assistant"
           >
             <X className="h-4 w-4" />
           </Button>
@@ -245,6 +247,7 @@ export function HelpAssistant({ problem, currentPhase, completedSteps = [], save
             onClick={handleSend}
             disabled={!input.trim() || isLoading}
             className="rounded-full h-10 w-10 p-0 bg-gradient-to-br from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+            aria-label="Send message"
           >
             <Send className="h-4 w-4 text-white" />
           </Button>
