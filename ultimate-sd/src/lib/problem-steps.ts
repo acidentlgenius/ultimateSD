@@ -1604,7 +1604,7 @@ const LRU_CACHE_STEPS: Record<string, StepData[]> = {
       prompt: 'Explain how the eviction process works when the cache reaches capacity. Try adding items in the visualizer to see it in action.',
       inputType: 'textarea',
       placeholder: 'e.g., When capacity is reached, remove the tail of the linked list and delete it from the hash map...',
-      widgetId: 'CacheVisualizer'
+      widgetId: 'cache-visualizer'
     }
   ],
   concurrency: [

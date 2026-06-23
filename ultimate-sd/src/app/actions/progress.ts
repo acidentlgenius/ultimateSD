@@ -25,49 +25,51 @@ export async function updateProblemProgress(problemId: string, status: 'NOT_STAR
     }
 
     try {
-        await prisma.problemProgress.upsert({
-            where: {
-                userId_problemId: {
-                    userId,
-                    problemId
-                }
-            },
-            update: {
-                status,
-                lastAttemptAt: new Date(),
-                attempts: {
-                    increment: 1
+        await prisma.$transaction(async (tx) => {
+            await tx.problemProgress.upsert({
+                where: {
+                    userId_problemId: {
+                        userId,
+                        problemId
+                    }
                 },
-                ...(score !== undefined && { lastScore: score }),
-                ...(currentStep !== undefined && { currentStep }),
-                ...(nextRepetitionDate && { nextRepetitionDate })
-            },
-            create: {
-                userId,
-                problemId,
-                status,
-                lastAttemptAt: new Date(),
-                attempts: 1,
-                lastScore: score,
-                currentStep,
-                nextRepetitionDate
+                update: {
+                    status,
+                    lastAttemptAt: new Date(),
+                    attempts: {
+                        increment: 1
+                    },
+                    ...(score !== undefined && { lastScore: score }),
+                    ...(currentStep !== undefined && { currentStep }),
+                    ...(nextRepetitionDate && { nextRepetitionDate })
+                },
+                create: {
+                    userId,
+                    problemId,
+                    status,
+                    lastAttemptAt: new Date(),
+                    attempts: 1,
+                    lastScore: score,
+                    currentStep,
+                    nextRepetitionDate
+                }
+            });
+
+            // Update user stats
+            if (status === 'COMPLETED') {
+                const completedCount = await tx.problemProgress.count({
+                    where: {
+                        userId,
+                        status: 'COMPLETED'
+                    }
+                });
+
+                await tx.user.update({
+                    where: { id: userId },
+                    data: { completedProblems: completedCount }
+                });
             }
         });
-
-        // Update user stats
-        if (status === 'COMPLETED') {
-            const completedCount = await prisma.problemProgress.count({
-                where: {
-                    userId,
-                    status: 'COMPLETED'
-                }
-            });
-
-            await prisma.user.update({
-                where: { id: userId },
-                data: { completedProblems: completedCount }
-            });
-        }
 
         revalidatePath('/dashboard');
         revalidatePath(`/practice/${problemId}`);
