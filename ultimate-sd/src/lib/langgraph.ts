@@ -1,8 +1,9 @@
+import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import { HumanMessage } from '@langchain/core/messages';
 import { SystemDesignProblem, ChatMessage } from '@/types';
 
-function getDefaultLLM(): ChatGoogleGenerativeAI | null {
+function getDefaultLLM(): BaseChatModel | null {
   if (!process.env.GOOGLE_API_KEY) {
     return null;
   }
@@ -17,7 +18,7 @@ export async function getAIResponse(
   userInput: string,
   phase: string,
   messages: ChatMessage[],
-  llmOverride?: ChatGoogleGenerativeAI | null
+  llmOverride?: BaseChatModel | null
 ): Promise<ChatMessage> {
   const llm = llmOverride ?? getDefaultLLM();
   if (!llm) {
@@ -57,7 +58,7 @@ Keep responses <150 words.`;
 export async function getFeedback(
   problem: SystemDesignProblem,
   messages: ChatMessage[],
-  llmOverride?: ChatGoogleGenerativeAI | null
+  llmOverride?: BaseChatModel | null
 ): Promise<{ score: number; tips: string[] }> {
   const llm = llmOverride ?? getDefaultLLM();
   if (!llm) {

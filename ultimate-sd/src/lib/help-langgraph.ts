@@ -1,3 +1,4 @@
+import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 import { SystemDesignProblem } from '@/types';
@@ -86,7 +87,7 @@ Companies: ${problem.companies?.join(', ') || 'Not specified'}`;
 
 export async function getHelpResponse(
   context: HelpContext,
-  llmOverride?: ChatGoogleGenerativeAI | null
+  llmOverride?: any | null
 ): Promise<string> {
   const llm = llmOverride ?? (process.env.GOOGLE_API_KEY
     ? new ChatGoogleGenerativeAI({

@@ -17,6 +17,15 @@ const accessSelect = {
     aiCredits: true,
     geminiApiKey: true,
     xaiApiKey: true,
+    openaiApiKey: true,
+    anthropicApiKey: true,
+    azureOpenaiApiKey: true,
+    azureOpenaiEndpoint: true,
+    awsBedrockRegion: true,
+    awsBedrockAccessKey: true,
+    awsBedrockSecretKey: true,
+    ollamaEndpoint: true,
+    ollamaModel: true,
     preferredProvider: true,
     role: true,
 } as const;
@@ -32,6 +41,15 @@ function applyAccessToToken(
         aiCredits: number;
         geminiApiKey: string | null;
         xaiApiKey: string | null;
+        openaiApiKey: string | null;
+        anthropicApiKey: string | null;
+        azureOpenaiApiKey: string | null;
+        azureOpenaiEndpoint: string | null;
+        awsBedrockRegion: string | null;
+        awsBedrockAccessKey: string | null;
+        awsBedrockSecretKey: string | null;
+        ollamaEndpoint: string | null;
+        ollamaModel: string | null;
         preferredProvider: string;
         role: string;
     }
@@ -42,6 +60,15 @@ function applyAccessToToken(
         aiCredits: user.aiCredits,
         geminiApiKey: user.geminiApiKey,
         xaiApiKey: user.xaiApiKey,
+        openaiApiKey: user.openaiApiKey,
+        anthropicApiKey: user.anthropicApiKey,
+        azureOpenaiApiKey: user.azureOpenaiApiKey,
+        azureOpenaiEndpoint: user.azureOpenaiEndpoint,
+        awsBedrockRegion: user.awsBedrockRegion,
+        awsBedrockAccessKey: user.awsBedrockAccessKey,
+        awsBedrockSecretKey: user.awsBedrockSecretKey,
+        ollamaEndpoint: user.ollamaEndpoint,
+        ollamaModel: user.ollamaModel,
         preferredProvider: user.preferredProvider,
     } satisfies UserAccess);
 
@@ -54,7 +81,13 @@ function applyAccessToToken(
     token.hasAiPlan = access.hasAiPlan;
     token.hasGeminiKey = access.hasGeminiKey;
     token.hasXaiKey = access.hasXaiKey;
+    token.hasOpenaiKey = access.hasOpenaiKey;
+    token.hasAnthropicKey = access.hasAnthropicKey;
+    token.hasAzureOpenaiKey = access.hasAzureOpenaiKey;
+    token.hasAwsBedrockKey = access.hasAwsBedrockKey;
+    token.hasOllamaEndpoint = access.hasOllamaEndpoint;
     token.aiCredits = access.aiCredits;
+    token.preferredProvider = access.preferredProvider;
     token.planExpiresAt = user.planExpiresAt?.toISOString() ?? null;
     token.role = user.role;
 }
@@ -141,7 +174,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 session.user.hasAiPlan = token.hasAiPlan as boolean;
                 session.user.hasGeminiKey = token.hasGeminiKey as boolean;
                 session.user.hasXaiKey = token.hasXaiKey as boolean;
+                session.user.hasOpenaiKey = token.hasOpenaiKey as boolean;
+                session.user.hasAnthropicKey = token.hasAnthropicKey as boolean;
+                session.user.hasAzureOpenaiKey = token.hasAzureOpenaiKey as boolean;
+                session.user.hasAwsBedrockKey = token.hasAwsBedrockKey as boolean;
+                session.user.hasOllamaEndpoint = token.hasOllamaEndpoint as boolean;
                 session.user.aiCredits = token.aiCredits as number;
+                session.user.preferredProvider = token.preferredProvider as string;
                 session.user.planExpiresAt = token.planExpiresAt as string | null;
                 session.user.role = token.role as string;
             }

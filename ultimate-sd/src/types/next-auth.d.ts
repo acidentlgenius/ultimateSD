@@ -15,9 +15,14 @@ declare module "next-auth" {
             hasAiPlan: boolean
             hasGeminiKey: boolean
             hasXaiKey: boolean
+            hasOpenaiKey: boolean
+            hasAnthropicKey: boolean
+            hasAzureOpenaiKey: boolean
+            hasAwsBedrockKey: boolean
+            hasOllamaEndpoint: boolean
             aiCredits: number
+            preferredProvider: string
             planExpiresAt: string | null
-        role?: string
             role?: string
         } & DefaultSession["user"]
     }
@@ -41,7 +46,13 @@ declare module "next-auth/jwt" {
         hasAiPlan: boolean
         hasGeminiKey: boolean
         hasXaiKey: boolean
+        hasOpenaiKey: boolean
+        hasAnthropicKey: boolean
+        hasAzureOpenaiKey: boolean
+        hasAwsBedrockKey: boolean
+        hasOllamaEndpoint: boolean
         aiCredits: number
+        preferredProvider: string
         planExpiresAt: string | null
         role?: string
     }
