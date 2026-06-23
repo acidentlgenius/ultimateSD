@@ -8,12 +8,15 @@ if (!connectionString) {
   throw new Error('DATABASE_URL is not set')
 }
 
+const requiresSsl =
+  connectionString.includes('sslmode=require') ||
+  connectionString.includes('ssl=true') ||
+  connectionString.includes('neon.tech')
+
 const pool = new Pool({
   connectionString,
   max: process.env.NODE_ENV === 'production' ? 1 : undefined,
-  ssl: connectionString.includes('sslmode=require') || connectionString.includes('ssl=true')
-    ? { rejectUnauthorized: false }
-    : undefined,
+  ssl: requiresSsl ? { rejectUnauthorized: false } : undefined,
 })
 const adapter = new PrismaPg(pool)
 

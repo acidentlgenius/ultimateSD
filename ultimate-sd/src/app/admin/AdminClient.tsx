@@ -1,10 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { updateUserPlan, revokeUserAccess } from '@/app/actions/admin';
 import { toast } from 'sonner';
 
 export function AdminClient({ users }: { users: any[] }) {
+  const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
 
   const handleUpdatePlan = async (userId: string, planType: 'free' | 'platform' | 'ai') => {
@@ -15,6 +17,7 @@ export function AdminClient({ users }: { users: any[] }) {
         toast.error(result.error);
       } else {
         toast.success(`Plan updated to ${planType}`);
+        router.refresh();
       }
     } catch (err) {
       toast.error('An error occurred');
@@ -33,6 +36,7 @@ export function AdminClient({ users }: { users: any[] }) {
         toast.error(result.error);
       } else {
         toast.success('Access revoked');
+        router.refresh();
       }
     } catch (err) {
       toast.error('An error occurred');
