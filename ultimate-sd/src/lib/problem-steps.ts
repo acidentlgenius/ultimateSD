@@ -1573,6 +1573,52 @@ const PAYMENT_STEPS: Record<string, StepData[]> = {
   ]
 };
 
+
+
+const LRU_CACHE_STEPS: Record<string, StepData[]> = {
+  requirements: [
+    {
+      phase: 'Requirements',
+      subStep: 'api',
+      title: 'API Design',
+      prompt: 'Define the API for the LRU Cache. What methods are required (e.g., get, put)? What are their expected time complexities?',
+      inputType: 'textarea',
+      placeholder: 'e.g., get(key): returns value, put(key, value): inserts or updates value...'
+    }
+  ],
+  data_structures: [
+    {
+      phase: 'Data Structures',
+      subStep: 'core',
+      title: 'Core Data Structures',
+      prompt: 'What data structures will you use to achieve O(1) time complexity for both get and put operations? Explain how they work together.',
+      inputType: 'textarea',
+      placeholder: 'e.g., Hash Map for O(1) lookups, Doubly Linked List for O(1) evictions...'
+    }
+  ],
+  eviction: [
+    {
+      phase: 'Eviction',
+      subStep: 'policy',
+      title: 'Eviction Policy & Visualizer',
+      prompt: 'Explain how the eviction process works when the cache reaches capacity. Try adding items in the visualizer to see it in action.',
+      inputType: 'textarea',
+      placeholder: 'e.g., When capacity is reached, remove the tail of the linked list and delete it from the hash map...',
+      widgetId: 'CacheVisualizer'
+    }
+  ],
+  concurrency: [
+    {
+      phase: 'Concurrency',
+      subStep: 'thread_safety',
+      title: 'Concurrency & Thread Safety',
+      prompt: 'How would you make this LRU Cache thread-safe in a multi-threaded environment? Discuss locks, ReadWriteLocks, or concurrent data structures.',
+      inputType: 'textarea',
+      placeholder: 'e.g., Use a ReentrantReadWriteLock or partition the cache to reduce lock contention...'
+    }
+  ]
+};
+
 export const PROBLEM_STEPS: Record<string, Record<string, StepData[]>> = {
   'design-tinyurl': TINYURL_STEPS,
   'design-youtube': YOUTUBE_STEPS,
@@ -1620,6 +1666,7 @@ export const PROBLEM_STEPS: Record<string, Record<string, StepData[]>> = {
   'design-task-scheduler': TASK_SCHEDULER_STEPS,
   'design-flash-sale-system': FLASH_SALE_STEPS,
   'design-payment-system': PAYMENT_STEPS,
+  'design-lru-cache': LRU_CACHE_STEPS,
 };
 
 export function getStepsForProblem(slug: string): Record<string, StepData[]> | undefined {

@@ -333,6 +333,60 @@ graph TD
             ]
         }
     }
+,
+    'design-lru-cache': {
+        slug: 'design-lru-cache',
+        title: 'LRU Cache (Expert Guide)',
+        overview: 'An in-memory data structure that provides O(1) time complexity for both get and put operations, while automatically evicting the least recently used item when capacity is reached.',
+        components: [
+            {
+                name: 'Hash Map',
+                description: 'Stores keys mapped to pointers of the corresponding node in the Doubly Linked List, enabling O(1) lookups.',
+                technologies: ['Hash Table / Dictionary']
+            },
+            {
+                name: 'Doubly Linked List',
+                description: 'Maintains the access order of items. Most recently used items are moved to the head, and least recently used items naturally fall to the tail for O(1) eviction.',
+                technologies: ['Pointers', 'Linked Nodes']
+            },
+            {
+                name: 'Concurrency Controller (Optional)',
+                description: 'For thread-safe environments, controls access to the cache to prevent race conditions during concurrent reads and writes.',
+                technologies: ['Mutex', 'ReadWriteLock', 'ConcurrentHashMap']
+            }
+        ],
+        dataFlow: [
+            'Get(key): Look up the key in the Hash Map.',
+            'If found, move the corresponding node to the head of the Doubly Linked List (marking it as most recently used) and return its value.',
+            'If not found, return -1 or null.',
+            'Put(key, value): Look up the key in the Hash Map.',
+            'If it exists, update the nodes value and move it to the head of the list.',
+            'If it does not exist, create a new node and add it to the head of the list, then add it to the Hash Map.',
+            'If adding a new node exceeds capacity, remove the tail node from the list and delete its corresponding key from the Hash Map.'
+        ],
+        tradeoffs: {
+            pros: [
+                'O(1) time complexity for get and put operations.',
+                'Predictable memory usage bounded by capacity.'
+            ],
+            cons: [
+                'High memory overhead per item due to storing pointers for the doubly linked list.',
+                'Lock contention can become a bottleneck in highly concurrent environments.'
+            ]
+        },
+        requirements: {
+            functional: [
+                'Initialize cache with positive capacity.',
+                'get(key) returns value if exists, else -1.',
+                'put(key, value) updates value if key exists, inserts if not.',
+                'Evict least recently used key if put exceeds capacity.'
+            ],
+            nonFunctional: [
+                'O(1) time complexity for get and put.',
+                'Thread safety in concurrent environments.'
+            ]
+        }
+    }
 };
 
 export const getSolution = (slug: string): ExpertSolution | null => {
