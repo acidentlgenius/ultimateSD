@@ -8,6 +8,15 @@ export interface UserAccess {
   aiCredits: number;
   geminiApiKey: string | null;
   xaiApiKey: string | null;
+  openaiApiKey: string | null;
+  anthropicApiKey: string | null;
+  azureOpenaiApiKey: string | null;
+  azureOpenaiEndpoint: string | null;
+  awsBedrockRegion: string | null;
+  awsBedrockAccessKey: string | null;
+  awsBedrockSecretKey: string | null;
+  ollamaEndpoint: string | null;
+  ollamaModel: string | null;
   preferredProvider: string;
 }
 
@@ -19,6 +28,11 @@ export interface UserAccessSnapshot {
   hasAiPlan: boolean;
   hasGeminiKey: boolean;
   hasXaiKey: boolean;
+  hasOpenaiKey: boolean;
+  hasAnthropicKey: boolean;
+  hasAzureOpenaiKey: boolean;
+  hasAwsBedrockKey: boolean;
+  hasOllamaEndpoint: boolean;
   aiCredits: number;
   preferredProvider: string;
 }
@@ -61,11 +75,36 @@ export function hasAiPlan(user: Pick<UserAccess, 'planType' | 'planExpiresAt'>):
   return getEffectivePlanType(user) === 'ai';
 }
 
-export function hasByokKey(user: Pick<UserAccess, 'geminiApiKey' | 'xaiApiKey' | 'preferredProvider'>): boolean {
-  if (user.preferredProvider === 'xai') {
-    return Boolean(user.xaiApiKey);
+export function hasByokKey(
+  user: Pick<
+    UserAccess,
+    | 'geminiApiKey'
+    | 'xaiApiKey'
+    | 'openaiApiKey'
+    | 'anthropicApiKey'
+    | 'azureOpenaiApiKey'
+    | 'awsBedrockAccessKey'
+    | 'ollamaEndpoint'
+    | 'preferredProvider'
+  >
+): boolean {
+  switch (user.preferredProvider) {
+    case 'xai':
+      return Boolean(user.xaiApiKey);
+    case 'openai':
+      return Boolean(user.openaiApiKey);
+    case 'anthropic':
+      return Boolean(user.anthropicApiKey);
+    case 'azure':
+      return Boolean(user.azureOpenaiApiKey);
+    case 'aws':
+      return Boolean(user.awsBedrockAccessKey);
+    case 'ollama':
+      return Boolean(user.ollamaEndpoint);
+    case 'gemini':
+    default:
+      return Boolean(user.geminiApiKey);
   }
-  return Boolean(user.geminiApiKey);
 }
 
 export function canAccessProblem(
@@ -118,7 +157,7 @@ export function canUseAI(
     }
     return {
       allowed: false,
-      reason: 'Add your Gemini API key in Settings to use AI on the Platform plan.',
+      reason: 'Add your preferred API key in Settings to use AI on the Platform plan.',
     };
   }
 
@@ -140,6 +179,11 @@ export function toAccessSnapshot(user: UserAccess): UserAccessSnapshot {
     hasAiPlan: active && planType === 'ai',
     hasGeminiKey: Boolean(user.geminiApiKey),
     hasXaiKey: Boolean(user.xaiApiKey),
+    hasOpenaiKey: Boolean(user.openaiApiKey),
+    hasAnthropicKey: Boolean(user.anthropicApiKey),
+    hasAzureOpenaiKey: Boolean(user.azureOpenaiApiKey),
+    hasAwsBedrockKey: Boolean(user.awsBedrockAccessKey),
+    hasOllamaEndpoint: Boolean(user.ollamaEndpoint),
     aiCredits: user.aiCredits,
     preferredProvider: user.preferredProvider,
   };

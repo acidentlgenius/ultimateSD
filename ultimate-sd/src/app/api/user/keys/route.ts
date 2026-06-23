@@ -13,6 +13,11 @@ export async function GET() {
     select: {
       geminiApiKey: true,
       xaiApiKey: true,
+      openaiApiKey: true,
+      anthropicApiKey: true,
+      azureOpenaiApiKey: true,
+      awsBedrockAccessKey: true,
+      ollamaEndpoint: true,
       preferredProvider: true,
       planType: true,
     },
@@ -25,6 +30,11 @@ export async function GET() {
   return NextResponse.json({
     hasGeminiKey: Boolean(user.geminiApiKey),
     hasXaiKey: Boolean(user.xaiApiKey),
+    hasOpenaiKey: Boolean(user.openaiApiKey),
+    hasAnthropicKey: Boolean(user.anthropicApiKey),
+    hasAzureOpenaiKey: Boolean(user.azureOpenaiApiKey),
+    hasAwsBedrockKey: Boolean(user.awsBedrockAccessKey),
+    hasOllamaEndpoint: Boolean(user.ollamaEndpoint),
     preferredProvider: user.preferredProvider,
     planType: user.planType,
   });
@@ -37,27 +47,59 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { geminiApiKey, xaiApiKey, preferredProvider } = await req.json() as {
-      geminiApiKey?: string;
-      xaiApiKey?: string;
-      preferredProvider?: string;
-    };
+    const {
+      geminiApiKey,
+      xaiApiKey,
+      openaiApiKey,
+      anthropicApiKey,
+      azureOpenaiApiKey,
+      azureOpenaiEndpoint,
+      awsBedrockRegion,
+      awsBedrockAccessKey,
+      awsBedrockSecretKey,
+      ollamaEndpoint,
+      ollamaModel,
+      preferredProvider,
+    } = await req.json() as any;
 
-    const data: {
-      geminiApiKey?: string | null;
-      xaiApiKey?: string | null;
-      preferredProvider?: string;
-    } = {};
+    const data: any = {};
 
-    if (typeof geminiApiKey === 'string') {
-      data.geminiApiKey = geminiApiKey.trim() || null;
+    const stringFields = [
+      'geminiApiKey',
+      'xaiApiKey',
+      'openaiApiKey',
+      'anthropicApiKey',
+      'azureOpenaiApiKey',
+      'azureOpenaiEndpoint',
+      'awsBedrockRegion',
+      'awsBedrockAccessKey',
+      'awsBedrockSecretKey',
+      'ollamaEndpoint',
+      'ollamaModel',
+    ];
+
+    const body = {
+      geminiApiKey,
+      xaiApiKey,
+      openaiApiKey,
+      anthropicApiKey,
+      azureOpenaiApiKey,
+      azureOpenaiEndpoint,
+      awsBedrockRegion,
+      awsBedrockAccessKey,
+      awsBedrockSecretKey,
+      ollamaEndpoint,
+      ollamaModel,
+    } as any;
+
+    for (const field of stringFields) {
+      if (typeof body[field] === 'string') {
+        data[field] = body[field].trim() || null;
+      }
     }
 
-    if (typeof xaiApiKey === 'string') {
-      data.xaiApiKey = xaiApiKey.trim() || null;
-    }
-
-    if (preferredProvider === 'gemini' || preferredProvider === 'xai') {
+    const validProviders = ['gemini', 'xai', 'openai', 'anthropic', 'azure', 'aws', 'ollama'];
+    if (validProviders.includes(preferredProvider)) {
       data.preferredProvider = preferredProvider;
     }
 

@@ -3,6 +3,7 @@ import { auth } from '@/auth';
 import { PROBLEMS } from '@/lib/problems';
 import { getStepsForProblem } from '@/lib/problem-steps';
 import { getAIResponse, getFeedback } from '@/lib/langgraph';
+import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { ChatMessage } from '@/types';
 import { getUserLLM, AIAccessError } from '@/lib/user-llm';
 

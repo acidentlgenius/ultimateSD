@@ -56,7 +56,7 @@ describe('DiagramCanvas Load Design from localStorage', () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     // Render the component
-    render(<DiagramCanvas />);
+    render(<DiagramCanvas stepKey="test-step" />);
 
     // Open load modal
     const loadButton = screen.getByTitle('Load Saved Design');

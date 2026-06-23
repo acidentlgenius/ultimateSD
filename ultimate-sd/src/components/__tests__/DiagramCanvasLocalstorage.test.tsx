@@ -60,7 +60,7 @@ describe('DiagramCanvas localStorage', () => {
     localStorageMock.setItem('saved-designs-list', '{ invalid JSON');
 
     // We expect it NOT to throw an error and render
-    const { container } = render(<DiagramCanvas />);
+    const { container } = render(<DiagramCanvas stepKey="test-step" />);
     expect(container.querySelector('canvas')).not.toBeNull();
   });
 });

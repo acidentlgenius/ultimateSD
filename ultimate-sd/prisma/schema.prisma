@@ -39,6 +39,15 @@ model User {
   // BYOK (stored server-side; never returned to client)
   geminiApiKey         String?
   xaiApiKey            String?
+  openaiApiKey         String?
+  anthropicApiKey      String?
+  azureOpenaiApiKey    String?
+  azureOpenaiEndpoint  String?
+  awsBedrockRegion     String?
+  awsBedrockAccessKey  String?
+  awsBedrockSecretKey  String?
+  ollamaEndpoint       String?
+  ollamaModel          String?
   preferredProvider    String    @default("gemini")
   
   // Relations

@@ -41,6 +41,15 @@ export default function SettingsClient({ user }: SettingsClientProps) {
     const [isPublic, setIsPublic] = useState(user.isPublic ?? true);
     const [geminiKey, setGeminiKey] = useState('');
     const [xaiKey, setXaiKey] = useState('');
+    const [openaiKey, setOpenaiKey] = useState('');
+    const [anthropicKey, setAnthropicKey] = useState('');
+    const [azureOpenaiKey, setAzureOpenaiKey] = useState('');
+    const [azureOpenaiEndpoint, setAzureOpenaiEndpoint] = useState('');
+    const [awsBedrockRegion, setAwsBedrockRegion] = useState('');
+    const [awsBedrockAccessKey, setAwsBedrockAccessKey] = useState('');
+    const [awsBedrockSecretKey, setAwsBedrockSecretKey] = useState('');
+    const [ollamaEndpoint, setOllamaEndpoint] = useState('');
+    const [ollamaModel, setOllamaModel] = useState('');
     const [preferredProvider, setPreferredProvider] = useState(user.preferredProvider ?? 'gemini');
     const [hasGeminiKey, setHasGeminiKey] = useState(Boolean(user.geminiApiKey));
     const [hasXaiKey, setHasXaiKey] = useState(Boolean(user.xaiApiKey));
@@ -91,6 +100,15 @@ export default function SettingsClient({ user }: SettingsClientProps) {
                 body: JSON.stringify({
                     geminiApiKey: geminiKey,
                     xaiApiKey: xaiKey,
+                    openaiApiKey: openaiKey,
+                    anthropicApiKey: anthropicKey,
+                    azureOpenaiApiKey: azureOpenaiKey,
+                    azureOpenaiEndpoint: azureOpenaiEndpoint,
+                    awsBedrockRegion: awsBedrockRegion,
+                    awsBedrockAccessKey: awsBedrockAccessKey,
+                    awsBedrockSecretKey: awsBedrockSecretKey,
+                    ollamaEndpoint: ollamaEndpoint,
+                    ollamaModel: ollamaModel,
                     preferredProvider,
                 }),
             });
@@ -101,6 +119,15 @@ export default function SettingsClient({ user }: SettingsClientProps) {
             if (xaiKey) setHasXaiKey(true);
             setGeminiKey('');
             setXaiKey('');
+            setOpenaiKey('');
+            setAnthropicKey('');
+            setAzureOpenaiKey('');
+            setAzureOpenaiEndpoint('');
+            setAwsBedrockRegion('');
+            setAwsBedrockAccessKey('');
+            setAwsBedrockSecretKey('');
+            setOllamaEndpoint('');
+            setOllamaModel('');
             toast.success('API keys saved securely');
             router.refresh();
         } catch (error) {
@@ -251,15 +278,56 @@ export default function SettingsClient({ user }: SettingsClientProps) {
                                     />
                                 </div>
                                 <div className="space-y-2">
+                                    <Label htmlFor="openai-key">OpenAI API Key {(user as any).hasOpenaiKey && <span className="text-green-600">(saved)</span>}</Label>
+                                    <Input id="openai-key" type="password" value={openaiKey} onChange={(e) => setOpenaiKey(e.target.value)} placeholder="sk-..." />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="anthropic-key">Anthropic API Key {(user as any).hasAnthropicKey && <span className="text-green-600">(saved)</span>}</Label>
+                                    <Input id="anthropic-key" type="password" value={anthropicKey} onChange={(e) => setAnthropicKey(e.target.value)} placeholder="sk-ant-..." />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="azure-key">Azure OpenAI API Key {(user as any).hasAzureOpenaiKey && <span className="text-green-600">(saved)</span>}</Label>
+                                    <Input id="azure-key" type="password" value={azureOpenaiKey} onChange={(e) => setAzureOpenaiKey(e.target.value)} placeholder="Enter Azure API Key" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="azure-endpoint">Azure OpenAI Endpoint</Label>
+                                    <Input id="azure-endpoint" type="text" value={azureOpenaiEndpoint} onChange={(e) => setAzureOpenaiEndpoint(e.target.value)} placeholder="https://your-resource.openai.azure.com/" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="aws-region">AWS Bedrock Region</Label>
+                                    <Input id="aws-region" type="text" value={awsBedrockRegion} onChange={(e) => setAwsBedrockRegion(e.target.value)} placeholder="us-east-1" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="aws-access-key">AWS Bedrock Access Key {(user as any).hasAwsBedrockKey && <span className="text-green-600">(saved)</span>}</Label>
+                                    <Input id="aws-access-key" type="password" value={awsBedrockAccessKey} onChange={(e) => setAwsBedrockAccessKey(e.target.value)} placeholder="AKIA..." />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="aws-secret-key">AWS Bedrock Secret Key</Label>
+                                    <Input id="aws-secret-key" type="password" value={awsBedrockSecretKey} onChange={(e) => setAwsBedrockSecretKey(e.target.value)} placeholder="Enter Secret Key" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="ollama-endpoint">Ollama Endpoint {(user as any).hasOllamaEndpoint && <span className="text-green-600">(saved)</span>}</Label>
+                                    <Input id="ollama-endpoint" type="text" value={ollamaEndpoint} onChange={(e) => setOllamaEndpoint(e.target.value)} placeholder="http://127.0.0.1:11434" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="ollama-model">Ollama Model</Label>
+                                    <Input id="ollama-model" type="text" value={ollamaModel} onChange={(e) => setOllamaModel(e.target.value)} placeholder="llama3" />
+                                </div>
+                                <div className="space-y-2">
                                     <Label>Preferred provider</Label>
-                                    <div className="flex gap-2">
+                                    <div className="flex gap-2 flex-wrap">
                                         <Button type="button" variant={preferredProvider === 'gemini' ? 'default' : 'outline'} onClick={() => setPreferredProvider('gemini')}>Gemini</Button>
                                         <Button type="button" variant={preferredProvider === 'xai' ? 'default' : 'outline'} onClick={() => setPreferredProvider('xai')}>xAI</Button>
+                                        <Button type="button" variant={preferredProvider === 'openai' ? 'default' : 'outline'} onClick={() => setPreferredProvider('openai')}>OpenAI</Button>
+                                        <Button type="button" variant={preferredProvider === 'anthropic' ? 'default' : 'outline'} onClick={() => setPreferredProvider('anthropic')}>Anthropic</Button>
+                                        <Button type="button" variant={preferredProvider === 'azure' ? 'default' : 'outline'} onClick={() => setPreferredProvider('azure')}>Azure</Button>
+                                        <Button type="button" variant={preferredProvider === 'aws' ? 'default' : 'outline'} onClick={() => setPreferredProvider('aws')}>AWS</Button>
+                                        <Button type="button" variant={preferredProvider === 'ollama' ? 'default' : 'outline'} onClick={() => setPreferredProvider('ollama')}>Ollama</Button>
                                     </div>
                                 </div>
                             </CardContent>
                             <CardFooter>
-                                <Button type="submit" disabled={isSavingKeys || (!geminiKey && !xaiKey && preferredProvider === user.preferredProvider)}>
+                                <Button type="submit" disabled={isSavingKeys}>
                                     {isSavingKeys && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                     Save API Keys
                                 </Button>
