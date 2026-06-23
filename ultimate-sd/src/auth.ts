@@ -18,6 +18,7 @@ const accessSelect = {
     geminiApiKey: true,
     xaiApiKey: true,
     preferredProvider: true,
+    role: true,
 } as const;
 
 function applyAccessToToken(
@@ -32,6 +33,7 @@ function applyAccessToToken(
         geminiApiKey: string | null;
         xaiApiKey: string | null;
         preferredProvider: string;
+        role: string;
     }
 ) {
     const access = toAccessSnapshot({
@@ -54,6 +56,7 @@ function applyAccessToToken(
     token.hasXaiKey = access.hasXaiKey;
     token.aiCredits = access.aiCredits;
     token.planExpiresAt = user.planExpiresAt?.toISOString() ?? null;
+    token.role = user.role;
 }
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
@@ -140,6 +143,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 session.user.hasXaiKey = token.hasXaiKey as boolean;
                 session.user.aiCredits = token.aiCredits as number;
                 session.user.planExpiresAt = token.planExpiresAt as string | null;
+                session.user.role = token.role as string;
             }
             return session;
         }

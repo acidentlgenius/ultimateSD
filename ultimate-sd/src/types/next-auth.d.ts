@@ -1,3 +1,4 @@
+import { type User } from "next-auth"
 import { type DefaultSession } from "next-auth"
 import { type PlanType } from "@/lib/plans"
 
@@ -16,6 +17,8 @@ declare module "next-auth" {
             hasXaiKey: boolean
             aiCredits: number
             planExpiresAt: string | null
+        role?: string
+            role?: string
         } & DefaultSession["user"]
     }
 
@@ -40,5 +43,6 @@ declare module "next-auth/jwt" {
         hasXaiKey: boolean
         aiCredits: number
         planExpiresAt: string | null
+        role?: string
     }
 }
