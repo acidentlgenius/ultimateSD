@@ -25,9 +25,9 @@ export default async function AdminPage() {
 
   // Analytics
   const totalUsers = users.length;
-  const premiumUsers = users.filter(u => u.planType !== 'free').length;
-  const aiUsers = users.filter(u => u.planType === 'ai').length;
-  const totalCompletedProblems = users.reduce((acc, u) => acc + u.completedProblems, 0);
+  const premiumUsers = users.filter((u: any) => u.planType !== 'free').length;
+  const aiUsers = users.filter((u: any) => u.planType === 'ai').length;
+  const totalCompletedProblems = users.reduce((acc: number, u: any) => acc + u.completedProblems, 0);
 
   return (
     <div className="container mx-auto py-10 px-4 md:px-0">

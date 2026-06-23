@@ -36,7 +36,7 @@ export async function getUserRecommendations() {
         where: { userId }
     });
 
-    const progressMap = new Map(progress.map(p => [p.problemId, p]));
+    const progressMap = new Map(progress.map((p: any) => [p.problemId, p]));
 
     // 2. Score Problems
     const scoredProblems = PROBLEMS.map(problem => {
@@ -46,18 +46,18 @@ export async function getUserRecommendations() {
         const pStatus = progressMap.get(problem.id);
 
         // Filter out completed unless review needed
-        if (pStatus?.status === 'COMPLETED' && (!pStatus.nextRepetitionDate || pStatus.nextRepetitionDate > new Date())) {
+        if ((pStatus as any)?.status === 'COMPLETED' && (!(pStatus as any).nextRepetitionDate || (pStatus as any).nextRepetitionDate > new Date())) {
             return { problem, score: -100 }; // Deprioritize completed
         }
 
         // A. SRS Urgency (Highest Priority)
-        if (pStatus?.nextRepetitionDate && pStatus.nextRepetitionDate <= new Date()) {
+        if ((pStatus as any)?.nextRepetitionDate && (pStatus as any).nextRepetitionDate <= new Date()) {
             score += 500; // Immediate review needed
         }
 
         // B. Weakness / Status Boost
-        if (pStatus?.status === 'REVIEW_NEEDED') score += 200;
-        if (pStatus?.status === 'IN_PROGRESS') score += 100; // Finish what you started
+        if ((pStatus as any)?.status === 'REVIEW_NEEDED') score += 200;
+        if ((pStatus as any)?.status === 'IN_PROGRESS') score += 100; // Finish what you started
 
         // C. Company Match
         if (problem.companies?.length > 0 && targetCompanies.length > 0 && 
@@ -82,7 +82,7 @@ export async function getUserRecommendations() {
             score += 10;
         }
 
-        return { problem, score, status: pStatus?.status };
+        return { problem, score, status: (pStatus as any)?.status };
     });
 
     // 3. Sort & Categorize
