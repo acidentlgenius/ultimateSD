@@ -1,5 +1,23 @@
 import { SystemDesignProblem } from '@/types';
 
+export function getProblemBySlug(slug: string): SystemDesignProblem | undefined {
+  if (slug.startsWith('custom-')) {
+    // Return a dummy problem since the real details are parsed from the URL/local storage on the fly
+    // For standard flows that just need a valid problem object (like metadata generation)
+    return {
+      id: slug,
+      title: 'Custom Problem',
+      slug: slug,
+      description: 'Custom user-defined problem.',
+      difficulty: 'Medium',
+      category: 'Custom',
+      companies: [],
+      requirements: []
+    };
+  }
+  return PROBLEMS.find(p => p.slug === slug);
+}
+
 export const PROBLEMS: SystemDesignProblem[] = [
   {
     id: '1',

@@ -134,7 +134,9 @@ export function DashboardClient({ user, recommendations, onboardingCompleted = f
                     </p>
                 </div>
 
-                <ProblemFilterBar
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                    <div className="flex-1 w-full">
+                        <ProblemFilterBar
                     search={search}
                     setSearch={setSearch}
                     category={category}
@@ -147,6 +149,13 @@ export function DashboardClient({ user, recommendations, onboardingCompleted = f
                     difficulties={difficulties}
                     user={user}
                 />
+                    </div>
+                    <Link href="/custom">
+                        <Button className="shrink-0 h-12 px-6 rounded-xl font-bold bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5">
+                            <span className="mr-2">✨</span> Design Custom Problem
+                        </Button>
+                    </Link>
+                </div>
 
                 {/* Problems Grid */}
                 <div className="min-h-[500px]">
