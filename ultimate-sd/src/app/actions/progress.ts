@@ -374,6 +374,70 @@ export async function completeStep(
     }
 }
 
+export async function syncSessionState(problemId: string, sessionState: any) {
+    const session = await auth();
+    if (!session?.user?.id) {
+        throw new Error('Unauthorized');
+    }
+
+    const userId = session.user.id;
+    const now = new Date();
+
+    try {
+        await prisma.problemProgress.upsert({
+            where: {
+                userId_problemId: {
+                    userId,
+                    problemId
+                }
+            },
+            update: {
+                sessionState,
+                lastAttemptAt: now
+            },
+            create: {
+                userId,
+                problemId,
+                status: 'IN_PROGRESS',
+                sessionState,
+                startedAt: now,
+                lastAttemptAt: now,
+                attempts: 1
+            }
+        });
+        return { success: true };
+    } catch (error) {
+        console.error('Failed to sync session state:', error);
+        return { success: false, error: 'Failed to sync session state' };
+    }
+}
+
+export async function getSavedSessionState(problemId: string) {
+    const session = await auth();
+    if (!session?.user?.id) {
+        throw new Error('Unauthorized');
+    }
+
+    try {
+        const progress = await prisma.problemProgress.findUnique({
+            where: {
+                userId_problemId: {
+                    userId: session.user.id,
+                    problemId
+                }
+            },
+            select: {
+                sessionState: true
+            }
+        });
+
+        return { success: true, sessionState: progress?.sessionState || null };
+    } catch (error) {
+        console.error('Failed to get saved session state:', error);
+        return { success: false, error: 'Failed to get saved session state' };
+    }
+}
+
 export async function getStepSubmissions(problemId: string, stepId: string) {
     const session = await auth();
     if (!session?.user?.id) {

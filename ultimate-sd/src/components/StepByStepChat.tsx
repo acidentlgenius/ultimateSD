@@ -16,8 +16,9 @@ import {
   loadSessionState,
   clearSessionState
 } from '@/lib/session-storage';
-import { updateProblemProgress, completeStep } from '@/app/actions/progress';
+import { updateProblemProgress, completeStep, syncSessionState, getSavedSessionState } from '@/app/actions/progress';
 import FeedbackModal from './FeedbackModal';
+import { useSession } from 'next-auth/react';
 import {
   Sparkles,
   Plus,
@@ -162,38 +163,107 @@ export default function StepByStepChat({ problem }: Props) {
   const getStepKey = (phase: string, stepIdx: number) => `${phase}-${stepIdx}`;
   const currentStepKey = getStepKey(currentPhase, currentStepIndex);
 
-  // Load session from localStorage on mount
+  const { data: session, status: sessionStatus } = useSession();
+
+  // Load session on mount
   useEffect(() => {
-    const restored = loadSessionState(problem.slug);
-    if (restored) {
-      setCurrentPhase(restored.currentPhase);
-      setCurrentStepIndex(restored.currentStepIndex);
-      setSavedStepData(restored.savedStepData);
-      setCompletedSteps(restored.completedSteps);
-      setSessionRestored(true);
-      setRestoredDate(restored.lastUpdated);
+    // Only attempt to load once we know the session status (authenticated or unauthenticated)
+    if (sessionStatus === 'loading') return;
 
-      console.log('Session restored from', restored.lastUpdated);
+    let isMounted = true;
 
+    const loadData = async () => {
+      let restored = null;
 
-    }
-  }, [problem.slug]);
-
-  // Save session to localStorage whenever state changes
-  useEffect(() => {
-    if (sessionRestored || savedStepData.size > 0) {
-      const saved = saveSessionState(problem.slug, {
-        currentPhase,
-        currentStepIndex,
-        savedStepData,
-        completedSteps,
-      });
-
-      if (saved) {
-        console.log('Session saved to localStorage');
+      // Try fetching from cloud if user has premium plan or BYOK setup
+      if (session?.user && (session.user.hasActivePlan || session.user.hasGeminiKey || session.user.hasXaiKey)) {
+        try {
+          const res = await getSavedSessionState(problem.id);
+          if (res.success && res.sessionState) {
+            const parsed = res.sessionState as any;
+            restored = {
+              currentPhase: parsed.currentPhase,
+              currentStepIndex: parsed.currentStepIndex,
+              savedStepData: new Map(Object.entries(parsed.savedStepData || {})),
+              completedSteps: new Set(parsed.completedSteps || []),
+              lastUpdated: parsed.lastUpdated ? new Date(parsed.lastUpdated) : new Date()
+            };
+          }
+        } catch (error) {
+          console.error("Failed to load cloud session state:", error);
+        }
       }
+
+      // Fallback to local storage
+      if (!restored) {
+        restored = loadSessionState(problem.slug);
+      }
+
+      if (isMounted) {
+        if (restored) {
+          setCurrentPhase(restored.currentPhase);
+          setCurrentStepIndex(restored.currentStepIndex);
+          setSavedStepData(restored.savedStepData as any);
+          setCompletedSteps(restored.completedSteps as any);
+          setSessionRestored(true);
+          setRestoredDate(restored.lastUpdated);
+
+          console.log('Session restored from', restored.lastUpdated);
+        } else {
+          setSessionRestored(true); // Always set to true eventually to allow saving
+        }
+      }
+    };
+
+    loadData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [problem.id, problem.slug, session, sessionStatus]);
+
+  // Save session whenever state changes (debounced for cloud sync)
+  useEffect(() => {
+    if (!sessionRestored) return;
+
+    const stateToSave = {
+      currentPhase,
+      currentStepIndex,
+      savedStepData,
+      completedSteps,
+    };
+
+    // Always save locally immediately
+    const saved = saveSessionState(problem.slug, stateToSave);
+
+    if (saved) {
+      console.log('Session saved to localStorage');
     }
-  }, [problem.slug, currentPhase, currentStepIndex, savedStepData, completedSteps, sessionRestored]);
+
+    // Sync to cloud if user has premium plan or BYOK setup (Debounced)
+    let syncTimeoutId: NodeJS.Timeout;
+    if (session?.user && (session.user.hasActivePlan || session.user.hasGeminiKey || session.user.hasXaiKey)) {
+      syncTimeoutId = setTimeout(() => {
+        const cloudState = {
+          currentPhase,
+          currentStepIndex,
+          savedStepData: Object.fromEntries(savedStepData),
+          completedSteps: Array.from(completedSteps),
+          lastUpdated: new Date().toISOString()
+        };
+
+        syncSessionState(problem.id, cloudState).catch(error => {
+           console.error("Failed to sync session state to cloud:", error);
+        });
+      }, 2000); // 2 second debounce
+    }
+
+    return () => {
+      if (syncTimeoutId) {
+        clearTimeout(syncTimeoutId);
+      }
+    };
+  }, [problem.id, problem.slug, currentPhase, currentStepIndex, savedStepData, completedSteps, sessionRestored, session]);
 
   // Listen for navigation events from Sidebar
   useEffect(() => {
