@@ -4,7 +4,7 @@ import Link from "next/link"
 import { signOut } from "next-auth/react"
 import { User } from "next-auth"
 import { Button } from "@/components/ui/button"
-import { LogOut, User as UserIcon, ChevronDown, Settings } from "lucide-react"
+import { LogOut, User as UserIcon, ChevronDown, Settings, ShieldAlert } from "lucide-react"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -16,7 +16,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 interface UserMenuProps {
-    user?: User
+    user?: User & { role?: string }
 }
 
 export function UserMenu({ user }: UserMenuProps) {
@@ -43,6 +43,14 @@ export function UserMenu({ user }: UserMenuProps) {
                         </div>
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
+                    {user.role === "ADMIN" && (
+                        <DropdownMenuItem asChild>
+                            <Link href="/admin" className="cursor-pointer">
+                                <ShieldAlert className="mr-2 h-4 w-4" />
+                                <span>Admin Panel</span>
+                            </Link>
+                        </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem asChild>
                         <Link href="/profile" className="cursor-pointer">
                             <UserIcon className="mr-2 h-4 w-4" />

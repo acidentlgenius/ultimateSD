@@ -1,3 +1,4 @@
+import { type User } from "next-auth"
 import { type DefaultSession } from "next-auth"
 import { type PlanType } from "@/lib/plans"
 
@@ -14,8 +15,15 @@ declare module "next-auth" {
             hasAiPlan: boolean
             hasGeminiKey: boolean
             hasXaiKey: boolean
+            hasOpenaiKey: boolean
+            hasAnthropicKey: boolean
+            hasAzureOpenaiKey: boolean
+            hasAwsBedrockKey: boolean
+            hasOllamaEndpoint: boolean
             aiCredits: number
+            preferredProvider: string
             planExpiresAt: string | null
+            role?: string
         } & DefaultSession["user"]
     }
 
@@ -38,7 +46,14 @@ declare module "next-auth/jwt" {
         hasAiPlan: boolean
         hasGeminiKey: boolean
         hasXaiKey: boolean
+        hasOpenaiKey: boolean
+        hasAnthropicKey: boolean
+        hasAzureOpenaiKey: boolean
+        hasAwsBedrockKey: boolean
+        hasOllamaEndpoint: boolean
         aiCredits: number
+        preferredProvider: string
         planExpiresAt: string | null
+        role?: string
     }
 }
