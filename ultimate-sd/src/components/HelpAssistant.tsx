@@ -143,7 +143,7 @@ export function HelpAssistant({ problem, currentPhase, completedSteps = [], save
           <HelpCircle className="h-5 w-5 text-white" />
           <span className="text-white font-medium">Help Assistant</span>
           {messages.length > 1 && (
-            <span className="bg-white text-blue-600 text-xs px-2 py-0.5 rounded-full font-semibold">
+            <span className="bg-black dark:bg-white text-blue-600 text-xs px-2 py-0.5 rounded-full font-semibold">
               {messages.length - 1}
             </span>
           )}
@@ -169,7 +169,7 @@ export function HelpAssistant({ problem, currentPhase, completedSteps = [], save
             variant="ghost"
             size="sm"
             onClick={() => setIsMinimized(true)}
-            className="h-8 w-8 p-0 hover:bg-white/20 text-white"
+            className="h-8 w-8 p-0 hover:bg-black dark:hover:bg-white/20 text-white"
             aria-label="Minimize Help Assistant"
           >
             <Minimize2 className="h-4 w-4" />
@@ -178,7 +178,7 @@ export function HelpAssistant({ problem, currentPhase, completedSteps = [], save
             variant="ghost"
             size="sm"
             onClick={() => setIsOpen(false)}
-            className="h-8 w-8 p-0 hover:bg-white/20 text-white"
+            className="h-8 w-8 p-0 hover:bg-black dark:hover:bg-white/20 text-white"
             aria-label="Close Help Assistant"
           >
             <X className="h-4 w-4" />

@@ -2312,7 +2312,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
             onDoubleClick={handleDoubleClick}
-            className="border-2 border-border/50 rounded-lg bg-white shadow-xl"
+            className="border-2 border-border/50 rounded-lg bg-black dark:bg-white shadow-xl"
             style={{ cursor: currentTool === 'select' ? 'default' : 'crosshair' }}
           />
         </div>
@@ -2461,7 +2461,7 @@ export default function DiagramCanvas({ stepKey }: { stepKey: string }) {
       const modal = document.createElement('div');
       modal.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm';
       modal.innerHTML = `
-        <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md shadow-xl border-2 border-primary/30">
+        <div class="bg-black dark:bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md shadow-xl border-2 border-primary/30">
           <div class="flex items-start gap-3">
             <div class="p-2 rounded-full bg-green-500/10">
               <svg class="h-6 w-6 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">

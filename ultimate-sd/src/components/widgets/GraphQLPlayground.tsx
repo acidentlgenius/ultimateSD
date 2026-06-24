@@ -96,7 +96,7 @@ export default function GraphQLPlayground() {
                             {/* User Fields */}
                             <div className="pl-8 flex flex-col gap-1">
                                 {['id', 'name', 'email'].map(f => (
-                                    <label key={f} className="flex items-center gap-2 cursor-pointer hover:bg-white/5 rounded px-1">
+                                    <label key={f} className="flex items-center gap-2 cursor-pointer hover:bg-black dark:hover:bg-white/5 rounded px-1">
                                         <input
                                             type="checkbox"
                                             checked={selectedUserFields.includes(f as QueryField)}
@@ -108,7 +108,7 @@ export default function GraphQLPlayground() {
                                 ))}
 
                                 {/* Posts Relation */}
-                                <label className="flex items-center gap-2 cursor-pointer hover:bg-white/5 rounded px-1 mt-1">
+                                <label className="flex items-center gap-2 cursor-pointer hover:bg-black dark:hover:bg-white/5 rounded px-1 mt-1">
                                     <input
                                         type="checkbox"
                                         checked={selectedUserFields.includes('posts')}
@@ -122,7 +122,7 @@ export default function GraphQLPlayground() {
                                 {selectedUserFields.includes('posts') && (
                                     <div className="pl-4 flex flex-col gap-1 border-l border-slate-700 ml-1">
                                         {['title', 'views'].map(f => (
-                                            <label key={f} className="flex items-center gap-2 cursor-pointer hover:bg-white/5 rounded px-1">
+                                            <label key={f} className="flex items-center gap-2 cursor-pointer hover:bg-black dark:hover:bg-white/5 rounded px-1">
                                                 <input
                                                     type="checkbox"
                                                     checked={selectedPostFields.includes(f as PostField)}

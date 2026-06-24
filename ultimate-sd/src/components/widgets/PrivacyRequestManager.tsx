@@ -128,7 +128,7 @@ export default function PrivacyRequestManager() {
                         layout
                         className={`
               relative p-4 rounded-lg border-2 flex flex-col items-center text-center transition-colors
-              ${store.status === 'clean' ? 'bg-white border-teal-200' : 'bg-white border-red-100'}
+              ${store.status === 'clean' ? 'bg-black dark:bg-white border-teal-200' : 'bg-black dark:bg-white border-red-100'}
               ${store.status === 'purging' ? 'scale-95 border-red-400 bg-red-50' : ''}
               ${store.status === 'scanning' ? 'animate-pulse border-teal-300' : ''}
             `}

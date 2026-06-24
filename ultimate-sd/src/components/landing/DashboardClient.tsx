@@ -177,10 +177,10 @@ export function DashboardClient({ user, recommendations, onboardingCompleted = f
                                 ))}
                             </div>
                         ) : (
-                            <div className="rounded-3xl border border-white/10 bg-card/40 backdrop-blur-xl shadow-2xl shadow-black/5 overflow-hidden animate-slide-up">
+                            <div className="rounded-3xl border border-black/10 dark:border-white/10 bg-card/40 backdrop-blur-xl shadow-2xl shadow-black/5 dark:shadow-white/5 overflow-hidden animate-slide-up">
                                 <Table>
                                     <TableHeader>
-                                        <TableRow className="border-white/5 hover:bg-transparent">
+                                        <TableRow className="border-black/5 dark:border-white/5 hover:bg-transparent">
                                             <TableHead className="w-[45%] font-semibold pl-6 h-14">Problem</TableHead>
                                             <TableHead className="font-semibold h-14">Difficulty</TableHead>
                                             <TableHead className="font-semibold h-14">Category</TableHead>
@@ -191,7 +191,7 @@ export function DashboardClient({ user, recommendations, onboardingCompleted = f
                                     </TableHeader>
                                     <TableBody>
                                         {filtered.map((problem) => (
-                                            <TableRow key={problem.id} className="group hover:bg-white/5 transition-colors border-white/5">
+                                            <TableRow key={problem.id} className="group hover:bg-black/5 dark:hover:bg-black dark:hover:bg-white/5 transition-colors border-black/5 dark:border-white/5">
                                                 <TableCell className="font-medium pl-6 py-4">
                                                     <div className="flex flex-col gap-1">
                                                         <span className="text-base font-bold group-hover:text-primary transition-colors">{problem.title}</span>
@@ -272,7 +272,7 @@ export function DashboardClient({ user, recommendations, onboardingCompleted = f
                             </div>
                         )
                     ) : (
-                        <div className="text-center py-24 bg-card/30 backdrop-blur-md rounded-3xl border border-dashed border-white/10 flex flex-col items-center justify-center">
+                        <div className="text-center py-24 bg-card/30 backdrop-blur-md rounded-3xl border border-dashed border-black/10 dark:border-white/10 flex flex-col items-center justify-center">
                             <div className="w-24 h-24 mb-6 rounded-full bg-primary/5 flex items-center justify-center animate-pulse">
                                 <Search className="h-10 w-10 text-primary/40" />
                             </div>
@@ -300,7 +300,7 @@ export function DashboardClient({ user, recommendations, onboardingCompleted = f
                 {!user && (
                     <div className="mt-32 rounded-[3rem] relative overflow-hidden bg-gradient-to-br from-primary to-purple-700 px-6 py-24 text-center shadow-2xl shadow-primary/30">
                         <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-20 mix-blend-overlay" />
-                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-white/10 blur-[120px] rounded-full pointer-events-none" />
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-black/10 dark:bg-white/10 blur-[120px] rounded-full pointer-events-none" />
 
                         <div className="relative z-10 space-y-8 max-w-2xl mx-auto">
                             <h2 className="text-4xl md:text-6xl font-bold text-white tracking-tight">Ready to Design?</h2>
@@ -309,7 +309,7 @@ export function DashboardClient({ user, recommendations, onboardingCompleted = f
                             </p>
                             <div className="pt-6 flex justify-center gap-4">
                                 <Link href="/draw">
-                                    <Button size="lg" className="bg-white text-primary hover:bg-white/90 shadow-xl shadow-black/20 border-0 h-16 px-10 font-bold text-lg rounded-full transition-transform hover:-translate-y-1 hover:shadow-2xl">
+                                    <Button size="lg" className="bg-black dark:bg-white text-primary hover:bg-black/90 dark:hover:bg-black dark:hover:bg-white/90 shadow-xl shadow-black/20 dark:shadow-white/20 border-0 h-16 px-10 font-bold text-lg rounded-full transition-transform hover:-translate-y-1 hover:shadow-2xl">
                                         Launch Canvas <ArrowRight className="ml-2 h-5 w-5" />
                                     </Button>
                                 </Link>
