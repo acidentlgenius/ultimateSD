@@ -742,7 +742,8 @@ export default function StepByStepChat({ problem }: Props) {
                         variant="ghost"
                         size="sm"
                         onClick={() => removeListItem(index)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
+                        className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity h-6 w-6 p-0"
+                        aria-label="Remove item"
                       >
                         <X className="h-4 w-4" />
                       </Button>
