@@ -33,3 +33,9 @@
 2. Ensure cloud write/sync `useEffect`s are strictly guarded by a flag (e.g., `sessionRestored`) that is *only* set to `true` after the asynchronous load attempt has fully resolved.
 3. Always debounce backend writes (e.g., using `setTimeout` within the `useEffect` cleanup pattern) when syncing local interactive state to prevent DDoS-ing the database.
 4. Always verify database schemas (like Prisma relations) to ensure the correct ID type (e.g., CUID vs Slug) is passed to foreign key queries.
+
+## 2026-06-24 - [Floating Promise with Next.js Server Actions]
+
+**Learning:** Next.js Server Actions in this project (like `syncSessionState`) are designed to return error objects (e.g., `{ error: 'message' }`) rather than throwing exceptions. This means that appending `.catch(console.error)` to them in a `useEffect` will *never* catch the application-level errors, creating silent failures on the client side while appearing handled.
+
+**Action:** Always verify the actual return type of a Next.js Server Action. When calling async functions inside `useEffect` or timeouts, use an inner `async() => {}` wrapper to properly `await` the result, check for returned error objects (e.g., `result.error`), and wrap the entire call in a `try/catch` block to handle true network or execution failures.
