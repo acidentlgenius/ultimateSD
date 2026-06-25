@@ -74,6 +74,10 @@ describe('DiagramCanvas Load Design from localStorage', () => {
     // Check that it removed the bad key from localStorage
     expect(localStorage.getItem('saved-design-corrupt-design')).toBeNull();
 
+    // Check that it was also removed from the saved-designs-list
+    const savedDesignsList = JSON.parse(localStorage.getItem('saved-designs-list') || '[]');
+    expect(savedDesignsList).toHaveLength(0);
+
     consoleSpy.mockRestore();
   });
 });
