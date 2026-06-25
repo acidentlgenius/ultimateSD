@@ -1573,6 +1573,11 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
       console.error('Error loading design:', error);
       localStorage.removeItem(storageKey);
 
+      const savedDesignsList = getSafeSavedDesignsList();
+      const filtered = savedDesignsList.filter((d: any) => d.name !== name);
+      localStorage.setItem('saved-designs-list', JSON.stringify(filtered));
+      loadSavedDesignsList();
+
       const toast = document.createElement('div');
       toast.className = 'fixed bottom-4 right-4 z-50 bg-red-500 text-white px-4 py-3 rounded-lg shadow-lg animate-fade-in';
       toast.innerHTML = `<div class="flex items-center gap-2">

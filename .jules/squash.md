@@ -33,6 +33,11 @@
 2. Ensure cloud write/sync `useEffect`s are strictly guarded by a flag (e.g., `sessionRestored`) that is *only* set to `true` after the asynchronous load attempt has fully resolved.
 3. Always debounce backend writes (e.g., using `setTimeout` within the `useEffect` cleanup pattern) when syncing local interactive state to prevent DDoS-ing the database.
 4. Always verify database schemas (like Prisma relations) to ensure the correct ID type (e.g., CUID vs Slug) is passed to foreign key queries.
+## 2025-02-21 - Dangling references in list storage pattern
+
+**Learning:** When storing individual items in `localStorage` alongside a master "list" key (e.g. `saved-designs-list` containing references), a corruption in the individual item could lead to state inconsistency. When the item fails to parse, clearing only the item key leaves a dangling reference in the master list, causing "ghost" UI entries.
+
+**Action:** Whenever implementing or debugging a manual `localStorage` list-and-item pattern, always verify that deleting or handling a corrupted item also correctly removes its reference from the master list index.
 
 ## 2026-06-24 - [Floating Promise with Next.js Server Actions]
 
