@@ -38,3 +38,9 @@
 **Learning:** When storing individual items in `localStorage` alongside a master "list" key (e.g. `saved-designs-list` containing references), a corruption in the individual item could lead to state inconsistency. When the item fails to parse, clearing only the item key leaves a dangling reference in the master list, causing "ghost" UI entries.
 
 **Action:** Whenever implementing or debugging a manual `localStorage` list-and-item pattern, always verify that deleting or handling a corrupted item also correctly removes its reference from the master list index.
+
+## 2026-06-24 - [Floating Promise with Next.js Server Actions]
+
+**Learning:** Next.js Server Actions in this project (like `syncSessionState`) are designed to return error objects (e.g., `{ error: 'message' }`) rather than throwing exceptions. This means that appending `.catch(console.error)` to them in a `useEffect` will *never* catch the application-level errors, creating silent failures on the client side while appearing handled.
+
+**Action:** Always verify the actual return type of a Next.js Server Action. When calling async functions inside `useEffect` or timeouts, use an inner `async() => {}` wrapper to properly `await` the result, check for returned error objects (e.g., `result.error`), and wrap the entire call in a `try/catch` block to handle true network or execution failures.
