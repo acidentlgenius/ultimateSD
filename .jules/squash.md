@@ -44,3 +44,9 @@
 **Learning:** Next.js Server Actions in this project (like `syncSessionState`) are designed to return error objects (e.g., `{ error: 'message' }`) rather than throwing exceptions. This means that appending `.catch(console.error)` to them in a `useEffect` will *never* catch the application-level errors, creating silent failures on the client side while appearing handled.
 
 **Action:** Always verify the actual return type of a Next.js Server Action. When calling async functions inside `useEffect` or timeouts, use an inner `async() => {}` wrapper to properly `await` the result, check for returned error objects (e.g., `result.error`), and wrap the entire call in a `try/catch` block to handle true network or execution failures.
+
+## 2026-06-25 - [Memory Leaks with requestAnimationFrame in React]
+
+**Learning:** When using `requestAnimationFrame` inside a React `useEffect` hook for custom animations, failing to capture the returned animation frame ID and clean it up via `cancelAnimationFrame` on component unmount causes severe memory leaks. The animation loop continues running in the background, attempting to update state on an unmounted component, which pollutes the JS heap and triggers React warnings.
+
+**Action:** Always capture the ID returned by `requestAnimationFrame` (and any associated `setTimeout` wrappers) in variables initialized to `0`. In the `useEffect` cleanup function, explicitly call `cancelAnimationFrame(id)` and `clearTimeout(id)` to ensure all scheduled updates are safely aborted.

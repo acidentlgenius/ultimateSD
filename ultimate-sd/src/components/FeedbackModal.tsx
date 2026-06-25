@@ -85,6 +85,13 @@ export default function FeedbackModal({ feedback, isOpen, onClose, onContinue, x
       const startScore = 0;
       const endScore = feedback.score;
 
+      // SQUASH: Root Cause: requestAnimationFrame calls within useEffect were not being canceled on unmount,
+      // leading to memory leaks and state updates on unmounted components.
+      // SQUASH: Fix: Store the animation frame IDs and clearTimeout, then clean them up in the useEffect return function.
+      let animationFrameScoreId: number = 0;
+      let animationFrameAccuracyId: number = 0;
+      let accuracyTimeoutId: NodeJS.Timeout;
+
       const animateScore = (timestamp: number) => {
         if (!startTime) startTime = timestamp;
         const progress = Math.min((timestamp - startTime) / duration, 1);
@@ -92,7 +99,7 @@ export default function FeedbackModal({ feedback, isOpen, onClose, onContinue, x
         setAnimatedScore(Math.floor(startScore + (endScore - startScore) * easeOutQuart));
 
         if (progress < 1) {
-          requestAnimationFrame(animateScore);
+          animationFrameScoreId = requestAnimationFrame(animateScore);
         }
       };
 
@@ -109,12 +116,20 @@ export default function FeedbackModal({ feedback, isOpen, onClose, onContinue, x
         setAnimatedAccuracy(Math.floor(startAccuracy + (endAccuracy - startAccuracy) * easeOutQuart));
 
         if (progress < 1) {
-          requestAnimationFrame(animateAccuracy);
+          animationFrameAccuracyId = requestAnimationFrame(animateAccuracy);
         }
       };
 
-      requestAnimationFrame(animateScore);
-      setTimeout(() => requestAnimationFrame(animateAccuracy), 200);
+      animationFrameScoreId = requestAnimationFrame(animateScore);
+      accuracyTimeoutId = setTimeout(() => {
+        animationFrameAccuracyId = requestAnimationFrame(animateAccuracy);
+      }, 200);
+
+      return () => {
+        cancelAnimationFrame(animationFrameScoreId);
+        cancelAnimationFrame(animationFrameAccuracyId);
+        clearTimeout(accuracyTimeoutId);
+      };
     } else {
       setAnimatedScore(0);
       setAnimatedAccuracy(0);
