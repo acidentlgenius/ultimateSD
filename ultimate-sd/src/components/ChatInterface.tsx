@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { SystemDesignProblem, ChatMessage } from '@/types';
 import { tokens } from '@/styles/tokens';
 import { fetchWithRetry } from '@/lib/fetchUtils';
-import { Send, Bot, User, Sparkles } from 'lucide-react';
+import { Send, Bot, User, Sparkles, RotateCcw } from 'lucide-react';
 
 interface Props {
   problem: SystemDesignProblem;
@@ -52,23 +52,35 @@ export default function ChatInterface({ problem }: Props) {
     }
   }, [messages]);
 
-  async function sendMessage() {
-    if (!input.trim()) return;
-    const userMsg: ChatMessage = {
-      role: 'user',
-      content: input,
-      id: Date.now().toString(),
-      timestamp: new Date()
-    };
+  async function sendMessage(retryMessageContent?: string) {
+    const contentToSend = retryMessageContent || input;
+    if (!contentToSend.trim()) return;
 
-    // optimistic update
-    setMessages(prev => [...prev, userMsg]);
+    let payloadMessages = messages;
+
+    if (retryMessageContent) {
+      const filtered = messages.filter(m => m.id !== 'error');
+      if (filtered.length > 0 && filtered[filtered.length - 1].role === 'user') {
+        filtered.pop();
+      }
+      payloadMessages = filtered;
+      setMessages(prev => prev.filter(m => m.id !== 'error'));
+    } else {
+      const userMsg: ChatMessage = {
+        role: 'user',
+        content: contentToSend,
+        id: Date.now().toString(),
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, userMsg]);
+    }
+
     setLoading(true);
 
     try {
       const res = await fetchWithRetry('/api/ai/chat', {
         method: 'POST',
-        body: JSON.stringify({ input, slug: problem.slug, messages, phase }),
+        body: JSON.stringify({ input: contentToSend, slug: problem.slug, messages: payloadMessages, phase }),
         headers: { 'Content-Type': 'application/json' },
         retries: 2,
         timeout: 15000,
@@ -89,7 +101,9 @@ export default function ChatInterface({ problem }: Props) {
     }
 
     setLoading(false);
-    setInput('');
+    if (!retryMessageContent) {
+      setInput('');
+    }
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -157,6 +171,24 @@ export default function ChatInterface({ problem }: Props) {
                       <div className="text-xs text-muted-foreground">
                         <span className="font-semibold">Tips:</span> {msg.feedback.tips.join(', ')}
                       </div>
+                    </div>
+                  )}
+                  {msg.id === 'error' && (
+                    <div className="mt-3 pt-3 border-t border-border/50">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full gap-2 text-primary border-primary/20 hover:bg-primary/10 hover:border-primary/50 transition-all"
+                        onClick={() => {
+                          const lastUserMsg = [...messages].reverse().find(m => m.role === 'user');
+                          if (lastUserMsg) {
+                            sendMessage(lastUserMsg.content);
+                          }
+                        }}
+                      >
+                        <RotateCcw className="h-4 w-4" />
+                        Try Again
+                      </Button>
                     </div>
                   )}
                 </div>
