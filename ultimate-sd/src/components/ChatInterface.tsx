@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { SystemDesignProblem, ChatMessage } from '@/types';
@@ -92,7 +92,7 @@ export default function ChatInterface({ problem }: Props) {
     setInput('');
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     // Cmd/Ctrl + Enter to send
     if ((e.key === 'Enter' && (e.metaKey || e.ctrlKey)) && !loading) {
       e.preventDefault();
@@ -190,14 +190,15 @@ export default function ChatInterface({ problem }: Props) {
       <form onSubmit={e => { e.preventDefault(); sendMessage(); }} className="glass p-4 border-t border-border">
         <div className="flex gap-2 items-center">
           <div className="flex-1">
-            <Input
+            <Textarea
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               aria-label="Explain your design"
               placeholder="Explain your design... (Cmd/Ctrl + Enter to send)"
-              className="bg-background/50 backdrop-blur-sm border-2 focus:border-primary transition-all"
+              className="resize-none bg-background/50 backdrop-blur-sm border-2 focus:border-primary transition-all"
               disabled={loading}
+              rows={3}
             />
           </div>
           <Button
