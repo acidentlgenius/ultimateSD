@@ -76,4 +76,44 @@ describe('FeedbackModal', () => {
 
     consoleSpy.mockRestore();
   });
+  it('clears animation frames on unmount', () => {
+    vi.useFakeTimers();
+
+    // Spy on the global animation frame functions
+    const requestSpy = vi.spyOn(global, 'requestAnimationFrame');
+    const cancelSpy = vi.spyOn(global, 'cancelAnimationFrame');
+    const clearTimeoutSpy = vi.spyOn(global, 'clearTimeout');
+
+    const feedback = {
+      score: 10,
+      accuracy: 100,
+      strengths: [],
+      weaknesses: [],
+      isAcceptable: true
+    };
+
+    const { unmount } = render(
+      <FeedbackModal
+        isOpen={true}
+        feedback={feedback}
+        onClose={() => {}}
+        xpEarned={10}
+      />
+    );
+
+    // Initial render should have called requestAnimationFrame for score
+    expect(requestSpy).toHaveBeenCalled();
+
+    // Unmount the component to trigger cleanup
+    unmount();
+
+    // Cleanup should call cancelAnimationFrame and clearTimeout
+    expect(cancelSpy).toHaveBeenCalled();
+    expect(clearTimeoutSpy).toHaveBeenCalled();
+
+    requestSpy.mockRestore();
+    cancelSpy.mockRestore();
+    clearTimeoutSpy.mockRestore();
+    vi.useRealTimers();
+  });
 });
