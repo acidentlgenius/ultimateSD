@@ -1706,6 +1706,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
         onClick={() => setShowSaveDialog(true)}
         className="h-7 w-7 p-0"
         title="Save to Browser"
+        aria-label="Save to Browser"
       >
         <Save className="h-3.5 w-3.5" />
       </Button>
@@ -1718,6 +1719,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
         }}
         className="h-7 w-7 p-0"
         title="Load Saved Design"
+        aria-label="Load Saved Design"
       >
         <Upload className="h-3.5 w-3.5" />
       </Button>
@@ -1902,6 +1904,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
                             deleteDesignFromLocalStorage(design.name);
                           }
                         }}
+                        aria-label={`Delete ${design.name}`}
                       >
                         <Trash2 className="h-3 w-3" />
                       </Button>
@@ -1937,6 +1940,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
             onClick={() => setCurrentTool('select')}
             className="h-8 w-8 p-0"
             title="Select & Move (V)"
+            aria-label="Select & Move Tool"
           >
             <Move className="h-4 w-4" />
           </Button>
@@ -1946,6 +1950,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
             onClick={() => setCurrentTool('rectangle')}
             className="h-8 w-8 p-0"
             title="Rectangle - Generic Component (R)"
+            aria-label="Rectangle Tool"
           >
             <Square className="h-4 w-4" />
           </Button>
@@ -1955,6 +1960,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
             onClick={() => setCurrentTool('circle')}
             className="h-8 w-8 p-0"
             title="Circle - Process/Node (C)"
+            aria-label="Circle Tool"
           >
             <Circle className="h-4 w-4" />
           </Button>
@@ -1964,6 +1970,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
             onClick={() => setCurrentTool('database')}
             className="h-8 w-8 p-0"
             title="Database - SQL/NoSQL Storage (D)"
+            aria-label="Database Tool"
           >
             <Database className="h-4 w-4" />
           </Button>
@@ -1973,6 +1980,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
             onClick={() => setCurrentTool('server')}
             className="h-8 w-8 p-0"
             title="Server - Application Server (S)"
+            aria-label="Server Tool"
           >
             <Server className="h-4 w-4" />
           </Button>
@@ -1982,6 +1990,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
             onClick={() => setCurrentTool('cloud')}
             className="h-8 w-8 p-0"
             title="Cloud - Cloud Service/Infrastructure"
+            aria-label="Cloud Tool"
           >
             <Cloud className="h-4 w-4" />
           </Button>
@@ -1991,6 +2000,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
             onClick={() => setCurrentTool('arrow')}
             className="h-8 w-8 p-0"
             title="Arrow - Data Flow Direction (A)"
+            aria-label="Arrow Tool"
           >
             <ArrowRight className="h-4 w-4" />
           </Button>
@@ -2000,6 +2010,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
             onClick={() => setCurrentTool('line')}
             className="h-8 w-8 p-0"
             title="Line - Connection/Link (L)"
+            aria-label="Line Tool"
           >
             <Workflow className="h-4 w-4" />
           </Button>
@@ -2009,6 +2020,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
             onClick={() => setCurrentTool('text')}
             className="h-8 w-8 p-0"
             title="Text - Label/Annotation (T)"
+            aria-label="Text Tool"
           >
             <Type className="h-4 w-4" />
           </Button>
@@ -2024,6 +2036,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
             onClick={() => setCurrentTool('loadbalancer')}
             className="h-8 w-8 p-0"
             title="Load Balancer - Distributes Traffic"
+            aria-label="Load Balancer Tool"
           >
             <Gauge className="h-4 w-4" />
           </Button>
@@ -2033,6 +2046,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
             onClick={() => setCurrentTool('cache')}
             className="h-8 w-8 p-0"
             title="Cache - Redis/Memcached"
+            aria-label="Cache Tool"
           >
             <Zap className="h-4 w-4" />
           </Button>
@@ -2042,6 +2056,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
             onClick={() => setCurrentTool('queue')}
             className="h-8 w-8 p-0"
             title="Message Queue - Kafka/RabbitMQ/SQS"
+            aria-label="Message Queue Tool"
           >
             <Binary className="h-4 w-4" />
           </Button>
@@ -2051,6 +2066,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
             onClick={() => setCurrentTool('client')}
             className="h-8 w-8 p-0"
             title="Client - User/Mobile/Web App"
+            aria-label="Client Tool"
           >
             <Users className="h-4 w-4" />
           </Button>
@@ -2060,6 +2076,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
             onClick={() => setCurrentTool('api')}
             className="h-8 w-8 p-0"
             title="API Gateway - REST/GraphQL Endpoint"
+            aria-label="API Gateway Tool"
           >
             <Cable className="h-4 w-4" />
           </Button>
@@ -2069,6 +2086,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
             onClick={() => setCurrentTool('microservice')}
             className="h-8 w-8 p-0"
             title="Microservice - Service Component"
+            aria-label="Microservice Tool"
           >
             <Box className="h-4 w-4" />
           </Button>
@@ -2078,6 +2096,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
             onClick={() => setCurrentTool('cdn')}
             className="h-8 w-8 p-0"
             title="CDN - Content Delivery Network"
+            aria-label="CDN Tool"
           >
             <HardDrive className="h-4 w-4" />
           </Button>
@@ -2093,6 +2112,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
             onClick={() => setCurrentTool('diamond')}
             className="h-8 w-8 p-0"
             title="Diamond - Decision (Flowchart)"
+            aria-label="Diamond Tool"
           >
             <Diamond className="h-4 w-4" />
           </Button>
@@ -2102,6 +2122,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
             onClick={() => setCurrentTool('oval')}
             className="h-8 w-8 p-0"
             title="Oval - Start/End (Flowchart)"
+            aria-label="Oval Tool"
           >
             <Circle className="h-4 w-4" />
           </Button>
@@ -2111,6 +2132,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
             onClick={() => setCurrentTool('parallelogram')}
             className="h-8 w-8 p-0"
             title="Parallelogram - Input/Output (Flowchart)"
+            aria-label="Parallelogram Tool"
           >
             <Hexagon className="h-4 w-4" style={{ transform: 'skew(-10deg)' }} />
           </Button>
@@ -2120,6 +2142,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
             onClick={() => setCurrentTool('hexagon')}
             className="h-8 w-8 p-0"
             title="Hexagon - Preparation (Flowchart)"
+            aria-label="Hexagon Tool"
           >
             <Hexagon className="h-4 w-4" />
           </Button>
@@ -2129,6 +2152,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
             onClick={() => setCurrentTool('document')}
             className="h-8 w-8 p-0"
             title="Document - Report/Document (Flowchart)"
+            aria-label="Document Tool"
           >
             <Square className="h-4 w-4" style={{ borderRadius: '0 0 8px 8px' }} />
           </Button>
@@ -2138,6 +2162,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
             onClick={() => setCurrentTool('cylinder')}
             className="h-8 w-8 p-0"
             title="Cylinder - Database (Flowchart)"
+            aria-label="Cylinder Tool"
           >
             <Database className="h-4 w-4" />
           </Button>
@@ -2153,6 +2178,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
             disabled={historyIndex <= 0}
             className="h-8 w-8 p-0"
             title="Undo (Cmd+Z)"
+            aria-label="Undo"
           >
             <Undo className="h-4 w-4" />
           </Button>
@@ -2163,6 +2189,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
             disabled={historyIndex >= history.length - 1}
             className="h-8 w-8 p-0"
             title="Redo (Cmd+Shift+Z)"
+            aria-label="Redo"
           >
             <Redo className="h-4 w-4" />
           </Button>
@@ -2202,6 +2229,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
             onClick={() => setShowGrid(!showGrid)}
             className="h-8 w-8 p-0"
             title="Toggle Grid"
+            aria-label="Toggle Grid"
           >
             <Grid3x3 className={`h-4 w-4 ${showGrid ? 'text-primary' : ''}`} />
           </Button>
@@ -2211,6 +2239,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
             onClick={toggleFullscreen}
             className="h-8 w-8 p-0"
             title={isFullscreen ? "Exit Fullscreen (ESC)" : "Fullscreen Mode"}
+            aria-label={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
           >
             {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
           </Button>
@@ -2238,6 +2267,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
             disabled={selectedElements.size !== 1}
             className="h-8 w-8 p-0"
             title="Bring to Front (Cmd+Shift+])"
+            aria-label="Bring to Front"
           >
             <ChevronsUp className="h-4 w-4" />
           </Button>
@@ -2248,6 +2278,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
             disabled={selectedElements.size !== 1}
             className="h-8 w-8 p-0"
             title="Bring Forward (Cmd+])"
+            aria-label="Bring Forward"
           >
             <ArrowUp className="h-4 w-4" />
           </Button>
@@ -2258,6 +2289,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
             disabled={selectedElements.size !== 1}
             className="h-8 w-8 p-0"
             title="Send Backward (Cmd+[)"
+            aria-label="Send Backward"
           >
             <ArrowDown className="h-4 w-4" />
           </Button>
@@ -2268,6 +2300,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
             disabled={selectedElements.size !== 1}
             className="h-8 w-8 p-0"
             title="Send to Back (Cmd+Shift+[)"
+            aria-label="Send to Back"
           >
             <ChevronsDown className="h-4 w-4" />
           </Button>
@@ -2283,6 +2316,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
             disabled={selectedElements.size === 0}
             className="h-8 w-8 p-0"
             title="Delete (Del)"
+            aria-label="Delete Selected"
           >
             <Trash2 className="h-4 w-4" />
           </Button>
