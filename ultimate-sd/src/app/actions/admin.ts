@@ -3,7 +3,8 @@
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
-import { type PlanType } from '@/lib/plans';
+import { getPlanExpiryDate } from '@/lib/access';
+import { AI_MONTHLY_CREDITS, type PlanType } from '@/lib/plans';
 
 async function requireAdmin() {
     const session = await auth();
@@ -26,9 +27,7 @@ async function requireAdmin() {
 export async function updateUserPlan(userId: string, planType: PlanType) {
     await requireAdmin();
 
-    const planExpiresAt = planType !== 'free'
-        ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
-        : null;
+    const planExpiresAt = planType !== 'free' ? getPlanExpiryDate() : null;
 
     try {
         await prisma.user.update({
@@ -37,7 +36,7 @@ export async function updateUserPlan(userId: string, planType: PlanType) {
                 planType,
                 planExpiresAt,
                 planActivatedAt: planType !== 'free' ? new Date() : null,
-                aiCredits: planType === 'ai' ? 500 : 0
+                aiCredits: planType === 'ai' ? AI_MONTHLY_CREDITS : 0
             }
         });
 
