@@ -91,7 +91,7 @@ function LoginForm() {
                         Master Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">Craft</span>
                     </h1>
                     <p className="text-lg text-slate-300 animate-slide-up" style={{ animationDelay: '0.1s' }}>
-                        Join thousands of developers practicing system design with our advanced interactive tools.
+                        Practice system design with interactive simulations, structured problems, and AI feedback.
                     </p>
 
                     <div className="pt-8 space-y-4 animate-slide-up" style={{ animationDelay: '0.2s' }}>

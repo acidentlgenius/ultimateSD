@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { fetchWithRetry } from '../fetchUtils';
+import { fetchWithRetry, getFetchErrorMessage } from '../fetchUtils';
 
 describe('fetchWithRetry', () => {
   beforeEach(() => {
@@ -65,5 +65,23 @@ describe('fetchWithRetry', () => {
     await expect(promise).rejects.toThrow('HTTP error! status: 500');
     await catchPromise;
     expect(global.fetch).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('getFetchErrorMessage', () => {
+  it('maps timeout errors', () => {
+    const error = new DOMException('Aborted', 'AbortError');
+    expect(getFetchErrorMessage(error)).toContain('timed out');
+  });
+
+  it('maps HTTP status codes', () => {
+    expect(getFetchErrorMessage(new Error('HTTP error! status: 401'))).toContain('sign in');
+    expect(getFetchErrorMessage(new Error('HTTP error! status: 402'))).toContain('credits');
+    expect(getFetchErrorMessage(new Error('HTTP error! status: 500'))).toContain('unavailable');
+  });
+
+  it('maps network failures', () => {
+    expect(getFetchErrorMessage(new TypeError('Failed to fetch'))).toContain('Could not reach');
+    expect(getFetchErrorMessage(new Error('Network error'))).toContain('Could not reach');
   });
 });

@@ -3,7 +3,7 @@
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { PROBLEMS } from '@/lib/problems';
-import { SystemDesignProblem } from '@/types';
+import { categorizeRecommendations } from '@/lib/recommendations-logic';
 
 export async function getUserRecommendations() {
     const session = await auth();
@@ -86,17 +86,12 @@ export async function getUserRecommendations() {
     });
 
     // 3. Sort & Categorize
-    scoredProblems.sort((a, b) => b.score - a.score);
+    scoredProblems.sort(
+        (a, b) => b.score - a.score || a.problem.slug.localeCompare(b.problem.slug)
+    );
 
     const validProblems = scoredProblems.filter(p => p.score > -50);
-
-    const dailyPick = validProblems.length > 0 ? validProblems[0] : null;
-
-    // Review Bucket: High score + existing progress
-    const needsReview = validProblems.filter(p => p.score > 200 && p.status && p.status !== 'NOT_STARTED').slice(0, 3);
-
-    // General Recommendations: The rest
-    const recommended = validProblems.filter(p => p !== dailyPick && !needsReview.includes(p)).slice(0, 5);
+    const { dailyPick, needsReview, recommended } = categorizeRecommendations(validProblems);
 
     return {
         dailyPick: dailyPick?.problem ?? null,

@@ -7,7 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { SystemDesignProblem, ChatMessage } from '@/types';
 import { tokens } from '@/styles/tokens';
-import { fetchWithRetry } from '@/lib/fetchUtils';
+import { fetchWithRetry, getFetchErrorMessage } from '@/lib/fetchUtils';
 import { Send, Bot, User, Sparkles, RotateCcw } from 'lucide-react';
 
 interface Props {
@@ -94,7 +94,7 @@ export default function ChatInterface({ problem }: Props) {
       console.error(error);
       setMessages(prev => [...prev, {
         role: 'ai',
-        content: 'Sorry, there was an error. Please try again.',
+        content: getFetchErrorMessage(error),
         id: 'error',
         timestamp: new Date()
       }]);

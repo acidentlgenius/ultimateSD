@@ -1,0 +1,130 @@
+import { describe, expect, it } from 'vitest';
+import { PROBLEMS } from '../problems';
+import { getStepsForProblem } from '../problem-steps';
+import { DEFAULT_PHASE_STEPS } from '../steps';
+import {
+  buildStepKey,
+  clampStepIndex,
+  isDiagramSubStep,
+  isFirstJourneyStep,
+  phaseIncludesDiagram,
+  resolveEffectivePhase,
+  resolveEvaluationPhaseKey,
+  resolveEvaluationSubStepKey,
+  resolvePhaseSteps,
+} from '../step-journey';
+
+describe('problem journey audit', () => {
+  it('every catalog problem has at least one valid step', () => {
+    for (const problem of PROBLEMS) {
+      const phaseSteps = resolvePhaseSteps(getStepsForProblem(problem.slug), DEFAULT_PHASE_STEPS);
+      const phaseKeys = Object.keys(phaseSteps);
+      expect(phaseKeys.length, problem.slug).toBeGreaterThan(0);
+
+      for (const phaseKey of phaseKeys) {
+        const steps = phaseSteps[phaseKey];
+        expect(steps.length, `${problem.slug}:${phaseKey}`).toBeGreaterThan(0);
+        for (const step of steps) {
+          expect(step.title, `${problem.slug}:${phaseKey}`).toBeTruthy();
+          expect(step.prompt, `${problem.slug}:${phaseKey}`).toBeTruthy();
+          expect(step.inputType, `${problem.slug}:${phaseKey}`).toBeTruthy();
+        }
+      }
+    }
+  });
+
+  it('stale requirements phase resolves to the first real phase for widget problems', () => {
+    const steps = getStepsForProblem('design-feature-flag-system');
+    expect(steps).toBeDefined();
+    const phaseKeys = Object.keys(steps!);
+    expect(resolveEffectivePhase('requirements', phaseKeys)).toBe('requirements');
+    expect(buildStepKey(resolveEffectivePhase('requirements', phaseKeys), 0)).toBe('requirements-0');
+  });
+});
+
+describe('resolveEffectivePhase', () => {
+  it('keeps a valid phase key', () => {
+    expect(resolveEffectivePhase('hld', ['requirements', 'hld', 'lld'])).toBe('hld');
+  });
+
+  it('falls back to the first phase when the current key is invalid', () => {
+    expect(
+      resolveEffectivePhase('requirements', ['feature-flag-flow'])
+    ).toBe('feature-flag-flow');
+  });
+});
+
+describe('buildStepKey', () => {
+  it('uses the effective phase key, not a stale requirements key', () => {
+    const phaseKeys = ['feature-flag-flow'];
+    const effective = resolveEffectivePhase('requirements', phaseKeys);
+    expect(buildStepKey(effective, 0)).toBe('feature-flag-flow-0');
+  });
+});
+
+describe('clampStepIndex', () => {
+  it('clamps out-of-range indices', () => {
+    expect(clampStepIndex(5, 2)).toBe(1);
+    expect(clampStepIndex(-1, 3)).toBe(0);
+  });
+});
+
+describe('isDiagramSubStep', () => {
+  it('recognizes architecture-like substeps used across problems', () => {
+    expect(isDiagramSubStep('architecture')).toBe(true);
+    expect(isDiagramSubStep('diagram')).toBe(true);
+    expect(isDiagramSubStep('hld')).toBe(true);
+    expect(isDiagramSubStep('high-level')).toBe(true);
+    expect(isDiagramSubStep('data-flow')).toBe(true);
+    expect(isDiagramSubStep('data_flow')).toBe(true);
+    expect(isDiagramSubStep('functional')).toBe(false);
+  });
+});
+
+describe('isFirstJourneyStep', () => {
+  it('does not assume requirements is always first', () => {
+    expect(isFirstJourneyStep('feature-flag-flow', 0, ['feature-flag-flow'])).toBe(true);
+    expect(isFirstJourneyStep('requirements', 0, ['feature-flag-flow'])).toBe(false);
+  });
+});
+
+describe('resolveEvaluationPhaseKey', () => {
+  it('maps phase keys directly', () => {
+    expect(resolveEvaluationPhaseKey('hld', 'System Architecture')).toBe('hld');
+    expect(resolveEvaluationPhaseKey('lld', 'Deep Dive')).toBe('lld');
+  });
+
+  it('maps display labels when phase key is missing', () => {
+    expect(resolveEvaluationPhaseKey(undefined, 'System Architecture')).toBe('hld');
+    expect(resolveEvaluationPhaseKey(undefined, 'Deep Dive')).toBe('lld');
+    expect(resolveEvaluationPhaseKey(undefined, 'Requirements')).toBe('requirements');
+  });
+
+  it('maps generic custom phase keys', () => {
+    expect(resolveEvaluationPhaseKey('architecture', 'Architecture')).toBe('hld');
+    expect(resolveEvaluationPhaseKey('deep_dive', 'Deep Dive')).toBe('lld');
+  });
+});
+
+describe('resolveEvaluationSubStepKey', () => {
+  it('normalizes HLD substeps', () => {
+    expect(resolveEvaluationSubStepKey('hld', 'diagram')).toBe('architecture');
+    expect(resolveEvaluationSubStepKey('hld', 'hld')).toBe('architecture');
+    expect(resolveEvaluationSubStepKey('hld', 'metadata')).toBe('data-model');
+  });
+
+  it('normalizes LLD substeps', () => {
+    expect(resolveEvaluationSubStepKey('lld', 'data_flow')).toBe('data-flow');
+    expect(resolveEvaluationSubStepKey('lld', 'core_components')).toBe('components');
+  });
+});
+
+describe('phaseIncludesDiagram', () => {
+  it('includes standard and generic architecture phases', () => {
+    expect(phaseIncludesDiagram('hld')).toBe(true);
+    expect(phaseIncludesDiagram('lld')).toBe(true);
+    expect(phaseIncludesDiagram('architecture')).toBe(true);
+    expect(phaseIncludesDiagram('deep_dive')).toBe(true);
+    expect(phaseIncludesDiagram('requirements')).toBe(false);
+  });
+});

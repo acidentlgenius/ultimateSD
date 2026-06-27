@@ -1,7 +1,7 @@
 import { auth } from '@/auth';
 import { PricingClient } from '@/app/pricing/PricingClient';
 import { getRazorpayKeyId } from '@/lib/razorpay';
-import { type PlanType } from '@/lib/plans';
+import { FREE_PROBLEM_SLUGS, type PlanType } from '@/lib/plans';
 
 export default async function PricingPage() {
   const session = await auth();
@@ -15,7 +15,7 @@ export default async function PricingPage() {
             Simple, transparent pricing
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Start with {3} core problems for free. Upgrade to unlock the full library and AI-powered feedback.
+            Start with {FREE_PROBLEM_SLUGS.length} core problems for free. Upgrade to unlock the full library and AI-powered feedback.
           </p>
           {session?.user?.hasActivePlan && session.user.planExpiresAt && (
             <p className="text-sm text-muted-foreground">

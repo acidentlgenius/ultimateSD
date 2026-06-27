@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import { SITE_URL } from '@/lib/site';
 
 export class EmailConfigurationError extends Error {
     constructor(message = 'Email is not configured') {
@@ -8,14 +9,6 @@ export class EmailConfigurationError extends Error {
 }
 
 export const EMAIL_VERIFY_PREFIX = 'email-verify:';
-
-function getAppUrl(): string {
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-    if (!appUrl) {
-        throw new EmailConfigurationError('NEXT_PUBLIC_APP_URL is not set');
-    }
-    return appUrl.replace(/\/$/, '');
-}
 
 function getFromAddress(): string {
     const from = process.env.EMAIL_FROM;
@@ -35,7 +28,6 @@ function getResendClient(): Resend {
 
 export function isEmailConfigured(): boolean {
     try {
-        getAppUrl();
         getFromAddress();
         getResendClient();
         return true;
@@ -75,7 +67,7 @@ function authEmailLayout(title: string, body: string, actionLabel: string, actio
 }
 
 export async function sendVerificationEmail(email: string, token: string) {
-    const verifyUrl = `${getAppUrl()}/api/auth/verify-email?token=${token}`;
+    const verifyUrl = `${SITE_URL}/api/auth/verify-email?token=${token}`;
 
     await sendMail({
         to: email,
@@ -91,7 +83,7 @@ export async function sendVerificationEmail(email: string, token: string) {
 }
 
 export async function sendPasswordResetEmail(email: string, token: string) {
-    const resetUrl = `${getAppUrl()}/reset-password?token=${token}`;
+    const resetUrl = `${SITE_URL}/reset-password?token=${token}`;
 
     await sendMail({
         to: email,

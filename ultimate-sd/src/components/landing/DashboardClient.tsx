@@ -30,6 +30,8 @@ import { cn } from '@/lib/utils';
 import { canAccessProblem } from '@/lib/access';
 import { ProModal } from '@/components/ProModal';
 import { type PlanType } from '@/lib/plans';
+import { getAllFilterTags, getProblemTags, problemMatchesTag } from '@/lib/problem-tags';
+import { ProblemTagList } from '@/components/ProblemTagBadge';
 
 type StatusFilter =
     | 'All'
@@ -117,6 +119,7 @@ export function DashboardClient({
     const [category, setCategory] = useState('All');
     const [difficulty, setDifficulty] = useState('All');
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('All');
+    const [topicFilter, setTopicFilter] = useState('All');
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [lockedProblem, setLockedProblem] = useState<ProblemWithStatus | null>(null);
 
@@ -129,6 +132,12 @@ export function DashboardClient({
 
     const isProblemLocked = (slug: string) => !canAccessProblem(accessUser, slug);
 
+    const topicOptions = useMemo(() => getAllFilterTags(problems), [problems]);
+
+    const handleTagClick = (tagId: string) => {
+        setTopicFilter(tagId);
+        document.getElementById('problems')?.scrollIntoView({ behavior: 'smooth' });
+    };
 
     const filtered = useMemo(() => {
         let filteredProblems = problems;
@@ -147,17 +156,29 @@ export function DashboardClient({
             );
         }
 
-        if (search) {
-            const searchLower = search.toLowerCase();
-            filteredProblems = filteredProblems.filter(p =>
-                p.title.toLowerCase().includes(searchLower) ||
-                p.description.toLowerCase().includes(searchLower) ||
-                p.companies.some(c => c.toLowerCase().includes(searchLower))
+        if (topicFilter !== 'All') {
+            filteredProblems = filteredProblems.filter((p) =>
+                problemMatchesTag(p.slug, p.tags, topicFilter)
             );
         }
 
+        if (search) {
+            const searchLower = search.toLowerCase();
+            filteredProblems = filteredProblems.filter(p => {
+                const tagLabels = getProblemTags(p.slug, p.tags)
+                    .map((t) => t.label.toLowerCase())
+                    .join(' ');
+                return (
+                    p.title.toLowerCase().includes(searchLower) ||
+                    p.description.toLowerCase().includes(searchLower) ||
+                    p.companies.some(c => c.toLowerCase().includes(searchLower)) ||
+                    tagLabels.includes(searchLower)
+                );
+            });
+        }
+
         return filteredProblems;
-    }, [problems, search, category, difficulty, statusFilter, user]);
+    }, [problems, search, category, difficulty, statusFilter, topicFilter, user]);
 
     const categories = ['All', ...new Set(problems.map(p => p.category))];
     const difficulties = ['All', 'Easy', 'Medium', 'Hard'];
@@ -221,6 +242,9 @@ export function DashboardClient({
                             setViewMode={setViewMode}
                             categories={categories}
                             difficulties={difficulties}
+                            topicFilter={topicFilter}
+                            setTopicFilter={setTopicFilter}
+                            topicOptions={topicOptions}
                             user={user}
                         />
                     </div>
@@ -246,6 +270,7 @@ export function DashboardClient({
                                             problem={problem}
                                             locked={isProblemLocked(problem.slug)}
                                             onLockedClick={setLockedProblem}
+                                            onTagClick={handleTagClick}
                                         />
                                     </div>
                                 ))}
@@ -325,15 +350,12 @@ export function DashboardClient({
                                                     </div>
                                                 </TableCell>
                                                 <TableCell className="hidden md:table-cell py-4">
-                                                    {(problem.tags && problem.tags.length > 0) && (
-                                                        <div className="flex flex-wrap gap-1.5">
-                                                            {problem.tags.slice(0, 2).map(tag => (
-                                                                <span key={tag} className="text-[10px] font-semibold text-primary/80 bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
-                                                                    #{tag}
-                                                                </span>
-                                                            ))}
-                                                        </div>
-                                                    )}
+                                                    <ProblemTagList
+                                                        slug={problem.slug}
+                                                        legacyTags={problem.tags}
+                                                        limit={3}
+                                                        onTagClick={handleTagClick}
+                                                    />
                                                 </TableCell>
                                                 <TableCell className="hidden md:table-cell py-4">
                                                     {problem.companies.length > 0 && (
@@ -413,7 +435,7 @@ export function DashboardClient({
                         <div className="relative z-10 space-y-8 max-w-2xl mx-auto">
                             <h2 className="text-4xl md:text-6xl font-bold text-white tracking-tight">Ready to Design?</h2>
                             <p className="text-white/80 text-xl font-light leading-relaxed">
-                                Your journey to mastering distributed systems starts with a single component. Join thousands of engineers growing today.
+                                Your journey to mastering distributed systems starts with a single component. Try the free canvas or start with TinyURL today.
                             </p>
                             <div className="pt-6 flex justify-center gap-4">
                                 <Link href="/draw">
@@ -427,9 +449,21 @@ export function DashboardClient({
                 )}
             </div>
 
-            {/* Footer Placeholder */}
-            <footer className="py-12 border-t border-border/40 bg-muted/5 text-center text-sm text-muted-foreground">
-                <p>&copy; {new Date().getFullYear()} Ultimate SD. Built for Engineers.</p>
+            <footer className="py-12 border-t border-border/40 bg-muted/5">
+                <div className="container mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
+                    <p>&copy; {new Date().getFullYear()} Ultimate SD. Built for Engineers.</p>
+                    <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+                        <Link href="/pricing" className="hover:text-foreground transition-colors">
+                            Pricing
+                        </Link>
+                        <Link href="/terms" className="hover:text-foreground transition-colors">
+                            Terms
+                        </Link>
+                        <Link href="/privacy" className="hover:text-foreground transition-colors">
+                            Privacy
+                        </Link>
+                    </nav>
+                </div>
             </footer>
         </div>
     );

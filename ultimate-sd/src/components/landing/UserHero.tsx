@@ -1,8 +1,7 @@
 import { Button } from '@/components/ui/button';
+import { pickSecondaryRecommendation } from '@/lib/recommendations-logic';
 import { ProblemWithStatus } from '@/types';
 import ProblemCard from '@/components/ProblemCard';
-import OnboardingModal from '@/components/OnboardingModal';
-import { useState } from 'react';
 import { Sparkles } from 'lucide-react';
 
 interface UserHeroProps {
@@ -22,6 +21,14 @@ interface UserHeroProps {
 }
 
 export function UserHero({ user, recommendations, setShowOnboarding }: UserHeroProps) {
+    const secondaryRec = recommendations
+        ? pickSecondaryRecommendation(
+            recommendations.dailyPick,
+            recommendations.needsReview,
+            recommendations.recommended
+        )
+        : null;
+
     return (
         <div className="container mx-auto px-4 py-12 animate-slide-up">
             <div className="glass-card rounded-[2rem] p-8 md:p-12 relative overflow-hidden group hover:shadow-glow-sm transition-all duration-500 border-black/10 dark:border-white/10">
@@ -72,20 +79,13 @@ export function UserHero({ user, recommendations, setShowOnboarding }: UserHeroP
                                 </div>
                             )}
 
-                            {/* Review Needed or Next Rec */}
-                            {(recommendations?.needsReview?.[0] || recommendations?.recommended?.[0]) && (
-                                (() => {
-                                    const rec = recommendations?.needsReview?.[0] || recommendations?.recommended?.[0];
-                                    const isReview = !!recommendations?.needsReview?.[0];
-                                    return (
-                                        <div className="h-full transform transition-all hover:scale-[1.01] hover:-translate-y-1 duration-300">
-                                            <ProblemCard
-                                                problem={rec}
-                                                badge={isReview ? "Review Due" : "Recommended"}
-                                            />
-                                        </div>
-                                    )
-                                })()
+                            {secondaryRec && (
+                                <div className="h-full transform transition-all hover:scale-[1.01] hover:-translate-y-1 duration-300">
+                                    <ProblemCard
+                                        problem={secondaryRec.problem}
+                                        badge={secondaryRec.isReview ? 'Review Due' : 'Recommended'}
+                                    />
+                                </div>
                             )}
 
                             {(!recommendations?.dailyPick && !recommendations?.recommended?.length) && (
