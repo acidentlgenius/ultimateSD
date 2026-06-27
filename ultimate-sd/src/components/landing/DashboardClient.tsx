@@ -413,7 +413,7 @@ export function DashboardClient({
                         <div className="relative z-10 space-y-8 max-w-2xl mx-auto">
                             <h2 className="text-4xl md:text-6xl font-bold text-white tracking-tight">Ready to Design?</h2>
                             <p className="text-white/80 text-xl font-light leading-relaxed">
-                                Your journey to mastering distributed systems starts with a single component. Join thousands of engineers growing today.
+                                Your journey to mastering distributed systems starts with a single component. Try the free canvas or start with TinyURL today.
                             </p>
                             <div className="pt-6 flex justify-center gap-4">
                                 <Link href="/draw">
@@ -427,9 +427,21 @@ export function DashboardClient({
                 )}
             </div>
 
-            {/* Footer Placeholder */}
-            <footer className="py-12 border-t border-border/40 bg-muted/5 text-center text-sm text-muted-foreground">
-                <p>&copy; {new Date().getFullYear()} Ultimate SD. Built for Engineers.</p>
+            <footer className="py-12 border-t border-border/40 bg-muted/5">
+                <div className="container mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
+                    <p>&copy; {new Date().getFullYear()} Ultimate SD. Built for Engineers.</p>
+                    <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+                        <Link href="/pricing" className="hover:text-foreground transition-colors">
+                            Pricing
+                        </Link>
+                        <Link href="/terms" className="hover:text-foreground transition-colors">
+                            Terms
+                        </Link>
+                        <Link href="/privacy" className="hover:text-foreground transition-colors">
+                            Privacy
+                        </Link>
+                    </nav>
+                </div>
             </footer>
         </div>
     );

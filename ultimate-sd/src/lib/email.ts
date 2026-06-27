@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { SITE_URL } from '@/lib/site';
 
 const transporter = nodemailer.createTransport({
     host: process.env.EMAIL_SERVER_HOST,
@@ -10,7 +11,7 @@ const transporter = nodemailer.createTransport({
 });
 
 export const sendPasswordResetEmail = async (email: string, token: string) => {
-    const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/reset-password?token=${token}`;
+    const resetUrl = `${SITE_URL}/reset-password?token=${token}`;
 
     await transporter.sendMail({
         from: process.env.EMAIL_FROM,
