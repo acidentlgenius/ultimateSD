@@ -499,28 +499,27 @@ export default function StepByStepChat({ problem }: Props) {
     };
   }, [currentStepKey, savedStepData]);
 
-  // Load saved data when step changes (skip while feedback modal is open)
+  // Load saved form data when navigating between steps. Feedback modal opens only
+  // from handleSubmit — never re-open from saved state (that caused modal flicker/loops).
   useEffect(() => {
-    if (showFeedback) return;
-
     const saved = savedStepData.get(currentStepKey);
     if (saved) {
       setListItems(saved.listItems);
       setTextInput(saved.textInput);
       setSchemaData(saved.schemaData || []);
       setFeedback(saved.feedback);
-      setShowFeedback(saved.feedback !== null);
       setDiagramData(saved.diagramData || null);
     } else {
       setListItems([]);
       setTextInput('');
       setSchemaData([]);
       setFeedback(null);
-      setShowFeedback(false);
       setDiagramData(null);
     }
+    setShowFeedback(false);
     setNewItemInput('');
-  }, [currentStepKey, savedStepData, showFeedback]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only reset form on step navigation
+  }, [currentStepKey]);
 
   // Dispatch phase change events
   useEffect(() => {
