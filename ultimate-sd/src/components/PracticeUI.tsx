@@ -7,7 +7,7 @@ import { TimerWidget } from './TimerWidget';
 import { HelpAssistant } from './HelpAssistant';
 import { Button } from './ui/button';
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Download, Layout, Loader2, Menu, X, Lock } from 'lucide-react';
+import { Download, Layout, Loader2, Menu, X } from 'lucide-react';
 import { SystemDesignProblem } from '@/types';
 import Link from 'next/link';
 import { exportPracticeSession } from '@/lib/pdf-export-compact';
@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
 
 import { DEFAULT_PHASE_STEPS } from '@/lib/steps';
+import { FEATURES } from '@/lib/features';
 import { SolutionViewer } from './SolutionViewer';
 import { getSolution } from '@/lib/solutions';
 
@@ -101,7 +102,7 @@ export default function PracticeUI({ problem, existingProgress }: { problem: Sys
   const Icon = theme.icon;
 
   const [isSolutionOpen, setIsSolutionOpen] = useState(false);
-  const solution = getSolution(problem.slug);
+  const solution = FEATURES.solutionViewer ? getSolution(problem.slug) : null;
 
   const handleUnlockSolution = () => {
     if (solution) {
@@ -245,15 +246,17 @@ export default function PracticeUI({ problem, existingProgress }: { problem: Sys
 
       {/* Sidebar Footer Actions */}
       <div className="p-4 border-t border-border/50 space-y-2 bg-muted/10 shrink-0">
-        <Button
-          variant="outline"
-          size="sm"
-          className={`w-full justify-start ${!solution ? 'opacity-50' : 'hover:bg-amber-500/10 hover:text-amber-600'}`}
-          onClick={handleUnlockSolution}
-          disabled={!solution}
-        >
-          {solution ? 'View Solution' : 'Solution Locked'}
-        </Button>
+        {FEATURES.solutionViewer && (
+          <Button
+            variant="outline"
+            size="sm"
+            className={`w-full justify-start ${!solution ? 'opacity-50' : 'hover:bg-amber-500/10 hover:text-amber-600'}`}
+            onClick={handleUnlockSolution}
+            disabled={!solution}
+          >
+            {solution ? 'View Solution' : 'Solution Locked'}
+          </Button>
+        )}
 
         <Button
           variant="ghost"
@@ -352,11 +355,13 @@ export default function PracticeUI({ problem, existingProgress }: { problem: Sys
       />
 
 
-      <SolutionViewer
-        isOpen={isSolutionOpen}
-        onClose={() => setIsSolutionOpen(false)}
-        solution={getSolution(problem.slug)}
-      />
+      {FEATURES.solutionViewer && (
+        <SolutionViewer
+          isOpen={isSolutionOpen}
+          onClose={() => setIsSolutionOpen(false)}
+          solution={solution}
+        />
+      )}
     </div >
   );
 }
