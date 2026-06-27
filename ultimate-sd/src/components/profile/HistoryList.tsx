@@ -58,7 +58,10 @@ function matchesFilter(item: HistoryItemData, filter: HistoryFilter): boolean {
 }
 
 function getItemHref(item: HistoryItemData): string {
-    if (item.status === "COMPLETED" && item.sessionId) {
+    if (
+        (item.status === "COMPLETED" || item.status === "REVIEW_NEEDED") &&
+        item.sessionId
+    ) {
         return `/profile/history/${item.sessionId}`;
     }
     return `/practice/${item.problemSlug}`;
@@ -163,9 +166,11 @@ export function HistoryList({ history }: HistoryListProps) {
                                                 {item.problemTitle}
                                             </span>
                                             {getStatusBadge(item.status)}
-                                            {item.attemptNumber != null && item.attemptNumber > 1 && (
+                                            {item.attemptNumber != null && item.attemptNumber > 0 && (
                                                 <Badge variant="outline" className="text-xs font-medium shadow-none">
-                                                    Attempt #{item.attemptNumber}
+                                                    {item.attemptNumber === 1
+                                                        ? "1 attempt"
+                                                        : `${item.attemptNumber} attempts`}
                                                 </Badge>
                                             )}
                                         </div>

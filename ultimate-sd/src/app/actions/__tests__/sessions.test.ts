@@ -40,4 +40,25 @@ describe('startPracticeSession', () => {
     expect(result.sessionId).toBe('sess-1');
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
+
+  it('returns completed session without creating a new attempt', async () => {
+    vi.mocked(prisma.problemProgress.findUnique).mockResolvedValue({
+      activeSessionId: 'sess-done',
+      activeSession: {
+        id: 'sess-done',
+        status: 'COMPLETED',
+        startedAt: new Date('2026-01-01'),
+        isTimerRunning: false,
+        totalPausedSeconds: 0,
+        lastPausedAt: null,
+      },
+    } as never);
+
+    const result = await startPracticeSession('problem-1');
+
+    expect(result.success).toBe(true);
+    expect(result.sessionId).toBe('sess-done');
+    expect(result.isCompleted).toBe(true);
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
 });

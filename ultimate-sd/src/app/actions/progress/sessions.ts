@@ -20,16 +20,23 @@ export async function startPracticeSession(problemId: string) {
       include: { activeSession: true },
     });
 
-    if (existing?.activeSession?.status === SessionStatus.ACTIVE) {
-      const active = existing.activeSession;
-      return {
-        success: true,
-        sessionId: active.id,
-        startedAt: active.startedAt,
-        isTimerRunning: active.isTimerRunning,
-        totalPausedSeconds: active.totalPausedSeconds,
-        lastPausedAt: active.lastPausedAt,
-      };
+    if (existing?.activeSession) {
+      const linked = existing.activeSession;
+      if (
+        linked.status === SessionStatus.ACTIVE ||
+        linked.status === SessionStatus.COMPLETED
+      ) {
+        return {
+          success: true,
+          sessionId: linked.id,
+          startedAt: linked.startedAt,
+          isTimerRunning:
+            linked.status === SessionStatus.ACTIVE ? linked.isTimerRunning : false,
+          totalPausedSeconds: linked.totalPausedSeconds,
+          lastPausedAt: linked.lastPausedAt,
+          isCompleted: linked.status === SessionStatus.COMPLETED,
+        };
+      }
     }
 
     const result = await prisma.$transaction(async (tx) => {

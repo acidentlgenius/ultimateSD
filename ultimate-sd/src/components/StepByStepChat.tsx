@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
@@ -264,10 +264,16 @@ export default function StepByStepChat({ problem }: Props) {
   const currentStepKey = getStepKey(currentPhase, currentStepIndex);
 
   const { data: session, status: sessionStatus } = useSession();
+  const sessionLoadedForRef = useRef<string | null>(null);
 
-  // Load session on mount
+  // Load session once per problem visit. Re-running on session refresh (e.g. after
+  // updateStreak in FeedbackModal) would call findResumePosition and skip ahead
+  // before the user clicks "Continue to Next Step".
   useEffect(() => {
     if (sessionStatus === 'loading') return;
+
+    const loadKey = `${problem.id}:${session?.user?.id ?? 'guest'}`;
+    if (sessionLoadedForRef.current === loadKey) return;
 
     let isMounted = true;
 
@@ -303,16 +309,21 @@ export default function StepByStepChat({ problem }: Props) {
                 ? new Date(activeResult.session.startedAt)
                 : new Date()
             );
+            if (isMounted) {
+              sessionLoadedForRef.current = loadKey;
+            }
             return;
           }
 
           if (isMounted) {
             setSessionRestored(true);
+            sessionLoadedForRef.current = loadKey;
           }
         } catch (error) {
           console.error('Failed to load session from account:', error);
           if (isMounted) {
             setSessionRestored(true);
+            sessionLoadedForRef.current = loadKey;
           }
         }
         return;
@@ -330,6 +341,7 @@ export default function StepByStepChat({ problem }: Props) {
         } else {
           setSessionRestored(true);
         }
+        sessionLoadedForRef.current = loadKey;
       }
     };
 
@@ -338,7 +350,7 @@ export default function StepByStepChat({ problem }: Props) {
     return () => {
       isMounted = false;
     };
-  }, [problem.id, problem.slug, problem.steps, session, sessionStatus]);
+  }, [problem.id, problem.slug, problem.steps, session?.user?.id, sessionStatus]);
 
   // Save session to localStorage as draft buffer
   useEffect(() => {
@@ -446,6 +458,8 @@ export default function StepByStepChat({ problem }: Props) {
     setRestoredDate(null);
     setDiagramData(null);
 
+    sessionLoadedForRef.current = null;
+
     toast.success('Session cleared! Starting fresh.');
   }, [problem.id, problem.slug, session?.user]);
 
@@ -485,8 +499,10 @@ export default function StepByStepChat({ problem }: Props) {
     };
   }, [currentStepKey, savedStepData]);
 
-  // Load saved data when step changes
+  // Load saved data when step changes (skip while feedback modal is open)
   useEffect(() => {
+    if (showFeedback) return;
+
     const saved = savedStepData.get(currentStepKey);
     if (saved) {
       setListItems(saved.listItems);
@@ -504,7 +520,7 @@ export default function StepByStepChat({ problem }: Props) {
       setDiagramData(null);
     }
     setNewItemInput('');
-  }, [currentStepKey, savedStepData]);
+  }, [currentStepKey, savedStepData, showFeedback]);
 
   // Dispatch phase change events
   useEffect(() => {
@@ -702,6 +718,7 @@ export default function StepByStepChat({ problem }: Props) {
   };
 
   const handleNext = () => {
+    setShowFeedback(false);
     if (currentStepIndex < currentSteps.length - 1) {
       setCurrentStepIndex(currentStepIndex + 1);
     } else {
