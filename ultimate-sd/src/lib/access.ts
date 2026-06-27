@@ -145,9 +145,13 @@ export function canUseAI(
     if (user.aiCredits > 0) {
       return { allowed: true, source: 'platform_credits' };
     }
+    if (hasByokKey(user)) {
+      return { allowed: true, source: 'byok' };
+    }
     return {
       allowed: false,
-      reason: 'You have used all AI credits for this month. Credits reset on your next billing cycle.',
+      reason:
+        'You have used all AI credits for this month. Add an API key in Settings or wait for credits to reset.',
     };
   }
 
