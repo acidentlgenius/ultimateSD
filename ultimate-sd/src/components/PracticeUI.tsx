@@ -15,7 +15,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Download, Layout, Loader2, Menu, X, Lock } from 'lucide-react';
+import { Download, Layout, Loader2, Menu, X } from 'lucide-react';
 import { SystemDesignProblem } from '@/types';
 import Link from 'next/link';
 import { exportPracticeSession } from '@/lib/pdf-export-compact';
@@ -25,6 +25,7 @@ import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
 
 import { DEFAULT_PHASE_STEPS } from '@/lib/steps';
+import { FEATURES } from '@/lib/features';
 import { SolutionViewer } from './SolutionViewer';
 import { getSolution } from '@/lib/solutions';
 
@@ -110,7 +111,7 @@ export default function PracticeUI({ problem, existingProgress }: { problem: Sys
 
   const [isSolutionOpen, setIsSolutionOpen] = useState(false);
   const [showSolutionConfirm, setShowSolutionConfirm] = useState(false);
-  const solution = getSolution(problem.slug);
+  const solution = FEATURES.solutionViewer ? getSolution(problem.slug) : null;
 
   const totalSteps = useMemo(
     () => Object.values(activeSteps).reduce((sum, steps) => sum + steps.length, 0),
@@ -285,15 +286,17 @@ export default function PracticeUI({ problem, existingProgress }: { problem: Sys
 
       {/* Sidebar Footer Actions */}
       <div className="p-4 border-t border-border/50 space-y-2 bg-muted/10 shrink-0">
-        <Button
-          variant="outline"
-          size="sm"
-          className={`w-full justify-start ${!solution ? 'opacity-50' : 'hover:bg-amber-500/10 hover:text-amber-600'}`}
-          onClick={handleUnlockSolution}
-          disabled={!solution}
-        >
-          {solution ? 'View Solution' : 'Solution Locked'}
-        </Button>
+        {FEATURES.solutionViewer && (
+          <Button
+            variant="outline"
+            size="sm"
+            className={`w-full justify-start ${!solution ? 'opacity-50' : 'hover:bg-amber-500/10 hover:text-amber-600'}`}
+            onClick={handleUnlockSolution}
+            disabled={!solution}
+          >
+            {solution ? 'View Solution' : 'Solution Locked'}
+          </Button>
+        )}
 
         <Button
           variant="ghost"
@@ -392,36 +395,40 @@ export default function PracticeUI({ problem, existingProgress }: { problem: Sys
       />
 
 
-      <SolutionViewer
-        isOpen={isSolutionOpen}
-        onClose={() => setIsSolutionOpen(false)}
-        solution={getSolution(problem.slug)}
-      />
+      {FEATURES.solutionViewer && (
+        <>
+          <SolutionViewer
+            isOpen={isSolutionOpen}
+            onClose={() => setIsSolutionOpen(false)}
+            solution={solution}
+          />
 
-      <Dialog open={showSolutionConfirm} onOpenChange={setShowSolutionConfirm}>
-        <DialogContent showCloseButton={false}>
-          <DialogHeader>
-            <DialogTitle>View expert solution?</DialogTitle>
-            <DialogDescription>
-              {attemptedStepCount === 0
-                ? 'You have not submitted any answers yet. Try at least one step on your own before viewing the full solution — it will be much more valuable.'
-                : `You have completed ${completedSteps.length} of ${totalSteps} steps. Viewing the solution now will reveal the full answer and may reduce the learning benefit of this practice session.`}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowSolutionConfirm(false)}>
-              Keep practicing
-            </Button>
-            <Button
-              variant={attemptedStepCount === 0 ? 'outline' : 'default'}
-              className={attemptedStepCount === 0 ? 'text-amber-700 border-amber-300 hover:bg-amber-50 dark:text-amber-300 dark:border-amber-700 dark:hover:bg-amber-950' : undefined}
-              onClick={confirmViewSolution}
-            >
-              {attemptedStepCount === 0 ? 'View anyway' : 'View solution'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          <Dialog open={showSolutionConfirm} onOpenChange={setShowSolutionConfirm}>
+            <DialogContent showCloseButton={false}>
+              <DialogHeader>
+                <DialogTitle>View expert solution?</DialogTitle>
+                <DialogDescription>
+                  {attemptedStepCount === 0
+                    ? 'You have not submitted any answers yet. Try at least one step on your own before viewing the full solution — it will be much more valuable.'
+                    : `You have completed ${completedSteps.length} of ${totalSteps} steps. Viewing the solution now will reveal the full answer and may reduce the learning benefit of this practice session.`}
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowSolutionConfirm(false)}>
+                  Keep practicing
+                </Button>
+                <Button
+                  variant={attemptedStepCount === 0 ? 'outline' : 'default'}
+                  className={attemptedStepCount === 0 ? 'text-amber-700 border-amber-300 hover:bg-amber-50 dark:text-amber-300 dark:border-amber-700 dark:hover:bg-amber-950' : undefined}
+                  onClick={confirmViewSolution}
+                >
+                  {attemptedStepCount === 0 ? 'View anyway' : 'View solution'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </>
+      )}
     </div >
   );
 }

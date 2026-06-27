@@ -8,6 +8,7 @@ import { CheckCircle, AlertCircle, Lightbulb, TrendingUp, Award, Trophy, Sparkle
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { updateStreak } from '@/app/actions/gamification';
+import { FEATURES } from '@/lib/features';
 
 interface FeedbackData {
   score: number;
@@ -385,14 +386,16 @@ export default function FeedbackModal({ feedback, isOpen, onClose, onContinue, x
           </div>
 
           {/* Footer Actions - Enhanced */}
-          <div className="flex flex-col-reverse sm:flex-row justify-between items-center gap-4 px-6 py-4 border-t border-border/50 bg-muted/20">
-            <Button 
-              variant="outline" 
-              onClick={exportToPDF} 
-              className="w-full sm:w-auto hover:bg-muted transition-all hover:scale-105"
-            >
-              Export PDF
-            </Button>
+          <div className={`flex flex-col-reverse sm:flex-row ${FEATURES.feedbackPdfExport ? 'justify-between' : 'justify-end'} items-center gap-4 px-6 py-4 border-t border-border/50 bg-muted/20`}>
+            {FEATURES.feedbackPdfExport && (
+              <Button 
+                variant="outline" 
+                onClick={exportToPDF} 
+                className="w-full sm:w-auto hover:bg-muted transition-all hover:scale-105"
+              >
+                Export PDF
+              </Button>
+            )}
             <Button 
               onClick={handleContinue} 
               className={`w-full sm:w-auto gradient-bg hover:opacity-90 transition-all hover:scale-105 shadow-lg ${
