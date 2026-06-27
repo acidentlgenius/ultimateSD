@@ -1,11 +1,10 @@
 import { MetadataRoute } from 'next'
 import { PROBLEMS } from '@/lib/problems'
+import { SITE_URL } from '@/lib/site'
 
 export default function sitemap(): MetadataRoute.Sitemap {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ultimatesd.ai'
-
     const problemUrls = PROBLEMS.map((problem) => ({
-        url: `${baseUrl}/practice/${problem.slug}`,
+        url: `${SITE_URL}/practice/${problem.slug}`,
         lastModified: new Date(),
         changeFrequency: 'weekly' as const,
         priority: 0.8,
@@ -13,19 +12,19 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
     return [
         {
-            url: baseUrl,
+            url: SITE_URL,
             lastModified: new Date(),
             changeFrequency: 'daily',
             priority: 1,
         },
         {
-            url: `${baseUrl}/roadmap`,
+            url: `${SITE_URL}/roadmap`,
             lastModified: new Date(),
             changeFrequency: 'weekly',
             priority: 0.9,
         },
         {
-            url: `${baseUrl}/pricing`,
+            url: `${SITE_URL}/pricing`,
             lastModified: new Date(),
             changeFrequency: 'monthly',
             priority: 0.7,

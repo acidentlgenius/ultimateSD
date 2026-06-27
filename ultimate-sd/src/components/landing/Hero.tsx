@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Sparkles, Zap, Shield, Search } from "lucide-react";
+import { ArrowRight, Sparkles, Zap } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 
@@ -22,7 +22,7 @@ export function Hero() {
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/50 border border-secondary mb-8 backdrop-blur-sm"
                 >
                     <Sparkles className="w-4 h-4 text-primary animate-pulse" />
-                    <span className="text-sm font-medium">The Future of System Design Practice</span>
+                    <span className="text-sm font-medium">Now launching — interactive system design practice</span>
                 </motion.div>
 
                 <motion.h1
@@ -65,25 +65,29 @@ export function Hero() {
                     </Button>
                 </motion.div>
 
-                {/* Trust Signals */}
+                {/* Launch signals */}
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.6, delay: 0.8 }}
                     className="mt-12 flex flex-col items-center gap-4"
                 >
-                    <p className="text-sm text-muted-foreground font-medium">Trusted by engineers from</p>
-                    <div className="flex items-center justify-center gap-8 grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all duration-300">
-                        {/* Simple text-based logos for now, can replace with SVGs later */}
-                        <span className="font-bold text-lg text-slate-400">Google</span>
-                        <span className="font-bold text-lg text-slate-400">Meta</span>
-                        <span className="font-bold text-lg text-slate-400">Amazon</span>
-                        <span className="font-bold text-lg text-slate-400">Netflix</span>
-                        <span className="font-bold text-lg text-slate-400">Uber</span>
+                    <p className="text-sm text-muted-foreground font-medium">
+                        Built for engineers preparing for senior &amp; staff system design interviews
+                    </p>
+                    <div className="flex flex-wrap items-center justify-center gap-3 max-w-2xl">
+                        {['86+ problems', 'Interactive simulations', 'AI step-by-step practice', 'Free canvas'].map((item) => (
+                            <span
+                                key={item}
+                                className="text-xs font-medium text-muted-foreground bg-secondary/30 px-3 py-1.5 rounded-full border border-secondary/50"
+                            >
+                                {item}
+                            </span>
+                        ))}
                     </div>
-                    <div className="flex items-center gap-2 mt-4 text-xs text-muted-foreground/80 bg-secondary/30 px-3 py-1 rounded-full border border-secondary/50">
-                        <span className="flex h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
-                        128 engineers practicing right now
+                    <div className="flex items-center gap-2 mt-2 text-xs text-primary/90 bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
+                        <span className="flex h-2 w-2 rounded-full bg-primary animate-pulse" />
+                        Launching today — try it free, feedback welcome
                     </div>
                 </motion.div>
 
