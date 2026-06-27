@@ -3,7 +3,9 @@
 import { PROBLEMS } from '@/lib/problems';
 import ProblemCard from '@/components/ProblemCard';
 import { useState, useMemo } from 'react';
-import { Search, ArrowRight, Building2, TrendingUp, Lock } from 'lucide-react';
+import { Search, ArrowRight, Building2, TrendingUp, Lock, CheckCircle, Clock, RotateCcw } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import type { ProgressStatus } from '@/types';
 import {
     Table,
     TableBody,
@@ -29,6 +31,14 @@ import { canAccessProblem } from '@/lib/access';
 import { ProModal } from '@/components/ProModal';
 import { type PlanType } from '@/lib/plans';
 
+type StatusFilter =
+    | 'All'
+    | 'Not Started'
+    | 'Attempted'
+    | 'In Progress'
+    | 'Completed'
+    | 'Review Due';
+
 interface DashboardClientProps {
     user?: {
         id?: string;
@@ -46,12 +56,67 @@ interface DashboardClientProps {
         recommended: ProblemWithStatus[];
     };
     onboardingCompleted?: boolean;
+    problems?: ProblemWithStatus[];
 }
 
-export function DashboardClient({ user, recommendations, onboardingCompleted = false }: DashboardClientProps) {
+function getStatusBadgeConfig(status?: ProgressStatus) {
+    switch (status) {
+        case 'COMPLETED':
+            return { icon: CheckCircle, label: 'Completed', className: 'border-green-500/30 text-green-600 bg-green-500/10' };
+        case 'REVIEW_NEEDED':
+            return { icon: RotateCcw, label: 'Review Due', className: 'border-amber-500/30 text-amber-600 bg-amber-500/10' };
+        case 'IN_PROGRESS':
+            return { icon: Clock, label: 'In Progress', className: 'border-blue-500/30 text-blue-600 bg-blue-500/10' };
+        case 'NOT_STARTED':
+        case undefined:
+            return null;
+        default: {
+            const _exhaustive: never = status;
+            return _exhaustive;
+        }
+    }
+}
+
+function matchesStatusFilter(
+    problem: ProblemWithStatus,
+    filter: StatusFilter
+): boolean {
+    if (filter === 'All') return true;
+
+    const status = problem.status;
+    switch (filter) {
+        case 'Not Started':
+            return !status || status === 'NOT_STARTED';
+        case 'Attempted':
+            return (
+                (problem.totalAttempts ?? 0) > 0 &&
+                status !== 'COMPLETED' &&
+                status !== 'REVIEW_NEEDED'
+            );
+        case 'In Progress':
+            return status === 'IN_PROGRESS';
+        case 'Completed':
+            return status === 'COMPLETED';
+        case 'Review Due':
+            return status === 'REVIEW_NEEDED';
+        default: {
+            const _exhaustive: never = filter;
+            return _exhaustive;
+        }
+    }
+}
+
+export function DashboardClient({
+    user,
+    recommendations,
+    onboardingCompleted = false,
+    problems: problemsProp,
+}: DashboardClientProps) {
+    const problems: ProblemWithStatus[] = problemsProp ?? PROBLEMS;
     const [search, setSearch] = useState('');
     const [category, setCategory] = useState('All');
     const [difficulty, setDifficulty] = useState('All');
+    const [statusFilter, setStatusFilter] = useState<StatusFilter>('All');
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [lockedProblem, setLockedProblem] = useState<ProblemWithStatus | null>(null);
 
@@ -66,7 +131,7 @@ export function DashboardClient({ user, recommendations, onboardingCompleted = f
 
 
     const filtered = useMemo(() => {
-        let filteredProblems = PROBLEMS;
+        let filteredProblems = problems;
 
         if (category !== 'All') {
             filteredProblems = filteredProblems.filter(p => p.category === category);
@@ -74,6 +139,12 @@ export function DashboardClient({ user, recommendations, onboardingCompleted = f
 
         if (difficulty !== 'All') {
             filteredProblems = filteredProblems.filter(p => p.difficulty === difficulty);
+        }
+
+        if (user && statusFilter !== 'All') {
+            filteredProblems = filteredProblems.filter((p) =>
+                matchesStatusFilter(p, statusFilter)
+            );
         }
 
         if (search) {
@@ -86,9 +157,9 @@ export function DashboardClient({ user, recommendations, onboardingCompleted = f
         }
 
         return filteredProblems;
-    }, [search, category, difficulty]);
+    }, [problems, search, category, difficulty, statusFilter, user]);
 
-    const categories = ['All', ...new Set(PROBLEMS.map(p => p.category))];
+    const categories = ['All', ...new Set(problems.map(p => p.category))];
     const difficulties = ['All', 'Easy', 'Medium', 'Hard'];
 
     return (
@@ -137,18 +208,21 @@ export function DashboardClient({ user, recommendations, onboardingCompleted = f
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                     <div className="flex-1 w-full">
                         <ProblemFilterBar
-                    search={search}
-                    setSearch={setSearch}
-                    category={category}
-                    setCategory={setCategory}
-                    difficulty={difficulty}
-                    setDifficulty={setDifficulty}
-                    viewMode={viewMode}
-                    setViewMode={setViewMode}
-                    categories={categories}
-                    difficulties={difficulties}
-                    user={user}
-                />
+                            search={search}
+                            setSearch={setSearch}
+                            category={category}
+                            setCategory={setCategory}
+                            difficulty={difficulty}
+                            setDifficulty={setDifficulty}
+                            statusFilter={statusFilter}
+                            setStatusFilter={setStatusFilter}
+                            showStatusFilter={!!user}
+                            viewMode={viewMode}
+                            setViewMode={setViewMode}
+                            categories={categories}
+                            difficulties={difficulties}
+                            user={user}
+                        />
                     </div>
                     <Link href="/custom">
                         <Button className="shrink-0 h-12 px-6 rounded-xl font-bold bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5">
@@ -177,12 +251,14 @@ export function DashboardClient({ user, recommendations, onboardingCompleted = f
                                 ))}
                             </div>
                         ) : (
-                            <div className="rounded-3xl border border-white/10 bg-card/40 backdrop-blur-xl shadow-2xl shadow-black/5 overflow-hidden animate-slide-up">
+                            <div className="rounded-3xl border border-black/10 dark:border-white/10 bg-card/40 backdrop-blur-xl shadow-2xl shadow-black/5 dark:shadow-white/5 overflow-hidden animate-slide-up">
                                 <Table>
                                     <TableHeader>
-                                        <TableRow className="border-white/5 hover:bg-transparent">
-                                            <TableHead className="w-[45%] font-semibold pl-6 h-14">Problem</TableHead>
+                                        <TableRow className="border-black/5 dark:border-white/5 hover:bg-transparent">
+                                            <TableHead className="w-[35%] font-semibold pl-6 h-14">Problem</TableHead>
                                             <TableHead className="font-semibold h-14">Difficulty</TableHead>
+                                            {user && <TableHead className="font-semibold h-14">Status</TableHead>}
+                                            {user && <TableHead className="font-semibold h-14">Progress</TableHead>}
                                             <TableHead className="font-semibold h-14">Category</TableHead>
                                             <TableHead className="hidden md:table-cell font-semibold h-14">Tags</TableHead>
                                             <TableHead className="hidden md:table-cell font-semibold h-14">Companies</TableHead>
@@ -191,7 +267,7 @@ export function DashboardClient({ user, recommendations, onboardingCompleted = f
                                     </TableHeader>
                                     <TableBody>
                                         {filtered.map((problem) => (
-                                            <TableRow key={problem.id} className="group hover:bg-white/5 transition-colors border-white/5">
+                                            <TableRow key={problem.id} className="group hover:bg-black/5 dark:hover:bg-white/5 transition-colors border-black/5 dark:border-white/5">
                                                 <TableCell className="font-medium pl-6 py-4">
                                                     <div className="flex flex-col gap-1">
                                                         <span className="text-base font-bold group-hover:text-primary transition-colors">{problem.title}</span>
@@ -211,6 +287,37 @@ export function DashboardClient({ user, recommendations, onboardingCompleted = f
                                                         {problem.difficulty}
                                                     </Badge>
                                                 </TableCell>
+                                                {user && (
+                                                    <TableCell className="py-4">
+                                                        {(() => {
+                                                            const statusConfig = getStatusBadgeConfig(problem.status);
+                                                            if (!statusConfig) {
+                                                                return <span className="text-xs text-muted-foreground">—</span>;
+                                                            }
+                                                            const StatusIcon = statusConfig.icon;
+                                                            return (
+                                                                <Badge variant="outline" className={cn("font-semibold gap-1 shadow-none", statusConfig.className)}>
+                                                                    <StatusIcon className="h-3 w-3" />
+                                                                    {statusConfig.label}
+                                                                </Badge>
+                                                            );
+                                                        })()}
+                                                    </TableCell>
+                                                )}
+                                                {user && (
+                                                    <TableCell className="py-4">
+                                                        {problem.progress != null && problem.progress > 0 ? (
+                                                            <div className="flex items-center gap-2 w-24">
+                                                                <Progress value={problem.progress} className="h-1.5 flex-1 bg-secondary/80" />
+                                                                <span className="text-[10px] font-bold text-muted-foreground w-8">
+                                                                    {Math.round(problem.progress)}%
+                                                                </span>
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-xs text-muted-foreground">—</span>
+                                                        )}
+                                                    </TableCell>
+                                                )}
                                                 <TableCell className="py-4">
                                                     <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
                                                         <TrendingUp className="h-4 w-4 opacity-50" />
@@ -272,7 +379,7 @@ export function DashboardClient({ user, recommendations, onboardingCompleted = f
                             </div>
                         )
                     ) : (
-                        <div className="text-center py-24 bg-card/30 backdrop-blur-md rounded-3xl border border-dashed border-white/10 flex flex-col items-center justify-center">
+                        <div className="text-center py-24 bg-card/30 backdrop-blur-md rounded-3xl border border-dashed border-black/10 dark:border-white/10 flex flex-col items-center justify-center">
                             <div className="w-24 h-24 mb-6 rounded-full bg-primary/5 flex items-center justify-center animate-pulse">
                                 <Search className="h-10 w-10 text-primary/40" />
                             </div>
@@ -285,6 +392,7 @@ export function DashboardClient({ user, recommendations, onboardingCompleted = f
                                     setSearch('');
                                     setCategory('All');
                                     setDifficulty('All');
+                                    setStatusFilter('All');
                                 }}
                                 variant="outline"
                                 size="lg"
@@ -300,7 +408,7 @@ export function DashboardClient({ user, recommendations, onboardingCompleted = f
                 {!user && (
                     <div className="mt-32 rounded-[3rem] relative overflow-hidden bg-gradient-to-br from-primary to-purple-700 px-6 py-24 text-center shadow-2xl shadow-primary/30">
                         <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-20 mix-blend-overlay" />
-                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-white/10 blur-[120px] rounded-full pointer-events-none" />
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-black/10 dark:bg-white/10 blur-[120px] rounded-full pointer-events-none" />
 
                         <div className="relative z-10 space-y-8 max-w-2xl mx-auto">
                             <h2 className="text-4xl md:text-6xl font-bold text-white tracking-tight">Ready to Design?</h2>

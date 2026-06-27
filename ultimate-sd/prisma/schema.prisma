@@ -1,9 +1,22 @@
-  datasource db {
+datasource db {
   provider = "postgresql"
 }
 
 generator client {
   provider = "prisma-client-js"
+}
+
+enum ProgressStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  REVIEW_NEEDED
+  COMPLETED
+}
+
+enum SessionStatus {
+  ACTIVE
+  COMPLETED
+  ABANDONED
 }
 
 model User {
@@ -54,6 +67,7 @@ model User {
   // Relations
   problemProgress      ProblemProgress[]
   stepSubmissions      StepSubmission[]
+  practiceSessions     PracticeSession[]
   
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -98,32 +112,52 @@ model VerificationToken {
   @@id([identifier, token])
 }
 
+model PracticeSession {
+  id                 String        @id @default(cuid())
+  userId             String
+  problemId          String
+  status             SessionStatus @default(ACTIVE)
+  attemptNumber      Int
+  startedAt          DateTime      @default(now())
+  completedAt        DateTime?
+  finalScore         Int?
+  diagramSnapshot    Json?
+  isTimerRunning     Boolean       @default(true)
+  lastPausedAt       DateTime?
+  totalPausedSeconds Int           @default(0)
+
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  submissions  StepSubmission[]
+  activeFor    ProblemProgress?
+
+  @@index([userId, problemId])
+  @@index([userId, status])
+}
+
 model ProblemProgress {
-  id                String   @id @default(cuid())
+  id                String         @id @default(cuid())
   userId            String
   problemId         String
-  status            String   @default("NOT_STARTED") // NOT_STARTED | IN_PROGRESS | REVIEW_NEEDED | COMPLETED
-  attempts          Int      @default(0)
+  status            ProgressStatus @default(NOT_STARTED)
+  progressPercent   Int            @default(0)
+  totalAttempts     Int            @default(0)
+  bestScore         Int?
+  activeSessionId   String?        @unique
   lastScore         Int?
   currentStep       String?
   startedAt         DateTime?
   lastAttemptAt     DateTime?
-  
-  // Timer State 
-  isTimerRunning    Boolean  @default(true)
-  lastPausedAt      DateTime?
-  totalPausedSeconds Int     @default(0)
 
   nextRepetitionDate DateTime?
 
   // Progress Tracking
   completedStepIds  String[] @default([])
-  sessionState      Json?
-  
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activeSession     PracticeSession? @relation(fields: [activeSessionId], references: [id], onDelete: SetNull)
   
   createdAt         DateTime @default(now())
-  updatedAt         DateTime? @updatedAt
+  updatedAt         DateTime @updatedAt
   
   @@unique([userId, problemId], name: "userId_problemId")
   @@index([userId])
@@ -134,7 +168,9 @@ model StepSubmission {
   id        String   @id @default(cuid())
   userId    String
   problemId String
+  sessionId String
   stepId    String   // e.g. "requirements-0"
+  phase     String   // e.g. "requirements", "hld", "lld", "tradeoffs", "scalability"
   
   content   String   @db.Text
   feedback  String?  @db.Text // JSON string of feedback
@@ -143,7 +179,9 @@ model StepSubmission {
   
   createdAt DateTime @default(now())
   
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session   PracticeSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   
   @@index([userId, problemId, stepId])
+  @@index([sessionId])
 }

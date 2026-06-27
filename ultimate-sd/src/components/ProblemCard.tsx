@@ -40,7 +40,7 @@ export default function ProblemCard({ problem, featured, locked, badge, onLocked
   const cardInner = (
     <Card className={cn(
       "h-full relative overflow-hidden flex flex-col transition-all duration-300",
-      "bg-card/80 backdrop-blur-md border border-white/10 dark:border-white/5",
+      "bg-card/80 backdrop-blur-md border border-black/10 dark:border-white/10",
       locked ? "opacity-80 cursor-pointer" : "group-hover:scale-[1.02] group-hover:-translate-y-1",
       featured ? "shadow-glow-sm border-primary/20" : "shadow-sm hover:shadow-glow-sm"
     )}>
@@ -101,7 +101,7 @@ export default function ProblemCard({ problem, featured, locked, badge, onLocked
               <Building2 className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0" />
               <div className="flex flex-wrap gap-1.5 flex-1 min-w-0">
                 {Array.from(new Set(problem.companies)).slice(0, 3).map(c => (
-                  <span key={c} className="text-xs font-medium text-muted-foreground/80 bg-secondary/50 px-2 py-0.5 rounded-md border border-white/5">
+                  <span key={c} className="text-xs font-medium text-muted-foreground/80 bg-secondary/50 px-2 py-0.5 rounded-md border border-black/5 dark:border-white/5">
                     {c}
                   </span>
                 ))}
@@ -111,14 +111,21 @@ export default function ProblemCard({ problem, featured, locked, badge, onLocked
 
           <div className="mt-auto space-y-4">
             <div className="flex items-center justify-between min-h-[1.5rem]">
-              {status ? (
-                <div className={cn("flex items-center gap-1.5 text-xs font-semibold px-2 py-1 rounded-full", status.bg, status.color)}>
-                  {StatusIcon && <StatusIcon className="h-3 w-3" />}
-                  <span>{status.text}</span>
-                </div>
-              ) : (
-                <div className="h-6" />
-              )}
+              <div className="flex items-center gap-2 flex-wrap">
+                {status ? (
+                  <div className={cn("flex items-center gap-1.5 text-xs font-semibold px-2 py-1 rounded-full", status.bg, status.color)}>
+                    {StatusIcon && <StatusIcon className="h-3 w-3" />}
+                    <span>{status.text}</span>
+                  </div>
+                ) : (
+                  <div className="h-6" />
+                )}
+                {(problem.totalAttempts ?? 0) > 0 && problem.status !== 'COMPLETED' && (
+                  <Badge variant="outline" className="text-[10px] font-semibold px-2 py-0.5 rounded-full shadow-none">
+                    {problem.totalAttempts} attempt{problem.totalAttempts !== 1 ? 's' : ''}
+                  </Badge>
+                )}
+              </div>
 
               {(problem.progress && problem.progress > 0 && problem.status !== 'COMPLETED') && (
                 <div className="flex items-center gap-2 w-24">

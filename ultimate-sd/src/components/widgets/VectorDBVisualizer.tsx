@@ -176,7 +176,7 @@ const VectorDBVisualizer: React.FC = () => {
                             animate={toCSS(queryPos)}
                             transition={{ type: 'spring', stiffness: 300, damping: 25 }}
                         >
-                            <div className="w-1 h-1 bg-white rounded-full" />
+                            <div className="w-1 h-1 bg-black dark:bg-white rounded-full" />
                             <div className="absolute w-20 h-20 border border-white/10 rounded-full animate-ping" />
                         </motion.div>
 
