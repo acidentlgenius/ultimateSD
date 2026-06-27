@@ -12,7 +12,7 @@ import {
   AdminActivityItem,
   AdminActivityType,
   getActivityLabel,
-} from '@/lib/admin-activities';
+} from '@/lib/admin-activities-types';
 
 interface AdminUser {
   id: string;

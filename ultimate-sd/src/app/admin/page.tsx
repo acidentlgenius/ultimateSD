@@ -2,8 +2,7 @@ import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { getAdminActivities } from '@/lib/admin-activities';
 import { redirect } from 'next/navigation';
-import { AdminClient } from './AdminClient';
-import { AdminActivityFeed } from './AdminActivityFeed';
+import { AdminDashboard } from './AdminDashboard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default async function AdminPage({
@@ -78,15 +77,9 @@ export default async function AdminPage({
         </Card>
       </div>
 
-      <h2 className="text-xl font-semibold mb-4">User Management</h2>
-      <AdminClient users={users} />
-
-      <h2 id="activities" className="text-xl font-semibold mb-4 mt-10 scroll-mt-8">
-        User Activities
-      </h2>
-      <AdminActivityFeed
+      <AdminDashboard
+        users={users}
         activities={activities}
-        users={users.map((u) => ({ id: u.id, name: u.name, email: u.email }))}
         initialUserId={filterUserId}
       />
     </div>

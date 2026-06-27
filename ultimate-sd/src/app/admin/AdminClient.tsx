@@ -1,12 +1,28 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { updateUserPlan, revokeUserAccess } from '@/app/actions/admin';
 import { toast } from 'sonner';
 
-export function AdminClient({ users }: { users: any[] }) {
+interface AdminClientProps {
+  users: Array<{
+    id: string;
+    name: string | null;
+    email: string;
+    role: string;
+    planType: string;
+    planExpiresAt: Date | null;
+    xp: number;
+    level: number;
+    streak: number;
+    completedProblems: number;
+    createdAt: Date;
+  }>;
+  onViewActivity?: (userId: string) => void;
+}
+
+export function AdminClient({ users, onViewActivity }: AdminClientProps) {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
 
@@ -130,12 +146,13 @@ export function AdminClient({ users }: { users: any[] }) {
                       Revoke Access
                     </button>
                   )}
-                  <Link
-                    href={`/admin?user=${u.id}#activities`}
-                    className="text-xs text-zinc-600 hover:text-zinc-900 mt-1"
+                  <button
+                    type="button"
+                    onClick={() => onViewActivity?.(u.id)}
+                    className="text-xs text-zinc-600 hover:text-zinc-900 mt-1 text-left"
                   >
                     View Activity
-                  </Link>
+                  </button>
                 </div>
               </td>
             </tr>
