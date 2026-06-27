@@ -3,6 +3,10 @@ import { HumanMessage } from '@langchain/core/messages';
 import { auth } from '@/auth';
 import { getSolution } from '@/lib/solutions';
 import { getUserLLM, AIAccessError } from '@/lib/user-llm';
+import {
+  resolveEvaluationPhaseKey,
+  resolveEvaluationSubStepKey,
+} from '@/lib/step-journey';
 
 // Detailed evaluation prompts for each phase
 const EVALUATION_GUIDES = {
@@ -236,7 +240,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { problem, phase, subStep, userAnswer, problemDetails } = body;
+  const { problem, phase, phaseKey, subStep, userAnswer, problemDetails } = body;
 
   let llm;
   try {
@@ -262,10 +266,12 @@ export async function POST(req: NextRequest) {
 
   try {
     // Get evaluation criteria
-    const phaseKey = phase.toLowerCase().replace('-', '').replace(' ', '') as keyof typeof EVALUATION_GUIDES;
-    const stepKey = subStep as string;
-    const phaseGuide = EVALUATION_GUIDES[phaseKey];
-    const guide: any = phaseGuide ? (phaseGuide as any)[stepKey] : null;
+    const evaluationPhase = resolveEvaluationPhaseKey(phaseKey, phase);
+    const evaluationSubStep = evaluationPhase
+      ? resolveEvaluationSubStepKey(evaluationPhase, subStep)
+      : subStep;
+    const phaseGuide = evaluationPhase ? EVALUATION_GUIDES[evaluationPhase] : null;
+    const guide: any = phaseGuide ? (phaseGuide as any)[evaluationSubStep] : null;
 
     const problemTitle = problemDetails?.title || problem;
     const problemDesc = problemDetails?.description || '';

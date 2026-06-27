@@ -1,5 +1,6 @@
 import { StepData, SystemDesignProblem } from '@/types';
 import { DEFAULT_PHASE_STEPS } from '@/lib/steps';
+import { phaseIncludesDiagram as journeyPhaseIncludesDiagram } from '@/lib/step-journey';
 
 export interface StepExportEntry {
   stepKey: string;
@@ -78,5 +79,5 @@ export function buildPhaseExportGroups(
 }
 
 export function phaseIncludesDiagram(phaseKey: string): boolean {
-  return phaseKey === 'hld' || phaseKey === 'lld';
+  return journeyPhaseIncludesDiagram(phaseKey);
 }

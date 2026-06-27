@@ -25,6 +25,7 @@ import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
 
 import { DEFAULT_PHASE_STEPS } from '@/lib/steps';
+import { isDiagramSubStep } from '@/lib/step-journey';
 import { FEATURES } from '@/lib/features';
 import { SolutionViewer } from './SolutionViewer';
 import { getSolution } from '@/lib/solutions';
@@ -62,7 +63,7 @@ export default function PracticeUI({ problem, existingProgress }: { problem: Sys
     setIsMounted(true);
   }, []);
 
-  const isDiagramRelevant = currentSubStep === 'architecture' || currentSubStep === 'data-flow';
+  const isDiagramRelevant = isDiagramSubStep(currentSubStep);
 
 
 

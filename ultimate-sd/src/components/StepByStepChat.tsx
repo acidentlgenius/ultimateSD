@@ -55,6 +55,14 @@ import WidgetLoader from './widgets/WidgetLoader';
 import SubmissionHistory from './SubmissionHistory';
 import { History } from 'lucide-react';
 import { DEFAULT_PHASE_STEPS } from '@/lib/steps';
+import {
+  buildStepKey,
+  clampStepIndex,
+  isDiagramSubStep,
+  isFirstJourneyStep,
+  resolveEffectivePhase,
+  resolvePhaseSteps,
+} from '@/lib/step-journey';
 
 // Dynamic imports for widgets to improve initial load performance
 const WIDGETS: Record<string, React.ComponentType> = {
@@ -225,7 +233,10 @@ function findResumePosition(
 }
 
 export default function StepByStepChat({ problem }: Props) {
-  const [currentPhase, setCurrentPhase] = useState('requirements');
+  const [currentPhase, setCurrentPhase] = useState(() => {
+    const keys = Object.keys(resolvePhaseSteps(problem.steps, DEFAULT_PHASE_STEPS));
+    return keys[0] ?? 'requirements';
+  });
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [listItems, setListItems] = useState<string[]>([]);
   const [textInput, setTextInput] = useState('');
@@ -254,25 +265,27 @@ export default function StepByStepChat({ problem }: Props) {
     description?: string;
   } | null>(null);
 
-  const PHASE_STEPS = problem.steps || DEFAULT_PHASE_STEPS;
+  const PHASE_STEPS = resolvePhaseSteps(problem.steps, DEFAULT_PHASE_STEPS);
   const phases = Object.keys(PHASE_STEPS);
-  // Ensure currentPhase is valid for this problem, fallback to first phase if not
-  const validCurrentPhase = phases.includes(currentPhase) ? currentPhase : phases[0];
+  const effectivePhase = resolveEffectivePhase(currentPhase, phases);
+  const currentSteps = PHASE_STEPS[effectivePhase] ?? [];
+  const safeStepIndex = clampStepIndex(currentStepIndex, currentSteps.length);
+  const currentStep = currentSteps[safeStepIndex];
+  const currentStepKey = buildStepKey(effectivePhase, safeStepIndex);
 
-  // If we had to correct the phase, update state effectively
-  if (currentPhase !== validCurrentPhase && phases.length > 0) {
-    // This side effect in render is not ideal but prevents crashing.
-    // Better would be a useEffect, but let's just use the valid one for now.
-    // We can't call setCurrentPhase here directly.
-  }
+  useEffect(() => {
+    const phaseKeys = Object.keys(resolvePhaseSteps(problem.steps, DEFAULT_PHASE_STEPS));
+    const nextPhase = resolveEffectivePhase(currentPhase, phaseKeys);
+    const stepsInPhase = resolvePhaseSteps(problem.steps, DEFAULT_PHASE_STEPS)[nextPhase] ?? [];
+    const nextIndex = clampStepIndex(currentStepIndex, stepsInPhase.length);
 
-  const effectivePhase = phases.includes(currentPhase) ? currentPhase : phases[0];
-  const currentSteps = PHASE_STEPS[effectivePhase];
-  const currentStep = currentSteps[currentStepIndex];
-
-  // Get step key for storage
-  const getStepKey = (phase: string, stepIdx: number) => `${phase}-${stepIdx}`;
-  const currentStepKey = getStepKey(currentPhase, currentStepIndex);
+    if (nextPhase !== currentPhase) {
+      setCurrentPhase(nextPhase);
+    }
+    if (nextIndex !== currentStepIndex) {
+      setCurrentStepIndex(nextIndex);
+    }
+  }, [problem.slug, problem.steps, currentPhase, currentStepIndex]);
 
   const { data: session, status: sessionStatus } = useSession();
   const sessionLoadedForRef = useRef<string | null>(null);
@@ -589,7 +602,7 @@ export default function StepByStepChat({ problem }: Props) {
     if (!userAnswer.trim() || (currentStep.inputType === 'schema' && schemaData.length === 0)) return;
 
     // Check if diagram should be included (for High Level Architecture and Data Flow steps)
-    const shouldIncludeDiagram = currentStep.subStep === 'architecture' || currentStep.subStep === 'data-flow';
+    const shouldIncludeDiagram = isDiagramSubStep(currentStep.subStep);
 
     setLoading(true);
     setShowFeedback(false);
@@ -598,6 +611,7 @@ export default function StepByStepChat({ problem }: Props) {
       const requestBody: any = {
         problem: problem.slug,
         phase: currentStep.phase,
+        phaseKey: effectivePhase,
         subStep: currentStep.subStep,
         userAnswer,
         problemDetails: problem
@@ -695,7 +709,7 @@ export default function StepByStepChat({ problem }: Props) {
             sessionId: activeSessionId,
             problemId: problem.id,
             stepId: currentStepKey,
-            phase: currentPhase,
+            phase: effectivePhase,
             content: userAnswer,
             feedback: JSON.stringify(data.feedback),
             score: Math.round(data.feedback.score),
@@ -745,27 +759,24 @@ export default function StepByStepChat({ problem }: Props) {
 
   const handleNext = () => {
     setShowFeedback(false);
-    if (currentStepIndex < currentSteps.length - 1) {
-      setCurrentStepIndex(currentStepIndex + 1);
+    if (safeStepIndex < currentSteps.length - 1) {
+      setCurrentStepIndex(safeStepIndex + 1);
     } else {
-      // Move to next phase
-      const currentPhaseIndex = phases.indexOf(currentPhase);
+      const currentPhaseIndex = phases.indexOf(effectivePhase);
       if (currentPhaseIndex < phases.length - 1) {
         setCurrentPhase(phases[currentPhaseIndex + 1]);
         setCurrentStepIndex(0);
       } else {
-        // All done
         toast.success('🎉 Congratulations! You have completed all sections!');
       }
     }
   };
 
   const handlePrevious = () => {
-    if (currentStepIndex > 0) {
-      setCurrentStepIndex(currentStepIndex - 1);
+    if (safeStepIndex > 0) {
+      setCurrentStepIndex(safeStepIndex - 1);
     } else {
-      // Move to previous phase
-      const currentPhaseIndex = phases.indexOf(currentPhase);
+      const currentPhaseIndex = phases.indexOf(effectivePhase);
       if (currentPhaseIndex > 0) {
         const prevPhase = phases[currentPhaseIndex - 1];
         setCurrentPhase(prevPhase);
@@ -800,8 +811,8 @@ export default function StepByStepChat({ problem }: Props) {
     return tokens.colors.phase[phaseKey] || tokens.colors.info;
   };
 
-  const progress = ((currentStepIndex + 1) / currentSteps.length) * 100;
-  const isFirstStep = currentPhase === 'requirements' && currentStepIndex === 0;
+  const progress = currentSteps.length > 0 ? ((safeStepIndex + 1) / currentSteps.length) * 100 : 0;
+  const isFirstStep = isFirstJourneyStep(effectivePhase, safeStepIndex, phases);
   const canGoBack = !isFirstStep;
 
   const totalStepCount = useMemo(
@@ -813,15 +824,24 @@ export default function StepByStepChat({ problem }: Props) {
     let position = 0;
     for (const p of phases) {
       if (p === effectivePhase) {
-        position += currentStepIndex + 1;
+        position += safeStepIndex + 1;
         break;
       }
       position += PHASE_STEPS[p]?.length ?? 0;
     }
     return position;
-  }, [phases, effectivePhase, currentStepIndex, PHASE_STEPS]);
+  }, [phases, effectivePhase, safeStepIndex, PHASE_STEPS]);
 
   const showRestoreBanner = restoredDate !== null && !dismissedRestoreBanner;
+
+  if (!currentStep) {
+    return (
+      <div className="flex items-center justify-center p-8 text-muted-foreground">
+        <Loader2 className="h-5 w-5 animate-spin mr-2" />
+        Loading practice steps...
+      </div>
+    );
+  }
 
   return (
     <div className="w-full flex flex-col gap-6">
@@ -882,7 +902,7 @@ export default function StepByStepChat({ problem }: Props) {
           )}
 
           {/* Diagram Status Indicator - Show for High Level Architecture and Data Flow steps */}
-          {(currentStep.subStep === 'architecture' || currentStep.subStep === 'data-flow') && (
+          {isDiagramSubStep(currentStep.subStep) && (
             <div className={`p-3 rounded-lg border-2 ${diagramData
               ? 'bg-green-500/10 border-green-500/30'
               : 'bg-orange-500/10 border-orange-500/30'
@@ -1060,7 +1080,7 @@ export default function StepByStepChat({ problem }: Props) {
                     </>
                   ) : (
                     <>
-                      {(currentStep.subStep === 'architecture' || currentStep.subStep === 'data-flow')
+                      {isDiagramSubStep(currentStep.subStep)
                         ? 'Analyze Design'
                         : 'Submit for Review'}
                       <ArrowRight className="h-4 w-4 ml-2" />
