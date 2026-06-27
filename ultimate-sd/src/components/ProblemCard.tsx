@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { ArrowRight, Building2, TrendingUp, CheckCircle, Clock, RotateCcw, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ProblemTagList } from '@/components/ProblemTagBadge';
 
 interface ProblemCardProps {
   problem: ProblemWithStatus;
@@ -15,9 +16,10 @@ interface ProblemCardProps {
   index?: number;
   badge?: string;
   onLockedClick?: (problem: ProblemWithStatus) => void;
+  onTagClick?: (tagId: string) => void;
 }
 
-export default function ProblemCard({ problem, featured, locked, badge, onLockedClick }: ProblemCardProps) {
+export default function ProblemCard({ problem, featured, locked, badge, onLockedClick, onTagClick }: ProblemCardProps) {
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
       case 'Easy': return 'bg-green-500/10 text-green-600 border-green-200 dark:bg-green-500/20 dark:text-green-400 dark:border-green-500/30';
@@ -86,15 +88,13 @@ export default function ProblemCard({ problem, featured, locked, badge, onLocked
             {problem.description}
           </p>
 
-          {(problem.tags && problem.tags.length > 0) && (
-            <div className="flex flex-wrap gap-1.5 mt-2">
-              {problem.tags.map(tag => (
-                <span key={tag} className="text-[10px] font-semibold text-primary/80 bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
-                  #{tag}
-                </span>
-              ))}
-            </div>
-          )}
+          <ProblemTagList
+            slug={problem.slug}
+            legacyTags={problem.tags}
+            limit={4}
+            className="mt-2"
+            onTagClick={onTagClick}
+          />
 
           {problem.companies.length > 0 && (
             <div className="flex items-center gap-2">
