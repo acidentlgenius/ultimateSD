@@ -1,10 +1,17 @@
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
+import { getAdminActivities } from '@/lib/admin-activities';
 import { redirect } from 'next/navigation';
 import { AdminClient } from './AdminClient';
+import { AdminActivityFeed } from './AdminActivityFeed';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-export default async function AdminPage() {
+export default async function AdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ user?: string }>;
+}) {
+  const { user: filterUserId } = await searchParams;
   const session = await auth();
   if (!session?.user?.id) {
     redirect('/');
@@ -19,9 +26,12 @@ export default async function AdminPage() {
     redirect('/');
   }
 
-  const users = await prisma.user.findMany({
-    orderBy: { createdAt: 'desc' }
-  });
+  const [users, activities] = await Promise.all([
+    prisma.user.findMany({
+      orderBy: { createdAt: 'desc' },
+    }),
+    getAdminActivities(100),
+  ]);
 
   // Analytics
   const totalUsers = users.length;
@@ -70,6 +80,15 @@ export default async function AdminPage() {
 
       <h2 className="text-xl font-semibold mb-4">User Management</h2>
       <AdminClient users={users} />
+
+      <h2 id="activities" className="text-xl font-semibold mb-4 mt-10 scroll-mt-8">
+        User Activities
+      </h2>
+      <AdminActivityFeed
+        activities={activities}
+        users={users.map((u) => ({ id: u.id, name: u.name, email: u.email }))}
+        initialUserId={filterUserId}
+      />
     </div>
   );
 }

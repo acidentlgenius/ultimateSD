@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { updateUserPlan, revokeUserAccess } from '@/app/actions/admin';
 import { toast } from 'sonner';
@@ -129,6 +130,12 @@ export function AdminClient({ users }: { users: any[] }) {
                       Revoke Access
                     </button>
                   )}
+                  <Link
+                    href={`/admin?user=${u.id}#activities`}
+                    className="text-xs text-zinc-600 hover:text-zinc-900 mt-1"
+                  >
+                    View Activity
+                  </Link>
                 </div>
               </td>
             </tr>
