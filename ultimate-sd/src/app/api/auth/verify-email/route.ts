@@ -1,0 +1,55 @@
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { emailFromVerificationIdentifier } from '@/lib/email';
+
+export async function GET(req: Request) {
+    const token = new URL(req.url).searchParams.get('token');
+    const loginUrl = new URL('/login', req.url);
+
+    if (!token) {
+        loginUrl.searchParams.set('error', 'invalid_token');
+        return NextResponse.redirect(loginUrl);
+    }
+
+    try {
+        const verificationToken = await prisma.verificationToken.findFirst({
+            where: {
+                token,
+                identifier: { startsWith: 'email-verify:' },
+                expires: { gt: new Date() },
+            },
+        });
+
+        if (!verificationToken) {
+            loginUrl.searchParams.set('error', 'invalid_token');
+            return NextResponse.redirect(loginUrl);
+        }
+
+        const email = emailFromVerificationIdentifier(verificationToken.identifier);
+        if (!email) {
+            loginUrl.searchParams.set('error', 'invalid_token');
+            return NextResponse.redirect(loginUrl);
+        }
+
+        await prisma.user.update({
+            where: { email },
+            data: { emailVerified: new Date() },
+        });
+
+        await prisma.verificationToken.delete({
+            where: {
+                identifier_token: {
+                    identifier: verificationToken.identifier,
+                    token,
+                },
+            },
+        });
+
+        loginUrl.searchParams.set('verified', '1');
+        return NextResponse.redirect(loginUrl);
+    } catch (error) {
+        console.error('Verify email error:', error);
+        loginUrl.searchParams.set('error', 'verification_failed');
+        return NextResponse.redirect(loginUrl);
+    }
+}

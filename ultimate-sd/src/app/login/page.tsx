@@ -12,10 +12,41 @@ function LoginForm() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const callbackUrl = searchParams.get("callbackUrl") ?? "/"
+    const verified = searchParams.get("verified") === "1"
+    const verificationError = searchParams.get("error")
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
     const [error, setError] = useState("")
+    const [successMessage, setSuccessMessage] = useState(
+        verified ? "Email verified successfully. You can sign in now." : ""
+    )
+    const [resendMessage, setResendMessage] = useState("")
     const [isLoading, setIsLoading] = useState(false)
+    const [isResending, setIsResending] = useState(false)
+
+    const handleResendVerification = async () => {
+        if (!email) {
+            setResendMessage("Enter your email address first.")
+            return
+        }
+
+        setResendMessage("")
+        setIsResending(true)
+
+        try {
+            const res = await fetch("/api/auth/resend-verification", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email }),
+            })
+            const data = await res.json()
+            setResendMessage(data.message || "Verification email sent.")
+        } catch {
+            setResendMessage("Failed to resend verification email.")
+        } finally {
+            setIsResending(false)
+        }
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -30,7 +61,7 @@ function LoginForm() {
             })
 
             if (result?.error) {
-                setError("Invalid email or password")
+                setError("Invalid email or password. If you haven't verified your email yet, check your inbox or resend the link below.")
                 setIsLoading(false)
             } else {
                 router.push(callbackUrl)
@@ -127,9 +158,46 @@ function LoginForm() {
                                 />
                             </div>
 
+                            {successMessage && (
+                                <div className="p-3 text-sm text-green-700 bg-green-50 dark:bg-green-900/20 rounded-md border border-green-200 dark:border-green-900/50">
+                                    {successMessage}
+                                </div>
+                            )}
+
+                            {verificationError === "invalid_token" && (
+                                <div className="p-3 text-sm text-red-500 bg-red-50 dark:bg-red-900/20 rounded-md border border-red-200 dark:border-red-900/50">
+                                    This verification link is invalid or has expired. Request a new one below.
+                                </div>
+                            )}
+
+                            {verificationError === "verification_failed" && (
+                                <div className="p-3 text-sm text-red-500 bg-red-50 dark:bg-red-900/20 rounded-md border border-red-200 dark:border-red-900/50">
+                                    We couldn't verify your email. Please try again or contact support.
+                                </div>
+                            )}
+
                             {error && (
                                 <div className="p-3 text-sm text-red-500 bg-red-50 dark:bg-red-900/20 rounded-md border border-red-200 dark:border-red-900/50">
                                     {error}
+                                </div>
+                            )}
+
+                            {(error || verificationError === "invalid_token") && (
+                                <div className="space-y-2">
+                                    {resendMessage && (
+                                        <div className="p-3 text-sm text-muted-foreground bg-muted/50 rounded-md border border-border">
+                                            {resendMessage}
+                                        </div>
+                                    )}
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        className="w-full"
+                                        disabled={isResending}
+                                        onClick={handleResendVerification}
+                                    >
+                                        {isResending ? "Sending..." : "Resend verification email"}
+                                    </Button>
                                 </div>
                             )}
 
