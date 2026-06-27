@@ -13,6 +13,14 @@ const paymentEnvVars = [
     'RAZORPAY_WEBHOOK_SECRET',
 ];
 
+const emailEnvVars = [
+    'EMAIL_SERVER_HOST',
+    'EMAIL_SERVER_USER',
+    'EMAIL_SERVER_PASSWORD',
+    'EMAIL_FROM',
+    'NEXT_PUBLIC_APP_URL',
+];
+
 const envPath = path.resolve(process.cwd(), '.env');
 const envLocalPath = path.resolve(process.cwd(), '.env.local');
 
@@ -41,6 +49,7 @@ const main = () => {
 
     const missing = requiredEnvVars.filter(key => !loadedEnv[key]);
     const missingPayment = paymentEnvVars.filter(key => !loadedEnv[key]);
+    const missingEmail = emailEnvVars.filter(key => !loadedEnv[key]);
 
     if (missing.length > 0) {
         console.warn('⚠️  Missing environment variables (functionality may be limited):');
@@ -54,6 +63,11 @@ const main = () => {
     if (missingPayment.length > 0) {
         console.warn('⚠️  Payment env vars missing (checkout disabled until set):');
         missingPayment.forEach(key => console.warn(`   - ${key}`));
+    }
+
+    if (missingEmail.length > 0) {
+        console.warn('⚠️  Email env vars missing (verification & password reset emails disabled):');
+        missingEmail.forEach(key => console.warn(`   - ${key}`));
     }
 
     console.log('✅ All required environment variables are set.');
