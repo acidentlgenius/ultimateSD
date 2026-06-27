@@ -1,4 +1,9 @@
-import { FREE_PROBLEM_SLUGS, AI_MONTHLY_CREDITS, type PlanType } from '@/lib/plans';
+import {
+  FREE_PROBLEM_SLUGS,
+  AI_MONTHLY_CREDITS,
+  FREE_MONTHLY_CREDITS,
+  type PlanType,
+} from '@/lib/plans';
 
 export { FREE_PROBLEM_SLUGS };
 
@@ -135,10 +140,16 @@ export function canUseAI(
   const plan = getEffectivePlanType(user);
 
   if (plan === 'free' && problemSlug && isProblemFree(problemSlug)) {
+    if (user.aiCredits > 0) {
+      return { allowed: true, source: 'platform_credits' };
+    }
     if (hasByokKey(user)) {
       return { allowed: true, source: 'byok' };
     }
-    return { allowed: true, source: 'server' };
+    return {
+      allowed: false,
+      reason: `You've used your ${FREE_MONTHLY_CREDITS} free AI credits this month. Add an API key in Settings or upgrade for more.`,
+    };
   }
 
   if (plan === 'ai') {
@@ -206,5 +217,12 @@ export function getPlanExpiryDate(from = new Date()): Date {
 }
 
 export function getInitialAiCreditsForPlan(planType: PlanType): number {
-  return planType === 'ai' ? AI_MONTHLY_CREDITS : 0;
+  switch (planType) {
+    case 'ai':
+      return AI_MONTHLY_CREDITS;
+    case 'free':
+      return FREE_MONTHLY_CREDITS;
+    default:
+      return 0;
+  }
 }

@@ -24,6 +24,11 @@ export default async function PricingPage() {
               {session.user.hasAiPlan && ` · ${session.user.aiCredits} AI credits remaining`}
             </p>
           )}
+          {session?.user && !session.user.hasActivePlan && (
+            <p className="text-sm text-muted-foreground">
+              {session.user.aiCredits} free AI credits remaining this month
+            </p>
+          )}
         </div>
 
         <PricingClient
