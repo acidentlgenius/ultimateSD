@@ -134,7 +134,7 @@ export default function BlockchainDemo() {
                             layout
                             className={`
                     w-72 p-4 rounded-xl border-2 transition-all shadow-md flex-shrink-0
-                    ${block.isMined ? 'bg-white border-emerald-500' : 'bg-red-50 border-red-500'}
+                    ${block.isMined ? 'bg-black dark:bg-white border-emerald-500' : 'bg-red-50 border-red-500'}
                   `}
                         >
                             <div className="flex justify-between items-start mb-4">

@@ -95,9 +95,9 @@ export function Hero() {
                     className="mt-20 relative mx-auto max-w-5xl aspect-[16/9] hidden md:block"
                 >
                     <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-border/50 to-transparent p-[1px] shadow-2xl">
-                        <div className="w-full h-full rounded-2xl bg-background/50 backdrop-blur-xl overflow-hidden border border-white/10 relative group">
+                        <div className="w-full h-full rounded-2xl bg-background/50 backdrop-blur-xl overflow-hidden border border-black/10 dark:border-white/10 relative group">
                             {/* Mock Interface Header */}
-                            <div className="h-12 border-b border-white/10 flex items-center px-4 gap-2 bg-white/5">
+                            <div className="h-12 border-b border-black/10 dark:border-white/10 flex items-center px-4 gap-2 bg-black/5 dark:bg-white/5">
                                 <div className="flex gap-2">
                                     <div className="w-3 h-3 rounded-full bg-red-500/50" />
                                     <div className="w-3 h-3 rounded-full bg-yellow-500/50" />

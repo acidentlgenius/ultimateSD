@@ -2351,7 +2351,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
             onDoubleClick={handleDoubleClick}
-            className="border-2 border-border/50 rounded-lg bg-white shadow-xl"
+            className="border-2 border-border/50 rounded-lg bg-white dark:bg-gray-900 shadow-xl"
             style={{ cursor: currentTool === 'select' ? 'default' : 'crosshair' }}
           />
         </div>

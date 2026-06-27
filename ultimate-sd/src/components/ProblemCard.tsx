@@ -40,7 +40,7 @@ export default function ProblemCard({ problem, featured, locked, badge, onLocked
   const cardInner = (
     <Card className={cn(
       "h-full relative overflow-hidden flex flex-col transition-all duration-300",
-      "bg-card/80 backdrop-blur-md border border-white/10 dark:border-white/5",
+      "bg-card/80 backdrop-blur-md border border-black/10 dark:border-white/10",
       locked ? "opacity-80 cursor-pointer" : "group-hover:scale-[1.02] group-hover:-translate-y-1",
       featured ? "shadow-glow-sm border-primary/20" : "shadow-sm hover:shadow-glow-sm"
     )}>
@@ -101,7 +101,7 @@ export default function ProblemCard({ problem, featured, locked, badge, onLocked
               <Building2 className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0" />
               <div className="flex flex-wrap gap-1.5 flex-1 min-w-0">
                 {Array.from(new Set(problem.companies)).slice(0, 3).map(c => (
-                  <span key={c} className="text-xs font-medium text-muted-foreground/80 bg-secondary/50 px-2 py-0.5 rounded-md border border-white/5">
+                  <span key={c} className="text-xs font-medium text-muted-foreground/80 bg-secondary/50 px-2 py-0.5 rounded-md border border-black/5 dark:border-white/5">
                     {c}
                   </span>
                 ))}

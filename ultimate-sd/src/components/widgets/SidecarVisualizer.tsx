@@ -132,7 +132,7 @@ const SidecarVisualizer: React.FC = () => {
             <div className="mt-8 flex justify-center">
                 <button
                     onClick={sendRequest}
-                    className="bg-white text-black px-6 py-3 rounded-full font-bold shadow-lg shadow-white/10 hover:scale-105 transition-transform flex items-center gap-2"
+                    className="bg-black dark:bg-white text-black px-6 py-3 rounded-full font-bold shadow-lg shadow-white/10 hover:scale-105 transition-transform flex items-center gap-2"
                 >
                     <Send className="w-4 h-4" /> Send Request
                 </button>

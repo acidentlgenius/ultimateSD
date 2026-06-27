@@ -125,7 +125,7 @@ const PaymentLedger: React.FC = () => {
                                         placeholder="Idempotency Key"
                                     />
                                     <div className="absolute right-2 top-2.5 cursor-pointer" onClick={generateNewKey} title="Generate new key">
-                                        <Repeat className="w-4 h-4 text-slate-500 hover:text-white" />
+                                        <Repeat className="w-4 h-4 text-slate-500 hover:text-black dark:hover:text-white" />
                                     </div>
                                 </div>
                             </div>
