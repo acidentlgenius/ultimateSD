@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
 import { toast } from 'sonner';
-import { AI_MONTHLY_CREDITS, PLAN_PRICES_INR, type PlanType } from '@/lib/plans';
+import { AI_MONTHLY_CREDITS, FREE_MONTHLY_CREDITS, PLAN_PRICES_INR, type PlanType } from '@/lib/plans';
 import { FREE_PROBLEM_SLUGS } from '@/lib/access';
 
 declare global {
@@ -40,10 +40,11 @@ const AI_FEATURES = [
 
 const FREE_FEATURES = [
   `${FREE_PROBLEM_SLUGS.length} core starter problems`,
+  `${FREE_MONTHLY_CREDITS} AI credits / month on free problems`,
+  'Bring your own API key (BYOK) when credits run out',
   'Interactive diagram canvas',
   'Architecture widgets & simulators',
   'Progress tracking & gamification',
-  'Upgrade for AI feedback',
 ];
 
 function loadRazorpayScript(): Promise<boolean> {

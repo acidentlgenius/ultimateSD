@@ -241,7 +241,7 @@ export default function SettingsClient({ user }: SettingsClientProps) {
                                             Renews / expires {new Date(user.planExpiresAt).toLocaleDateString()}
                                         </p>
                                     )}
-                                    {planType === 'ai' && (
+                                    {(planType === 'ai' || planType === 'free') && (
                                         <p className="text-xs text-muted-foreground mt-1">
                                             {user.aiCredits ?? 0} AI credits remaining this month
                                         </p>
@@ -262,14 +262,19 @@ export default function SettingsClient({ user }: SettingsClientProps) {
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2"><Key className="h-5 w-5" /> Bring Your Own Key</CardTitle>
                             <CardDescription>
-                                Platform plan users must add a Gemini API key to use AI features. Keys are stored securely and never shown again.
+                                Add your API key to use AI when credits run out (free plan) or as your primary AI source (platform plan). Keys are stored securely and never shown again.
                             </CardDescription>
                         </CardHeader>
                         <form onSubmit={handleSaveKeys}>
                             <CardContent className="space-y-6">
-                                {planType !== 'platform' && planType !== 'ai' && (
+                                {planType === 'platform' && (
                                     <p className="text-sm text-amber-600 bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
-                                        Subscribe to the Platform plan to use your own API keys for AI feedback.
+                                        Platform plan requires an API key to use AI on all problems.
+                                    </p>
+                                )}
+                                {planType === 'free' && (
+                                    <p className="text-sm text-muted-foreground bg-muted/50 border border-border rounded-lg p-3">
+                                        Free plan: use included monthly credits on starter problems, or add your own API key for unlimited AI on those problems.
                                     </p>
                                 )}
                                 <div className="space-y-2">

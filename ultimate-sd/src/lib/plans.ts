@@ -19,6 +19,9 @@ export const PLAN_PRICES_PAISE: Record<Exclude<PlanType, 'free'>, number> = {
 /** Monthly AI credits included with the AI plan */
 export const AI_MONTHLY_CREDITS = 500;
 
+/** Monthly AI credits for free-tier users on free problems */
+export const FREE_MONTHLY_CREDITS = 20;
+
 export const PLAN_LABELS: Record<PlanType, string> = {
   free: 'Free',
   platform: 'Platform',

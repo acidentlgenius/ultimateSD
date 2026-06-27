@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
+import { getNextAiCreditsResetDate } from "@/lib/access"
+import { FREE_MONTHLY_CREDITS } from "@/lib/plans"
 
 export async function POST(req: Request) {
     try {
@@ -32,6 +34,8 @@ export async function POST(req: Request) {
                 name,
                 email,
                 password: hashedPassword,
+                aiCredits: FREE_MONTHLY_CREDITS,
+                aiCreditsResetAt: getNextAiCreditsResetDate(),
             },
         })
 

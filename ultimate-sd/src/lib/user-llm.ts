@@ -9,10 +9,11 @@ import { prisma } from '@/lib/prisma';
 import {
   canUseAI,
   getEffectivePlanType,
+  getInitialAiCreditsForPlan,
   getNextAiCreditsResetDate,
   type UserAccess,
 } from '@/lib/access';
-import { AI_MONTHLY_CREDITS, type PlanType } from '@/lib/plans';
+import { type PlanType } from '@/lib/plans';
 
 export type LLMSource = 'byok' | 'platform_credits' | 'server';
 
@@ -133,9 +134,12 @@ function createOllamaLLM(baseUrl: string, model: string, temperature = 0.7): Cha
 }
 
 async function ensureCreditsReset(userId: string, user: UserAccess): Promise<number> {
-  if (getEffectivePlanType(user) !== 'ai') {
+  const plan = getEffectivePlanType(user);
+  if (plan !== 'ai' && plan !== 'free') {
     return user.aiCredits;
   }
+
+  const monthlyCredits = getInitialAiCreditsForPlan(plan);
 
   const dbUser = await prisma.user.findUnique({
     where: { id: userId },
@@ -143,7 +147,15 @@ async function ensureCreditsReset(userId: string, user: UserAccess): Promise<num
   });
 
   if (!dbUser?.aiCreditsResetAt) {
-    return user.aiCredits;
+    const now = new Date();
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        aiCredits: monthlyCredits,
+        aiCreditsResetAt: getNextAiCreditsResetDate(now),
+      },
+    });
+    return monthlyCredits;
   }
 
   if (new Date() >= dbUser.aiCreditsResetAt) {
@@ -151,11 +163,11 @@ async function ensureCreditsReset(userId: string, user: UserAccess): Promise<num
     await prisma.user.update({
       where: { id: userId },
       data: {
-        aiCredits: AI_MONTHLY_CREDITS,
+        aiCredits: monthlyCredits,
         aiCreditsResetAt: getNextAiCreditsResetDate(now),
       },
     });
-    return AI_MONTHLY_CREDITS;
+    return monthlyCredits;
   }
 
   return user.aiCredits;
@@ -299,7 +311,7 @@ export async function activateUserPlan(
       planType,
       planActivatedAt: now,
       planExpiresAt: new Date(now.getFullYear(), now.getMonth() + 1, now.getDate()),
-      aiCredits: planType === 'ai' ? AI_MONTHLY_CREDITS : 0,
+      aiCredits: getInitialAiCreditsForPlan(planType),
       aiCreditsResetAt: planType === 'ai' ? getNextAiCreditsResetDate(now) : null,
     },
   });

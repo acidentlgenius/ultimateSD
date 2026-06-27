@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { FREE_MONTHLY_CREDITS } from "@/lib/plans";
+import { FREE_PROBLEM_SLUGS } from "@/lib/access";
 
 export function PricingSection() {
     return (
@@ -50,10 +52,10 @@ export function PricingSection() {
                             <CardContent className="flex-1">
                                 <ul className="space-y-4">
                                     {[
-                                        "Access to 3 core problems",
-                                        "Basic system design concepts",
-                                        "Community support",
-                                        "Basic progress tracking"
+                                        `Access to ${FREE_PROBLEM_SLUGS.length} core problems`,
+                                        `${FREE_MONTHLY_CREDITS} AI credits / month on free problems`,
+                                        "Bring your own API key when credits run out",
+                                        "Basic progress tracking",
                                     ].map((feature) => (
                                         <li key={feature} className="flex items-center gap-3">
                                             <CheckCircle2 className="h-5 w-5 text-muted-foreground shrink-0" />

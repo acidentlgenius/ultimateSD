@@ -3,8 +3,8 @@
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
-import { getPlanExpiryDate } from '@/lib/access';
-import { AI_MONTHLY_CREDITS, type PlanType } from '@/lib/plans';
+import { getInitialAiCreditsForPlan, getNextAiCreditsResetDate, getPlanExpiryDate } from '@/lib/access';
+import { type PlanType } from '@/lib/plans';
 
 async function requireAdmin() {
     const session = await auth();
@@ -29,14 +29,17 @@ export async function updateUserPlan(userId: string, planType: PlanType) {
 
     const planExpiresAt = planType !== 'free' ? getPlanExpiryDate() : null;
 
+    const now = new Date();
+
     try {
         await prisma.user.update({
             where: { id: userId },
             data: {
                 planType,
                 planExpiresAt,
-                planActivatedAt: planType !== 'free' ? new Date() : null,
-                aiCredits: planType === 'ai' ? AI_MONTHLY_CREDITS : 0
+                planActivatedAt: planType !== 'free' ? now : null,
+                aiCredits: getInitialAiCreditsForPlan(planType),
+                aiCreditsResetAt: planType === 'ai' ? getNextAiCreditsResetDate(now) : null,
             }
         });
 
@@ -58,7 +61,8 @@ export async function revokeUserAccess(userId: string) {
                 planType: 'free',
                 planExpiresAt: null,
                 planActivatedAt: null,
-                aiCredits: 0
+                aiCredits: 0,
+                aiCreditsResetAt: null,
             }
         });
 
