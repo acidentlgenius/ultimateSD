@@ -51,8 +51,13 @@ export default function SettingsClient({ user }: SettingsClientProps) {
     const [ollamaEndpoint, setOllamaEndpoint] = useState('');
     const [ollamaModel, setOllamaModel] = useState('');
     const [preferredProvider, setPreferredProvider] = useState(user.preferredProvider ?? 'gemini');
-    const [hasGeminiKey, setHasGeminiKey] = useState(Boolean(user.geminiApiKey));
-    const [hasXaiKey, setHasXaiKey] = useState(Boolean(user.xaiApiKey));
+    const [hasGeminiKey, setHasGeminiKey] = useState(false);
+    const [hasXaiKey, setHasXaiKey] = useState(false);
+    const [hasOpenaiKey, setHasOpenaiKey] = useState(false);
+    const [hasAnthropicKey, setHasAnthropicKey] = useState(false);
+    const [hasAzureOpenaiKey, setHasAzureOpenaiKey] = useState(false);
+    const [hasAwsBedrockKey, setHasAwsBedrockKey] = useState(false);
+    const [hasOllamaEndpoint, setHasOllamaEndpoint] = useState(false);
     const [isPending, startTransition] = useTransition();
     const [isSavingKeys, setIsSavingKeys] = useState(false);
 
@@ -65,6 +70,11 @@ export default function SettingsClient({ user }: SettingsClientProps) {
             .then(data => {
                 if (data.hasGeminiKey !== undefined) setHasGeminiKey(data.hasGeminiKey);
                 if (data.hasXaiKey !== undefined) setHasXaiKey(data.hasXaiKey);
+                if (data.hasOpenaiKey !== undefined) setHasOpenaiKey(data.hasOpenaiKey);
+                if (data.hasAnthropicKey !== undefined) setHasAnthropicKey(data.hasAnthropicKey);
+                if (data.hasAzureOpenaiKey !== undefined) setHasAzureOpenaiKey(data.hasAzureOpenaiKey);
+                if (data.hasAwsBedrockKey !== undefined) setHasAwsBedrockKey(data.hasAwsBedrockKey);
+                if (data.hasOllamaEndpoint !== undefined) setHasOllamaEndpoint(data.hasOllamaEndpoint);
                 if (data.preferredProvider) setPreferredProvider(data.preferredProvider);
             })
             .catch(() => undefined);
@@ -117,6 +127,11 @@ export default function SettingsClient({ user }: SettingsClientProps) {
 
             if (geminiKey) setHasGeminiKey(true);
             if (xaiKey) setHasXaiKey(true);
+            if (openaiKey) setHasOpenaiKey(true);
+            if (anthropicKey) setHasAnthropicKey(true);
+            if (azureOpenaiKey) setHasAzureOpenaiKey(true);
+            if (awsBedrockAccessKey) setHasAwsBedrockKey(true);
+            if (ollamaEndpoint) setHasOllamaEndpoint(true);
             setGeminiKey('');
             setXaiKey('');
             setOpenaiKey('');
@@ -278,15 +293,15 @@ export default function SettingsClient({ user }: SettingsClientProps) {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="openai-key">OpenAI API Key {(user as any).hasOpenaiKey && <span className="text-green-600">(saved)</span>}</Label>
+                                    <Label htmlFor="openai-key">OpenAI API Key {hasOpenaiKey && <span className="text-green-600">(saved)</span>}</Label>
                                     <Input id="openai-key" type="password" value={openaiKey} onChange={(e) => setOpenaiKey(e.target.value)} placeholder="sk-..." />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="anthropic-key">Anthropic API Key {(user as any).hasAnthropicKey && <span className="text-green-600">(saved)</span>}</Label>
+                                    <Label htmlFor="anthropic-key">Anthropic API Key {hasAnthropicKey && <span className="text-green-600">(saved)</span>}</Label>
                                     <Input id="anthropic-key" type="password" value={anthropicKey} onChange={(e) => setAnthropicKey(e.target.value)} placeholder="sk-ant-..." />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="azure-key">Azure OpenAI API Key {(user as any).hasAzureOpenaiKey && <span className="text-green-600">(saved)</span>}</Label>
+                                    <Label htmlFor="azure-key">Azure OpenAI API Key {hasAzureOpenaiKey && <span className="text-green-600">(saved)</span>}</Label>
                                     <Input id="azure-key" type="password" value={azureOpenaiKey} onChange={(e) => setAzureOpenaiKey(e.target.value)} placeholder="Enter Azure API Key" />
                                 </div>
                                 <div className="space-y-2">
@@ -298,7 +313,7 @@ export default function SettingsClient({ user }: SettingsClientProps) {
                                     <Input id="aws-region" type="text" value={awsBedrockRegion} onChange={(e) => setAwsBedrockRegion(e.target.value)} placeholder="us-east-1" />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="aws-access-key">AWS Bedrock Access Key {(user as any).hasAwsBedrockKey && <span className="text-green-600">(saved)</span>}</Label>
+                                    <Label htmlFor="aws-access-key">AWS Bedrock Access Key {hasAwsBedrockKey && <span className="text-green-600">(saved)</span>}</Label>
                                     <Input id="aws-access-key" type="password" value={awsBedrockAccessKey} onChange={(e) => setAwsBedrockAccessKey(e.target.value)} placeholder="AKIA..." />
                                 </div>
                                 <div className="space-y-2">
@@ -306,7 +321,7 @@ export default function SettingsClient({ user }: SettingsClientProps) {
                                     <Input id="aws-secret-key" type="password" value={awsBedrockSecretKey} onChange={(e) => setAwsBedrockSecretKey(e.target.value)} placeholder="Enter Secret Key" />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="ollama-endpoint">Ollama Endpoint {(user as any).hasOllamaEndpoint && <span className="text-green-600">(saved)</span>}</Label>
+                                    <Label htmlFor="ollama-endpoint">Ollama Endpoint {hasOllamaEndpoint && <span className="text-green-600">(saved)</span>}</Label>
                                     <Input id="ollama-endpoint" type="text" value={ollamaEndpoint} onChange={(e) => setOllamaEndpoint(e.target.value)} placeholder="http://127.0.0.1:11434" />
                                 </div>
                                 <div className="space-y-2">
