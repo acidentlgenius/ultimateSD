@@ -1,11 +1,19 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import StepByStepChat from './StepByStepChat';
 import DiagramCanvas from './DiagramCanvas';
 import { TimerWidget } from './TimerWidget';
 import { HelpAssistant } from './HelpAssistant';
 import { Button } from './ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Download, Layout, Loader2, Menu, X, Lock } from 'lucide-react';
 import { SystemDesignProblem } from '@/types';
@@ -101,12 +109,44 @@ export default function PracticeUI({ problem, existingProgress }: { problem: Sys
   const Icon = theme.icon;
 
   const [isSolutionOpen, setIsSolutionOpen] = useState(false);
+  const [showSolutionConfirm, setShowSolutionConfirm] = useState(false);
   const solution = getSolution(problem.slug);
 
+  const totalSteps = useMemo(
+    () => Object.values(activeSteps).reduce((sum, steps) => sum + steps.length, 0),
+    [activeSteps]
+  );
+
+  const attemptedStepCount = useMemo(() => {
+    let count = 0;
+    savedStepData.forEach((data) => {
+      if (
+        data?.completed ||
+        data?.feedback ||
+        data?.textInput?.trim() ||
+        (Array.isArray(data?.listItems) && data.listItems.length > 0) ||
+        (Array.isArray(data?.schemaData) && data.schemaData.length > 0)
+      ) {
+        count += 1;
+      }
+    });
+    return count;
+  }, [savedStepData]);
+
+  const isFullyComplete = completedSteps.length >= totalSteps && totalSteps > 0;
+
   const handleUnlockSolution = () => {
-    if (solution) {
+    if (!solution) return;
+    if (isFullyComplete) {
       setIsSolutionOpen(true);
+      return;
     }
+    setShowSolutionConfirm(true);
+  };
+
+  const confirmViewSolution = () => {
+    setShowSolutionConfirm(false);
+    setIsSolutionOpen(true);
   };
 
   const exportTranscript = async () => {
@@ -357,6 +397,31 @@ export default function PracticeUI({ problem, existingProgress }: { problem: Sys
         onClose={() => setIsSolutionOpen(false)}
         solution={getSolution(problem.slug)}
       />
+
+      <Dialog open={showSolutionConfirm} onOpenChange={setShowSolutionConfirm}>
+        <DialogContent showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle>View expert solution?</DialogTitle>
+            <DialogDescription>
+              {attemptedStepCount === 0
+                ? 'You have not submitted any answers yet. Try at least one step on your own before viewing the full solution — it will be much more valuable.'
+                : `You have completed ${completedSteps.length} of ${totalSteps} steps. Viewing the solution now will reveal the full answer and may reduce the learning benefit of this practice session.`}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSolutionConfirm(false)}>
+              Keep practicing
+            </Button>
+            <Button
+              variant={attemptedStepCount === 0 ? 'outline' : 'default'}
+              className={attemptedStepCount === 0 ? 'text-amber-700 border-amber-300 hover:bg-amber-50 dark:text-amber-300 dark:border-amber-700 dark:hover:bg-amber-950' : undefined}
+              onClick={confirmViewSolution}
+            >
+              {attemptedStepCount === 0 ? 'View anyway' : 'View solution'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div >
   );
 }

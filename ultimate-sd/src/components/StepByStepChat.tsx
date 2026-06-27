@@ -1,7 +1,16 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -235,6 +244,8 @@ export default function StepByStepChat({ problem }: Props) {
   // Session restoration state
   const [sessionRestored, setSessionRestored] = useState(false);
   const [restoredDate, setRestoredDate] = useState<Date | null>(null);
+  const [dismissedRestoreBanner, setDismissedRestoreBanner] = useState(false);
+  const [showStartOverConfirm, setShowStartOverConfirm] = useState(false);
 
   // Diagram tracking - now per step
   const [diagramData, setDiagramData] = useState<{
@@ -265,6 +276,22 @@ export default function StepByStepChat({ problem }: Props) {
 
   const { data: session, status: sessionStatus } = useSession();
   const sessionLoadedForRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (restoredDate) {
+      setDismissedRestoreBanner(false);
+    }
+  }, [restoredDate]);
+
+  useEffect(() => {
+    if (!restoredDate || dismissedRestoreBanner) return;
+
+    const timer = window.setTimeout(() => {
+      setDismissedRestoreBanner(true);
+    }, 5000);
+
+    return () => window.clearTimeout(timer);
+  }, [restoredDate, dismissedRestoreBanner]);
 
   // Load session once per problem visit. Re-running on session refresh (e.g. after
   // updateStreak in FeedbackModal) would call findResumePosition and skip ahead
@@ -777,11 +804,53 @@ export default function StepByStepChat({ problem }: Props) {
   const isFirstStep = currentPhase === 'requirements' && currentStepIndex === 0;
   const canGoBack = !isFirstStep;
 
+  const totalStepCount = useMemo(
+    () => phases.reduce((sum, p) => sum + (PHASE_STEPS[p]?.length ?? 0), 0),
+    [phases, PHASE_STEPS]
+  );
+
+  const globalStepPosition = useMemo(() => {
+    let position = 0;
+    for (const p of phases) {
+      if (p === effectivePhase) {
+        position += currentStepIndex + 1;
+        break;
+      }
+      position += PHASE_STEPS[p]?.length ?? 0;
+    }
+    return position;
+  }, [phases, effectivePhase, currentStepIndex, PHASE_STEPS]);
+
+  const showRestoreBanner = restoredDate !== null && !dismissedRestoreBanner;
+
   return (
     <div className="w-full flex flex-col gap-6">
-      {/* Session Restoration Banner Removed */}
-
-      {/* Navigation and Header removed for Sidebar Layout Refactor */}
+      {showRestoreBanner && (
+        <div
+          role="status"
+          className="flex items-start justify-between gap-3 rounded-xl border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-900 dark:text-green-100"
+        >
+          <div className="flex items-start gap-2 min-w-0">
+            <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5 text-green-600 dark:text-green-400" />
+            <p>
+              <span className="font-medium">Session restored</span>
+              {' '}from {format(restoredDate, 'MMM d, yyyy · h:mm a')}
+              {totalStepCount > 0 && (
+                <> — continuing at step {globalStepPosition} of {totalStepCount}</>
+              )}
+            </p>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 shrink-0 text-green-700 hover:text-green-900 hover:bg-green-500/20 dark:text-green-300"
+            onClick={() => setDismissedRestoreBanner(true)}
+            aria-label="Dismiss restoration notice"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
 
       {/* Step Content */}
       <Card className="glass border-2 border-border">
@@ -1044,13 +1113,40 @@ export default function StepByStepChat({ problem }: Props) {
             variant="ghost"
             size="sm"
             className="h-7 text-xs text-muted-foreground hover:text-foreground"
-            onClick={handleClearSession}
+            onClick={() => setShowStartOverConfirm(true)}
           >
             <RotateCcw className="h-3.5 w-3.5 mr-1" />
             Start Over
           </Button>
         )}
       </div>
+
+      <Dialog open={showStartOverConfirm} onOpenChange={setShowStartOverConfirm}>
+        <DialogContent showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle>Start over?</DialogTitle>
+            <DialogDescription>
+              This will clear your current answers, feedback, and diagram drafts for this
+              problem. Your previous session will be saved in history, but you will begin a
+              new attempt from step one.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowStartOverConfirm(false)}>
+              Keep practicing
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                setShowStartOverConfirm(false);
+                void handleClearSession();
+              }}
+            >
+              Start over
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
