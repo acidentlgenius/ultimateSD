@@ -5,11 +5,35 @@ import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { StatsOverview } from "@/components/profile/StatsOverview";
 import { HistoryList, HistoryItemData } from "@/components/profile/HistoryList";
 import { PROBLEMS } from "@/lib/problems";
+import type { ProgressStatus } from "@/types";
 
 export const metadata = {
     title: "User Profile | Ultimate SD",
     description: "Your system design practice progress and history.",
 };
+
+function computeDurationMinutes(
+    startedAt: Date,
+    completedAt: Date | null,
+    totalPausedSeconds: number
+): number {
+    const end = completedAt ?? new Date();
+    const elapsedSeconds = (end.getTime() - startedAt.getTime()) / 1000;
+    const effectiveSeconds = Math.max(0, elapsedSeconds - totalPausedSeconds);
+    return Math.round(effectiveSeconds / 60);
+}
+
+function deriveSessionDisplayStatus(
+    sessionStatus: string,
+    progressStatus: ProgressStatus | undefined
+): ProgressStatus {
+    if (sessionStatus === "COMPLETED") {
+        if (progressStatus === "REVIEW_NEEDED") return "REVIEW_NEEDED";
+        return "COMPLETED";
+    }
+    if (sessionStatus === "ACTIVE") return "IN_PROGRESS";
+    return progressStatus ?? "IN_PROGRESS";
+}
 
 export default async function ProfilePage() {
     const session = await auth();
@@ -18,7 +42,6 @@ export default async function ProfilePage() {
         redirect("/login");
     }
 
-    // Fetch full user data including stats
     const user = await prisma.user.findUnique({
         where: { email: session.user.email },
     });
@@ -27,50 +50,65 @@ export default async function ProfilePage() {
         redirect("/login");
     }
 
-    // Fetch problem progress history
-    // Ordered by lastAttemptAt descending, limit 50
-    const progressHistory = await prisma.problemProgress.findMany({
-        where: {
-            userId: user.id,
-            // Only show items that have at least started
-            status: { not: "NOT_STARTED" },
-        },
-        orderBy: {
-            lastAttemptAt: "desc",
-        },
-        take: 50,
-    });
+    const [sessions, progressRows] = await Promise.all([
+        prisma.practiceSession.findMany({
+            where: { userId: user.id },
+            orderBy: { startedAt: "desc" },
+            take: 50,
+            include: {
+                submissions: {
+                    select: { stepId: true, isPassing: true },
+                },
+            },
+        }),
+        prisma.problemProgress.findMany({
+            where: {
+                userId: user.id,
+                status: { not: "NOT_STARTED" },
+            },
+        }),
+    ]);
 
-    // Calculate stats if they aren't fully tracked on user model yet
-    // (Though schema has them, we can double check or rely on schema)
-    const completedCount = progressHistory.filter((p: any) => p.status === 'COMPLETED').length;
+    const progressByProblem = new Map(progressRows.map((p) => [p.problemId, p]));
 
-    // Calculate average score
-    const itemsWithScore = progressHistory.filter((p: any) => p.lastScore !== null);
-    const avgScore = itemsWithScore.length > 0
-        ? itemsWithScore.reduce((acc: number, curr: any) => acc + (curr.lastScore || 0), 0) / itemsWithScore.length
-        : null;
+    const completedCount = progressRows.filter((p) => p.status === "COMPLETED").length;
+    const itemsWithScore = progressRows.filter((p) => p.lastScore !== null);
+    const avgScore =
+        itemsWithScore.length > 0
+            ? itemsWithScore.reduce((acc, curr) => acc + (curr.lastScore ?? 0), 0) /
+              itemsWithScore.length
+            : null;
 
-    // Transform to HistoryItemData
-    const historyItems: HistoryItemData[] = progressHistory.map((item: any) => {
-        // Find problem title from static data
-        const problem = PROBLEMS.find(p => p.id === item.problemId);
+    const historyItems: HistoryItemData[] = sessions.map((item) => {
+        const problem = PROBLEMS.find((p) => p.id === item.problemId);
+        const progress = progressByProblem.get(item.problemId);
+        const passingStepIds = new Set(
+            item.submissions.filter((s) => s.isPassing).map((s) => s.stepId)
+        );
 
         return {
             id: item.id,
+            sessionId: item.id,
             problemId: item.problemId,
-            problemSlug: problem?.slug || item.problemId,
-            problemTitle: problem?.title || `Problem ${item.problemId}`,
-            status: item.status,
-            score: item.lastScore,
-            lastAttemptAt: item.lastAttemptAt,
+            problemSlug: problem?.slug ?? item.problemId,
+            problemTitle: problem?.title ?? `Problem ${item.problemId}`,
+            status: deriveSessionDisplayStatus(item.status, progress?.status),
+            score: item.finalScore ?? progress?.lastScore ?? null,
+            lastAttemptAt: item.completedAt ?? item.startedAt,
+            attemptNumber: item.attemptNumber,
+            stepsCompleted: passingStepIds.size,
+            durationMinutes: computeDurationMinutes(
+                item.startedAt,
+                item.completedAt,
+                item.totalPausedSeconds
+            ),
         };
     });
 
     const stats = {
         totalSolved: user.completedProblems || completedCount,
         activeDays: user.streak,
-        avgScore: avgScore,
+        avgScore,
     };
 
     return (

@@ -29,9 +29,56 @@ export interface ChatMessage {
   feedback?: { score: number; tips: string[] };
 }
 
+export type ProgressStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'REVIEW_NEEDED';
+export type SessionStatus = 'ACTIVE' | 'COMPLETED' | 'ABANDONED';
+
 export interface ProblemWithStatus extends SystemDesignProblem {
-  status?: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'REVIEW_NEEDED';
+  status?: ProgressStatus;
+  progress?: number;
   lastPracticed?: Date;
   nextRepetitionDate?: Date;
-  progress?: number;
+  totalAttempts?: number;
+  bestScore?: number;
+}
+
+export interface ParsedFeedback {
+  score: number;
+  strengths?: string[];
+  weaknesses?: string[];
+  missed?: string[];
+  isAcceptable?: boolean;
+}
+
+export interface StepSubmissionAttempt {
+  id: string;
+  content: string;
+  feedback: ParsedFeedback | null;
+  score: number | null;
+  isPassing: boolean;
+  createdAt: Date;
+}
+
+export interface StepSubmissionDetail {
+  stepId: string;
+  stepTitle: string;
+  attempts: StepSubmissionAttempt[];
+}
+
+export interface PhaseSubmissionGroup {
+  phase: string;
+  phaseLabel: string;
+  steps: StepSubmissionDetail[];
+}
+
+export interface SessionDetail {
+  id: string;
+  problemTitle: string;
+  problemSlug: string;
+  status: SessionStatus;
+  startedAt: Date;
+  completedAt?: Date;
+  finalScore?: number;
+  attemptNumber: number;
+  diagramSnapshot?: unknown;
+  phases: PhaseSubmissionGroup[];
 }

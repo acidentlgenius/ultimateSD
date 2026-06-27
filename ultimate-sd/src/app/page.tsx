@@ -2,7 +2,9 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { DashboardClient } from "@/components/landing/DashboardClient";
 import { getUserRecommendations } from "@/app/actions/recommendations";
-import { SystemDesignProblem, ProblemWithStatus } from "@/types";
+import { getUserProgressMap } from "@/app/actions/progress";
+import { PROBLEMS } from "@/lib/problems";
+import { ProblemWithStatus } from "@/types";
 
 export default async function Home() {
   const session = await auth();
@@ -15,17 +17,23 @@ export default async function Home() {
     recommended: ProblemWithStatus[];
   } = { dailyPick: null, needsReview: [], recommended: [] };
   let onboardingCompleted = false;
+  let problemsWithStatus: ProblemWithStatus[] = PROBLEMS;
 
   if (session?.user?.id) {
-    const [recs, user] = await Promise.all([
+    const [recs, user, progressMap] = await Promise.all([
       getUserRecommendations(),
       prisma.user.findUnique({
         where: { id: session.user.id },
         select: { onboardingCompleted: true }
-      })
+      }),
+      getUserProgressMap(),
     ]);
     recommendations = recs;
     onboardingCompleted = !!user?.onboardingCompleted;
+    problemsWithStatus = PROBLEMS.map((p) => ({
+      ...p,
+      ...(progressMap.get(p.id) ?? {}),
+    }));
   }
 
   return (
@@ -33,6 +41,7 @@ export default async function Home() {
       user={session?.user}
       recommendations={recommendations}
       onboardingCompleted={onboardingCompleted}
+      problems={problemsWithStatus}
     />
   );
 }

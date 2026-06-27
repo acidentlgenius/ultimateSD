@@ -1,7 +1,23 @@
-import { Search, Filter, LayoutGrid, List, ChevronDown } from 'lucide-react';
+import { Search, LayoutGrid, List, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
+
+type StatusFilter =
+    | 'All'
+    | 'Not Started'
+    | 'Attempted'
+    | 'In Progress'
+    | 'Completed'
+    | 'Review Due';
+
+const STATUS_OPTIONS: StatusFilter[] = [
+    'All',
+    'Not Started',
+    'Attempted',
+    'In Progress',
+    'Completed',
+    'Review Due',
+];
 
 interface ProblemFilterBarProps {
     search: string;
@@ -10,11 +26,14 @@ interface ProblemFilterBarProps {
     setCategory: (value: string) => void;
     difficulty: string;
     setDifficulty: (value: string) => void;
+    statusFilter?: StatusFilter;
+    setStatusFilter?: (value: StatusFilter) => void;
+    showStatusFilter?: boolean;
     viewMode: 'grid' | 'list';
     setViewMode: (mode: 'grid' | 'list') => void;
     categories: string[];
     difficulties: string[];
-    user?: any;
+    user?: unknown;
 }
 
 export function ProblemFilterBar({
@@ -24,6 +43,9 @@ export function ProblemFilterBar({
     setCategory,
     difficulty,
     setDifficulty,
+    statusFilter = 'All',
+    setStatusFilter,
+    showStatusFilter = false,
     viewMode,
     setViewMode,
     categories,
@@ -85,6 +107,24 @@ export function ProblemFilterBar({
                                     difficulty === 'Hard' ? 'bg-red-500' : 'bg-muted-foreground/30'
                         )} />
                     </div>
+
+                    {showStatusFilter && setStatusFilter && (
+                        <div className="relative min-w-[140px] md:w-auto md:min-w-[160px]">
+                            <select
+                                value={statusFilter}
+                                onChange={e => setStatusFilter(e.target.value as StatusFilter)}
+                                aria-label="Filter by Status"
+                                className="w-full h-12 pl-4 pr-10 bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 hover:border-sidebar-border rounded-2xl outline-none cursor-pointer text-sm font-medium appearance-none transition-all hover:bg-black/10 dark:bg-white/10 focus:ring-2 focus:ring-primary/20 text-muted-foreground focus:text-foreground"
+                            >
+                                {STATUS_OPTIONS.map((status) => (
+                                    <option key={status} value={status} className="bg-popover text-popover-foreground">
+                                        {status}
+                                    </option>
+                                ))}
+                            </select>
+                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                        </div>
+                    )}
 
                     {/* View Toggle */}
                     <div className="flex bg-black/5 dark:bg-white/5 p-1 rounded-2xl h-12 items-center gap-1 shrink-0 border border-black/5 dark:border-white/5">

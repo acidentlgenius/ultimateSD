@@ -1,13 +1,22 @@
-import { render, screen } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+// @vitest-environment node
+import { renderToStaticMarkup } from 'react-dom/server';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import Home from './page';
+import { auth } from '@/auth';
+import { getUserProgressMap } from '@/app/actions/progress';
+import { prisma } from '@/lib/prisma';
+
+const dashboardProps = vi.fn();
 
 vi.mock('@/auth', () => ({
   auth: vi.fn(() => Promise.resolve(null)),
 }));
 
 vi.mock('@/components/landing/DashboardClient', () => ({
-  DashboardClient: () => <div data-testid="dashboard-client"><h1>Master Systems</h1></div>,
+  DashboardClient: (props: unknown) => {
+    dashboardProps(props);
+    return <div data-testid="dashboard-client"><h1>Master Systems</h1></div>;
+  },
 }));
 
 vi.mock('@/lib/prisma', () => ({
@@ -22,11 +31,48 @@ vi.mock('@/app/actions/recommendations', () => ({
   getUserRecommendations: vi.fn(() => Promise.resolve({ dailyPick: null, needsReview: [], recommended: [] })),
 }));
 
+vi.mock('@/app/actions/progress', () => ({
+  getUserProgressMap: vi.fn(() => Promise.resolve(new Map())),
+}));
+
 describe('Home', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('renders the home page', async () => {
     const Component = await Home();
-    render(Component);
-    expect(screen.getByRole('heading', { level: 1, name: /Master Systems/i })).toBeDefined();
-    expect(screen.getByTestId('dashboard-client')).toBeDefined();
+    const html = renderToStaticMarkup(Component);
+    expect(html).toContain('Master Systems');
+    expect(html).toContain('dashboard-client');
+  });
+
+  it('merges user progress into problems when logged in', async () => {
+    vi.mocked(auth).mockResolvedValue({ user: { id: 'user-1' } } as never);
+    vi.mocked(getUserProgressMap).mockResolvedValue(
+      new Map([
+        ['1', { status: 'IN_PROGRESS', progress: 25, totalAttempts: 1 }],
+      ])
+    );
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      onboardingCompleted: true,
+    } as never);
+
+    const Component = await Home();
+    renderToStaticMarkup(Component);
+
+    expect(getUserProgressMap).toHaveBeenCalled();
+    expect(dashboardProps).toHaveBeenCalledWith(
+      expect.objectContaining({
+        problems: expect.arrayContaining([
+          expect.objectContaining({
+            id: '1',
+            status: 'IN_PROGRESS',
+            progress: 25,
+            totalAttempts: 1,
+          }),
+        ]),
+      })
+    );
   });
 });

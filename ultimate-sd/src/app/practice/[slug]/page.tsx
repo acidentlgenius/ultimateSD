@@ -54,10 +54,21 @@ export default async function PracticePage({ params }: { params: Promise<{ slug:
     where: {
       userId_problemId: {
         userId: session.user.id,
-        problemId: problem.id
-      }
-    }
+        problemId: problem.id,
+      },
+    },
+    include: { activeSession: true },
   });
 
-  return <PracticeUI problem={problem} existingProgress={existingProgress} />;
+  const progressForUI = existingProgress
+    ? {
+        ...existingProgress,
+        startedAt: existingProgress.startedAt ?? existingProgress.activeSession?.startedAt,
+        isTimerRunning: existingProgress.activeSession?.isTimerRunning ?? true,
+        totalPausedSeconds: existingProgress.activeSession?.totalPausedSeconds ?? 0,
+        lastPausedAt: existingProgress.activeSession?.lastPausedAt ?? null,
+      }
+    : null;
+
+  return <PracticeUI problem={problem} existingProgress={progressForUI} />;
 }

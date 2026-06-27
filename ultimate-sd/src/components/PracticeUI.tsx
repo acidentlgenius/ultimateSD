@@ -20,7 +20,7 @@ import { DEFAULT_PHASE_STEPS } from '@/lib/steps';
 import { SolutionViewer } from './SolutionViewer';
 import { getSolution } from '@/lib/solutions';
 
-import { updateProblemProgress, startPracticeSession } from '@/app/actions/progress';
+import { startPracticeSession, togglePracticeTimer } from '@/app/actions/progress';
 import { CheckCircle } from 'lucide-react';
 
 export default function PracticeUI({ problem, existingProgress }: { problem: SystemDesignProblem, existingProgress?: any }) {
@@ -67,9 +67,9 @@ export default function PracticeUI({ problem, existingProgress }: { problem: Sys
 
         if (result.success && result.startedAt) {
           setServerStartedAt(result.startedAt);
-          setIsTimerRunning((result as any).isTimerRunning);
-          setServerPausedSeconds((result as any).totalPausedSeconds);
-          setLastPausedAt((result as any).lastPausedAt);
+          setIsTimerRunning(result.isTimerRunning ?? true);
+          setServerPausedSeconds(result.totalPausedSeconds ?? 0);
+          setLastPausedAt(result.lastPausedAt ?? null);
         }
       } catch (error) {
         console.error("Failed to auto-start session:", error);
@@ -160,11 +160,11 @@ export default function PracticeUI({ problem, existingProgress }: { problem: Sys
             lastPausedAt={lastPausedAt}
             onToggle={async () => {
               if (!isAuthenticated) return;
-              const result = await import('@/app/actions/progress').then(mod => mod.togglePracticeTimer(problem.id));
+              const result = await togglePracticeTimer(problem.id);
               if (result.success) {
-                setIsTimerRunning(result.isTimerRunning);
-                setServerPausedSeconds(result.totalPausedSeconds);
-                setLastPausedAt(result.lastPausedAt);
+                setIsTimerRunning(result.isTimerRunning ?? false);
+                setServerPausedSeconds(result.totalPausedSeconds ?? 0);
+                setLastPausedAt(result.lastPausedAt ?? null);
               }
             }}
             onComplete={async () => {

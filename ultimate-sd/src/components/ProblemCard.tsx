@@ -111,14 +111,21 @@ export default function ProblemCard({ problem, featured, locked, badge, onLocked
 
           <div className="mt-auto space-y-4">
             <div className="flex items-center justify-between min-h-[1.5rem]">
-              {status ? (
-                <div className={cn("flex items-center gap-1.5 text-xs font-semibold px-2 py-1 rounded-full", status.bg, status.color)}>
-                  {StatusIcon && <StatusIcon className="h-3 w-3" />}
-                  <span>{status.text}</span>
-                </div>
-              ) : (
-                <div className="h-6" />
-              )}
+              <div className="flex items-center gap-2 flex-wrap">
+                {status ? (
+                  <div className={cn("flex items-center gap-1.5 text-xs font-semibold px-2 py-1 rounded-full", status.bg, status.color)}>
+                    {StatusIcon && <StatusIcon className="h-3 w-3" />}
+                    <span>{status.text}</span>
+                  </div>
+                ) : (
+                  <div className="h-6" />
+                )}
+                {(problem.totalAttempts ?? 0) > 0 && problem.status !== 'COMPLETED' && (
+                  <Badge variant="outline" className="text-[10px] font-semibold px-2 py-0.5 rounded-full shadow-none">
+                    {problem.totalAttempts} attempt{problem.totalAttempts !== 1 ? 's' : ''}
+                  </Badge>
+                )}
+              </div>
 
               {(problem.progress && problem.progress > 0 && problem.status !== 'COMPLETED') && (
                 <div className="flex items-center gap-2 w-24">
