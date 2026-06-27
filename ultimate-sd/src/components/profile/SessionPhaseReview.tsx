@@ -11,25 +11,45 @@ import type { SessionDetail } from "@/types";
 
 interface SessionPhaseReviewProps {
     session: SessionDetail;
+    backHref?: string;
+    backLabel?: string;
+    showBackLink?: boolean;
+    userName?: string | null;
+    userEmail?: string;
 }
 
-export function SessionPhaseReview({ session }: SessionPhaseReviewProps) {
+export function SessionPhaseReview({
+    session,
+    backHref = "/profile",
+    backLabel = "Back to Profile",
+    showBackLink = true,
+    userName,
+    userEmail,
+}: SessionPhaseReviewProps) {
     const defaultPhase = session.phases[0]?.phase ?? "";
 
     return (
         <div className="space-y-8">
             <div className="space-y-4">
-                <Link
-                    href="/profile"
-                    className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                    <ArrowLeft className="w-4 h-4" />
-                    Back to Profile
-                </Link>
+                {showBackLink && (
+                    <Link
+                        href={backHref}
+                        className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                        <ArrowLeft className="w-4 h-4" />
+                        {backLabel}
+                    </Link>
+                )}
 
                 <div className="glass-card rounded-2xl p-6 md:p-8 border border-border/50 space-y-4">
                     <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                         <div className="space-y-2">
+                            {(userName || userEmail) && (
+                                <p className="text-sm text-muted-foreground">
+                                    {userName ?? "Unknown user"}
+                                    {userEmail ? ` · ${userEmail}` : ""}
+                                </p>
+                            )}
                             <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
                                 {session.problemTitle}
                             </h1>

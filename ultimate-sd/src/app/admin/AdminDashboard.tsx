@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { AdminClient } from './AdminClient';
-import { AdminActivityFeed } from './AdminActivityFeed';
-import type { AdminActivityItem } from '@/lib/admin-activities-types';
+import { AdminSessionExplorer } from './AdminSessionExplorer';
+import type { AdminSessionSummary } from '@/lib/admin-sessions-types';
 import { cn } from '@/lib/utils';
 
 interface AdminUser {
@@ -24,11 +24,11 @@ type AdminTab = 'users' | 'activities';
 
 interface AdminDashboardProps {
   users: AdminUser[];
-  activities: AdminActivityItem[];
+  sessions: AdminSessionSummary[];
   initialUserId?: string;
 }
 
-export function AdminDashboard({ users, activities, initialUserId }: AdminDashboardProps) {
+export function AdminDashboard({ users, sessions, initialUserId }: AdminDashboardProps) {
   const [tab, setTab] = useState<AdminTab>(initialUserId ? 'activities' : 'users');
   const [activityUserFilter, setActivityUserFilter] = useState(initialUserId ?? 'all');
 
@@ -69,8 +69,8 @@ export function AdminDashboard({ users, activities, initialUserId }: AdminDashbo
       {tab === 'users' ? (
         <AdminClient users={users} onViewActivity={handleViewActivity} />
       ) : (
-        <AdminActivityFeed
-          activities={activities}
+        <AdminSessionExplorer
+          sessions={sessions}
           users={users.map((u) => ({ id: u.id, name: u.name, email: u.email }))}
           initialUserId={activityUserFilter !== 'all' ? activityUserFilter : undefined}
         />

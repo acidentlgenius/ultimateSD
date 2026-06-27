@@ -1,6 +1,6 @@
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
-import { getAdminActivities } from '@/lib/admin-activities';
+import { getAdminSessions } from '@/lib/admin-sessions';
 import { redirect } from 'next/navigation';
 import { AdminDashboard } from './AdminDashboard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,11 +25,11 @@ export default async function AdminPage({
     redirect('/');
   }
 
-  const [users, activities] = await Promise.all([
+  const [users, sessions] = await Promise.all([
     prisma.user.findMany({
       orderBy: { createdAt: 'desc' },
     }),
-    getAdminActivities(100),
+    getAdminSessions(200),
   ]);
 
   // Analytics
@@ -79,7 +79,7 @@ export default async function AdminPage({
 
       <AdminDashboard
         users={users}
-        activities={activities}
+        sessions={sessions}
         initialUserId={filterUserId}
       />
     </div>
