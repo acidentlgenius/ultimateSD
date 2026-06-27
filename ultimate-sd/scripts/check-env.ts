@@ -14,9 +14,7 @@ const paymentEnvVars = [
 ];
 
 const emailEnvVars = [
-    'EMAIL_SERVER_HOST',
-    'EMAIL_SERVER_USER',
-    'EMAIL_SERVER_PASSWORD',
+    'RESEND_API_KEY',
     'EMAIL_FROM',
     'NEXT_PUBLIC_APP_URL',
 ];
@@ -66,7 +64,7 @@ const main = () => {
     }
 
     if (missingEmail.length > 0) {
-        console.warn('⚠️  Email env vars missing (verification & password reset emails disabled):');
+        console.warn('⚠️  Email env vars missing (Resend auth emails disabled):');
         missingEmail.forEach(key => console.warn(`   - ${key}`));
     }
 
