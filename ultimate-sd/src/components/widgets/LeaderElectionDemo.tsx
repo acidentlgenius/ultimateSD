@@ -135,11 +135,11 @@ export default function LeaderElectionDemo() {
                                 </motion.div>
 
                                 {/* Controls */}
-                                <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                                     {node.state === 'Dead' ? (
-                                        <Button size="icon" variant="outline" className="h-6 w-6" aria-label="Restart Node" onClick={() => restartNode(node.id)}>↺</Button>
+                                        <Button size="icon" variant="outline" className="h-6 w-6" aria-label="Restart Node" title="Restart Node" onClick={() => restartNode(node.id)}>↺</Button>
                                     ) : (
-                                        <Button size="icon" variant="destructive" className="h-6 w-6" aria-label="Kill Node" onClick={() => killNode(node.id)}>✕</Button>
+                                        <Button size="icon" variant="destructive" className="h-6 w-6" aria-label="Kill Node" title="Kill Node" onClick={() => killNode(node.id)}>✕</Button>
                                     )}
                                 </div>
 
