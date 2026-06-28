@@ -75,6 +75,7 @@ const JobSchedulerViz: React.FC = () => {
     useEffect(() => {
         if (!isRunning) return;
 
+        const timeoutIds = new Set<NodeJS.Timeout>();
         const interval = setInterval(() => {
             // Find idle workers
             const idleWorkers = workers.filter(w => !w.busy);
@@ -118,22 +119,28 @@ const JobSchedulerViz: React.FC = () => {
                 // Schedule completion
                 assignments.forEach(({ workerId, taskId }) => {
                     const task = tasks.find(t => t.id === taskId);
-                    setTimeout(() => {
+                    const timeoutId = setTimeout(() => {
                         completeTask(taskId, workerId);
+                        timeoutIds.delete(timeoutId);
                     }, task?.duration || 1000);
+                    timeoutIds.add(timeoutId);
                 });
             }
 
         }, 1000);
 
-        return () => clearInterval(interval);
+        return () => {
+            clearInterval(interval);
+            timeoutIds.forEach(clearTimeout);
+            timeoutIds.clear();
+        };
     }, [isRunning, workers, tasks, addLog]);
 
-    const completeTask = (taskId: string, workerId: number) => {
+    const completeTask = useCallback((taskId: string, workerId: number) => {
         setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: 'completed', workerId: undefined } : t));
         setWorkers(prev => prev.map(w => w.id === workerId ? { ...w, busy: false, taskId: undefined } : w));
         addLog(`Task completed: ${INITIAL_TASKS.find(t => t.id === taskId)?.name}`);
-    };
+    }, [addLog]);
 
     const reset = () => {
         setTasks(INITIAL_TASKS.map(t => ({ ...t }))); // Deep copy to reset status
