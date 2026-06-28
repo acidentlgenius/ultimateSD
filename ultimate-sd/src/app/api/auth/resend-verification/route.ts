@@ -9,7 +9,8 @@ import {
 
 export async function POST(req: Request) {
     try {
-        const { email } = await req.json();
+        let { email } = await req.json();
+        if (email) email = email.toLowerCase();
 
         if (!email) {
             return NextResponse.json({ message: 'Email is required' }, { status: 400 });

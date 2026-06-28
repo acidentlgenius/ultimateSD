@@ -12,7 +12,8 @@ import {
 
 export async function POST(req: Request) {
     try {
-        const { name, email, password } = await req.json()
+        let { name, email, password } = await req.json()
+        if (email) email = email.toLowerCase()
 
         if (!email || !password) {
             return NextResponse.json(
