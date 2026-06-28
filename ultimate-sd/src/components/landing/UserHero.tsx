@@ -79,7 +79,8 @@ export function UserHero({ user, recommendations, setShowOnboarding }: UserHeroP
                                 </div>
                             )}
 
-                            {secondaryRec && (
+                            {secondaryRec &&
+                                secondaryRec.problem.slug !== recommendations.dailyPick?.slug && (
                                 <div className="h-full transform transition-all hover:scale-[1.01] hover:-translate-y-1 duration-300">
                                     <ProblemCard
                                         problem={secondaryRec.problem}
