@@ -3,7 +3,7 @@
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { PROBLEMS } from '@/lib/problems';
-import { categorizeRecommendations } from '@/lib/recommendations-logic';
+import { categorizeRecommendations, pickDailyPick } from '@/lib/recommendations-logic';
 
 export async function getUserRecommendations() {
     const session = await auth();
@@ -91,7 +91,12 @@ export async function getUserRecommendations() {
     );
 
     const validProblems = scoredProblems.filter(p => p.score > -50);
-    const { dailyPick, needsReview, recommended } = categorizeRecommendations(validProblems);
+    const dateKey = new Date().toISOString().slice(0, 10);
+    const dailyPickScored = pickDailyPick(validProblems, `${userId}:${dateKey}`);
+    const { dailyPick, needsReview, recommended } = categorizeRecommendations(
+      validProblems,
+      dailyPickScored
+    );
 
     return {
         dailyPick: dailyPick?.problem ?? null,
