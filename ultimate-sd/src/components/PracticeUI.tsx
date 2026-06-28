@@ -322,7 +322,7 @@ export default function PracticeUI({ problem, existingProgress }: { problem: Sys
           {isMounted ? (
             <Sheet>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="-ml-2 shrink-0" aria-label="Toggle menu">
+                <Button variant="ghost" size="icon" className="-ml-2 shrink-0" aria-label="Toggle menu" title="Toggle menu">
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
@@ -331,7 +331,7 @@ export default function PracticeUI({ problem, existingProgress }: { problem: Sys
               </SheetContent>
             </Sheet>
           ) : (
-            <Button variant="ghost" size="icon" className="-ml-2 shrink-0" aria-label="Toggle menu">
+            <Button variant="ghost" size="icon" className="-ml-2 shrink-0" aria-label="Toggle menu" title="Toggle menu">
               <Menu className="h-5 w-5" />
             </Button>
           )}
