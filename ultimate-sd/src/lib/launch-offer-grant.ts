@@ -18,17 +18,15 @@ export type ClaimPlatformResult =
   | { success: true; expiresAt: Date; emailSent: boolean }
   | { error: 'not_authenticated' | 'offer_ended' | 'already_redeemed' | 'sold_out' | 'has_paid_plan' };
 
-export type EnterGiveawayResult =
-  | { success: true }
-  | { error: 'not_authenticated' | 'offer_ended' | 'already_redeemed' | 'already_entered' | 'has_paid_plan' };
-
 export type DrawWinnersResult =
   | { success: true; winnerCount: number; emailFailures: number }
-  | { error: 'giveaway_full' | 'no_entries' };
+  | { error: 'giveaway_full' | 'no_eligible' };
 
 export type AdminPlatformGrantResult =
   | { success: true; expiresAt: Date; launchOfferSlotUsed: boolean }
   | { error: 'sold_out' | 'already_redeemed' };
+
+type PrismaTx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
 
 function shuffleInPlace<T>(items: T[]): T[] {
   for (let i = items.length - 1; i > 0; i -= 1) {
@@ -38,26 +36,31 @@ function shuffleInPlace<T>(items: T[]): T[] {
   return items;
 }
 
+async function countPlatformSlotsUsed(tx: PrismaTx | typeof prisma): Promise<number> {
+  return tx.launchOfferRedemption.count({
+    where: { kind: { in: ['PLATFORM_LAUNCH', 'AI_GIVEAWAY'] } },
+  });
+}
+
 export async function getLaunchOfferStats(): Promise<LaunchOfferPublicStats> {
-  const [platformClaimed, aiWinners, aiEntries] = await Promise.all([
-    prisma.launchOfferRedemption.count({ where: { kind: 'PLATFORM_LAUNCH' } }),
+  const [platformClaimed, aiWinners, aiEligible] = await Promise.all([
+    prisma.launchOfferRedemption.count({
+      where: { kind: { in: ['PLATFORM_LAUNCH', 'AI_GIVEAWAY'] } },
+    }),
     prisma.launchOfferRedemption.count({ where: { kind: 'AI_GIVEAWAY' } }),
-    prisma.launchOfferEntry.count(),
+    prisma.launchOfferRedemption.count({ where: { kind: 'PLATFORM_LAUNCH' } }),
   ]);
 
-  return buildLaunchOfferStats(platformClaimed, aiWinners, aiEntries);
+  return buildLaunchOfferStats(platformClaimed, aiWinners, aiEligible);
 }
 
 export async function getLaunchOfferUserState(userId: string): Promise<LaunchOfferUserState> {
-  const [redemption, entry] = await Promise.all([
-    prisma.launchOfferRedemption.findUnique({ where: { userId } }),
-    prisma.launchOfferEntry.findUnique({ where: { userId } }),
-  ]);
+  const redemption = await prisma.launchOfferRedemption.findUnique({ where: { userId } });
 
   return {
     hasRedeemed: Boolean(redemption),
     redemptionKind: redemption?.kind ?? null,
-    hasEnteredGiveaway: Boolean(entry),
+    isEligibleForAiDraw: redemption?.kind === 'PLATFORM_LAUNCH',
   };
 }
 
@@ -99,9 +102,7 @@ export async function grantAdminPlatformPlan(
     const existing = await tx.launchOfferRedemption.findUnique({ where: { userId } });
     if (existing) return { error: 'already_redeemed' as const };
 
-    const claimed = await tx.launchOfferRedemption.count({
-      where: { kind: 'PLATFORM_LAUNCH' },
-    });
+    const claimed = await countPlatformSlotsUsed(tx);
     if (claimed >= LAUNCH_PLATFORM_SLOTS) {
       return { error: 'sold_out' as const };
     }
@@ -124,7 +125,10 @@ export async function grantAdminPlatformPlan(
   });
 
   if ('error' in result) {
-    return result;
+    if (result.error === 'already_redeemed') {
+      return { error: 'already_redeemed' };
+    }
+    return { error: 'sold_out' };
   }
 
   return { success: true, expiresAt: result.expiresAt, launchOfferSlotUsed: true };
@@ -143,9 +147,7 @@ export async function claimPlatformLaunchOffer(userId: string): Promise<ClaimPla
     const existing = await tx.launchOfferRedemption.findUnique({ where: { userId } });
     if (existing) return { error: 'already_redeemed' as const };
 
-    const claimed = await tx.launchOfferRedemption.count({
-      where: { kind: 'PLATFORM_LAUNCH' },
-    });
+    const claimed = await countPlatformSlotsUsed(tx);
     if (claimed >= LAUNCH_PLATFORM_SLOTS) {
       return { error: 'sold_out' as const };
     }
@@ -204,33 +206,6 @@ export async function claimPlatformLaunchOffer(userId: string): Promise<ClaimPla
   return { success: true, expiresAt: result.expiresAt, emailSent };
 }
 
-export async function enterAiGiveaway(userId: string): Promise<EnterGiveawayResult> {
-  if (!isLaunchOfferActive()) {
-    return { error: 'offer_ended' };
-  }
-
-  if (await userHasPaidPlan(userId)) {
-    return { error: 'has_paid_plan' };
-  }
-
-  const existingRedemption = await prisma.launchOfferRedemption.findUnique({
-    where: { userId },
-  });
-  if (existingRedemption) {
-    return { error: 'already_redeemed' };
-  }
-
-  const existingEntry = await prisma.launchOfferEntry.findUnique({
-    where: { userId },
-  });
-  if (existingEntry) {
-    return { error: 'already_entered' };
-  }
-
-  await prisma.launchOfferEntry.create({ data: { userId } });
-  return { success: true };
-}
-
 export async function drawAiGiveawayWinners(
   adminId: string,
   count = LAUNCH_AI_WINNER_SLOTS
@@ -243,26 +218,21 @@ export async function drawAiGiveawayWinners(
     return { error: 'giveaway_full' };
   }
 
-  const entries = await prisma.launchOfferEntry.findMany({
-    where: {
-      user: {
-        launchOfferRedemption: null,
-      },
-    },
-    select: { userId: true },
+  const eligible = await prisma.launchOfferRedemption.findMany({
+    where: { kind: 'PLATFORM_LAUNCH' },
+    select: { userId: true, id: true },
   });
 
-  if (entries.length === 0) {
-    return { error: 'no_entries' };
+  if (eligible.length === 0) {
+    return { error: 'no_eligible' };
   }
 
-  const pickCount = Math.min(count, slotsLeft, entries.length);
-  const shuffled = shuffleInPlace([...entries]);
-  const winners = shuffled.slice(0, pickCount);
+  const pickCount = Math.min(count, slotsLeft, eligible.length);
+  const winners = shuffleInPlace([...eligible]).slice(0, pickCount);
 
   let emailFailures = 0;
 
-  for (const { userId } of winners) {
+  for (const { userId, id: redemptionId } of winners) {
     const now = new Date();
     const expiresAt = getLaunchOfferExpiry(now);
 
@@ -277,15 +247,10 @@ export async function drawAiGiveawayWinners(
           aiCreditsResetAt: getNextAiCreditsResetDate(now),
         },
       }),
-      prisma.launchOfferRedemption.create({
-        data: {
-          userId,
-          kind: 'AI_GIVEAWAY',
-          expiresAt,
-          grantedBy: adminId,
-        },
+      prisma.launchOfferRedemption.update({
+        where: { id: redemptionId },
+        data: { kind: 'AI_GIVEAWAY', expiresAt, grantedBy: adminId },
       }),
-      prisma.launchOfferEntry.delete({ where: { userId } }),
     ]);
 
     const user = await prisma.user.findUnique({
@@ -322,6 +287,14 @@ export type LaunchOfferRedemptionRow = {
   user: { email: string; name: string | null };
 };
 
+export type LaunchOfferClaimantRow = {
+  userId: string;
+  email: string;
+  name: string | null;
+  claimedAt: Date;
+  kind: 'PLATFORM_LAUNCH' | 'AI_GIVEAWAY';
+};
+
 export async function getLaunchOfferRedemptions(): Promise<LaunchOfferRedemptionRow[]> {
   return prisma.launchOfferRedemption.findMany({
     include: {
@@ -329,4 +302,20 @@ export async function getLaunchOfferRedemptions(): Promise<LaunchOfferRedemption
     },
     orderBy: { grantedAt: 'desc' },
   });
+}
+
+export async function getLaunchOfferPlatformClaimants(): Promise<LaunchOfferClaimantRow[]> {
+  const rows = await prisma.launchOfferRedemption.findMany({
+    where: { kind: { in: ['PLATFORM_LAUNCH', 'AI_GIVEAWAY'] } },
+    include: { user: { select: { email: true, name: true } } },
+    orderBy: { grantedAt: 'asc' },
+  });
+
+  return rows.map((r) => ({
+    userId: r.userId,
+    email: r.user.email,
+    name: r.user.name,
+    claimedAt: r.grantedAt,
+    kind: r.kind,
+  }));
 }

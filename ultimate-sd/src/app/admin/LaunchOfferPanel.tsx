@@ -11,11 +11,12 @@ import {
   LAUNCH_PLATFORM_SLOTS,
   type LaunchOfferPublicStats,
 } from '@/lib/launch-offer';
-import type { LaunchOfferRedemptionRow } from '@/lib/launch-offer-grant';
+import type { LaunchOfferClaimantRow, LaunchOfferRedemptionRow } from '@/lib/launch-offer-grant';
 
 interface LaunchOfferPanelProps {
   stats: LaunchOfferPublicStats;
   redemptions: LaunchOfferRedemptionRow[];
+  claimants: LaunchOfferClaimantRow[];
 }
 
 function formatKind(kind: LaunchOfferRedemptionRow['kind']): string {
@@ -23,7 +24,7 @@ function formatKind(kind: LaunchOfferRedemptionRow['kind']): string {
     case 'PLATFORM_LAUNCH':
       return 'Platform (FCFS)';
     case 'AI_GIVEAWAY':
-      return 'AI Giveaway';
+      return 'AI Lucky Draw';
     default: {
       const _exhaustive: never = kind;
       return _exhaustive;
@@ -31,14 +32,18 @@ function formatKind(kind: LaunchOfferRedemptionRow['kind']): string {
   }
 }
 
-export function LaunchOfferPanel({ stats, redemptions }: LaunchOfferPanelProps) {
+function formatClaimantStatus(kind: LaunchOfferClaimantRow['kind']): string {
+  return kind === 'PLATFORM_LAUNCH' ? 'Eligible' : 'AI winner';
+}
+
+export function LaunchOfferPanel({ stats, redemptions, claimants }: LaunchOfferPanelProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
   const handleDraw = () => {
     if (
       !confirm(
-        `Draw up to ${LAUNCH_AI_WINNER_SLOTS - stats.aiWinners} AI giveaway winner(s) from ${stats.aiEntries} entries?`
+        `Draw up to ${LAUNCH_AI_WINNER_SLOTS - stats.aiWinners} AI winner(s) from ${stats.aiEligible} eligible Platform claimants?`
       )
     ) {
       return;
@@ -50,7 +55,7 @@ export function LaunchOfferPanel({ stats, redemptions }: LaunchOfferPanelProps) 
       if ('error' in result) {
         const messages: Record<string, string> = {
           giveaway_full: 'All AI giveaway slots are filled.',
-          no_entries: 'No eligible giveaway entries to draw from.',
+          no_eligible: 'No eligible Platform claimants to draw from.',
         };
         toast.error(messages[result.error] ?? 'Draw failed');
         return;
@@ -64,10 +69,7 @@ export function LaunchOfferPanel({ stats, redemptions }: LaunchOfferPanelProps) 
     });
   };
 
-  const canDraw =
-    stats.isActive &&
-    stats.aiWinners < LAUNCH_AI_WINNER_SLOTS &&
-    stats.aiEntries > 0;
+  const canDraw = stats.aiWinners < LAUNCH_AI_WINNER_SLOTS && stats.aiEligible > 0;
 
   return (
     <div className="space-y-6">
@@ -79,14 +81,14 @@ export function LaunchOfferPanel({ stats, redemptions }: LaunchOfferPanelProps) 
           </p>
         </div>
         <div className="rounded-lg border bg-white dark:bg-zinc-900 p-4">
-          <p className="text-sm text-zinc-500">AI giveaway winners</p>
+          <p className="text-sm text-zinc-500">AI lucky draw winners</p>
           <p className="text-2xl font-bold text-purple-600">
             {stats.aiWinners} / {LAUNCH_AI_WINNER_SLOTS}
           </p>
         </div>
         <div className="rounded-lg border bg-white dark:bg-zinc-900 p-4">
-          <p className="text-sm text-zinc-500">Giveaway entries</p>
-          <p className="text-2xl font-bold">{stats.aiEntries}</p>
+          <p className="text-sm text-zinc-500">AI draw eligible</p>
+          <p className="text-2xl font-bold">{stats.aiEligible}</p>
         </div>
         <div className="rounded-lg border bg-white dark:bg-zinc-900 p-4">
           <p className="text-sm text-zinc-500">Offer status</p>
@@ -115,54 +117,102 @@ export function LaunchOfferPanel({ stats, redemptions }: LaunchOfferPanelProps) 
           )}
         </Button>
         <p className="text-sm text-muted-foreground">
-          Randomly selects from users who entered and have not redeemed yet.
+          Randomly selects from Platform claimants who have not yet won the AI draw.
         </p>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border bg-white dark:bg-zinc-900 shadow">
-        <table className="min-w-[640px] w-full divide-y divide-zinc-200 dark:divide-zinc-800">
-          <thead className="bg-zinc-50 dark:bg-zinc-800">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
-                User
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
-                Kind
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
-                Granted
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
-                Expires
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
-            {redemptions.length === 0 ? (
+      <div className="space-y-3">
+        <h3 className="text-lg font-semibold">Platform claimants (AI draw pool)</h3>
+        <div className="overflow-x-auto rounded-lg border bg-white dark:bg-zinc-900 shadow">
+          <table className="min-w-[640px] w-full divide-y divide-zinc-200 dark:divide-zinc-800">
+            <thead className="bg-zinc-50 dark:bg-zinc-800">
               <tr>
-                <td colSpan={4} className="px-6 py-8 text-center text-muted-foreground">
-                  No launch offer redemptions yet.
-                </td>
+                <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
+                  User
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
+                  Claimed at
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
+                  Status
+                </th>
               </tr>
-            ) : (
-              redemptions.map((row) => (
-                <tr key={row.id}>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium">{row.user.name ?? '—'}</div>
-                    <div className="text-sm text-zinc-500">{row.user.email}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">{formatKind(row.kind)}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-500">
-                    {new Date(row.grantedAt).toLocaleString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-500">
-                    {new Date(row.expiresAt).toLocaleDateString()}
+            </thead>
+            <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+              {claimants.length === 0 ? (
+                <tr>
+                  <td colSpan={3} className="px-6 py-8 text-center text-muted-foreground">
+                    No platform claimants yet.
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                claimants.map((row) => (
+                  <tr key={row.userId}>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium">{row.name ?? '—'}</div>
+                      <div className="text-sm text-zinc-500">{row.email}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-500">
+                      {new Date(row.claimedAt).toLocaleString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      {formatClaimantStatus(row.kind)}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <h3 className="text-lg font-semibold">All redemptions</h3>
+        <div className="overflow-x-auto rounded-lg border bg-white dark:bg-zinc-900 shadow">
+          <table className="min-w-[640px] w-full divide-y divide-zinc-200 dark:divide-zinc-800">
+            <thead className="bg-zinc-50 dark:bg-zinc-800">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
+                  User
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
+                  Kind
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
+                  Granted
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
+                  Expires
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+              {redemptions.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="px-6 py-8 text-center text-muted-foreground">
+                    No launch offer redemptions yet.
+                  </td>
+                </tr>
+              ) : (
+                redemptions.map((row) => (
+                  <tr key={row.id}>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium">{row.user.name ?? '—'}</div>
+                      <div className="text-sm text-zinc-500">{row.user.email}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">{formatKind(row.kind)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-500">
+                      {new Date(row.grantedAt).toLocaleString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-500">
+                      {new Date(row.expiresAt).toLocaleDateString()}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

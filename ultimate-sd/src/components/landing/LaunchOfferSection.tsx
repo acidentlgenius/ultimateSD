@@ -7,12 +7,16 @@ import { motion } from 'framer-motion';
 import { CheckCircle2, Gift, Key, Sparkles, Trophy } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
 import {
-  claimLaunchPlatformAction,
-  enterAiGiveawayAction,
-} from '@/app/actions/launch-offer';
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { claimLaunchPlatformAction } from '@/app/actions/launch-offer';
 import {
   LAUNCH_AI_WINNER_SLOTS,
   LAUNCH_OFFER_MONTHS,
@@ -37,7 +41,7 @@ export function LaunchOfferSection({
 }: LaunchOfferSectionProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [action, setAction] = useState<'claim' | 'enter' | null>(null);
+  const [isClaiming, setIsClaiming] = useState(false);
 
   if (!stats.isActive) return null;
 
@@ -45,7 +49,7 @@ export function LaunchOfferSection({
   const platformClaimed = userState?.redemptionKind === 'PLATFORM_LAUNCH';
   const aiWon = userState?.redemptionKind === 'AI_GIVEAWAY';
   const hasRedeemed = userState?.hasRedeemed ?? false;
-  const hasEntered = userState?.hasEnteredGiveaway ?? false;
+  const isEligibleForAiDraw = userState?.isEligibleForAiDraw ?? false;
 
   const platformProgress = Math.round((stats.platformClaimed / LAUNCH_PLATFORM_SLOTS) * 100);
 
@@ -55,10 +59,10 @@ export function LaunchOfferSection({
       return;
     }
 
-    setAction('claim');
+    setIsClaiming(true);
     startTransition(async () => {
       const result = await claimLaunchPlatformAction();
-      setAction(null);
+      setIsClaiming(false);
 
       if ('error' in result) {
         const messages: Record<string, string> = {
@@ -72,35 +76,9 @@ export function LaunchOfferSection({
         return;
       }
 
-      toast.success('Launch offer claimed! Enjoy 3 months of Platform access.');
-      router.refresh();
-    });
-  };
-
-  const handleEnter = () => {
-    if (!isLoggedIn) {
-      router.push('/login?callbackUrl=/pricing');
-      return;
-    }
-
-    setAction('enter');
-    startTransition(async () => {
-      const result = await enterAiGiveawayAction();
-      setAction(null);
-
-      if ('error' in result) {
-        const messages: Record<string, string> = {
-          not_authenticated: 'Please sign in to enter the giveaway.',
-          offer_ended: 'The launch offer has ended.',
-          already_redeemed: 'You have already redeemed a launch offer.',
-          already_entered: 'You are already entered in the AI giveaway.',
-          has_paid_plan: 'You already have an active paid plan.',
-        };
-        toast.error(messages[result.error] ?? 'Could not enter giveaway');
-        return;
-      }
-
-      toast.success('You are entered in the AI plan giveaway!');
+      toast.success(
+        'Launch offer claimed! Enjoy 3 months of Platform access — you are entered in the AI lucky draw.'
+      );
       router.refresh();
     });
   };
@@ -108,7 +86,11 @@ export function LaunchOfferSection({
   return (
     <section
       id="launch-offer"
-      className={embedded ? 'py-8 md:py-12 bg-background relative overflow-hidden' : 'py-16 md:py-24 bg-background relative overflow-hidden'}
+      className={
+        embedded
+          ? 'py-8 md:py-12 bg-background relative overflow-hidden'
+          : 'py-16 md:py-24 bg-background relative overflow-hidden'
+      }
     >
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-indigo-500/5 rounded-full blur-[120px]" />
@@ -133,17 +115,8 @@ export function LaunchOfferSection({
             </>
           )}
           <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto px-2">
-            {embedded ? (
-              <>
-                {LAUNCH_PLATFORM_SLOTS} free {LAUNCH_OFFER_MONTHS}-month Platform plans and{' '}
-                {LAUNCH_AI_WINNER_SLOTS} AI giveaways — claim or enter below.
-              </>
-            ) : (
-              <>
-                Celebrate our launch with {LAUNCH_PLATFORM_SLOTS} free {LAUNCH_OFFER_MONTHS}-month Platform plans
-                and {LAUNCH_AI_WINNER_SLOTS} AI plan giveaways.
-              </>
-            )}
+            Sign in and claim your free Platform plan. Every claimant is automatically entered into
+            a lucky draw for {LAUNCH_AI_WINNER_SLOTS} AI plans.
           </p>
         </motion.div>
 
@@ -171,7 +144,7 @@ export function LaunchOfferSection({
                 {[
                   'First-come, first-served',
                   'Unlock all practice problems',
-                  'Use your own Gemini API key',
+                  'Automatically entered for AI lucky draw',
                 ].map((item) => (
                   <li key={item} className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-blue-500 shrink-0" />
@@ -197,10 +170,10 @@ export function LaunchOfferSection({
                 <Button
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                   size="lg"
-                  disabled={isPending && action === 'claim'}
+                  disabled={isPending && isClaiming}
                   onClick={handleClaim}
                 >
-                  {isPending && action === 'claim'
+                  {isPending && isClaiming
                     ? 'Claiming…'
                     : isLoggedIn
                       ? 'Claim free Platform access'
@@ -213,7 +186,7 @@ export function LaunchOfferSection({
           <Card className="border-indigo-500/40 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 ring-1 ring-indigo-500/20">
             <CardHeader>
               <CardTitle className="text-xl sm:text-2xl flex flex-wrap items-center gap-2">
-                AI Plan <Sparkles className="h-5 w-5 text-indigo-500" />
+                AI Plan Lucky Draw <Sparkles className="h-5 w-5 text-indigo-500" />
               </CardTitle>
               <CardDescription>
                 {LAUNCH_AI_WINNER_SLOTS} winners · {LAUNCH_OFFER_MONTHS} months free
@@ -223,14 +196,16 @@ export function LaunchOfferSection({
               <div className="flex items-center gap-3 p-3 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
                 <Trophy className="h-8 w-8 text-indigo-500 shrink-0" />
                 <div className="text-sm">
-                  <p className="font-medium">{stats.aiEntries} entries so far</p>
-                  <p className="text-muted-foreground">{stats.aiWinners} / {LAUNCH_AI_WINNER_SLOTS} winners picked</p>
+                  <p className="font-medium">{stats.aiEligible} claimants eligible</p>
+                  <p className="text-muted-foreground">
+                    {stats.aiWinners} / {LAUNCH_AI_WINNER_SLOTS} winners selected
+                  </p>
                 </div>
               </div>
               <ul className="space-y-2 text-sm">
                 {[
-                  'No API keys required',
-                  'Generous monthly AI credits',
+                  'No separate signup — claim Platform above',
+                  'Winners upgraded to AI plan with credits',
                   'Winners notified by email',
                 ].map((item) => (
                   <li key={item} className="flex items-center gap-2">
@@ -242,34 +217,17 @@ export function LaunchOfferSection({
             </CardContent>
             <CardFooter className="flex flex-col gap-2">
               {aiWon ? (
-                <Button className="w-full" disabled>
-                  You won the AI giveaway!
-                </Button>
-              ) : platformClaimed ? (
-                <Button className="w-full" disabled>
-                  Platform offer already claimed
-                </Button>
-              ) : hasEntered ? (
-                <Button className="w-full" variant="outline" disabled>
-                  You&apos;re entered ✓
-                </Button>
-              ) : hasRedeemed ? (
-                <Button className="w-full" disabled>
-                  Already redeemed
-                </Button>
+                <div className="w-full rounded-md border border-indigo-500/30 bg-indigo-500/10 px-4 py-3 text-center text-sm font-medium">
+                  You won the AI lucky draw!
+                </div>
+              ) : isEligibleForAiDraw ? (
+                <div className="w-full rounded-md border border-green-500/30 bg-green-500/10 px-4 py-3 text-center text-sm font-medium">
+                  You&apos;re in the AI lucky draw ✓
+                </div>
               ) : (
-                <Button
-                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
-                  size="lg"
-                  disabled={isPending && action === 'enter'}
-                  onClick={handleEnter}
-                >
-                  {isPending && action === 'enter'
-                    ? 'Entering…'
-                    : isLoggedIn
-                      ? 'Enter AI giveaway'
-                      : 'Sign in to enter'}
-                </Button>
+                <div className="w-full rounded-md border border-muted px-4 py-3 text-center text-sm text-muted-foreground">
+                  Claim Platform above to be entered automatically
+                </div>
               )}
               <Button asChild variant="ghost" size="sm" className="w-full text-muted-foreground">
                 <Link href="/pricing">View full pricing</Link>

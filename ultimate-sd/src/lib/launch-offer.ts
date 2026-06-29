@@ -6,14 +6,14 @@ export type LaunchOfferPublicStats = {
   platformClaimed: number;
   platformRemaining: number;
   aiWinners: number;
-  aiEntries: number;
+  aiEligible: number;
   isActive: boolean;
 };
 
 export type LaunchOfferUserState = {
   hasRedeemed: boolean;
   redemptionKind: 'PLATFORM_LAUNCH' | 'AI_GIVEAWAY' | null;
-  hasEnteredGiveaway: boolean;
+  isEligibleForAiDraw: boolean;
 };
 
 export function getLaunchOfferExpiry(from = new Date()): Date {
@@ -31,14 +31,14 @@ export function isLaunchOfferActive(now = new Date()): boolean {
 export function buildLaunchOfferStats(
   platformClaimed: number,
   aiWinners: number,
-  aiEntries: number,
+  aiEligible: number,
   now = new Date()
 ): LaunchOfferPublicStats {
   return {
     platformClaimed,
     platformRemaining: Math.max(0, LAUNCH_PLATFORM_SLOTS - platformClaimed),
     aiWinners,
-    aiEntries,
+    aiEligible,
     isActive: isLaunchOfferActive(now),
   };
 }

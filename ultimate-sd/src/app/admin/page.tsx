@@ -1,6 +1,7 @@
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { getAdminSessions } from '@/lib/admin-sessions';
+import { getLaunchOfferPlatformClaimants } from '@/lib/launch-offer-grant';
 import {
   getLaunchOfferRedemptions,
   getLaunchOfferStats,
@@ -30,13 +31,14 @@ export default async function AdminPage({
     redirect('/');
   }
 
-  const [users, sessions, launchStats, launchRedemptions] = await Promise.all([
+  const [users, sessions, launchStats, launchRedemptions, launchClaimants] = await Promise.all([
     prisma.user.findMany({
       orderBy: { createdAt: 'desc' },
     }),
     getAdminSessions(200),
     getLaunchOfferStats(),
     getLaunchOfferRedemptions(),
+    getLaunchOfferPlatformClaimants(),
   ]);
 
   // Analytics
@@ -107,10 +109,10 @@ export default async function AdminPage({
         </Card>
         <Card>
             <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-zinc-500">Giveaway Entries</CardTitle>
+                <CardTitle className="text-sm font-medium text-zinc-500">AI Draw Eligible</CardTitle>
             </CardHeader>
             <CardContent>
-                <div className="text-2xl font-bold text-cyan-600">{launchStats.aiEntries}</div>
+                <div className="text-2xl font-bold text-cyan-600">{launchStats.aiEligible}</div>
             </CardContent>
         </Card>
         <Card>
@@ -131,6 +133,7 @@ export default async function AdminPage({
         initialUserId={filterUserId}
         launchStats={launchStats}
         launchRedemptions={launchRedemptions}
+        launchClaimants={launchClaimants}
       />
     </div>
   );

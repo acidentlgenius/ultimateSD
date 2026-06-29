@@ -5,7 +5,6 @@ import { revalidatePath } from 'next/cache';
 import {
   claimPlatformLaunchOffer,
   drawAiGiveawayWinners,
-  enterAiGiveaway,
   getLaunchOfferRedemptions,
   getLaunchOfferStats,
   getLaunchOfferUserState,
@@ -37,23 +36,6 @@ export async function claimLaunchPlatformAction() {
   }
 
   const result = await claimPlatformLaunchOffer(session.user.id);
-
-  if ('success' in result && result.success) {
-    revalidatePath('/');
-    revalidatePath('/pricing');
-    revalidatePath('/admin');
-  }
-
-  return result;
-}
-
-export async function enterAiGiveawayAction() {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { error: 'not_authenticated' as const };
-  }
-
-  const result = await enterAiGiveaway(session.user.id);
 
   if ('success' in result && result.success) {
     revalidatePath('/');

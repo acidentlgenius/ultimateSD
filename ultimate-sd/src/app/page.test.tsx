@@ -35,6 +35,19 @@ vi.mock('@/app/actions/progress', () => ({
   getUserProgressMap: vi.fn(() => Promise.resolve(new Map())),
 }));
 
+vi.mock('@/app/actions/launch-offer', () => ({
+  getLaunchOfferStats: vi.fn(() =>
+    Promise.resolve({
+      platformClaimed: 0,
+      platformRemaining: 50,
+      aiWinners: 0,
+      aiEligible: 0,
+      isActive: true,
+    })
+  ),
+  getLaunchOfferUserState: vi.fn(() => Promise.resolve(null)),
+}));
+
 describe('Home', () => {
   beforeEach(() => {
     vi.clearAllMocks();

@@ -21,8 +21,14 @@ describe('buildLaunchOfferStats', () => {
     expect(stats.platformClaimed).toBe(12);
     expect(stats.platformRemaining).toBe(LAUNCH_PLATFORM_SLOTS - 12);
     expect(stats.aiWinners).toBe(2);
-    expect(stats.aiEntries).toBe(40);
+    expect(stats.aiEligible).toBe(40);
     expect(stats.isActive).toBe(true);
+  });
+
+  it('exposes aiEligible instead of aiEntries', () => {
+    const stats = buildLaunchOfferStats(12, 2, 35);
+    expect(stats.aiEligible).toBe(35);
+    expect(stats).not.toHaveProperty('aiEntries');
   });
 
   it('never returns negative remaining slots', () => {

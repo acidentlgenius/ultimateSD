@@ -23,11 +23,14 @@ export function LaunchOfferBanner({ stats }: LaunchOfferBannerProps) {
       <span className="hidden sm:inline text-muted-foreground">·</span>
       <span className="text-sm text-muted-foreground text-center sm:text-left max-w-xs sm:max-w-none">
         {soldOut ? (
-          <>Platform slots claimed — enter the AI giveaway ({LAUNCH_AI_WINNER_SLOTS} winners)</>
+          <>
+            All Platform slots claimed — {LAUNCH_AI_WINNER_SLOTS} AI plans will be drawn from
+            claimants
+          </>
         ) : (
           <>
-            <strong className="text-foreground">{stats.platformRemaining}</strong> of {LAUNCH_PLATFORM_SLOTS} free
-            Platform plans left
+            <strong className="text-foreground">{stats.platformRemaining}</strong> of{' '}
+            {LAUNCH_PLATFORM_SLOTS} free Platform plans left · claim to enter AI lucky draw
           </>
         )}
       </span>

@@ -6,7 +6,7 @@ import { AdminSessionExplorer } from './AdminSessionExplorer';
 import { LaunchOfferPanel } from './LaunchOfferPanel';
 import type { AdminSessionSummary } from '@/lib/admin-sessions-types';
 import type { LaunchOfferPublicStats } from '@/lib/launch-offer';
-import type { LaunchOfferRedemptionRow } from '@/lib/launch-offer-grant';
+import type { LaunchOfferClaimantRow, LaunchOfferRedemptionRow } from '@/lib/launch-offer-grant';
 import { cn } from '@/lib/utils';
 
 interface AdminUser {
@@ -31,6 +31,7 @@ interface AdminDashboardProps {
   initialUserId?: string;
   launchStats: LaunchOfferPublicStats;
   launchRedemptions: LaunchOfferRedemptionRow[];
+  launchClaimants: LaunchOfferClaimantRow[];
 }
 
 export function AdminDashboard({
@@ -39,6 +40,7 @@ export function AdminDashboard({
   initialUserId,
   launchStats,
   launchRedemptions,
+  launchClaimants,
 }: AdminDashboardProps) {
   const [tab, setTab] = useState<AdminTab>(initialUserId ? 'activities' : 'users');
   const [activityUserFilter, setActivityUserFilter] = useState(initialUserId ?? 'all');
@@ -102,7 +104,11 @@ export function AdminDashboard({
           initialUserId={activityUserFilter !== 'all' ? activityUserFilter : undefined}
         />
       ) : (
-        <LaunchOfferPanel stats={launchStats} redemptions={launchRedemptions} />
+        <LaunchOfferPanel
+          stats={launchStats}
+          redemptions={launchRedemptions}
+          claimants={launchClaimants}
+        />
       )}
     </div>
   );

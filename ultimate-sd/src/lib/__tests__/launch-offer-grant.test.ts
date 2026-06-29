@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const mockTransaction = vi.fn();
 const mockCount = vi.fn();
 const mockFindUnique = vi.fn();
+const mockFindMany = vi.fn();
 const mockCreate = vi.fn();
 const mockUpdate = vi.fn();
 const mockSendPlanWelcomeEmail = vi.fn();
@@ -13,7 +14,9 @@ vi.mock('@/lib/prisma', () => ({
     launchOfferRedemption: {
       count: (...args: unknown[]) => mockCount(...args),
       findUnique: (...args: unknown[]) => mockFindUnique(...args),
+      findMany: (...args: unknown[]) => mockFindMany(...args),
       create: (...args: unknown[]) => mockCreate(...args),
+      update: (...args: unknown[]) => mockUpdate(...args),
     },
     user: {
       findUnique: (...args: unknown[]) => mockFindUnique(...args),
@@ -29,7 +32,11 @@ vi.mock('@/lib/email', () => ({
   sendPlanWelcomeEmail: (...args: unknown[]) => mockSendPlanWelcomeEmail(...args),
 }));
 
-import { claimPlatformLaunchOffer, grantAdminPlatformPlan } from '../launch-offer-grant';
+import {
+  claimPlatformLaunchOffer,
+  drawAiGiveawayWinners,
+  grantAdminPlatformPlan,
+} from '../launch-offer-grant';
 
 describe('claimPlatformLaunchOffer', () => {
   beforeEach(() => {
@@ -182,5 +189,49 @@ describe('grantAdminPlatformPlan', () => {
 
     const result = await grantAdminPlatformPlan('user-1', 'admin-1', true);
     expect(result).toEqual({ error: 'sold_out' });
+  });
+});
+
+describe('drawAiGiveawayWinners', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockCount.mockResolvedValue(0);
+    mockTransaction.mockImplementation(async (arg: unknown) => {
+      if (Array.isArray(arg)) {
+        await Promise.all(arg);
+        return [];
+      }
+      return arg;
+    });
+    mockUpdate.mockResolvedValue({});
+    mockFindUnique.mockResolvedValue({ email: 'winner@example.com', name: 'Winner' });
+    mockSendPlanWelcomeEmail.mockResolvedValue(undefined);
+  });
+
+  it('draws from PLATFORM_LAUNCH claimants and upgrades them to AI', async () => {
+    mockFindMany.mockResolvedValue([{ userId: 'user-1', id: 'redemption-1' }]);
+
+    const result = await drawAiGiveawayWinners('admin-1', 1);
+
+    expect(result).toEqual(
+      expect.objectContaining({ success: true, winnerCount: 1, emailFailures: 0 })
+    );
+    expect(mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'redemption-1' },
+        data: expect.objectContaining({ kind: 'AI_GIVEAWAY', grantedBy: 'admin-1' }),
+      })
+    );
+    expect(mockSendPlanWelcomeEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ planType: 'ai' })
+    );
+  });
+
+  it('returns no_eligible when no platform claimants remain', async () => {
+    mockFindMany.mockResolvedValue([]);
+
+    const result = await drawAiGiveawayWinners('admin-1');
+
+    expect(result).toEqual({ error: 'no_eligible' });
   });
 });
