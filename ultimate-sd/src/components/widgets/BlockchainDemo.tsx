@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, Lock, Unlock, Hammer, Check, AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -34,6 +34,16 @@ export default function BlockchainDemo() {
         { id: 1, nonce: 0, data: 'Genesis Block', prevHash: '0000000000', hash: '', isMined: false }
     ]);
     const [miningId, setMiningId] = useState<number | null>(null);
+    const mineLoopRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Clean up active mining loop on unmount to prevent memory leaks
+    useEffect(() => {
+        return () => {
+            if (mineLoopRef.current) {
+                clearInterval(mineLoopRef.current);
+            }
+        };
+    }, []);
 
     // Recalculate hashes whenever data/nonce/prevHash changes
     useEffect(() => {
@@ -113,6 +123,7 @@ export default function BlockchainDemo() {
             }
 
         }, 50);
+        mineLoopRef.current = mineLoop;
     };
 
     return (
