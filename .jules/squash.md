@@ -50,3 +50,9 @@
 **Learning:** When using `requestAnimationFrame` inside a React `useEffect` hook for custom animations, failing to capture the returned animation frame ID and clean it up via `cancelAnimationFrame` on component unmount causes severe memory leaks. The animation loop continues running in the background, attempting to update state on an unmounted component, which pollutes the JS heap and triggers React warnings.
 
 **Action:** Always capture the ID returned by `requestAnimationFrame` (and any associated `setTimeout` wrappers) in variables initialized to `0`. In the `useEffect` cleanup function, explicitly call `cancelAnimationFrame(id)` and `clearTimeout(id)` to ensure all scheduled updates are safely aborted.
+
+## 2026-06-28 - [Memory Leaks with setTimeout inside intervals in React]
+
+**Learning:** When using `setTimeout` inside an interval (like `setInterval`) within a React `useEffect` hook, the interval cleanup function `clearInterval` only stops future executions of the interval, but it does NOT cancel any `setTimeout` calls that have already been scheduled. This can lead to state updates on unmounted components and memory leaks if the component unmounts before the nested timeouts fire.
+
+**Action:** Always track all active `setTimeout` IDs in a persistent structure (like a `Set`) within the effect. In the `useEffect` cleanup function, iterate through the tracked timeout IDs and call `clearTimeout` on each one in addition to calling `clearInterval`. Remember to remove timeout IDs from the tracked set once they have successfully executed to avoid memory leaks from an ever-growing array or set over long sessions.
