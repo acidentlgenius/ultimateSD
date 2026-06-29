@@ -29,7 +29,7 @@ vi.mock('@/lib/email', () => ({
   sendPlanWelcomeEmail: (...args: unknown[]) => mockSendPlanWelcomeEmail(...args),
 }));
 
-import { claimPlatformLaunchOffer } from '../launch-offer-grant';
+import { claimPlatformLaunchOffer, grantAdminPlatformPlan } from '../launch-offer-grant';
 
 describe('claimPlatformLaunchOffer', () => {
   beforeEach(() => {
@@ -113,5 +113,74 @@ describe('claimPlatformLaunchOffer', () => {
 
     const result = await claimPlatformLaunchOffer('user-1');
     expect(result).toEqual({ error: 'has_paid_plan' });
+  });
+});
+
+describe('grantAdminPlatformPlan', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUpdate.mockResolvedValue({});
+  });
+
+  it('grants platform without consuming a launch slot', async () => {
+    const result = await grantAdminPlatformPlan('user-1', 'admin-1', false);
+
+    expect(result).toEqual(
+      expect.objectContaining({ success: true, launchOfferSlotUsed: false })
+    );
+    expect(mockTransaction).not.toHaveBeenCalled();
+    expect(mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'user-1' },
+        data: expect.objectContaining({ planType: 'platform' }),
+      })
+    );
+  });
+
+  it('creates redemption when consuming a launch slot', async () => {
+    const mockCreate = vi.fn().mockResolvedValue({});
+    mockTransaction.mockImplementation(async (fn: (tx: unknown) => Promise<unknown>) => {
+      const tx = {
+        launchOfferRedemption: {
+          findUnique: vi.fn().mockResolvedValue(null),
+          count: vi.fn().mockResolvedValue(10),
+          create: mockCreate,
+        },
+        user: {
+          update: vi.fn().mockResolvedValue({}),
+        },
+      };
+      return fn(tx);
+    });
+
+    const result = await grantAdminPlatformPlan('user-1', 'admin-1', true);
+
+    expect(result).toEqual(
+      expect.objectContaining({ success: true, launchOfferSlotUsed: true })
+    );
+    expect(mockCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          userId: 'user-1',
+          kind: 'PLATFORM_LAUNCH',
+          grantedBy: 'admin-1',
+        }),
+      })
+    );
+  });
+
+  it('returns sold_out when launch slots are full', async () => {
+    mockTransaction.mockImplementation(async (fn: (tx: unknown) => Promise<unknown>) => {
+      const tx = {
+        launchOfferRedemption: {
+          findUnique: vi.fn().mockResolvedValue(null),
+          count: vi.fn().mockResolvedValue(50),
+        },
+      };
+      return fn(tx);
+    });
+
+    const result = await grantAdminPlatformPlan('user-1', 'admin-1', true);
+    expect(result).toEqual({ error: 'sold_out' });
   });
 });

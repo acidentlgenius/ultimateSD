@@ -26,6 +26,10 @@ export type DrawWinnersResult =
   | { success: true; winnerCount: number; emailFailures: number }
   | { error: 'giveaway_full' | 'no_entries' };
 
+export type AdminPlatformGrantResult =
+  | { success: true; expiresAt: Date; launchOfferSlotUsed: boolean }
+  | { error: 'sold_out' | 'already_redeemed' };
+
 function shuffleInPlace<T>(items: T[]): T[] {
   for (let i = items.length - 1; i > 0; i -= 1) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -66,6 +70,64 @@ async function userHasPaidPlan(userId: string): Promise<boolean> {
   if (user.planType === 'free') return false;
   if (!user.planExpiresAt) return true;
   return user.planExpiresAt > new Date();
+}
+
+export async function grantAdminPlatformPlan(
+  userId: string,
+  adminId: string,
+  consumeLaunchOfferSlot: boolean
+): Promise<AdminPlatformGrantResult> {
+  const now = new Date();
+  const expiresAt = getLaunchOfferExpiry(now);
+  const planData = {
+    planType: 'platform' as const,
+    planActivatedAt: now,
+    planExpiresAt: expiresAt,
+    aiCredits: getInitialAiCreditsForPlan('platform'),
+    aiCreditsResetAt: null,
+  };
+
+  if (!consumeLaunchOfferSlot) {
+    await prisma.user.update({
+      where: { id: userId },
+      data: planData,
+    });
+    return { success: true, expiresAt, launchOfferSlotUsed: false };
+  }
+
+  const result = await prisma.$transaction(async (tx) => {
+    const existing = await tx.launchOfferRedemption.findUnique({ where: { userId } });
+    if (existing) return { error: 'already_redeemed' as const };
+
+    const claimed = await tx.launchOfferRedemption.count({
+      where: { kind: 'PLATFORM_LAUNCH' },
+    });
+    if (claimed >= LAUNCH_PLATFORM_SLOTS) {
+      return { error: 'sold_out' as const };
+    }
+
+    await tx.user.update({
+      where: { id: userId },
+      data: planData,
+    });
+
+    await tx.launchOfferRedemption.create({
+      data: {
+        userId,
+        kind: 'PLATFORM_LAUNCH',
+        expiresAt,
+        grantedBy: adminId,
+      },
+    });
+
+    return { success: true as const, expiresAt };
+  });
+
+  if ('error' in result) {
+    return result;
+  }
+
+  return { success: true, expiresAt: result.expiresAt, launchOfferSlotUsed: true };
 }
 
 export async function claimPlatformLaunchOffer(userId: string): Promise<ClaimPlatformResult> {

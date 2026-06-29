@@ -90,7 +90,11 @@ export function AdminDashboard({
       </div>
 
       {tab === 'users' ? (
-        <AdminClient users={users} onViewActivity={handleViewActivity} />
+        <AdminClient
+          users={users}
+          launchStats={launchStats}
+          onViewActivity={handleViewActivity}
+        />
       ) : tab === 'activities' ? (
         <AdminSessionExplorer
           sessions={sessions}
