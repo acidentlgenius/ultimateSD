@@ -77,6 +77,8 @@ describe('FeedbackModal', () => {
     consoleSpy.mockRestore();
   });
   it('clears animation frames on unmount', () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.mocked(updateStreak).mockResolvedValue({ success: true, streak: 1 } as any);
     vi.useFakeTimers();
 
     // Spy on the global animation frame functions
@@ -114,6 +116,7 @@ describe('FeedbackModal', () => {
     requestSpy.mockRestore();
     cancelSpy.mockRestore();
     clearTimeoutSpy.mockRestore();
+    consoleSpy.mockRestore();
     vi.useRealTimers();
   });
 });

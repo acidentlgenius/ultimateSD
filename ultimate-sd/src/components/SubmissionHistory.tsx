@@ -39,21 +39,26 @@ export default function SubmissionHistory({ isOpen, onOpenChange, problemId, ste
 
     useEffect(() => {
         if (isOpen && problemId && stepId) {
-            setLoading(true);
-            setError(null);
-            getStepSubmissions(problemId, stepId)
-                .then(result => {
-                    if (result.success && result.submissions) {
+            const fetchSubmissions = async () => {
+                setLoading(true);
+                setError(null);
+                try {
+                    const result = await getStepSubmissions(problemId, stepId);
+                    if (result.error) {
+                        setError(result.error);
+                    } else if (result.success && result.submissions) {
                         setSubmissions(result.submissions);
                     } else {
-                        setError(result.error || 'Failed to load history');
+                        setError('Failed to load history');
                     }
-                })
-                .catch(err => {
+                } catch (err) {
                     console.error(err);
                     setError('An unexpected error occurred');
-                })
-                .finally(() => setLoading(false));
+                } finally {
+                    setLoading(false);
+                }
+            };
+            fetchSubmissions();
         }
     }, [isOpen, problemId, stepId]);
 
