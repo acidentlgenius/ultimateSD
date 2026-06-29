@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -42,6 +42,13 @@ const JobSchedulerViz: React.FC = () => {
     const [workers, setWorkers] = useState<Worker[]>(INITIAL_WORKERS);
     const [logs, setLogs] = useState<string[]>([]);
     const [isRunning, setIsRunning] = useState(false);
+    const timeoutsRef = useRef<NodeJS.Timeout[]>([]);
+
+    useEffect(() => {
+        return () => {
+            timeoutsRef.current.forEach(clearTimeout);
+        };
+    }, []);
 
     // Helper to add log
     const addLog = useCallback((message: string) => {
@@ -118,9 +125,10 @@ const JobSchedulerViz: React.FC = () => {
                 // Schedule completion
                 assignments.forEach(({ workerId, taskId }) => {
                     const task = tasks.find(t => t.id === taskId);
-                    setTimeout(() => {
+                    const timeout = setTimeout(() => {
                         completeTask(taskId, workerId);
                     }, task?.duration || 1000);
+                    timeoutsRef.current.push(timeout);
                 });
             }
 

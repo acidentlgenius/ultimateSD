@@ -24,6 +24,13 @@ export default function PrivacyRequestManager() {
     const [stores, setStores] = useState<DataStore[]>(INITIAL_STORES);
     const [requestState, setRequestState] = useState<'idle' | 'scanning' | 'ready' | 'purging' | 'completed'>('idle');
     const [scanProgress, setScanProgress] = useState(0);
+    const timeoutsRef = React.useRef<NodeJS.Timeout[]>([]);
+
+    React.useEffect(() => {
+        return () => {
+            timeoutsRef.current.forEach(clearTimeout);
+        };
+    }, []);
 
     const startScan = () => {
         setRequestState('scanning');
@@ -53,24 +60,26 @@ export default function PrivacyRequestManager() {
 
         // Animate purge one by one
         stores.forEach((store, index) => {
-            setTimeout(() => {
+            const timeout1 = setTimeout(() => {
                 setStores(prev => prev.map(s =>
                     s.id === store.id ? { ...s, status: 'purging' } : s
                 ));
 
-                setTimeout(() => {
+                const timeout2 = setTimeout(() => {
                     setStores(prev => prev.map(s =>
                         s.id === store.id ? { ...s, status: 'clean', recordsFound: 0 } : s
                     ));
                 }, 800);
-
+                timeoutsRef.current.push(timeout2);
             }, index * 1000);
+            timeoutsRef.current.push(timeout1);
         });
 
-        setTimeout(() => {
+        const timeout3 = setTimeout(() => {
             setRequestState('completed');
             toast.success("Right to Be Forgotten Executed", { description: "User data permanently removed." });
         }, stores.length * 1000 + 500);
+        timeoutsRef.current.push(timeout3);
     };
 
     const reset = () => {

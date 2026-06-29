@@ -50,3 +50,9 @@
 **Learning:** When using `requestAnimationFrame` inside a React `useEffect` hook for custom animations, failing to capture the returned animation frame ID and clean it up via `cancelAnimationFrame` on component unmount causes severe memory leaks. The animation loop continues running in the background, attempting to update state on an unmounted component, which pollutes the JS heap and triggers React warnings.
 
 **Action:** Always capture the ID returned by `requestAnimationFrame` (and any associated `setTimeout` wrappers) in variables initialized to `0`. In the `useEffect` cleanup function, explicitly call `cancelAnimationFrame(id)` and `clearTimeout(id)` to ensure all scheduled updates are safely aborted.
+
+## 2026-06-26 - [Memory Leaks with setInterval and setTimeout in React Components]
+
+**Learning:** Several widget components (e.g., `PrivacyRequestManager`, `CrawlerFrontier`, `JobSchedulerViz`, `SocketPulse`, `RAGArchitect`) were creating dangling timeouts because `setTimeout` and `setInterval` were being scheduled inside event handlers or loops, but their returned IDs were never captured and cleared upon component unmount. When the user navigates away, these timers would continue executing, attempting to perform state updates (`setX`) or trigger side effects (`toast.success`) on an unmounted component, leading to memory leaks.
+
+**Action:** Whenever generating multiple asynchronous timeouts dynamically, always maintain a persistent reference array `const timeoutsRef = useRef<NodeJS.Timeout[]>([])`. Push every generated timeout ID into this array, and inside a `useEffect` cleanup function, loop through and run `clearTimeout` on each one: `return () => timeoutsRef.current.forEach(clearTimeout);`. When testing for these memory leaks in Vitest, do not rely on `vi.getTimerCount()`; instead, spy on `React.useState` or mock the side-effect (e.g., `sonner.toast`) and assert that the calls are 0 after component unmount.
