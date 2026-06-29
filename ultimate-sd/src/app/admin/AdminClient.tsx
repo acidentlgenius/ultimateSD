@@ -32,8 +32,17 @@ export function AdminClient({ users, onViewActivity }: AdminClientProps) {
       const result = await updateUserPlan(userId, planType);
       if (result.error) {
         toast.error(result.error);
+      } else if (planType !== 'free' && result.emailSent === false) {
+        toast.success(`Plan updated to ${planType}`, {
+          description: 'Welcome email could not be sent. Check email configuration.',
+        });
+        router.refresh();
       } else {
-        toast.success(`Plan updated to ${planType}`);
+        toast.success(
+          planType === 'free'
+            ? `Plan updated to ${planType}`
+            : `Plan updated to ${planType}. Welcome email sent.`
+        );
         router.refresh();
       }
     } catch (err) {
