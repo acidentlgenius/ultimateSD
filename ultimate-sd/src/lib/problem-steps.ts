@@ -965,6 +965,17 @@ const WEB_CRAWLER_STEPS: Record<string, StepData[]> = {
       placeholder: 'Explain politeness...',
       widgetId: 'crawler-frontier'
     }
+  ],
+  "deduplication": [
+    {
+      phase: 'Deduplication',
+      subStep: 'bloom-filter',
+      title: 'URL Deduplication',
+      prompt: 'How do you avoid downloading the same URL twice? Visualize using a Bloom Filter.',
+      inputType: 'textarea',
+      placeholder: 'Explain deduplication strategy...',
+      widgetId: 'bloom-filter-viz'
+    }
   ]
 };
 
