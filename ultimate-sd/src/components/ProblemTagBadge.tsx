@@ -1,5 +1,6 @@
 'use client';
 
+import { type KeyboardEvent, type MouseEvent } from 'react';
 import { getProblemTags, TAG_CATEGORY_STYLES, type ProblemTag } from '@/lib/problem-tags';
 import { cn } from '@/lib/utils';
 
@@ -9,23 +10,50 @@ interface ProblemTagBadgeProps {
   onClick?: () => void;
 }
 
+const badgeClassName =
+  'inline-flex items-center text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-colors';
+
 export function ProblemTagBadge({ tag, className, onClick }: ProblemTagBadgeProps) {
-  const Component = onClick ? 'button' : 'span';
+  const sharedClassName = cn(
+    badgeClassName,
+    TAG_CATEGORY_STYLES[tag.category],
+    onClick && 'hover:opacity-80 cursor-pointer',
+    className
+  );
+
+  if (!onClick) {
+    return (
+      <span title={tag.label} className={sharedClassName}>
+        {tag.label}
+      </span>
+    );
+  }
+
+  const handleClick = (e: MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    onClick();
+  };
+
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      e.stopPropagation();
+      onClick();
+    }
+  };
 
   return (
-    <Component
-      type={onClick ? 'button' : undefined}
-      onClick={onClick}
+    <span
+      role="button"
+      tabIndex={0}
+      onClick={handleClick}
+      onKeyDown={handleKeyDown}
       title={tag.label}
-      className={cn(
-        'inline-flex items-center text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-colors',
-        TAG_CATEGORY_STYLES[tag.category],
-        onClick && 'hover:opacity-80 cursor-pointer',
-        className
-      )}
+      className={sharedClassName}
     >
       {tag.label}
-    </Component>
+    </span>
   );
 }
 

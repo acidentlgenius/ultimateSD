@@ -19,6 +19,11 @@ enum SessionStatus {
   ABANDONED
 }
 
+enum LaunchOfferKind {
+  PLATFORM_LAUNCH
+  AI_GIVEAWAY
+}
+
 model User {
   id            String          @id @default(cuid())
   name          String?
@@ -65,12 +70,35 @@ model User {
   preferredProvider    String    @default("gemini")
   
   // Relations
-  problemProgress      ProblemProgress[]
-  stepSubmissions      StepSubmission[]
-  practiceSessions     PracticeSession[]
+  problemProgress         ProblemProgress[]
+  stepSubmissions         StepSubmission[]
+  practiceSessions        PracticeSession[]
+  launchOfferRedemption   LaunchOfferRedemption?
+  launchOfferEntry        LaunchOfferEntry?
   
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+}
+
+model LaunchOfferRedemption {
+  id        String          @id @default(cuid())
+  userId    String          @unique
+  kind      LaunchOfferKind
+  grantedAt DateTime        @default(now())
+  expiresAt DateTime
+  grantedBy String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([kind])
+}
+
+model LaunchOfferEntry {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  enteredAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Account {

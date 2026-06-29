@@ -9,7 +9,12 @@ import {
   getNextAiCreditsResetDate,
 } from '@/lib/access';
 import { EmailConfigurationError, sendPlanWelcomeEmail } from '@/lib/email';
+import { grantAdminPlatformPlan } from '@/lib/launch-offer-grant';
 import { type PlanType } from '@/lib/plans';
+
+export type UpdateUserPlanOptions = {
+  consumeLaunchOfferSlot?: boolean;
+};
 
 async function requireAdmin() {
   const session = await auth();
@@ -29,24 +34,47 @@ async function requireAdmin() {
   return session.user.id;
 }
 
-export async function updateUserPlan(userId: string, planType: PlanType) {
-  await requireAdmin();
+export async function updateUserPlan(
+  userId: string,
+  planType: PlanType,
+  options?: UpdateUserPlanOptions
+) {
+  const adminId = await requireAdmin();
 
   const now = new Date();
-  const planExpiresAt =
+  let planExpiresAt =
     planType !== 'free' ? getAdminGrantExpiryDate(now) : null;
+  let launchOfferSlotUsed = false;
 
   try {
-    await prisma.user.update({
-      where: { id: userId },
-      data: {
-        planType,
-        planExpiresAt,
-        planActivatedAt: planType !== 'free' ? now : null,
-        aiCredits: getInitialAiCreditsForPlan(planType),
-        aiCreditsResetAt: planType === 'ai' ? getNextAiCreditsResetDate(now) : null,
-      },
-    });
+    if (planType === 'platform') {
+      const grantResult = await grantAdminPlatformPlan(
+        userId,
+        adminId,
+        options?.consumeLaunchOfferSlot === true
+      );
+
+      if ('error' in grantResult) {
+        if (grantResult.error === 'sold_out') {
+          return { error: 'All launch offer platform slots are taken' };
+        }
+        return { error: 'This user has already redeemed a launch offer' };
+      }
+
+      planExpiresAt = grantResult.expiresAt;
+      launchOfferSlotUsed = grantResult.launchOfferSlotUsed;
+    } else {
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          planType,
+          planExpiresAt,
+          planActivatedAt: planType !== 'free' ? now : null,
+          aiCredits: getInitialAiCreditsForPlan(planType),
+          aiCreditsResetAt: planType === 'ai' ? getNextAiCreditsResetDate(now) : null,
+        },
+      });
+    }
 
     let emailSent = false;
 
@@ -63,6 +91,10 @@ export async function updateUserPlan(userId: string, planType: PlanType) {
             name: user.name,
             planType,
             expiresAt: planExpiresAt!,
+            context:
+              launchOfferSlotUsed && planType === 'platform'
+                ? 'launch_platform_claim'
+                : 'default',
           });
           emailSent = true;
         } catch (error) {
@@ -76,7 +108,11 @@ export async function updateUserPlan(userId: string, planType: PlanType) {
     }
 
     revalidatePath('/admin');
-    return { success: true, emailSent };
+    if (launchOfferSlotUsed) {
+      revalidatePath('/');
+      revalidatePath('/pricing');
+    }
+    return { success: true, emailSent, launchOfferSlotUsed };
   } catch (error) {
     console.error('Failed to update user plan:', error);
     return { error: 'Failed to update user plan' };

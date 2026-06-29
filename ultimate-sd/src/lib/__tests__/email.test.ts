@@ -28,6 +28,36 @@ describe('formatPlanWelcomeEmailHtml', () => {
     expect(html).toContain('feedback');
     expect(html).toContain('September 29, 2026');
   });
+
+  it('mentions automatic AI lucky draw entry for launch platform claims', () => {
+    const html = formatPlanWelcomeEmailHtml({
+      name: 'Alex',
+      planLabel: 'Platform',
+      planDescription: 'full access to all practice problems on the platform',
+      expiresAt: new Date('2026-09-29T00:00:00.000Z'),
+      context: 'launch_platform_claim',
+    });
+
+    const normalized = html.replace(/\s+/g, ' ');
+    expect(normalized).toContain('automatically entered into our lucky draw');
+    expect(normalized).toContain('free AI plans');
+    expect(normalized).toContain('no further action is needed');
+  });
+
+  it('celebrates AI lucky draw win for launch winners', () => {
+    const html = formatPlanWelcomeEmailHtml({
+      name: 'Alex',
+      planLabel: 'AI',
+      planDescription: 'full access to all practice problems plus monthly AI credits',
+      expiresAt: new Date('2026-09-29T00:00:00.000Z'),
+      context: 'launch_ai_draw_win',
+    });
+
+    expect(html).toContain('You won the AI plan lucky draw!');
+    expect(html).toContain('selected as one of');
+    expect(html).toContain('5');
+    expect(html).toContain('upgraded');
+  });
 });
 
 describe('sendPlanWelcomeEmail', () => {
@@ -50,6 +80,22 @@ describe('sendPlanWelcomeEmail', () => {
       expect.objectContaining({
         to: 'user@example.com',
         subject: expect.stringContaining('Congratulations'),
+      })
+    );
+  });
+
+  it('uses lucky draw subject for AI draw winners', async () => {
+    await sendPlanWelcomeEmail({
+      email: 'user@example.com',
+      name: 'Alex',
+      planType: 'ai',
+      expiresAt: new Date('2026-09-29T00:00:00.000Z'),
+      context: 'launch_ai_draw_win',
+    });
+
+    expect(sendMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        subject: 'Congratulations — you won the AI plan lucky draw!',
       })
     );
   });

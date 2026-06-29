@@ -4,8 +4,14 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles, Zap } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import type { LaunchOfferPublicStats } from "@/lib/launch-offer";
+import { LaunchOfferBanner } from "@/components/landing/LaunchOfferBanner";
 
-export function Hero() {
+interface HeroProps {
+    launchStats?: LaunchOfferPublicStats;
+}
+
+export function Hero({ launchStats }: HeroProps) {
     return (
         <div className="relative overflow-hidden pt-20 pb-32 lg:pt-32 lg:pb-40">
             {/* Background Gradients */}
@@ -15,15 +21,19 @@ export function Hero() {
             </div>
 
             <div className="container mx-auto px-4 relative z-10 text-center">
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6 }}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/50 border border-secondary mb-8 backdrop-blur-sm"
-                >
-                    <Sparkles className="w-4 h-4 text-primary animate-pulse" />
-                    <span className="text-sm font-medium">Now launching — interactive system design practice</span>
-                </motion.div>
+                {launchStats ? (
+                    <LaunchOfferBanner stats={launchStats} />
+                ) : (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6 }}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/50 border border-secondary mb-8 backdrop-blur-sm"
+                    >
+                        <Sparkles className="w-4 h-4 text-primary animate-pulse" />
+                        <span className="text-sm font-medium">Now launching — interactive system design practice</span>
+                    </motion.div>
+                )}
 
                 <motion.h1
                     initial={{ opacity: 0, y: 20 }}

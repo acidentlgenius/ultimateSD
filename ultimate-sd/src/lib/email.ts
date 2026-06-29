@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import { LAUNCH_AI_WINNER_SLOTS } from '@/lib/launch-offer';
 import { SITE_URL } from '@/lib/site';
 import {
   PLAN_LABELS,
@@ -80,24 +81,34 @@ function formatExpiryDate(date: Date): string {
   });
 }
 
+export type PlanWelcomeEmailContext =
+  | 'default'
+  | 'launch_platform_claim'
+  | 'launch_ai_draw_win';
+
 export interface PlanWelcomeEmailParams {
   name: string | null;
   planLabel: string;
   planDescription: string;
   expiresAt: Date;
+  context?: PlanWelcomeEmailContext;
 }
 
-export function formatPlanWelcomeEmailHtml(params: PlanWelcomeEmailParams): string {
+function formatPlanWelcomeBody(params: PlanWelcomeEmailParams): string {
   const greeting = params.name ? `Hi ${params.name},` : 'Hi there,';
   const expiryFormatted = formatExpiryDate(params.expiresAt);
-  const dashboardUrl = `${SITE_URL}/home`;
+  const context = params.context ?? 'default';
 
-  return authEmailLayout(
-    'Welcome to Ultimate SD',
-    `
+  if (context === 'launch_ai_draw_win') {
+    return `
       <p>${greeting}</p>
       <p>
-        Congratulations! You have been given access to the
+        Great news — you have been selected as one of
+        <strong>${LAUNCH_AI_WINNER_SLOTS}</strong> winners in our launch offer
+        AI plan lucky draw!
+      </p>
+      <p>
+        Your account has been upgraded to the
         <strong>${params.planLabel}</strong> plan for the next
         <strong>3 months</strong> (until ${expiryFormatted}).
       </p>
@@ -106,7 +117,58 @@ export function formatPlanWelcomeEmailHtml(params: PlanWelcomeEmailParams): stri
         Please feel free to use the platform and share any feedback you have —
         we would love to hear from you.
       </p>
-    `,
+    `;
+  }
+
+  const launchDrawNote =
+    context === 'launch_platform_claim'
+      ? `
+      <p>
+        As a launch offer claimant, you are automatically entered into our lucky
+        draw for <strong>${LAUNCH_AI_WINNER_SLOTS}</strong> free AI plans.
+        Winners will be selected at random and notified by email — no further
+        action is needed on your part.
+      </p>
+    `
+      : '';
+
+  return `
+    <p>${greeting}</p>
+    <p>
+      Congratulations! You have been given access to the
+      <strong>${params.planLabel}</strong> plan for the next
+      <strong>3 months</strong> (until ${expiryFormatted}).
+    </p>
+    ${launchDrawNote}
+    <p>
+      Your plan includes ${params.planDescription}.
+      Please feel free to use the platform and share any feedback you have —
+      we would love to hear from you.
+    </p>
+  `;
+}
+
+function formatPlanWelcomeSubject(
+  planLabel: string,
+  context: PlanWelcomeEmailContext = 'default'
+): string {
+  if (context === 'launch_ai_draw_win') {
+    return 'Congratulations — you won the AI plan lucky draw!';
+  }
+  return `Congratulations — your ${planLabel} plan is ready`;
+}
+
+export function formatPlanWelcomeEmailHtml(params: PlanWelcomeEmailParams): string {
+  const dashboardUrl = `${SITE_URL}/home`;
+  const context = params.context ?? 'default';
+  const title =
+    context === 'launch_ai_draw_win'
+      ? 'You won the AI plan lucky draw!'
+      : 'Welcome to Ultimate SD';
+
+  return authEmailLayout(
+    title,
+    formatPlanWelcomeBody(params),
     'Start Practicing',
     dashboardUrl,
     'If you have questions, reply to this email or contact support.'
@@ -118,18 +180,21 @@ export async function sendPlanWelcomeEmail(options: {
   name: string | null;
   planType: Exclude<PlanType, 'free'>;
   expiresAt: Date;
+  context?: PlanWelcomeEmailContext;
 }): Promise<void> {
   const planLabel = PLAN_LABELS[options.planType];
   const planDescription = PLAN_WELCOME_DESCRIPTIONS[options.planType];
+  const context = options.context ?? 'default';
 
   await sendMail({
     to: options.email,
-    subject: `Congratulations — your ${planLabel} plan is ready`,
+    subject: formatPlanWelcomeSubject(planLabel, context),
     html: formatPlanWelcomeEmailHtml({
       name: options.name,
       planLabel,
       planDescription,
       expiresAt: options.expiresAt,
+      context,
     }),
   });
 }
