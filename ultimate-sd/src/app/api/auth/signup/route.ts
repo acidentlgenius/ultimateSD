@@ -22,8 +22,8 @@ export async function POST(req: Request) {
             )
         }
 
-        const existingUser = await prisma.user.findUnique({
-            where: { email },
+        const existingUser = await prisma.user.findFirst({
+            where: { email: { equals: email, mode: 'insensitive' } },
         })
 
         if (existingUser) {
