@@ -238,6 +238,7 @@ export function TimerWidget({
                     onClick={toggleTimer}
                     disabled={isLoading}
                     title={isActive ? "Pause" : "Start"}
+                    aria-label={isActive ? "Pause" : "Start"}
                 >
                     {isActive ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
                 </Button>
@@ -248,6 +249,7 @@ export function TimerWidget({
                         className="h-7 w-7 text-muted-foreground hover:text-foreground"
                         onClick={resetTimer}
                         title="Reset"
+                        aria-label="Reset"
                     >
                         <RotateCcw className="h-3.5 w-3.5" />
                     </Button>
