@@ -238,7 +238,7 @@ Reference tests:
 | Area | Example |
 |---|---|
 | Server page render | `src/app/page.test.tsx` |
-| Component + localStorage | `src/components/__tests__/DiagramCanvasLocalstorage.test.tsx` |
+| Component + localStorage | `src/components/__tests__/DiagramCanvas.test.tsx` |
 | Fetch utility | `src/lib/__tests__/fetchUtils.test.ts` |
 | Session storage | `src/components/__tests__/session-storage.test.ts` |
 
@@ -268,7 +268,9 @@ Reference tests:
 | Problems catalog | `src/lib/problems.ts` |
 | Practice UI shell | `src/components/PracticeUI.tsx` |
 | Step-by-step flow | `src/components/StepByStepChat.tsx` |
-| Diagram canvas | `src/components/DiagramCanvas.tsx` (Excalidraw) |
+| Diagram canvas | `src/components/DiagramCanvas.tsx` (Excalidraw wrapper) |
+| Diagram context | `src/components/diagram/DiagramCanvasContext.tsx` — wrap practice/draw trees with `DiagramCanvasProvider` |
+| Diagram persistence | `src/lib/diagram-persistence.ts` — localStorage, `resolveBestDiagramSnapshot`, `exportSceneToPng` |
 | Session persistence | `src/lib/session-storage.ts` |
 | PDF export | `src/lib/exportUtils.ts` |
 | Progress server actions | `src/app/actions/progress.ts` |
