@@ -216,6 +216,13 @@ export function getPlanExpiryDate(from = new Date()): Date {
   return expiry;
 }
 
+/** Expiry for plans granted manually by an admin (3 months). */
+export function getAdminGrantExpiryDate(from = new Date()): Date {
+  const expiry = new Date(from);
+  expiry.setMonth(expiry.getMonth() + 3);
+  return expiry;
+}
+
 export function getInitialAiCreditsForPlan(planType: PlanType): number {
   switch (planType) {
     case 'ai':

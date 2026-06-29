@@ -27,3 +27,8 @@ export const PLAN_LABELS: Record<PlanType, string> = {
   platform: 'Platform',
   ai: 'AI',
 };
+
+export const PLAN_WELCOME_DESCRIPTIONS: Record<Exclude<PlanType, 'free'>, string> = {
+  platform: 'full access to all practice problems on the platform',
+  ai: 'full access to all practice problems plus monthly AI credits for feedback and the help assistant',
+};

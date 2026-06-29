@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canUseAI, type UserAccess } from '@/lib/access';
+import { canUseAI, getAdminGrantExpiryDate, type UserAccess } from '@/lib/access';
 import { FREE_MONTHLY_CREDITS } from '@/lib/plans';
 
 function makeUser(overrides: Partial<UserAccess> = {}): UserAccess {
@@ -22,6 +22,16 @@ function makeUser(overrides: Partial<UserAccess> = {}): UserAccess {
     ...overrides,
   };
 }
+
+describe('getAdminGrantExpiryDate', () => {
+  it('returns a date 3 months after the given date', () => {
+    const from = new Date('2026-01-15T12:00:00.000Z');
+    const expiry = getAdminGrantExpiryDate(from);
+    expect(expiry.getFullYear()).toBe(2026);
+    expect(expiry.getMonth()).toBe(3); // April (0-indexed)
+    expect(expiry.getDate()).toBe(15);
+  });
+});
 
 describe('canUseAI', () => {
   it('denies unauthenticated users', () => {

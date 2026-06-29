@@ -1,5 +1,10 @@
 import { Resend } from 'resend';
 import { SITE_URL } from '@/lib/site';
+import {
+  PLAN_LABELS,
+  PLAN_WELCOME_DESCRIPTIONS,
+  type PlanType,
+} from '@/lib/plans';
 
 export class EmailConfigurationError extends Error {
     constructor(message = 'Email is not configured') {
@@ -64,6 +69,69 @@ function authEmailLayout(title: string, body: string, actionLabel: string, actio
             <p style="font-size: 13px; color: #6b7280; margin-top: 24px;">${footer}</p>
         </div>
     `;
+}
+
+function formatExpiryDate(date: Date): string {
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    timeZone: 'UTC',
+  });
+}
+
+export interface PlanWelcomeEmailParams {
+  name: string | null;
+  planLabel: string;
+  planDescription: string;
+  expiresAt: Date;
+}
+
+export function formatPlanWelcomeEmailHtml(params: PlanWelcomeEmailParams): string {
+  const greeting = params.name ? `Hi ${params.name},` : 'Hi there,';
+  const expiryFormatted = formatExpiryDate(params.expiresAt);
+  const dashboardUrl = `${SITE_URL}/home`;
+
+  return authEmailLayout(
+    'Welcome to Ultimate SD',
+    `
+      <p>${greeting}</p>
+      <p>
+        Congratulations! You have been given access to the
+        <strong>${params.planLabel}</strong> plan for the next
+        <strong>3 months</strong> (until ${expiryFormatted}).
+      </p>
+      <p>
+        Your plan includes ${params.planDescription}.
+        Please feel free to use the platform and share any feedback you have —
+        we would love to hear from you.
+      </p>
+    `,
+    'Start Practicing',
+    dashboardUrl,
+    'If you have questions, reply to this email or contact support.'
+  );
+}
+
+export async function sendPlanWelcomeEmail(options: {
+  email: string;
+  name: string | null;
+  planType: Exclude<PlanType, 'free'>;
+  expiresAt: Date;
+}): Promise<void> {
+  const planLabel = PLAN_LABELS[options.planType];
+  const planDescription = PLAN_WELCOME_DESCRIPTIONS[options.planType];
+
+  await sendMail({
+    to: options.email,
+    subject: `Congratulations — your ${planLabel} plan is ready`,
+    html: formatPlanWelcomeEmailHtml({
+      name: options.name,
+      planLabel,
+      planDescription,
+      expiresAt: options.expiresAt,
+    }),
+  });
 }
 
 export async function sendVerificationEmail(email: string, token: string) {
