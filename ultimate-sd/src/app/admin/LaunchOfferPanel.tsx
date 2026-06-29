@@ -96,11 +96,11 @@ export function LaunchOfferPanel({ stats, redemptions }: LaunchOfferPanelProps) 
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
         <Button
           onClick={handleDraw}
           disabled={!canDraw || isPending}
-          className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
+          className="w-full sm:w-auto bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shrink-0"
         >
           {isPending ? (
             <>
@@ -119,8 +119,8 @@ export function LaunchOfferPanel({ stats, redemptions }: LaunchOfferPanelProps) 
         </p>
       </div>
 
-      <div className="bg-white dark:bg-zinc-900 rounded-lg shadow overflow-hidden">
-        <table className="min-w-full divide-y divide-zinc-200 dark:divide-zinc-800">
+      <div className="overflow-x-auto rounded-lg border bg-white dark:bg-zinc-900 shadow">
+        <table className="min-w-[640px] w-full divide-y divide-zinc-200 dark:divide-zinc-800">
           <thead className="bg-zinc-50 dark:bg-zinc-800">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">

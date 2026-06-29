@@ -49,6 +49,7 @@ export default async function PricingPage() {
               stats={launchStats}
               userState={launchUserState}
               isLoggedIn={Boolean(session?.user)}
+              embedded
             />
           </div>
         )}

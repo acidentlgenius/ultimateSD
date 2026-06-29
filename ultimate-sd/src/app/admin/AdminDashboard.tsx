@@ -50,12 +50,12 @@ export function AdminDashboard({
 
   return (
     <div className="space-y-6">
-      <div className="flex gap-1 p-1 bg-zinc-100 dark:bg-zinc-800 rounded-lg w-fit">
+      <div className="flex flex-wrap gap-1 p-1 bg-zinc-100 dark:bg-zinc-800 rounded-lg w-full sm:w-fit">
         <button
           type="button"
           onClick={() => setTab('users')}
           className={cn(
-            'px-4 py-2 text-sm font-medium rounded-md transition-colors',
+            'flex-1 sm:flex-none px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-md transition-colors text-center',
             tab === 'users'
               ? 'bg-white dark:bg-zinc-900 text-foreground shadow-sm'
               : 'text-zinc-500 hover:text-foreground'
@@ -67,7 +67,7 @@ export function AdminDashboard({
           type="button"
           onClick={() => setTab('activities')}
           className={cn(
-            'px-4 py-2 text-sm font-medium rounded-md transition-colors',
+            'flex-1 sm:flex-none px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-md transition-colors text-center',
             tab === 'activities'
               ? 'bg-white dark:bg-zinc-900 text-foreground shadow-sm'
               : 'text-zinc-500 hover:text-foreground'
@@ -79,7 +79,7 @@ export function AdminDashboard({
           type="button"
           onClick={() => setTab('launch')}
           className={cn(
-            'px-4 py-2 text-sm font-medium rounded-md transition-colors',
+            'flex-1 sm:flex-none px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-md transition-colors text-center',
             tab === 'launch'
               ? 'bg-white dark:bg-zinc-900 text-foreground shadow-sm'
               : 'text-zinc-500 hover:text-foreground'

@@ -25,9 +25,16 @@ interface LaunchOfferSectionProps {
   stats: LaunchOfferPublicStats;
   userState: LaunchOfferUserState | null;
   isLoggedIn: boolean;
+  /** Less padding when nested inside another page (e.g. pricing). */
+  embedded?: boolean;
 }
 
-export function LaunchOfferSection({ stats, userState, isLoggedIn }: LaunchOfferSectionProps) {
+export function LaunchOfferSection({
+  stats,
+  userState,
+  isLoggedIn,
+  embedded = false,
+}: LaunchOfferSectionProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [action, setAction] = useState<'claim' | 'enter' | null>(null);
@@ -99,7 +106,10 @@ export function LaunchOfferSection({ stats, userState, isLoggedIn }: LaunchOffer
   };
 
   return (
-    <section id="launch-offer" className="py-24 bg-background relative overflow-hidden">
+    <section
+      id="launch-offer"
+      className={embedded ? 'py-8 md:py-12 bg-background relative overflow-hidden' : 'py-16 md:py-24 bg-background relative overflow-hidden'}
+    >
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-indigo-500/5 rounded-full blur-[120px]" />
       </div>
@@ -109,25 +119,38 @@ export function LaunchOfferSection({ stats, userState, isLoggedIn }: LaunchOffer
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-center mb-12 space-y-4"
+          className="text-center mb-8 md:mb-12 space-y-4"
         >
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium border border-primary/20">
-            <Gift className="w-4 h-4" />
-            Limited launch offer
-          </div>
-          <h2 className="text-3xl md:text-5xl font-bold tracking-tight">
-            Free access for early supporters
-          </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Celebrate our launch with {LAUNCH_PLATFORM_SLOTS} free {LAUNCH_OFFER_MONTHS}-month Platform plans
-            and {LAUNCH_AI_WINNER_SLOTS} AI plan giveaways.
+          {!embedded && (
+            <>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium border border-primary/20">
+                <Gift className="w-4 h-4" />
+                Limited launch offer
+              </div>
+              <h2 className="text-2xl sm:text-3xl md:text-5xl font-bold tracking-tight px-2">
+                Free access for early supporters
+              </h2>
+            </>
+          )}
+          <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto px-2">
+            {embedded ? (
+              <>
+                {LAUNCH_PLATFORM_SLOTS} free {LAUNCH_OFFER_MONTHS}-month Platform plans and{' '}
+                {LAUNCH_AI_WINNER_SLOTS} AI giveaways — claim or enter below.
+              </>
+            ) : (
+              <>
+                Celebrate our launch with {LAUNCH_PLATFORM_SLOTS} free {LAUNCH_OFFER_MONTHS}-month Platform plans
+                and {LAUNCH_AI_WINNER_SLOTS} AI plan giveaways.
+              </>
+            )}
           </p>
         </motion.div>
 
-        <div className="grid md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
           <Card className="border-blue-500/30 bg-card/50 backdrop-blur-sm">
             <CardHeader>
-              <CardTitle className="text-2xl flex items-center gap-2">
+              <CardTitle className="text-xl sm:text-2xl flex flex-wrap items-center gap-2">
                 Platform Plan <Key className="h-5 w-5 text-blue-500" />
               </CardTitle>
               <CardDescription>
@@ -189,7 +212,7 @@ export function LaunchOfferSection({ stats, userState, isLoggedIn }: LaunchOffer
 
           <Card className="border-indigo-500/40 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 ring-1 ring-indigo-500/20">
             <CardHeader>
-              <CardTitle className="text-2xl flex items-center gap-2">
+              <CardTitle className="text-xl sm:text-2xl flex flex-wrap items-center gap-2">
                 AI Plan <Sparkles className="h-5 w-5 text-indigo-500" />
               </CardTitle>
               <CardDescription>

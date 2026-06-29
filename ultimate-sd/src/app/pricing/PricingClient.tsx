@@ -189,7 +189,7 @@ export function PricingClient({
   };
 
   return (
-    <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 max-w-6xl mx-auto">
       <Card className="relative border-border bg-card/50 backdrop-blur-sm">
         <CardHeader>
           <CardTitle className="text-2xl">Free</CardTitle>
@@ -224,8 +224,8 @@ export function PricingClient({
             LAUNCH: FREE {LAUNCH_OFFER_MONTHS} MO
           </div>
         )}
-        <CardHeader>
-          <CardTitle className="text-2xl flex items-center gap-2">
+        <CardHeader className={platformLaunchAvailable ? 'pt-10' : undefined}>
+          <CardTitle className="text-xl sm:text-2xl flex flex-wrap items-center gap-2">
             Platform <Key className="h-5 w-5 text-blue-500" />
           </CardTitle>
           <CardDescription>Bring Your Own Key (BYOK)</CardDescription>
@@ -256,8 +256,11 @@ export function PricingClient({
                 'Claiming…'
               ) : (
                 <>
-                  <Gift className="mr-2 h-4 w-4" />
-                  Claim free launch offer ({launchStats.platformRemaining} left)
+                  <Gift className="mr-2 h-4 w-4 shrink-0" />
+                  <span className="sm:hidden">Claim free offer ({launchStats.platformRemaining} left)</span>
+                  <span className="hidden sm:inline">
+                    Claim free launch offer ({launchStats.platformRemaining} left)
+                  </span>
                 </>
               )}
             </Button>
