@@ -161,17 +161,24 @@ export default function ProblemCard({ problem, featured, locked, badge, onLocked
 
   if (locked) {
     return (
-      <button
-        type="button"
+      <div
+        role="button"
+        tabIndex={0}
         aria-label={`Unlock ${problem.title}`}
-        className="block group h-full relative w-full text-left"
+        className="block group h-full relative w-full text-left cursor-pointer"
         onClick={() => onLockedClick?.(problem)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onLockedClick?.(problem);
+          }
+        }}
       >
         <div className={cn(
           "absolute -inset-0.5 rounded-2xl bg-gradient-to-r from-amber-500/20 to-orange-500/20 opacity-40 blur transition-all duration-500"
         )} />
         {cardInner}
-      </button>
+      </div>
     );
   }
 
