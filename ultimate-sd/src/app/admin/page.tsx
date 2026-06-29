@@ -1,9 +1,14 @@
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { getAdminSessions } from '@/lib/admin-sessions';
+import {
+  getLaunchOfferRedemptions,
+  getLaunchOfferStats,
+} from '@/app/actions/launch-offer';
 import { redirect } from 'next/navigation';
 import { AdminDashboard } from './AdminDashboard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { LAUNCH_AI_WINNER_SLOTS, LAUNCH_PLATFORM_SLOTS } from '@/lib/launch-offer';
 
 export default async function AdminPage({
   searchParams,
@@ -25,11 +30,13 @@ export default async function AdminPage({
     redirect('/');
   }
 
-  const [users, sessions] = await Promise.all([
+  const [users, sessions, launchStats, launchRedemptions] = await Promise.all([
     prisma.user.findMany({
       orderBy: { createdAt: 'desc' },
     }),
     getAdminSessions(200),
+    getLaunchOfferStats(),
+    getLaunchOfferRedemptions(),
   ]);
 
   // Analytics
@@ -77,10 +84,53 @@ export default async function AdminPage({
         </Card>
       </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <Card>
+            <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-zinc-500">Launch Platform Claimed</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold text-orange-600">
+                  {launchStats.platformClaimed} / {LAUNCH_PLATFORM_SLOTS}
+                </div>
+            </CardContent>
+        </Card>
+        <Card>
+            <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-zinc-500">AI Giveaway Winners</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold text-pink-600">
+                  {launchStats.aiWinners} / {LAUNCH_AI_WINNER_SLOTS}
+                </div>
+            </CardContent>
+        </Card>
+        <Card>
+            <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-zinc-500">Giveaway Entries</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold text-cyan-600">{launchStats.aiEntries}</div>
+            </CardContent>
+        </Card>
+        <Card>
+            <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-zinc-500">Launch Offer</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold text-emerald-600">
+                  {launchStats.isActive ? 'Active' : 'Ended'}
+                </div>
+            </CardContent>
+        </Card>
+      </div>
+
       <AdminDashboard
         users={users}
         sessions={sessions}
         initialUserId={filterUserId}
+        launchStats={launchStats}
+        launchRedemptions={launchRedemptions}
       />
     </div>
   );

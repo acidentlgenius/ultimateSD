@@ -2,10 +2,22 @@ import { auth } from '@/auth';
 import { PricingClient } from '@/app/pricing/PricingClient';
 import { getRazorpayKeyId } from '@/lib/razorpay';
 import { FREE_PROBLEM_SLUGS, type PlanType } from '@/lib/plans';
+import {
+  getLaunchOfferStats,
+  getLaunchOfferUserState,
+} from '@/app/actions/launch-offer';
+import { LaunchOfferSection } from '@/components/landing/LaunchOfferSection';
 
 export default async function PricingPage() {
   const session = await auth();
   const currentPlan: PlanType = session?.user?.planType ?? 'free';
+
+  const [launchStats, launchUserState] = await Promise.all([
+    getLaunchOfferStats(),
+    session?.user?.id
+      ? getLaunchOfferUserState(session.user.id)
+      : Promise.resolve(null),
+  ]);
 
   return (
     <div className="min-h-screen bg-background pt-24 pb-12">
@@ -31,10 +43,22 @@ export default async function PricingPage() {
           )}
         </div>
 
+        {launchStats.isActive && (
+          <div className="mb-12">
+            <LaunchOfferSection
+              stats={launchStats}
+              userState={launchUserState}
+              isLoggedIn={Boolean(session?.user)}
+            />
+          </div>
+        )}
+
         <PricingClient
           isLoggedIn={Boolean(session?.user)}
           currentPlan={currentPlan}
           razorpayKeyId={getRazorpayKeyId()}
+          launchStats={launchStats}
+          launchUserState={launchUserState}
         />
       </div>
     </div>

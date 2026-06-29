@@ -21,6 +21,8 @@ import { Hero } from '@/components/landing/Hero';
 import { FeatureShowcase } from '@/components/landing/FeatureShowcase';
 import { RoadmapPreview } from '@/components/landing/RoadmapPreview';
 import { UserHero } from '@/components/landing/UserHero';
+import { LaunchOfferSection } from '@/components/landing/LaunchOfferSection';
+import type { LaunchOfferPublicStats, LaunchOfferUserState } from '@/lib/launch-offer';
 
 import Link from 'next/link';
 import OnboardingModal from '@/components/OnboardingModal';
@@ -59,6 +61,8 @@ interface DashboardClientProps {
     };
     onboardingCompleted?: boolean;
     problems?: ProblemWithStatus[];
+    launchStats?: LaunchOfferPublicStats;
+    launchUserState?: LaunchOfferUserState | null;
 }
 
 function getStatusBadgeConfig(status?: ProgressStatus) {
@@ -113,6 +117,8 @@ export function DashboardClient({
     recommendations,
     onboardingCompleted = false,
     problems: problemsProp,
+    launchStats,
+    launchUserState = null,
 }: DashboardClientProps) {
     const problems: ProblemWithStatus[] = problemsProp ?? PROBLEMS;
     const [search, setSearch] = useState('');
@@ -206,7 +212,15 @@ export function DashboardClient({
                     setShowOnboarding={setShowOnboarding}
                 />
             ) : (
-                <Hero />
+                <Hero launchStats={launchStats?.isActive ? launchStats : undefined} />
+            )}
+
+            {launchStats?.isActive && (
+                <LaunchOfferSection
+                    stats={launchStats}
+                    userState={launchUserState}
+                    isLoggedIn={Boolean(user)}
+                />
             )}
 
             {/* 2. Interactive Feature Showcase (Hide if logged in) */}

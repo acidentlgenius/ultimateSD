@@ -3,7 +3,10 @@
 import { useState } from 'react';
 import { AdminClient } from './AdminClient';
 import { AdminSessionExplorer } from './AdminSessionExplorer';
+import { LaunchOfferPanel } from './LaunchOfferPanel';
 import type { AdminSessionSummary } from '@/lib/admin-sessions-types';
+import type { LaunchOfferPublicStats } from '@/lib/launch-offer';
+import type { LaunchOfferRedemptionRow } from '@/lib/launch-offer-grant';
 import { cn } from '@/lib/utils';
 
 interface AdminUser {
@@ -20,15 +23,23 @@ interface AdminUser {
   createdAt: Date;
 }
 
-type AdminTab = 'users' | 'activities';
+type AdminTab = 'users' | 'activities' | 'launch';
 
 interface AdminDashboardProps {
   users: AdminUser[];
   sessions: AdminSessionSummary[];
   initialUserId?: string;
+  launchStats: LaunchOfferPublicStats;
+  launchRedemptions: LaunchOfferRedemptionRow[];
 }
 
-export function AdminDashboard({ users, sessions, initialUserId }: AdminDashboardProps) {
+export function AdminDashboard({
+  users,
+  sessions,
+  initialUserId,
+  launchStats,
+  launchRedemptions,
+}: AdminDashboardProps) {
   const [tab, setTab] = useState<AdminTab>(initialUserId ? 'activities' : 'users');
   const [activityUserFilter, setActivityUserFilter] = useState(initialUserId ?? 'all');
 
@@ -64,16 +75,30 @@ export function AdminDashboard({ users, sessions, initialUserId }: AdminDashboar
         >
           User Activities
         </button>
+        <button
+          type="button"
+          onClick={() => setTab('launch')}
+          className={cn(
+            'px-4 py-2 text-sm font-medium rounded-md transition-colors',
+            tab === 'launch'
+              ? 'bg-white dark:bg-zinc-900 text-foreground shadow-sm'
+              : 'text-zinc-500 hover:text-foreground'
+          )}
+        >
+          Launch Offer
+        </button>
       </div>
 
       {tab === 'users' ? (
         <AdminClient users={users} onViewActivity={handleViewActivity} />
-      ) : (
+      ) : tab === 'activities' ? (
         <AdminSessionExplorer
           sessions={sessions}
           users={users.map((u) => ({ id: u.id, name: u.name, email: u.email }))}
           initialUserId={activityUserFilter !== 'all' ? activityUserFilter : undefined}
         />
+      ) : (
+        <LaunchOfferPanel stats={launchStats} redemptions={launchRedemptions} />
       )}
     </div>
   );

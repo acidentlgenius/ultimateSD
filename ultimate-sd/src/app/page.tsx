@@ -3,11 +3,22 @@ import { prisma } from "@/lib/prisma";
 import { DashboardClient } from "@/components/landing/DashboardClient";
 import { getUserRecommendations } from "@/app/actions/recommendations";
 import { getUserProgressMap } from "@/app/actions/progress";
+import {
+  getLaunchOfferStats,
+  getLaunchOfferUserState,
+} from "@/app/actions/launch-offer";
 import { PROBLEMS } from "@/lib/problems";
 import { ProblemWithStatus } from "@/types";
 
 export default async function Home() {
   const session = await auth();
+
+  const [launchStats, launchUserState] = await Promise.all([
+    getLaunchOfferStats(),
+    session?.user?.id
+      ? getLaunchOfferUserState(session.user.id)
+      : Promise.resolve(null),
+  ]);
 
   // ...
 
@@ -42,6 +53,8 @@ export default async function Home() {
       recommendations={recommendations}
       onboardingCompleted={onboardingCompleted}
       problems={problemsWithStatus}
+      launchStats={launchStats}
+      launchUserState={launchUserState}
     />
   );
 }
