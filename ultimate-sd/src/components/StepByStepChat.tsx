@@ -112,6 +112,7 @@ const WIDGETS: Record<string, React.ComponentType> = {
   'job-scheduler-viz': dynamic(() => import('./widgets/JobSchedulerViz'), { loading: () => <WidgetLoader /> }),
   'flash-sale-demo': dynamic(() => import('./widgets/FlashSaleDemo'), { loading: () => <WidgetLoader /> }),
   'payment-ledger': dynamic(() => import('./widgets/PaymentLedger'), { loading: () => <WidgetLoader /> }),
+  'bloom-filter-viz': dynamic(() => import('./widgets/BloomFilterViz'), { loading: () => <WidgetLoader /> }),
 };
 
 interface FeedbackResult {
