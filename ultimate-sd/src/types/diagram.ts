@@ -1,5 +1,5 @@
+import type { ExcalidrawElement } from '@excalidraw/excalidraw/element/types';
 import type {
-  ExcalidrawElement,
   ExcalidrawImperativeAPI,
   AppState,
   BinaryFiles,

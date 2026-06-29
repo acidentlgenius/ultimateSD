@@ -1,4 +1,4 @@
-import type { ExcalidrawElement } from '@excalidraw/excalidraw/types';
+import type { ExcalidrawElement } from '@excalidraw/excalidraw/element/types';
 
 const CONNECTOR_TYPES = new Set(['arrow', 'line']);
 
