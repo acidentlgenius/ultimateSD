@@ -91,6 +91,10 @@ export async function updateUserPlan(
             name: user.name,
             planType,
             expiresAt: planExpiresAt!,
+            context:
+              launchOfferSlotUsed && planType === 'platform'
+                ? 'launch_platform_claim'
+                : 'default',
           });
           emailSent = true;
         } catch (error) {

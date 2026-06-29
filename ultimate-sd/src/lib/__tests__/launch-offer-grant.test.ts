@@ -74,7 +74,11 @@ describe('claimPlatformLaunchOffer', () => {
       expect.objectContaining({ success: true, emailSent: true })
     );
     expect(mockSendPlanWelcomeEmail).toHaveBeenCalledWith(
-      expect.objectContaining({ email: 'user@example.com', planType: 'platform' })
+      expect.objectContaining({
+        email: 'user@example.com',
+        planType: 'platform',
+        context: 'launch_platform_claim',
+      })
     );
   });
 
@@ -223,7 +227,7 @@ describe('drawAiGiveawayWinners', () => {
       })
     );
     expect(mockSendPlanWelcomeEmail).toHaveBeenCalledWith(
-      expect.objectContaining({ planType: 'ai' })
+      expect.objectContaining({ planType: 'ai', context: 'launch_ai_draw_win' })
     );
   });
 

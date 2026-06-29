@@ -194,6 +194,7 @@ export async function claimPlatformLaunchOffer(userId: string): Promise<ClaimPla
         name: user.name,
         planType: 'platform',
         expiresAt: result.expiresAt,
+        context: 'launch_platform_claim',
       });
       emailSent = true;
     } catch (error) {
@@ -265,6 +266,7 @@ export async function drawAiGiveawayWinners(
           name: user.name,
           planType: 'ai',
           expiresAt,
+          context: 'launch_ai_draw_win',
         });
       } catch (error) {
         emailFailures += 1;
