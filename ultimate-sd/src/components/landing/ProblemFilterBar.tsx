@@ -2,6 +2,7 @@ import { Search, LayoutGrid, List, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { ProblemTag } from '@/lib/problem-tags';
+import { MOST_ASKED_COLLECTIONS } from '@/lib/company-collections';
 
 type StatusFilter =
     | 'All'
@@ -37,6 +38,8 @@ interface ProblemFilterBarProps {
     topicFilter?: string;
     setTopicFilter?: (value: string) => void;
     topicOptions?: ProblemTag[];
+    companyCollection?: string | null;
+    setCompanyCollection?: (value: string | null) => void;
     user?: unknown;
 }
 
@@ -57,6 +60,8 @@ export function ProblemFilterBar({
     topicFilter = 'All',
     setTopicFilter,
     topicOptions = [],
+    companyCollection = null,
+    setCompanyCollection,
     user
 }: ProblemFilterBarProps) {
     return (
@@ -127,6 +132,30 @@ export function ProblemFilterBar({
                                 {topicOptions.map((tag) => (
                                     <option key={tag.id} value={tag.id} className="bg-popover text-popover-foreground">
                                         {tag.label}
+                                    </option>
+                                ))}
+                            </select>
+                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                        </div>
+                    )}
+
+                    {setCompanyCollection && (
+                        <div className="relative min-w-[140px] md:w-auto md:min-w-[160px]">
+                            <select
+                                value={companyCollection ?? 'All'}
+                                onChange={e =>
+                                    setCompanyCollection(e.target.value === 'All' ? null : e.target.value)
+                                }
+                                aria-label="Filter by Company"
+                                className={cn(
+                                    'w-full h-12 pl-4 pr-10 bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 hover:border-sidebar-border rounded-2xl outline-none cursor-pointer text-sm font-medium appearance-none transition-all hover:bg-black/10 dark:bg-white/10 focus:ring-2 focus:ring-primary/20 text-muted-foreground focus:text-foreground',
+                                    companyCollection && 'border-primary/30 text-foreground',
+                                )}
+                            >
+                                <option value="All" className="bg-popover text-popover-foreground">All Companies</option>
+                                {MOST_ASKED_COLLECTIONS.map((collection) => (
+                                    <option key={collection.id} value={collection.id} className="bg-popover text-popover-foreground">
+                                        {collection.company}
                                     </option>
                                 ))}
                             </select>

@@ -287,6 +287,8 @@ export function DashboardClient({
                             topicFilter={topicFilter}
                             setTopicFilter={setTopicFilter}
                             topicOptions={topicOptions}
+                            companyCollection={companyCollection}
+                            setCompanyCollection={setCompanyCollection}
                             user={user}
                         />
                     </div>
@@ -457,6 +459,8 @@ export function DashboardClient({
                                     setCategory('All');
                                     setDifficulty('All');
                                     setStatusFilter('All');
+                                    setTopicFilter('All');
+                                    setCompanyCollection(null);
                                 }}
                                 variant="outline"
                                 size="lg"
