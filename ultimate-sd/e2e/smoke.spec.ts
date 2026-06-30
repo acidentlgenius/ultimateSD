@@ -6,6 +6,7 @@ test.describe('Guest smoke', () => {
     await expect(
       page.getByRole('heading', { name: /Master Systems/i }),
     ).toBeVisible();
+    await expect(page.getByText(/Popular at top companies/i)).toBeVisible();
   });
 
   test('pricing page loads', async ({ page }) => {
@@ -18,7 +19,7 @@ test.describe('Guest smoke', () => {
   test('roadmap page loads without auth', async ({ page }) => {
     await page.goto('/roadmap?track=se');
     await expect(page.getByText(/Phase 1: Web Fundamentals/i)).toBeVisible();
-    await expect(page.getByText(/Design TinyURL/i)).toBeVisible();
+    await expect(page.getByText(/8-week study schedule/i)).toBeVisible();
   });
 
   test('login page renders sign-in form', async ({ page }) => {

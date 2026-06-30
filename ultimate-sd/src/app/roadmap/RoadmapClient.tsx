@@ -3,6 +3,7 @@
 import { TRACKS, getRoadmapData } from '@/components/roadmap/RoadmapData';
 import { RoadmapNode } from '@/components/roadmap/RoadmapNode';
 import { RoadmapPath } from '@/components/roadmap/RoadmapPath';
+import { RoadmapSchedule } from '@/components/roadmap/RoadmapSchedule';
 import { RoadmapTrack } from '@/components/roadmap/RoadmapTypes';
 import { applyProgressToRoadmap } from '@/lib/roadmap-progress';
 import type { ProgressStatus } from '@/types';
@@ -106,6 +107,8 @@ export function RoadmapClient({ progressBySlug }: RoadmapClientProps) {
             </div>
           </motion.div>
         </div>
+
+        <RoadmapSchedule track={selectedTrack} progressBySlug={progressBySlug} />
 
         <div className="relative max-w-5xl mx-auto pb-32 min-h-[500px]">
           <RoadmapPath />

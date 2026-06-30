@@ -34,6 +34,8 @@ import { ProModal } from '@/components/ProModal';
 import { type PlanType } from '@/lib/plans';
 import { getAllFilterTags, getProblemTags, problemMatchesTag } from '@/lib/problem-tags';
 import { ProblemTagList } from '@/components/ProblemTagBadge';
+import { MostAskedSection } from '@/components/landing/MostAskedSection';
+import { problemInCollection } from '@/lib/company-collections';
 
 type StatusFilter =
     | 'All'
@@ -126,6 +128,7 @@ export function DashboardClient({
     const [difficulty, setDifficulty] = useState('All');
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('All');
     const [topicFilter, setTopicFilter] = useState('All');
+    const [companyCollection, setCompanyCollection] = useState<string | null>(null);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [lockedProblem, setLockedProblem] = useState<ProblemWithStatus | null>(null);
 
@@ -168,6 +171,12 @@ export function DashboardClient({
             );
         }
 
+        if (companyCollection) {
+            filteredProblems = filteredProblems.filter((p) =>
+                problemInCollection(p.slug, companyCollection)
+            );
+        }
+
         if (search) {
             const searchLower = search.toLowerCase();
             filteredProblems = filteredProblems.filter(p => {
@@ -184,7 +193,7 @@ export function DashboardClient({
         }
 
         return filteredProblems;
-    }, [problems, search, category, difficulty, statusFilter, topicFilter, user]);
+    }, [problems, search, category, difficulty, statusFilter, topicFilter, companyCollection, user]);
 
     const categories = ['All', ...new Set(problems.map(p => p.category))];
     const difficulties = ['All', 'Easy', 'Medium', 'Hard'];
@@ -228,6 +237,16 @@ export function DashboardClient({
 
             {/* 2.5 Roadmap Preview */}
             <RoadmapPreview />
+
+            <MostAskedSection
+                selectedCollectionId={companyCollection}
+                onSelectCollection={(id) => {
+                    setCompanyCollection(id);
+                    if (id) {
+                        document.getElementById('problems')?.scrollIntoView({ behavior: 'smooth' });
+                    }
+                }}
+            />
 
             {/* 3. Problem Explorer */}
             <div id="problems" className="container mx-auto px-4 py-24 relative z-10 max-w-7xl">
