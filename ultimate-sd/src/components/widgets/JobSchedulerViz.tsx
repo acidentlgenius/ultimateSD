@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -71,11 +71,22 @@ const JobSchedulerViz: React.FC = () => {
         });
     }, [tasks, isRunning]);
 
+    // Store timeout IDs in a ref to avoid clearing them prematurely when the
+    // effect re-runs due to frequent state updates (React renders killing background workers)
+    const timeoutIds = useRef(new Set<NodeJS.Timeout>());
+
+    // Cleanup timeouts only on unmount
+    useEffect(() => {
+        return () => {
+            timeoutIds.current.forEach(clearTimeout);
+            timeoutIds.current.clear();
+        };
+    }, []);
+
     // Scheduler Loop
     useEffect(() => {
         if (!isRunning) return;
 
-        const timeoutIds = new Set<NodeJS.Timeout>();
         const interval = setInterval(() => {
             // Find idle workers
             const idleWorkers = workers.filter(w => !w.busy);
@@ -121,9 +132,9 @@ const JobSchedulerViz: React.FC = () => {
                     const task = tasks.find(t => t.id === taskId);
                     const timeoutId = setTimeout(() => {
                         completeTask(taskId, workerId);
-                        timeoutIds.delete(timeoutId);
+                        timeoutIds.current.delete(timeoutId);
                     }, task?.duration || 1000);
-                    timeoutIds.add(timeoutId);
+                    timeoutIds.current.add(timeoutId);
                 });
             }
 
@@ -131,8 +142,6 @@ const JobSchedulerViz: React.FC = () => {
 
         return () => {
             clearInterval(interval);
-            timeoutIds.forEach(clearTimeout);
-            timeoutIds.clear();
         };
     }, [isRunning, workers, tasks, addLog]);
 

@@ -36,4 +36,23 @@ describe('JobSchedulerViz', () => {
 
     expect(vi.getTimerCount()).toBeLessThan(countBeforeUnmount);
   });
+
+  it('completes tasks', async () => {
+    render(<JobSchedulerViz />);
+
+    const startButton = screen.getByText(/Start Job/i);
+    act(() => {
+      startButton.click();
+    });
+
+    for (let i = 0; i < 20; i++) {
+        act(() => {
+            vi.advanceTimersByTime(2000);
+        });
+    }
+
+    // Wait for tasks to complete
+    const completedTasks = screen.queryAllByText(/COMPLETED/i);
+    expect(completedTasks.length).toBeGreaterThanOrEqual(5);
+  });
 });

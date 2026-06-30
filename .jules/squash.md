@@ -62,3 +62,9 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+
+## 2024-06-30 - Background Process Killing via React Effect Cleanup
+
+**Learning:** When simulating background loops or intervals in React `useEffect` hooks, clearing those timers (`clearTimeout`, `clearInterval`) inside the effect's own cleanup function is an anti-pattern if the effect is frequently re-run (e.g., dependent on frequently updating local state). React will aggressively unmount/remount the effect on every state change, which executes the cleanup function, prematurely killing the background processes and causing simulated task starvation or bugs.
+
+**Action:** Store timeout or interval IDs in a mutable reference (`useRef`) and ONLY clear them in a dedicated, separate, unmount-only `useEffect` (one with an empty `[]` dependency array) to decouple state updates from background process lifecycle management.
