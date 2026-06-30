@@ -1,6 +1,7 @@
 import type { AppState } from '@excalidraw/excalidraw/types';
 import type { ExcalidrawScene, PersistedDiagram, StepDiagramData, DiagramSnapshot } from '@/types/diagram';
 import { toast } from 'sonner';
+import { countActiveElements, diagramDebug } from '@/lib/diagram-debug';
 
 const FORMAT = 'excalidraw' as const;
 const FORMAT_VERSION = 1;
@@ -39,13 +40,26 @@ export function isPersistedDiagram(value: unknown): value is PersistedDiagram {
 export function loadDiagram(stepKey: string): PersistedDiagram | null {
   const key = getDiagramStorageKey(stepKey);
   const raw = localStorage.getItem(key);
-  if (!raw) return null;
+  if (!raw) {
+    diagramDebug('load:miss', { stepKey, storageKey: key });
+    return null;
+  }
   try {
     const parsed = JSON.parse(raw);
-    if (isPersistedDiagram(parsed)) return parsed;
+    if (isPersistedDiagram(parsed)) {
+      diagramDebug('load:hit', {
+        stepKey,
+        storageKey: key,
+        elementCount: countActiveElements(parsed.scene.elements),
+        timestamp: parsed.timestamp,
+      });
+      return parsed;
+    }
+    diagramDebug('load:invalid-format-purged', { stepKey, storageKey: key, parsedKeys: Object.keys(parsed as object) });
     localStorage.removeItem(key);
     return null;
-  } catch {
+  } catch (err) {
+    diagramDebug('load:parse-error-purged', { stepKey, storageKey: key, error: String(err) });
     localStorage.removeItem(key);
     return null;
   }
@@ -61,6 +75,13 @@ export function saveDiagram(stepKey: string, scene: ExcalidrawScene): void {
   };
   try {
     localStorage.setItem(getDiagramStorageKey(stepKey), JSON.stringify(payload));
+    diagramDebug('save:ok', {
+      stepKey,
+      storageKey: getDiagramStorageKey(stepKey),
+      elementCount: countActiveElements(payload.scene.elements),
+      byteLength: JSON.stringify(payload).length,
+      reason: 'persist',
+    });
   } catch (err) {
     const isQuota =
       err instanceof DOMException &&

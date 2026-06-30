@@ -20,6 +20,7 @@ import {
   purgeLegacyDesignKeys,
   saveDiagram,
 } from '@/lib/diagram-persistence';
+import { countActiveElements, diagramDebug } from '@/lib/diagram-debug';
 import { exportPNG } from '@/lib/exportUtils';
 import type { DiagramCanvasProps, ExcalidrawScene } from '@/types/diagram';
 import type {
@@ -77,21 +78,48 @@ export default function DiagramCanvas({ stepKey, isVisible = true }: DiagramCanv
 
   stepKeyRef.current = stepKey;
 
-  const flushSaveForKey = useCallback((key: string) => {
+  const flushSaveForKey = useCallback((key: string, reason: string) => {
     if (saveTimerRef.current) {
       clearTimeout(saveTimerRef.current);
       saveTimerRef.current = null;
     }
     if (pendingSceneRef.current && !isRestoringRef.current) {
+      diagramDebug('flush', {
+        stepKey: key,
+        reason,
+        elementCount: countActiveElements(pendingSceneRef.current.elements),
+      });
       saveDiagram(key, pendingSceneRef.current);
+    } else {
+      diagramDebug('flush:skipped', {
+        stepKey: key,
+        reason,
+        hasPending: !!pendingSceneRef.current,
+        isRestoring: isRestoringRef.current,
+      });
     }
   }, []);
 
   const scheduleSave = useCallback((scene: ExcalidrawScene) => {
-    if (isRestoringRef.current) return;
+    if (isRestoringRef.current) {
+      diagramDebug('schedule:skipped-restoring', {
+        stepKey: stepKeyRef.current,
+        elementCount: countActiveElements(scene.elements),
+      });
+      return;
+    }
     pendingSceneRef.current = scene;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    diagramDebug('schedule:debounce', {
+      stepKey: stepKeyRef.current,
+      elementCount: countActiveElements(scene.elements),
+      debounceMs: SAVE_DEBOUNCE_MS,
+    });
     saveTimerRef.current = setTimeout(() => {
+      diagramDebug('schedule:commit', {
+        stepKey: stepKeyRef.current,
+        elementCount: countActiveElements(scene.elements),
+      });
       saveDiagram(stepKeyRef.current, scene);
       saveTimerRef.current = null;
     }, SAVE_DEBOUNCE_MS);
@@ -122,6 +150,10 @@ export default function DiagramCanvas({ stepKey, isVisible = true }: DiagramCanv
         apiRef.current.addFiles(fileValues);
       }
       pendingSceneRef.current = scene;
+      diagramDebug('restore:applied', {
+        stepKey: stepKeyRef.current,
+        elementCount: countActiveElements(scene.elements),
+      });
       endRestoreGuard();
     },
     [endRestoreGuard]
@@ -143,11 +175,19 @@ export default function DiagramCanvas({ stepKey, isVisible = true }: DiagramCanv
     if (!isReady || !apiRef.current) return;
 
     const isStepSwitch = loadedStepRef.current !== null && loadedStepRef.current !== stepKey;
+    diagramDebug('mount:restore-check', {
+      stepKey,
+      isReady,
+      isStepSwitch,
+      previousStepKey: loadedStepRef.current,
+      note: 'Diagrams persist under diagram-{stepKey}, not sd-practice-v1-* session keys',
+    });
     const persisted = loadDiagram(stepKey);
 
     if (persisted?.scene) {
       restoreScene(persisted.scene);
     } else if (isStepSwitch) {
+      diagramDebug('mount:reset-empty-step', { stepKey });
       isRestoringRef.current = true;
       apiRef.current.resetScene();
       filesRef.current = {};
@@ -161,12 +201,12 @@ export default function DiagramCanvas({ stepKey, isVisible = true }: DiagramCanv
   useEffect(() => {
     const key = stepKey;
     return () => {
-      flushSaveForKey(key);
+      flushSaveForKey(key, 'step-change-or-unmount');
     };
   }, [stepKey, flushSaveForKey]);
 
   useEffect(() => {
-    const onPageHide = () => flushSaveForKey(stepKeyRef.current);
+    const onPageHide = () => flushSaveForKey(stepKeyRef.current, 'pagehide');
     window.addEventListener('pagehide', onPageHide);
     return () => {
       window.removeEventListener('pagehide', onPageHide);
@@ -181,12 +221,17 @@ export default function DiagramCanvas({ stepKey, isVisible = true }: DiagramCanv
 
   const bindApi = useCallback(
     (api: ExcalidrawImperativeAPI) => {
-      if (apiRef.current === api) return;
       apiRef.current = api;
       onChangeUnsubRef.current?.();
       onChangeUnsubRef.current = api.onChange((elements, appState, files) => {
+        diagramDebug('onChange', {
+          stepKey: stepKeyRef.current,
+          elementCount: countActiveElements(elements),
+          isRestoring: isRestoringRef.current,
+        });
         handleSceneChange(elements, appState, files);
       });
+      diagramDebug('api:bound', { stepKey: stepKeyRef.current });
       setIsReady(true);
     },
     [handleSceneChange]
