@@ -56,3 +56,9 @@
 **Learning:** When using `setTimeout` inside an interval (like `setInterval`) within a React `useEffect` hook, the interval cleanup function `clearInterval` only stops future executions of the interval, but it does NOT cancel any `setTimeout` calls that have already been scheduled. This can lead to state updates on unmounted components and memory leaks if the component unmounts before the nested timeouts fire.
 
 **Action:** Always track all active `setTimeout` IDs in a persistent structure (like a `Set`) within the effect. In the `useEffect` cleanup function, iterate through the tracked timeout IDs and call `clearTimeout` on each one in addition to calling `clearInterval`. Remember to remove timeout IDs from the tracked set once they have successfully executed to avoid memory leaks from an ever-growing array or set over long sessions.
+
+## $(date +%Y-%m-%d) - [Memory Leaks with setTimeout inside intervals and useEffect dependency triggers in React]
+
+**Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
+
+**Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
