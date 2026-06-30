@@ -63,7 +63,15 @@ pnpm test run
 pnpm build
 ```
 
-CI runs the same checks on every push (`.github/workflows/ci.yml`).
+For end-to-end smoke and practice flows (requires local PostgreSQL):
+
+```bash
+npx prisma db push
+pnpm exec playwright install chromium
+pnpm test:e2e
+```
+
+CI runs lint, unit tests, build, and Playwright E2E on every push (`.github/workflows/ci.yml`).
 
 ## Tech stack
 
