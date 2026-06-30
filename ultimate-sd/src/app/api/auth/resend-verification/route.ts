@@ -16,8 +16,8 @@ export async function POST(req: Request) {
             return NextResponse.json({ message: 'Email is required' }, { status: 400 });
         }
 
-        const user = await prisma.user.findUnique({
-            where: { email },
+        const user = await prisma.user.findFirst({
+            where: { email: { equals: email, mode: 'insensitive' } },
         });
 
         if (!user || !user.password || user.emailVerified) {
@@ -27,7 +27,9 @@ export async function POST(req: Request) {
             );
         }
 
-        const identifier = verificationIdentifier(email);
+        const exactEmail = user.email;
+
+        const identifier = verificationIdentifier(exactEmail);
         const token = uuidv4();
         const expires = new Date();
         expires.setHours(expires.getHours() + 24);
@@ -40,7 +42,7 @@ export async function POST(req: Request) {
             data: { identifier, token, expires },
         });
 
-        await sendVerificationEmail(email, token);
+        await sendVerificationEmail(exactEmail, token);
 
         return NextResponse.json(
             { message: 'If an unverified account exists for that email, we sent a verification link.' },
