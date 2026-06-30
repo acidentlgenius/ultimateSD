@@ -7,6 +7,7 @@ import { DiagramCanvasProvider, useDiagramCanvasRef } from '../diagram/DiagramCa
 const RESTORE_GUARD_MS = 300;
 const SAVE_DEBOUNCE_MS = 1000;
 let mockEmitEmptyOnChange = false;
+let mockUpdateScene = vi.fn();
 
 function MockExcalidraw({
   excalidrawAPI,
@@ -17,12 +18,14 @@ function MockExcalidraw({
 }) {
   useEffect(() => {
     const element = { id: '1', type: 'rectangle', isDeleted: false };
+    mockUpdateScene = vi.fn();
     const api = {
       getSceneElements: () => (mockEmitEmptyOnChange ? [] : [element]),
       getAppState: () => ({ theme: 'light' }),
       getFiles: () => ({}),
-      updateScene: vi.fn(),
+      updateScene: mockUpdateScene,
       resetScene: vi.fn(),
+      addFiles: vi.fn(),
     };
     excalidrawAPI?.(api);
 
@@ -68,6 +71,7 @@ function RefProbe() {
 describe('DiagramCanvas', () => {
   beforeEach(() => {
     mockEmitEmptyOnChange = false;
+    mockUpdateScene = vi.fn();
     localStorage.clear();
     localStorage.setItem('saved-design-old', JSON.stringify({ name: 'legacy' }));
   });
@@ -163,5 +167,33 @@ describe('DiagramCanvas', () => {
     expect(parsed.scene.elements[0].id).toBe('saved-1');
 
     vi.useRealTimers();
+  });
+
+  it('restores pending scene via updateScene when api binds empty', async () => {
+    const savedScene = {
+      format: 'excalidraw' as const,
+      formatVersion: 1,
+      stepKey: 'hld-0',
+      scene: {
+        type: 'excalidraw' as const,
+        version: 2,
+        elements: [{ id: 'saved-1', type: 'rectangle', isDeleted: false }],
+        appState: { theme: 'light' },
+        files: {},
+      },
+      timestamp: new Date().toISOString(),
+    };
+    localStorage.setItem('diagram-hld-0', JSON.stringify(savedScene));
+    mockEmitEmptyOnChange = true;
+
+    render(
+      <DiagramCanvasProvider>
+        <DiagramCanvas stepKey="hld-0" isVisible />
+      </DiagramCanvasProvider>
+    );
+
+    await waitFor(() => {
+      expect(mockUpdateScene).toHaveBeenCalled();
+    });
   });
 });

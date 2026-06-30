@@ -72,6 +72,8 @@ export default function DiagramCanvas({ stepKey, isVisible = true }: DiagramCanv
   const [initialData, setInitialData] = useState<ExcalidrawInitialDataState | null | undefined>(
     undefined
   );
+  /** Bumps when persisted payload is resolved so Excalidraw remounts with initialData */
+  const [canvasEpoch, setCanvasEpoch] = useState(0);
 
   stepKeyRef.current = stepKey;
 
@@ -213,6 +215,7 @@ export default function DiagramCanvas({ stepKey, isVisible = true }: DiagramCanv
     if (persisted?.scene && countActiveElements(persisted.scene.elements) > 0) {
       pendingSceneRef.current = persisted.scene;
       setInitialData(sceneToInitialData(persisted.scene));
+      setCanvasEpoch((epoch) => epoch + 1);
       diagramDebug('step:initial-data-ready', {
         stepKey,
         elementCount: countActiveElements(persisted.scene.elements),
@@ -220,6 +223,7 @@ export default function DiagramCanvas({ stepKey, isVisible = true }: DiagramCanv
     } else {
       pendingSceneRef.current = null;
       setInitialData(null);
+      setCanvasEpoch((epoch) => epoch + 1);
       diagramDebug('step:initial-data-empty', { stepKey });
     }
   }, [stepKey]);
@@ -247,13 +251,38 @@ export default function DiagramCanvas({ stepKey, isVisible = true }: DiagramCanv
     (api: ExcalidrawImperativeAPI) => {
       apiRef.current = api;
       beginRestoreGuard();
+
+      const liveCount = countActiveElements(api.getSceneElements());
+      const pending = pendingSceneRef.current;
+      const pendingCount = countActiveElements(pending?.elements);
       diagramDebug('api:bound', {
         stepKey: stepKeyRef.current,
-        liveElementCount: countActiveElements(api.getSceneElements()),
+        liveElementCount: liveCount,
+        pendingElementCount: pendingCount,
       });
+
+      // excalidrawAPI fires before initialData is always hydrated — restore if still empty.
+      if (liveCount === 0 && pending && pendingCount > 0) {
+        const applyPendingScene = () => {
+          if (!apiRef.current) return;
+          const afterInitial = countActiveElements(apiRef.current.getSceneElements());
+          if (afterInitial > 0) {
+            diagramDebug('api:initial-data-applied', {
+              stepKey: stepKeyRef.current,
+              liveElementCount: afterInitial,
+            });
+            return;
+          }
+          if (pendingSceneRef.current && countActiveElements(pendingSceneRef.current.elements) > 0) {
+            restoreScene(pendingSceneRef.current);
+          }
+        };
+        requestAnimationFrame(() => requestAnimationFrame(applyPendingScene));
+      }
+
       setIsReady(true);
     },
-    [beginRestoreGuard]
+    [beginRestoreGuard, restoreScene]
   );
 
   useImperativeHandle(
@@ -388,7 +417,7 @@ export default function DiagramCanvas({ stepKey, isVisible = true }: DiagramCanv
       <div className="min-h-0 flex-1">
         {canMountCanvas ? (
           <Excalidraw
-            key={stepKey}
+            key={`${stepKey}-${canvasEpoch}`}
             excalidrawAPI={bindApi}
             initialData={initialData ?? undefined}
             onChange={handleSceneChange}
