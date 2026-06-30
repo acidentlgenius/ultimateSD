@@ -5,6 +5,7 @@ import { DEFAULT_PHASE_STEPS } from '../steps';
 import {
   buildStepKey,
   clampStepIndex,
+  getDiagramStepKeysForProblem,
   isDiagramSubStep,
   isFirstJourneyStep,
   phaseIncludesDiagram,
@@ -126,5 +127,22 @@ describe('phaseIncludesDiagram', () => {
     expect(phaseIncludesDiagram('architecture')).toBe(true);
     expect(phaseIncludesDiagram('deep_dive')).toBe(true);
     expect(phaseIncludesDiagram('requirements')).toBe(false);
+  });
+});
+
+describe('getDiagramStepKeysForProblem', () => {
+  it('returns keys only for diagram sub-steps', () => {
+    const phaseSteps = {
+      hld: [
+        { subStep: 'architecture', title: 'Architecture', inputType: 'text' },
+        { subStep: 'api', title: 'API', inputType: 'text' },
+      ],
+      tradeoffs: [
+        { subStep: 'tradeoffs', title: 'Tradeoffs', inputType: 'text' },
+      ],
+    };
+    const keys = getDiagramStepKeysForProblem(phaseSteps as any);
+    expect(keys).toEqual([buildStepKey('hld', 0)]);
+    expect(isDiagramSubStep('architecture')).toBe(true);
   });
 });

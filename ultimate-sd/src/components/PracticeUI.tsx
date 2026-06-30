@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import StepByStepChat from './StepByStepChat';
 import DiagramCanvas from './DiagramCanvas';
+import { DiagramCanvasProvider, useDiagramCanvasRef } from './diagram/DiagramCanvasContext';
 import { TimerWidget } from './TimerWidget';
 import { HelpAssistant } from './HelpAssistant';
 import { Button } from './ui/button';
@@ -25,7 +26,9 @@ import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
 
 import { DEFAULT_PHASE_STEPS } from '@/lib/steps';
-import { isDiagramSubStep } from '@/lib/step-journey';
+import { getDiagramStepKeysForProblem, isDiagramSubStep, resolvePhaseSteps } from '@/lib/step-journey';
+import { exportSceneToPng, resolveBestDiagramSnapshot } from '@/lib/diagram-persistence';
+import { cn } from '@/lib/utils';
 import { FEATURES } from '@/lib/features';
 import { SolutionViewer } from './SolutionViewer';
 import { getSolution } from '@/lib/solutions';
@@ -34,6 +37,15 @@ import { startPracticeSession, togglePracticeTimer } from '@/app/actions/progres
 import { CheckCircle } from 'lucide-react';
 
 export default function PracticeUI({ problem, existingProgress }: { problem: SystemDesignProblem, existingProgress?: any }) {
+  return (
+    <DiagramCanvasProvider>
+      <PracticeUIContent problem={problem} existingProgress={existingProgress} />
+    </DiagramCanvasProvider>
+  );
+}
+
+function PracticeUIContent({ problem, existingProgress }: { problem: SystemDesignProblem, existingProgress?: any }) {
+  const diagramRef = useDiagramCanvasRef();
   const { data: session, status } = useSession();
   const isAuthenticated = status === 'authenticated' && !!session?.user?.id;
 
@@ -64,6 +76,8 @@ export default function PracticeUI({ problem, existingProgress }: { problem: Sys
   }, []);
 
   const isDiagramRelevant = isDiagramSubStep(currentSubStep);
+  const phaseSteps = resolvePhaseSteps(problem.steps, DEFAULT_PHASE_STEPS);
+  const diagramStepKeys = getDiagramStepKeysForProblem(phaseSteps);
 
 
 
@@ -154,10 +168,20 @@ export default function PracticeUI({ problem, existingProgress }: { problem: Sys
   const exportTranscript = async () => {
     setIsExporting(true);
     try {
-      await exportPracticeSession({
-        problem,
-        savedStepData,
-      });
+      const getDiagramPng = async (): Promise<Blob | null> => {
+        const snapshot = resolveBestDiagramSnapshot(diagramStepKeys, savedStepData);
+        if (snapshot?.imageData) {
+          const res = await fetch(snapshot.imageData);
+          return res.blob();
+        }
+        if (snapshot?.scene) {
+          const fromScene = await exportSceneToPng(snapshot.scene);
+          if (fromScene) return fromScene;
+        }
+        return diagramRef.current?.getPng() ?? null;
+      };
+
+      await exportPracticeSession({ problem, savedStepData, getDiagramPng });
       toast.success('PDF exported successfully! Check your downloads folder.');
     } catch (error) {
       console.error('Export error:', error);
@@ -358,28 +382,40 @@ export default function PracticeUI({ problem, existingProgress }: { problem: Sys
             <StepByStepChat problem={problem} />
           </div>
 
-          {/* Diagram Section - Floating or Inline */}
-          {isDiagramRelevant && (
+          {/* Diagram Section — always mounted when stepKey is set */}
+          {currentStepKey && (
             <div className="mt-8 animate-fade-in space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 rounded-md bg-primary/10">
-                    <Layout className="h-4 w-4 text-primary" />
+              {isDiagramRelevant && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-md bg-primary/10">
+                      <Layout className="h-4 w-4 text-primary" />
+                    </div>
+                    <h3 className="font-semibold text-sm">System Diagram</h3>
                   </div>
-                  <h3 className="font-semibold text-sm">System Diagram</h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setDiagramCollapsed(!diagramCollapsed)}
+                    className="text-xs"
+                  >
+                    {diagramCollapsed ? 'Show Canvas' : 'Hide Canvas'}
+                  </Button>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setDiagramCollapsed(!diagramCollapsed)}
-                  className="text-xs"
-                >
-                  {diagramCollapsed ? 'Show Canvas' : 'Hide Canvas'}
-                </Button>
-              </div>
+              )}
 
-              <div className={`transition-all duration-300 border-2 border-border/60 rounded-xl overflow-hidden shadow-sm bg-card ${diagramCollapsed ? 'h-0 opacity-0' : 'h-[600px] opacity-100'}`}>
-                <DiagramCanvas stepKey={currentStepKey} />
+              <div
+                className={cn(
+                  'transition-all duration-300 border-2 border-border/60 rounded-xl overflow-hidden shadow-sm bg-card flex flex-col min-h-0',
+                  !isDiagramRelevant || diagramCollapsed
+                    ? 'h-0 opacity-0 overflow-hidden pointer-events-none border-0'
+                    : 'h-[600px] opacity-100'
+                )}
+              >
+                <DiagramCanvas
+                  stepKey={currentStepKey}
+                  isVisible={isDiagramRelevant && !diagramCollapsed}
+                />
               </div>
             </div>
           )}

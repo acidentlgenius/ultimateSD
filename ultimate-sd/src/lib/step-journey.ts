@@ -156,3 +156,17 @@ export function phaseIncludesDiagram(phaseKey: string): boolean {
   const key = phaseKey.toLowerCase();
   return HLD_PHASE_KEYS.has(key) || LLD_PHASE_KEYS.has(key);
 }
+
+export function getDiagramStepKeysForProblem(
+  phaseSteps: Record<string, StepData[]>
+): string[] {
+  const keys: string[] = [];
+  for (const [phaseKey, steps] of Object.entries(phaseSteps)) {
+    steps.forEach((step, index) => {
+      if (isDiagramSubStep(step.subStep)) {
+        keys.push(buildStepKey(phaseKey, index));
+      }
+    });
+  }
+  return keys;
+}

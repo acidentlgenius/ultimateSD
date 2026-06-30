@@ -24,6 +24,7 @@ const COLORS = {
 interface PDFExportOptions {
   problem: SystemDesignProblem;
   savedStepData: Map<string, any>;
+  getDiagramPng?: () => Promise<Blob | null>;
 }
 
 export class CompactPDFExporter {
@@ -46,7 +47,7 @@ export class CompactPDFExporter {
   async export(): Promise<void> {
     try {
       this.addHeader();
-      this.addContent();
+      await this.addContent();
       this.addFooter();
       this.addPageNumbers();
       
@@ -102,7 +103,7 @@ export class CompactPDFExporter {
     this.yPosition = 40;
   }
 
-  private addContent(): void {
+  private async addContent(): Promise<void> {
     const phaseGroups = buildPhaseExportGroups(
       this.options.problem,
       this.options.savedStepData
@@ -129,7 +130,7 @@ export class CompactPDFExporter {
       }
 
       if (phaseIncludesDiagram(phaseKey) && steps.some((step) => step.data.completed)) {
-        this.addDiagram();
+        await this.addDiagram();
       }
 
       this.yPosition += 4;
@@ -312,37 +313,38 @@ export class CompactPDFExporter {
     this.yPosition += 5;
   }
 
-  private addDiagram(): void {
+  private async addDiagram(): Promise<void> {
     try {
-      const canvas = document.querySelector('canvas') as HTMLCanvasElement;
-      if (!canvas) return;
+      const pngBlob = this.options.getDiagramPng ? await this.options.getDiagramPng() : null;
+      if (!pngBlob) return;
 
+      const bitmap = await createImageBitmap(pngBlob);
       const tempCanvas = document.createElement('canvas');
-      tempCanvas.width = Math.min(canvas.width, 800);
-      tempCanvas.height = Math.min(canvas.height, 500);
-      
+      tempCanvas.width = Math.min(bitmap.width, 800);
+      tempCanvas.height = Math.min(bitmap.height, 500);
+
       const ctx = tempCanvas.getContext('2d');
       if (!ctx) return;
 
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-      
-      const scale = Math.min(tempCanvas.width / canvas.width, tempCanvas.height / canvas.height, 1);
-      const scaledWidth = canvas.width * scale;
-      const scaledHeight = canvas.height * scale;
+
+      const scale = Math.min(tempCanvas.width / bitmap.width, tempCanvas.height / bitmap.height, 1);
+      const scaledWidth = bitmap.width * scale;
+      const scaledHeight = bitmap.height * scale;
       const offsetX = (tempCanvas.width - scaledWidth) / 2;
       const offsetY = (tempCanvas.height - scaledHeight) / 2;
-      
-      ctx.drawImage(canvas, offsetX, offsetY, scaledWidth, scaledHeight);
-      
+
+      ctx.drawImage(bitmap, offsetX, offsetY, scaledWidth, scaledHeight);
+
       const imgData = tempCanvas.toDataURL('image/jpeg', 0.7);
-      
+
       const imgWidth = this.contentWidth - 5;
       const imgHeight = Math.min((tempCanvas.height / tempCanvas.width) * imgWidth, 70);
-      
+
       this.checkPageBreak(imgHeight + 10);
       this.yPosition += 3;
-      
+
       this.doc.addImage(imgData, 'JPEG', this.margin + 2.5, this.yPosition, imgWidth, imgHeight);
       this.yPosition += imgHeight + 5;
     } catch (error) {
