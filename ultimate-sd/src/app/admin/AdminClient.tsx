@@ -16,6 +16,7 @@ import {
   type LaunchOfferPublicStats,
 } from '@/lib/launch-offer';
 import { toast } from 'sonner';
+import Link from 'next/link';
 
 interface AdminClientProps {
   users: Array<{
@@ -33,9 +34,12 @@ interface AdminClientProps {
   }>;
   launchStats: LaunchOfferPublicStats;
   onViewActivity?: (userId: string) => void;
+  page: number;
+  totalPages: number;
+  totalCount: number;
 }
 
-export function AdminClient({ users, launchStats, onViewActivity }: AdminClientProps) {
+export function AdminClient({ users, launchStats, onViewActivity, page, totalPages, totalCount }: AdminClientProps) {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
   const [platformGrantUserId, setPlatformGrantUserId] = useState<string | null>(null);
@@ -201,6 +205,38 @@ export function AdminClient({ users, launchStats, onViewActivity }: AdminClientP
             ))}
           </tbody>
         </table>
+      </div>
+
+      <div className="flex items-center justify-between px-6 py-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50">
+        <p className="text-sm text-zinc-500">
+          Showing page {page} of {totalPages} ({totalCount} users)
+        </p>
+        <div className="flex gap-2">
+          {page > 1 ? (
+            <Link
+              href={`/admin?page=${page - 1}`}
+              className="inline-flex items-center rounded-md border px-3 py-1.5 text-sm hover:bg-muted"
+            >
+              Previous
+            </Link>
+          ) : (
+            <span className="inline-flex items-center rounded-md border px-3 py-1.5 text-sm opacity-40">
+              Previous
+            </span>
+          )}
+          {page < totalPages ? (
+            <Link
+              href={`/admin?page=${page + 1}`}
+              className="inline-flex items-center rounded-md border px-3 py-1.5 text-sm hover:bg-muted"
+            >
+              Next
+            </Link>
+          ) : (
+            <span className="inline-flex items-center rounded-md border px-3 py-1.5 text-sm opacity-40">
+              Next
+            </span>
+          )}
+        </div>
       </div>
 
       <Dialog

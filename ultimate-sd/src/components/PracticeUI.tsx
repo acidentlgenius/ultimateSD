@@ -34,17 +34,35 @@ import { SolutionViewer } from './SolutionViewer';
 import { getSolution } from '@/lib/solutions';
 
 import { startPracticeSession, togglePracticeTimer } from '@/app/actions/progress';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, Sparkles } from 'lucide-react';
+import type { PracticeStepMode } from '@/lib/interview-lite-steps';
+import { Badge } from '@/components/ui/badge';
 
-export default function PracticeUI({ problem, existingProgress }: { problem: SystemDesignProblem, existingProgress?: any }) {
+export default function PracticeUI({
+  problem,
+  stepMode = 'full',
+  existingProgress,
+}: {
+  problem: SystemDesignProblem;
+  stepMode?: PracticeStepMode;
+  existingProgress?: any;
+}) {
   return (
     <DiagramCanvasProvider>
-      <PracticeUIContent problem={problem} existingProgress={existingProgress} />
+      <PracticeUIContent problem={problem} stepMode={stepMode} existingProgress={existingProgress} />
     </DiagramCanvasProvider>
   );
 }
 
-function PracticeUIContent({ problem, existingProgress }: { problem: SystemDesignProblem, existingProgress?: any }) {
+function PracticeUIContent({
+  problem,
+  stepMode,
+  existingProgress,
+}: {
+  problem: SystemDesignProblem;
+  stepMode: PracticeStepMode;
+  existingProgress?: any;
+}) {
   const diagramRef = useDiagramCanvasRef();
   const { data: session, status } = useSession();
   const isAuthenticated = status === 'authenticated' && !!session?.user?.id;
@@ -127,6 +145,7 @@ function PracticeUIContent({ problem, existingProgress }: { problem: SystemDesig
   const [isSolutionOpen, setIsSolutionOpen] = useState(false);
   const [showSolutionConfirm, setShowSolutionConfirm] = useState(false);
   const solution = FEATURES.solutionViewer ? getSolution(problem.slug) : null;
+  const hasPlatformPlan = session?.user?.hasPlatformPlan ?? false;
 
   const totalSteps = useMemo(
     () => Object.values(activeSteps).reduce((sum, steps) => sum + steps.length, 0),
@@ -153,7 +172,7 @@ function PracticeUIContent({ problem, existingProgress }: { problem: SystemDesig
 
   const handleUnlockSolution = () => {
     if (!solution) return;
-    if (isFullyComplete) {
+    if (hasPlatformPlan || isFullyComplete) {
       setIsSolutionOpen(true);
       return;
     }
@@ -207,6 +226,15 @@ function PracticeUIContent({ problem, existingProgress }: { problem: SystemDesig
               {problem.title}
             </h1>
             <p className="text-xs text-muted-foreground truncate">System Design Practice</p>
+            {stepMode === 'lite' && (
+              <Badge
+                variant="outline"
+                className="mt-1.5 text-[10px] border-sky-500/30 text-sky-600 bg-sky-500/10"
+              >
+                <Sparkles className="h-3 w-3 mr-1" />
+                Interview Lite · 45 min
+              </Badge>
+            )}
           </div>
         </div>
 
@@ -216,6 +244,7 @@ function PracticeUIContent({ problem, existingProgress }: { problem: SystemDesig
             className="w-full justify-between"
             problemId={problem.id}
             initialTimeSeconds={
+              stepMode === 'lite' ? 2700 :
               problem.difficulty === 'Easy' ? 1800 :
                 problem.difficulty === 'Medium' ? 2700 :
                   3600
@@ -318,8 +347,13 @@ function PracticeUIContent({ problem, existingProgress }: { problem: SystemDesig
             className={`w-full justify-start ${!solution ? 'opacity-50' : 'hover:bg-amber-500/10 hover:text-amber-600'}`}
             onClick={handleUnlockSolution}
             disabled={!solution}
+            title={
+              solution && !hasPlatformPlan && !isFullyComplete
+                ? 'Complete the problem or upgrade to view the expert solution'
+                : undefined
+            }
           >
-            {solution ? 'View Solution' : 'Solution Locked'}
+            {solution ? 'View Solution' : 'Solution Unavailable'}
           </Button>
         )}
 

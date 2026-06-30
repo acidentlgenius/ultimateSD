@@ -15,7 +15,7 @@
 | **Auth** | NextAuth v5 (Google OAuth + credentials) |
 | **Payments** | Razorpay (India) |
 | **UI** | Tailwind CSS 4 · shadcn/ui · Geist fonts |
-| **Tests** | Vitest 4 · Testing Library · jsdom |
+| **Tests** | Vitest 4 · Testing Library · jsdom · Playwright E2E |
 | **Package manager** | `pnpm` (preferred). `npm` works. Do not use `yarn`. |
 | **Path alias** | `@/*` → `src/*` |
 
@@ -69,6 +69,12 @@ pnpm build                        # check-env + next build (type-check included)
 # Run a single test file
 pnpm test run src/lib/__tests__/fetchUtils.test.ts
 
+# E2E (PostgreSQL required; seeds test@e2e.sysdesignai.local)
+npx prisma db push
+pnpm test:e2e
+pnpm test:e2e -- e2e/smoke.spec.ts
+pnpm test:e2e:ui
+
 # Run tests matching a name
 pnpm test run -t "renders the home page"
 
@@ -78,7 +84,7 @@ npx prisma db push                # Apply schema locally (no migration file)
 npx prisma studio                 # Visual DB browser
 ```
 
-**Definition of done:** `pnpm lint && pnpm test run && pnpm build` all pass with no new warnings in changed files.
+**Definition of done:** `pnpm lint && pnpm test run && pnpm build` all pass with no new warnings in changed files. Run `pnpm test:e2e` when touching user-facing flows.
 
 ---
 
@@ -241,6 +247,9 @@ Reference tests:
 | Component + localStorage | `src/components/__tests__/DiagramCanvas.test.tsx` |
 | Fetch utility | `src/lib/__tests__/fetchUtils.test.ts` |
 | Session storage | `src/components/__tests__/session-storage.test.ts` |
+| E2E guest smoke | `e2e/smoke.spec.ts` |
+| E2E auth + practice | `e2e/auth.spec.ts`, `e2e/practice.spec.ts` |
+| E2E roadmap unlocks | `e2e/roadmap.spec.ts` |
 
 ---
 

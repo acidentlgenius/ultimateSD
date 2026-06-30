@@ -233,3 +233,19 @@ export function getInitialAiCreditsForPlan(planType: PlanType): number {
       return 0;
   }
 }
+
+export function canViewExpertSolution(
+  user: Pick<UserAccess, 'planType' | 'planExpiresAt'> | null | undefined,
+  options: { hasSolution: boolean; isFullyComplete: boolean }
+): boolean {
+  if (!options.hasSolution) {
+    return false;
+  }
+  if (options.isFullyComplete) {
+    return true;
+  }
+  if (user && hasPlatformAccess(user)) {
+    return true;
+  }
+  return false;
+}

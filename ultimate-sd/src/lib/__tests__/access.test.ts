@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { canUseAI, getAdminGrantExpiryDate, type UserAccess } from '@/lib/access';
-import { FREE_MONTHLY_CREDITS } from '@/lib/plans';
+import {
+  canUseAI,
+  canViewExpertSolution,
+  getAdminGrantExpiryDate,
+  type UserAccess,
+} from '@/lib/access';
+import { FREE_MONTHLY_CREDITS, FREE_PROBLEM_SLUGS } from '@/lib/plans';
 
 function makeUser(overrides: Partial<UserAccess> = {}): UserAccess {
   return {
@@ -22,6 +27,44 @@ function makeUser(overrides: Partial<UserAccess> = {}): UserAccess {
     ...overrides,
   };
 }
+
+describe('FREE_PROBLEM_SLUGS', () => {
+  it('includes 8 canonical starter problems', () => {
+    expect(FREE_PROBLEM_SLUGS).toHaveLength(8);
+    expect(FREE_PROBLEM_SLUGS).toContain('design-tinyurl');
+    expect(FREE_PROBLEM_SLUGS).toContain('design-whatsapp');
+  });
+});
+
+describe('canViewExpertSolution', () => {
+  it('denies when no solution exists', () => {
+    expect(
+      canViewExpertSolution(makeUser(), { hasSolution: false, isFullyComplete: true })
+    ).toBe(false);
+  });
+
+  it('allows after full completion on free plan', () => {
+    expect(
+      canViewExpertSolution(makeUser(), { hasSolution: true, isFullyComplete: true })
+    ).toBe(true);
+  });
+
+  it('allows platform users before completion', () => {
+    const platformUser = makeUser({
+      planType: 'platform',
+      planExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+    });
+    expect(
+      canViewExpertSolution(platformUser, { hasSolution: true, isFullyComplete: false })
+    ).toBe(true);
+  });
+
+  it('denies free users before completion', () => {
+    expect(
+      canViewExpertSolution(makeUser(), { hasSolution: true, isFullyComplete: false })
+    ).toBe(false);
+  });
+});
 
 describe('getAdminGrantExpiryDate', () => {
   it('returns a date 3 months after the given date', () => {

@@ -1,4 +1,4 @@
 export const FEATURES = {
-  solutionViewer: false,
+  solutionViewer: true,
   feedbackPdfExport: false,
 } as const;
