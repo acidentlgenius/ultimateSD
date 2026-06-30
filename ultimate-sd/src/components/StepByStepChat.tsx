@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable react-hooks/refs */
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
@@ -282,9 +283,11 @@ export default function StepByStepChat({ problem }: Props) {
   const currentStep = currentSteps[safeStepIndex];
   const currentStepKey = buildStepKey(effectivePhase, safeStepIndex);
 
+  const currentSubStep = currentStep?.subStep;
+
   const getDiagramDataForStep = useCallback(
     (stepKey: string): StepDiagramData | null => {
-      if (stepKey === currentStepKey && currentStep && isDiagramSubStep(currentStep.subStep)) {
+      if (stepKey === currentStepKey && currentSubStep && isDiagramSubStep(currentSubStep)) {
         const live = diagramRef.current?.getScene();
         if (live && live.elements.some((el) => !el.isDeleted)) {
           return {
@@ -306,7 +309,7 @@ export default function StepByStepChat({ problem }: Props) {
       }
       return fromSaved ?? null;
     },
-    [currentStepKey, currentStep?.subStep, diagramRef, savedStepData]
+    [currentStepKey, currentSubStep, diagramRef, savedStepData]
   );
 
   useEffect(() => {
