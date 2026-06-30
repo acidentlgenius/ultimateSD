@@ -27,11 +27,12 @@ import type {
   ExcalidrawImperativeAPI,
   AppState,
   BinaryFiles,
+  ExcalidrawInitialDataState,
 } from '@excalidraw/excalidraw/types';
 import '@excalidraw/excalidraw/index.css';
 
 const SAVE_DEBOUNCE_MS = 1000;
-const RESTORE_GUARD_MS = 150;
+const RESTORE_GUARD_MS = 300;
 
 const Excalidraw = dynamic(
   async () => (await import('@excalidraw/excalidraw')).Excalidraw,
@@ -48,8 +49,12 @@ function buildSceneFromApi(api: ExcalidrawImperativeAPI): ExcalidrawScene {
   };
 }
 
-function readLiveScene(api: ExcalidrawImperativeAPI): ExcalidrawScene {
-  return buildSceneFromApi(api);
+function sceneToInitialData(scene: ExcalidrawScene): ExcalidrawInitialDataState {
+  return {
+    elements: scene.elements,
+    appState: scene.appState,
+    files: scene.files,
+  };
 }
 
 export default function DiagramCanvas({ stepKey, isVisible = true }: DiagramCanvasProps) {
@@ -63,22 +68,37 @@ export default function DiagramCanvas({ stepKey, isVisible = true }: DiagramCanv
   const filesRef = useRef<BinaryFiles>({});
   const pendingSceneRef = useRef<ExcalidrawScene | null>(null);
   const stepKeyRef = useRef(stepKey);
-  const loadedStepRef = useRef<string | null>(null);
-  const restoredStepRef = useRef<string | null>(null);
+  /** undefined = loading, null = empty canvas, object = restore payload */
+  const [initialData, setInitialData] = useState<ExcalidrawInitialDataState | null | undefined>(
+    undefined
+  );
 
   stepKeyRef.current = stepKey;
 
-  const persistLiveScene = useCallback((key: string, reason: string) => {
-    if (isRestoringRef.current || !apiRef.current) {
-      diagramDebug('persist:skipped', {
-        stepKey: key,
-        reason,
-        isRestoring: isRestoringRef.current,
-        hasApi: !!apiRef.current,
-      });
+  const beginRestoreGuard = useCallback(() => {
+    isRestoringRef.current = true;
+    window.setTimeout(() => {
+      isRestoringRef.current = false;
+    }, RESTORE_GUARD_MS);
+  }, []);
+
+  const resolveSceneForPersist = useCallback((): ExcalidrawScene | null => {
+    if (apiRef.current) {
+      const live = buildSceneFromApi(apiRef.current);
+      if (countActiveElements(live.elements) > 0) return live;
+    }
+    return pendingSceneRef.current;
+  }, []);
+
+  const persistScene = useCallback((key: string, scene: ExcalidrawScene | null, reason: string) => {
+    if (isRestoringRef.current) {
+      diagramDebug('persist:skipped-restoring', { stepKey: key, reason });
       return;
     }
-    const scene = readLiveScene(apiRef.current);
+    if (!scene || countActiveElements(scene.elements) === 0) {
+      diagramDebug('persist:skipped-empty', { stepKey: key, reason });
+      return;
+    }
     pendingSceneRef.current = scene;
     diagramDebug('persist', {
       stepKey: key,
@@ -87,6 +107,13 @@ export default function DiagramCanvas({ stepKey, isVisible = true }: DiagramCanv
     });
     saveDiagram(key, scene);
   }, []);
+
+  const persistLiveScene = useCallback(
+    (key: string, reason: string) => {
+      persistScene(key, resolveSceneForPersist(), reason);
+    },
+    [persistScene, resolveSceneForPersist]
+  );
 
   const flushSaveForKey = useCallback(
     (key: string, reason: string) => {
@@ -107,7 +134,7 @@ export default function DiagramCanvas({ stepKey, isVisible = true }: DiagramCanv
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     const previewCount = apiRef.current
       ? countActiveElements(apiRef.current.getSceneElements())
-      : 0;
+      : countActiveElements(pendingSceneRef.current?.elements);
     diagramDebug('schedule:debounce', {
       stepKey: stepKeyRef.current,
       elementCount: previewCount,
@@ -120,20 +147,14 @@ export default function DiagramCanvas({ stepKey, isVisible = true }: DiagramCanv
   }, [persistLiveScene]);
 
   const getScene = useCallback((): ExcalidrawScene | null => {
-    if (!apiRef.current) return null;
+    if (!apiRef.current) return pendingSceneRef.current;
     return buildSceneFromApi(apiRef.current);
-  }, []);
-
-  const endRestoreGuard = useCallback(() => {
-    window.setTimeout(() => {
-      isRestoringRef.current = false;
-    }, RESTORE_GUARD_MS);
   }, []);
 
   const restoreScene = useCallback(
     (scene: ExcalidrawScene) => {
       if (!apiRef.current) return;
-      isRestoringRef.current = true;
+      beginRestoreGuard();
       filesRef.current = scene.files ?? {};
       apiRef.current.updateScene({
         elements: scene.elements,
@@ -148,14 +169,23 @@ export default function DiagramCanvas({ stepKey, isVisible = true }: DiagramCanv
         stepKey: stepKeyRef.current,
         elementCount: countActiveElements(scene.elements),
       });
-      endRestoreGuard();
     },
-    [endRestoreGuard]
+    [beginRestoreGuard]
   );
 
   const handleSceneChange = useCallback(
     (elements: ExcalidrawScene['elements'], appState: AppState, files: BinaryFiles) => {
       filesRef.current = files;
+      const scene: ExcalidrawScene = {
+        type: 'excalidraw',
+        version: 2,
+        elements,
+        appState,
+        files,
+      };
+      if (countActiveElements(elements) > 0) {
+        pendingSceneRef.current = scene;
+      }
       diagramDebug('onChange', {
         stepKey: stepKeyRef.current,
         callbackElementCount: countActiveElements(elements),
@@ -172,34 +202,27 @@ export default function DiagramCanvas({ stepKey, isVisible = true }: DiagramCanv
   useEffect(() => {
     purgeLegacyDesignKeys();
   }, []);
+
   useEffect(() => {
-    if (!isReady || !apiRef.current) return;
-    if (restoredStepRef.current === stepKey) return;
+    setIsReady(false);
+    apiRef.current = null;
+    setInitialData(undefined);
 
-    const isStepSwitch = loadedStepRef.current !== null && loadedStepRef.current !== stepKey;
-    diagramDebug('mount:restore-check', {
-      stepKey,
-      isReady,
-      isStepSwitch,
-      previousStepKey: loadedStepRef.current,
-      note: 'Diagrams persist under diagram-{stepKey}, not sd-practice-v1-* session keys',
-    });
+    diagramDebug('step:load-initial-data', { stepKey });
     const persisted = loadDiagram(stepKey);
-
-    if (persisted?.scene) {
-      restoreScene(persisted.scene);
-    } else if (isStepSwitch) {
-      diagramDebug('mount:reset-empty-step', { stepKey });
-      isRestoringRef.current = true;
-      apiRef.current.resetScene();
-      filesRef.current = {};
+    if (persisted?.scene && countActiveElements(persisted.scene.elements) > 0) {
+      pendingSceneRef.current = persisted.scene;
+      setInitialData(sceneToInitialData(persisted.scene));
+      diagramDebug('step:initial-data-ready', {
+        stepKey,
+        elementCount: countActiveElements(persisted.scene.elements),
+      });
+    } else {
       pendingSceneRef.current = null;
-      endRestoreGuard();
+      setInitialData(null);
+      diagramDebug('step:initial-data-empty', { stepKey });
     }
-
-    loadedStepRef.current = stepKey;
-    restoredStepRef.current = stepKey;
-  }, [stepKey, isReady, restoreScene, endRestoreGuard]);
+  }, [stepKey]);
 
   useEffect(() => {
     const key = stepKey;
@@ -220,14 +243,18 @@ export default function DiagramCanvas({ stepKey, isVisible = true }: DiagramCanv
     };
   }, [flushSaveForKey]);
 
-  const bindApi = useCallback((api: ExcalidrawImperativeAPI) => {
-    apiRef.current = api;
-    diagramDebug('api:bound', {
-      stepKey: stepKeyRef.current,
-      liveElementCount: countActiveElements(api.getSceneElements()),
-    });
-    setIsReady(true);
-  }, []);
+  const bindApi = useCallback(
+    (api: ExcalidrawImperativeAPI) => {
+      apiRef.current = api;
+      beginRestoreGuard();
+      diagramDebug('api:bound', {
+        stepKey: stepKeyRef.current,
+        liveElementCount: countActiveElements(api.getSceneElements()),
+      });
+      setIsReady(true);
+    },
+    [beginRestoreGuard]
+  );
 
   useImperativeHandle(
     diagramRef,
@@ -254,7 +281,6 @@ export default function DiagramCanvas({ stepKey, isVisible = true }: DiagramCanv
         });
       },
       loadScene: (scene: ExcalidrawScene) => {
-        restoredStepRef.current = null;
         restoreScene(scene);
         scheduleSave();
       },
@@ -303,6 +329,7 @@ export default function DiagramCanvas({ stepKey, isVisible = true }: DiagramCanv
   );
 
   const excalidrawTheme = resolvedTheme === 'dark' ? 'dark' : 'light';
+  const canMountCanvas = initialData !== undefined && resolvedTheme !== undefined;
 
   return (
     <Card className="flex h-full w-full min-h-0 flex-col overflow-hidden border-0 shadow-none">
@@ -359,19 +386,27 @@ export default function DiagramCanvas({ stepKey, isVisible = true }: DiagramCanv
         </div>
       </div>
       <div className="min-h-0 flex-1">
-        <Excalidraw
-          excalidrawAPI={bindApi}
-          onChange={handleSceneChange}
-          theme={excalidrawTheme}
-          UIOptions={{
-            canvasActions: {
-              loadScene: false,
-              saveToActiveFile: false,
-              export: false,
-              toggleTheme: false,
-            },
-          }}
-        />
+        {canMountCanvas ? (
+          <Excalidraw
+            key={stepKey}
+            excalidrawAPI={bindApi}
+            initialData={initialData ?? undefined}
+            onChange={handleSceneChange}
+            theme={excalidrawTheme}
+            UIOptions={{
+              canvasActions: {
+                loadScene: false,
+                saveToActiveFile: false,
+                export: false,
+                toggleTheme: false,
+              },
+            }}
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
+            Loading canvas…
+          </div>
+        )}
       </div>
     </Card>
   );
