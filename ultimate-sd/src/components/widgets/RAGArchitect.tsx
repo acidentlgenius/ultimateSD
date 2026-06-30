@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Database, FileText, Sparkles, ArrowRight, Bot, User, BrainCircuit } from 'lucide-react';
 import { Card } from '@/components/ui/card';
@@ -25,6 +25,16 @@ const RAGArchitect: React.FC = () => {
     const [stage, setStage] = useState<'idle' | 'retrieving' | 'augmenting' | 'generating' | 'done'>('idle');
     const [retrievedDocs, setRetrievedDocs] = useState<typeof KNOWLEDGE_BASE>([]);
     const [generatedResponse, setGeneratedResponse] = useState('');
+    const timeoutIds = useRef(new Set<NodeJS.Timeout>());
+
+
+    // Clean up timeouts on unmount
+    useEffect(() => {
+        return () => {
+            timeoutIds.current.forEach(clearTimeout);
+            timeoutIds.current.clear();
+        };
+    }, []);
 
     const handleSearch = () => {
         if (!query.trim()) return;
@@ -33,7 +43,7 @@ const RAGArchitect: React.FC = () => {
         setGeneratedResponse('');
 
         // Simulate Retrieval
-        setTimeout(() => {
+        const tId1 = setTimeout(() => {
             // Simple keyword matching for demo purposes
             const relevant = KNOWLEDGE_BASE.filter(doc => {
                 const qWords = query.toLowerCase().split(' ');
@@ -45,12 +55,14 @@ const RAGArchitect: React.FC = () => {
             setRetrievedDocs(results);
             setStage('augmenting');
         }, 1500);
+        timeoutIds.current.add(tId1);
     };
 
     // Simulate Augmentation -> Generation
     useEffect(() => {
         if (stage === 'augmenting') {
-            setTimeout(() => setStage('generating'), 1000);
+            const tId2 = setTimeout(() => setStage('generating'), 1000);
+            timeoutIds.current.add(tId2);
         }
     }, [stage]);
 
@@ -70,6 +82,7 @@ const RAGArchitect: React.FC = () => {
                 }
             }, 30); // Typewriter speed
 
+            timeoutIds.current.add(interval as any);
             return () => clearInterval(interval);
         }
     }, [stage]);

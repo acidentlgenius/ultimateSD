@@ -1,4 +1,4 @@
-## $(date +%Y-%m-%d) - [Silent Loop Failure via LocalStorage Parsing Error]
+## 2026-06-30 - [Silent Loop Failure via LocalStorage Parsing Error]
 
 **Learning:** When iterating over a collection (like `localStorage` keys) and parsing their contents, wrapping the *entire* loop in a `try/catch` block creates a severe vulnerability: a single corrupted item will throw an error, abort the entire loop, and silently hide all subsequent valid items. In `getAllSessions`, this meant one corrupt session key made the system report *zero* total sessions for a user, effectively wiping their history until the bad key was manually cleared.
 
@@ -57,7 +57,7 @@
 
 **Action:** Always track all active `setTimeout` IDs in a persistent structure (like a `Set`) within the effect. In the `useEffect` cleanup function, iterate through the tracked timeout IDs and call `clearTimeout` on each one in addition to calling `clearInterval`. Remember to remove timeout IDs from the tracked set once they have successfully executed to avoid memory leaks from an ever-growing array or set over long sessions.
 
-## $(date +%Y-%m-%d) - [Memory Leaks with setTimeout inside intervals and useEffect dependency triggers in React]
+## 2026-06-30 - [Memory Leaks with setTimeout inside intervals and useEffect dependency triggers in React]
 
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 

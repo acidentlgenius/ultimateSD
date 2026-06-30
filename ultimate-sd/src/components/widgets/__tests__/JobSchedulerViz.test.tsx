@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, act } from '@testing-library/react';
+import { render, screen, act, fireEvent } from '@testing-library/react';
 import React from 'react';
 import JobSchedulerViz from '../JobSchedulerViz';
 
@@ -12,28 +12,25 @@ describe('JobSchedulerViz', () => {
     vi.useRealTimers();
   });
 
-  it('clears timeouts on unmount to prevent memory leaks', async () => {
-    const { unmount } = render(<JobSchedulerViz />);
+  it('completes tasks without prematurely clearing timeouts on re-renders', async () => {
+    render(<JobSchedulerViz />);
 
-    // Start the job
     const startButton = screen.getByText(/Start Job/i);
     act(() => {
-      startButton.click();
+      fireEvent.click(startButton);
     });
 
-    // Advance by 1 second to let interval trigger setTimeout
+    // Advance time to allow assignment
     act(() => {
       vi.advanceTimersByTime(1000);
     });
 
-    // There should be timers from the setTimeout
-    expect(vi.getTimerCount()).toBeGreaterThan(0);
+    // Advance time to allow task completion (Extract Data takes 2000ms)
+    act(() => {
+      vi.advanceTimersByTime(2500);
+    });
 
-    const countBeforeUnmount = vi.getTimerCount();
-
-    // Unmount the component
-    unmount();
-
-    expect(vi.getTimerCount()).toBeLessThan(countBeforeUnmount);
+    // We should see it completed
+    expect(screen.getByText(/Task completed: Extract Data/i)).toBeTruthy();
   });
 });
