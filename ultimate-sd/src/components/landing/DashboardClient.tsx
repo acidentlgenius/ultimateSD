@@ -34,6 +34,7 @@ import { ProModal } from '@/components/ProModal';
 import { type PlanType } from '@/lib/plans';
 import { getAllFilterTags, getProblemTags, problemMatchesTag } from '@/lib/problem-tags';
 import { ProblemTagList } from '@/components/ProblemTagBadge';
+import Fuse from 'fuse.js';
 
 type StatusFilter =
     | 'All'
@@ -145,8 +146,31 @@ export function DashboardClient({
         document.getElementById('problems')?.scrollIntoView({ behavior: 'smooth' });
     };
 
+    // Memoize the search index so it's not rebuilt on every keystroke
+    const fuseIndex = useMemo(() => {
+        const problemsWithTags = problems.map(p => ({
+            ...p,
+            tagLabels: getProblemTags(p.slug, p.tags).map(t => t.label)
+        }));
+
+        return new Fuse(problemsWithTags, {
+            keys: [
+                { name: 'title', weight: 2 },
+                { name: 'companies', weight: 1.5 },
+                { name: 'tagLabels', weight: 1.5 },
+                { name: 'description', weight: 1 }
+            ],
+            threshold: 0.3,
+            ignoreLocation: true
+        });
+    }, [problems]);
+
     const filtered = useMemo(() => {
         let filteredProblems = problems;
+
+        if (search) {
+            filteredProblems = fuseIndex.search(search).map(result => result.item);
+        }
 
         if (category !== 'All') {
             filteredProblems = filteredProblems.filter(p => p.category === category);
@@ -168,23 +192,8 @@ export function DashboardClient({
             );
         }
 
-        if (search) {
-            const searchLower = search.toLowerCase();
-            filteredProblems = filteredProblems.filter(p => {
-                const tagLabels = getProblemTags(p.slug, p.tags)
-                    .map((t) => t.label.toLowerCase())
-                    .join(' ');
-                return (
-                    p.title.toLowerCase().includes(searchLower) ||
-                    p.description.toLowerCase().includes(searchLower) ||
-                    p.companies.some(c => c.toLowerCase().includes(searchLower)) ||
-                    tagLabels.includes(searchLower)
-                );
-            });
-        }
-
         return filteredProblems;
-    }, [problems, search, category, difficulty, statusFilter, topicFilter, user]);
+    }, [problems, search, category, difficulty, statusFilter, topicFilter, user, fuseIndex]);
 
     const categories = ['All', ...new Set(problems.map(p => p.category))];
     const difficulties = ['All', 'Easy', 'Medium', 'Hard'];
