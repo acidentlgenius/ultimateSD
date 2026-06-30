@@ -867,6 +867,7 @@ export default function StepByStepChat({ problem }: Props) {
             className="h-7 w-7 shrink-0 text-green-700 hover:text-green-900 hover:bg-green-500/20 dark:text-green-300"
             onClick={() => setDismissedRestoreBanner(true)}
             aria-label="Dismiss restoration notice"
+            title="Dismiss restoration notice"
           >
             <X className="h-4 w-4" />
           </Button>
