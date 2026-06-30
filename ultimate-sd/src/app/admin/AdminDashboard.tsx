@@ -32,6 +32,9 @@ interface AdminDashboardProps {
   launchStats: LaunchOfferPublicStats;
   launchRedemptions: LaunchOfferRedemptionRow[];
   launchClaimants: LaunchOfferClaimantRow[];
+  userPage: number;
+  userTotalPages: number;
+  userTotalCount: number;
 }
 
 export function AdminDashboard({
@@ -41,6 +44,9 @@ export function AdminDashboard({
   launchStats,
   launchRedemptions,
   launchClaimants,
+  userPage,
+  userTotalPages,
+  userTotalCount,
 }: AdminDashboardProps) {
   const [tab, setTab] = useState<AdminTab>(initialUserId ? 'activities' : 'users');
   const [activityUserFilter, setActivityUserFilter] = useState(initialUserId ?? 'all');
@@ -96,6 +102,9 @@ export function AdminDashboard({
           users={users}
           launchStats={launchStats}
           onViewActivity={handleViewActivity}
+          page={userPage}
+          totalPages={userTotalPages}
+          totalCount={userTotalCount}
         />
       ) : tab === 'activities' ? (
         <AdminSessionExplorer

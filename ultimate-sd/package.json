@@ -2,7 +2,11 @@
   "name": "ultimate-sd",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "pnpm@10.8.0",
+  "packageManager": "pnpm@11.9.0",
+  "engines": {
+    "node": ">=22.13.0",
+    "pnpm": ">=11.9.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "npx tsx scripts/check-env.ts && next build",

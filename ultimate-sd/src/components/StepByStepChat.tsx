@@ -73,6 +73,7 @@ import {
   trimSceneForDbSnapshot,
 } from '@/lib/diagram-persistence';
 import { buildDiagramDescription } from '@/lib/diagram-description';
+import { shouldUseLocalSessionDraft } from '@/lib/session-persistence-policy';
 import type { StepDiagramData } from '@/types/diagram';
 
 // Dynamic imports for widgets to improve initial load performance
@@ -428,9 +429,10 @@ export default function StepByStepChat({ problem }: Props) {
     };
   }, [problem.id, problem.slug, problem.steps, session?.user?.id, sessionStatus]);
 
-  // Save session to localStorage as draft buffer
+  // Save session to localStorage as draft buffer (guests only; signed-in users use DB)
   useEffect(() => {
     if (!sessionRestored) return;
+    if (!shouldUseLocalSessionDraft(Boolean(session?.user))) return;
 
     const stateToSave = {
       currentPhase,
@@ -439,8 +441,20 @@ export default function StepByStepChat({ problem }: Props) {
       completedSteps,
     };
 
-    saveSessionState(problem.slug, stateToSave);
-  }, [problem.slug, currentPhase, currentStepIndex, savedStepData, completedSteps, sessionRestored]);
+    const timer = window.setTimeout(() => {
+      saveSessionState(problem.slug, stateToSave);
+    }, 500);
+
+    return () => window.clearTimeout(timer);
+  }, [
+    problem.slug,
+    currentPhase,
+    currentStepIndex,
+    savedStepData,
+    completedSteps,
+    sessionRestored,
+    session?.user,
+  ]);
 
   // Listen for navigation events from Sidebar
   useEffect(() => {

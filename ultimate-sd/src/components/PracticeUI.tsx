@@ -127,6 +127,7 @@ function PracticeUIContent({ problem, existingProgress }: { problem: SystemDesig
   const [isSolutionOpen, setIsSolutionOpen] = useState(false);
   const [showSolutionConfirm, setShowSolutionConfirm] = useState(false);
   const solution = FEATURES.solutionViewer ? getSolution(problem.slug) : null;
+  const hasPlatformPlan = session?.user?.hasPlatformPlan ?? false;
 
   const totalSteps = useMemo(
     () => Object.values(activeSteps).reduce((sum, steps) => sum + steps.length, 0),
@@ -153,7 +154,7 @@ function PracticeUIContent({ problem, existingProgress }: { problem: SystemDesig
 
   const handleUnlockSolution = () => {
     if (!solution) return;
-    if (isFullyComplete) {
+    if (hasPlatformPlan || isFullyComplete) {
       setIsSolutionOpen(true);
       return;
     }
@@ -318,8 +319,13 @@ function PracticeUIContent({ problem, existingProgress }: { problem: SystemDesig
             className={`w-full justify-start ${!solution ? 'opacity-50' : 'hover:bg-amber-500/10 hover:text-amber-600'}`}
             onClick={handleUnlockSolution}
             disabled={!solution}
+            title={
+              solution && !hasPlatformPlan && !isFullyComplete
+                ? 'Complete the problem or upgrade to view the expert solution'
+                : undefined
+            }
           >
-            {solution ? 'View Solution' : 'Solution Locked'}
+            {solution ? 'View Solution' : 'Solution Unavailable'}
           </Button>
         )}
 

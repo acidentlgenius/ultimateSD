@@ -39,7 +39,7 @@ export default function OnboardingModal({ isOpen, onClose, userId }: OnboardingM
         try {
             const result = await saveUserPreferences(selectedCompanies, selectedDifficulty, selectedFocus);
             if (result.success) {
-                toast.success('Preferences saved!', { description: 'Your specialized roadmap is ready.' });
+                toast.success('Preferences saved!', { description: 'We will use these to recommend problems on your dashboard.' });
                 onClose();
             } else {
                 toast.error('Failed to save preferences.');
