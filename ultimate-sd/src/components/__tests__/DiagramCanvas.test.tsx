@@ -6,8 +6,10 @@ import { DiagramCanvasProvider, useDiagramCanvasRef } from '../diagram/DiagramCa
 
 function MockExcalidraw({
   excalidrawAPI,
+  onChange,
 }: {
   excalidrawAPI?: (api: unknown) => void;
+  onChange?: (elements: unknown[], appState: object, files: object) => void;
 }) {
   useEffect(() => {
     const api = {
@@ -16,13 +18,14 @@ function MockExcalidraw({
       getFiles: () => ({}),
       updateScene: vi.fn(),
       resetScene: vi.fn(),
-      onChange: (cb: (elements: unknown[], appState: object, files: object) => void) => {
-        cb([{ id: '1', type: 'rectangle', isDeleted: false }], { theme: 'light' }, {});
-        return () => undefined;
-      },
     };
     excalidrawAPI?.(api);
-  }, [excalidrawAPI]);
+    onChange?.(
+      [{ id: '1', type: 'rectangle', isDeleted: false }],
+      { theme: 'light' },
+      {}
+    );
+  }, [excalidrawAPI, onChange]);
   return <div data-testid="excalidraw-mock" />;
 }
 
