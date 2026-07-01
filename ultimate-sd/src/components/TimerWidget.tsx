@@ -239,7 +239,6 @@ export function TimerWidget({
                     disabled={isLoading}
                     aria-label={isActive ? "Pause" : "Start"}
                     title={isActive ? "Pause" : "Start"}
-                    aria-label={isActive ? "Pause" : "Start"}
                 >
                     {isActive ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
                 </Button>
@@ -251,7 +250,6 @@ export function TimerWidget({
                         onClick={resetTimer}
                         aria-label="Reset"
                         title="Reset"
-                        aria-label="Reset"
                     >
                         <RotateCcw className="h-3.5 w-3.5" />
                     </Button>

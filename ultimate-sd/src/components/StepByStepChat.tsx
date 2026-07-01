@@ -669,90 +669,97 @@ export default function StepByStepChat({ problem }: Props) {
 
       const wasAlreadyCompleted = completedSteps.has(currentStepKey);
 
-      if (data.feedback.isAcceptable && !wasAlreadyCompleted) {
-        try {
-          const result = await awardStepXp(problem.id, currentStepKey);
-          if (result.success) {
-            const xpAwarded = result.xpAwarded || 0;
+      (async () => {
+        if (data.feedback.isAcceptable && !wasAlreadyCompleted) {
+          try {
+            const result = await awardStepXp(problem.id, currentStepKey);
+            if (result.success) {
+              const xpAwarded = result.xpAwarded || 0;
 
-            if (xpAwarded > 0) {
-              toast.success(`Step Complete! +${xpAwarded} XP`, {
-                icon: '⚡',
-                className: 'bg-blue-500/10 border-blue-500/20 text-blue-600'
-              });
-
-              if (result.levelUp) {
-                toast.success(`Level Up! You are now Level ${result.newLevel}!`, {
-                  icon: '🎓',
-                  className: 'bg-purple-500/10 border-purple-500/20 text-purple-600 font-bold'
+              if (xpAwarded > 0) {
+                toast.success(`Step Complete! +${xpAwarded} XP`, {
+                  icon: '⚡',
+                  className: 'bg-blue-500/10 border-blue-500/20 text-blue-600'
                 });
+
+                if (result.levelUp) {
+                  toast.success(`Level Up! You are now Level ${result.newLevel}!`, {
+                    icon: '🎓',
+                    className: 'bg-purple-500/10 border-purple-500/20 text-purple-600 font-bold'
+                  });
+                }
               }
             }
+          } catch (error) {
+            console.error('Failed to award XP:', error);
           }
-        } catch (error) {
-          console.error('Failed to award XP:', error);
-        }
-      } else if (data.feedback.isAcceptable && wasAlreadyCompleted) {
-        toast.info('Step Updated (Already Completed)', {
-          icon: '✓',
-          className: 'bg-muted border-border text-muted-foreground'
-        });
-      }
-
-      if (activeSessionId && userAnswer.trim()) {
-        try {
-          await recordStepSubmission({
-            sessionId: activeSessionId,
-            problemId: problem.id,
-            stepId: currentStepKey,
-            phase: effectivePhase,
-            content: userAnswer,
-            feedback: JSON.stringify(data.feedback),
-            score: Math.round(data.feedback.score),
-            isPassing: data.feedback.isAcceptable,
-            problemSlug: problem.slug,
+        } else if (data.feedback.isAcceptable && wasAlreadyCompleted) {
+          toast.info('Step Updated (Already Completed)', {
+            icon: '✓',
+            className: 'bg-muted border-border text-muted-foreground'
           });
-        } catch (error) {
-          console.error('Failed to record step submission:', error);
         }
-      }
+
+        if (activeSessionId && userAnswer.trim()) {
+          try {
+            await recordStepSubmission({
+              sessionId: activeSessionId,
+              problemId: problem.id,
+              stepId: currentStepKey,
+              phase: effectivePhase,
+              content: userAnswer,
+              feedback: JSON.stringify(data.feedback),
+              score: Math.round(data.feedback.score),
+              isPassing: data.feedback.isAcceptable,
+              problemSlug: problem.slug,
+            });
+          } catch (error) {
+            console.error('Failed to record step submission:', error);
+          }
+        }
+
+        if (data.feedback.isAcceptable) {
+          let totalStepsCount = 0;
+          Object.values(PHASE_STEPS).forEach(steps => totalStepsCount += steps.length);
+
+          const newCompletedSize = wasAlreadyCompleted
+            ? completedSteps.size
+            : completedSteps.size + 1;
+
+          if (newCompletedSize >= totalStepsCount && activeSessionId) {
+            try {
+              let snapshot = resolveBestDiagramSnapshot(diagramStepKeys, newSavedData);
+              if (snapshot?.scene && !snapshot.imageData) {
+                const png = await exportSceneToPng(snapshot.scene);
+                if (png) {
+                  snapshot.imageData = await blobToDataUrl(png);
+                }
+              }
+              if (snapshot?.scene) {
+                snapshot = {
+                  ...snapshot,
+                  scene: trimSceneForDbSnapshot(snapshot.scene),
+                  description:
+                    snapshot.description ??
+                    buildDiagramDescription(snapshot.scene.elements) ??
+                    undefined,
+                };
+              }
+              await completeSession(
+                activeSessionId,
+                Math.round(data.feedback.score),
+                snapshot ?? undefined
+              );
+              toast.success('🎉 Problem Completed! You have finished all steps!');
+            } catch (error) {
+              console.error('Failed to complete session:', error);
+            }
+          }
+        }
+      })().catch(err => console.error('Background updates failed:', err));
 
       if (data.feedback.isAcceptable) {
-        const newCompleted = new Set(completedSteps).add(currentStepKey);
-        setCompletedSteps(newCompleted);
-
-        let totalStepsCount = 0;
-        Object.values(PHASE_STEPS).forEach(steps => totalStepsCount += steps.length);
-
-        if (newCompleted.size >= totalStepsCount && activeSessionId) {
-          try {
-            let snapshot = resolveBestDiagramSnapshot(diagramStepKeys, newSavedData);
-            if (snapshot?.scene && !snapshot.imageData) {
-              const png = await exportSceneToPng(snapshot.scene);
-              if (png) {
-                snapshot.imageData = await blobToDataUrl(png);
-              }
-            }
-            if (snapshot?.scene) {
-              snapshot = {
-                ...snapshot,
-                scene: trimSceneForDbSnapshot(snapshot.scene),
-                description:
-                  snapshot.description ??
-                  buildDiagramDescription(snapshot.scene.elements) ??
-                  undefined,
-              };
-            }
-            await completeSession(
-              activeSessionId,
-              Math.round(data.feedback.score),
-              snapshot ?? undefined
-            );
-            toast.success('🎉 Problem Completed! You have finished all steps!');
-          } catch (error) {
-            console.error('Failed to complete session:', error);
-          }
-        }
+        setCompletedSteps(new Set(completedSteps).add(currentStepKey));
       }
     } catch (error) {
       console.error('Error evaluating answer:', error);
