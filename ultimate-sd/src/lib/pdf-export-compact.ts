@@ -4,6 +4,7 @@
  */
 
 import jsPDF from 'jspdf';
+import { getStepsForProblem } from '@/lib/problem-steps';
 import { SystemDesignProblem } from '@/types';
 
 const COLORS = {
@@ -99,20 +100,19 @@ export class CompactPDFExporter {
   }
 
   private addContent(): void {
-    const phases: { [key: string]: string } = {
-      requirements: 'Requirements',
-      hld: 'High-Level Design',
-      lld: 'Low-Level Design',
-      tradeoffs: 'Trade-offs',
-      scalability: 'Scalability',
-    };
+    const problemSteps = getStepsForProblem(this.options.problem.slug) || {};
+    const phaseKeys = Object.keys(problemSteps);
 
-    for (const [phaseKey, phaseName] of Object.entries(phases)) {
+    let diagramAdded = false;
+
+    for (const phaseKey of phaseKeys) {
       const phaseData = Array.from(this.options.savedStepData.entries()).filter(
         ([key]) => key.startsWith(phaseKey)
       );
 
       if (phaseData.length === 0) continue;
+
+      const phaseName = problemSteps[phaseKey]?.[0]?.phase || phaseKey;
 
       this.checkPageBreak(20);
       
@@ -130,12 +130,31 @@ export class CompactPDFExporter {
       this.yPosition += 5;
 
       phaseData.forEach(([key, data]) => {
-        this.addStepContent(data);
+        // Extract step index to get title
+        const parts = key.split('-');
+        const stepIdx = parseInt(parts[parts.length - 1], 10);
+        const stepDef = problemSteps[phaseKey]?.[stepIdx];
+
+        this.addStepContent(data, stepDef?.title);
+
+        if (data.diagramData && !diagramAdded) {
+          this.addDiagram();
+          diagramAdded = true;
+        }
       });
 
-      // Add diagram for HLD/LLD
-      if ((phaseKey === 'hld' || phaseKey === 'lld') && phaseData.some(([_, d]) => d.completed)) {
+      // Add diagram if there's any completed step that involves drawing
+      const hasDiagramStep = phaseData.some(([key, d]) => {
+        const parts = key.split('-');
+        const stepIdx = parseInt(parts[parts.length - 1], 10);
+        const stepDef = problemSteps[phaseKey]?.[stepIdx];
+        const isVisual = stepDef?.subStep === 'diagram' || stepDef?.subStep === 'hld' || stepDef?.subStep === 'lld' || stepDef?.subStep === 'architecture' || stepDef?.subStep === 'high-level' || stepDef?.subStep === 'deep-dive';
+        return d.completed && isVisual;
+      });
+
+      if (hasDiagramStep && !diagramAdded) {
         this.addDiagram();
+        diagramAdded = true;
       }
 
       this.yPosition += 4;
@@ -145,8 +164,16 @@ export class CompactPDFExporter {
     this.addSummary();
   }
 
-  private addStepContent(data: any): void {
+  private addStepContent(data: any, title?: string): void {
     this.checkPageBreak(15);
+
+    if (title) {
+      this.doc.setFontSize(10);
+      this.doc.setFont('helvetica', 'bold');
+      this.doc.setTextColor(COLORS.text[0], COLORS.text[1], COLORS.text[2]);
+      this.doc.text(title, this.margin, this.yPosition);
+      this.yPosition += 5;
+    }
 
     // Answers - show FULL text with proper wrapping
     if (data.listItems && data.listItems.length > 0) {
