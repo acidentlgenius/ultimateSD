@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Download, Layers, Workflow, X } from 'lucide-react';
 import DiagramCanvas from '@/components/DiagramCanvas';
 import { exportPNG } from '@/lib/exportUtils';
+import { safeGetJSON } from '@/lib/localStorageUtils';
 
 type DiagramType = 'HLD' | 'LLD' | null;
 
@@ -62,15 +63,9 @@ export default function DrawPage() {
         // When exiting fullscreen, trigger a reload of the canvas
         setTimeout(() => {
           const storageKey = `diagram-free-draw-${diagramType?.toLowerCase()}`;
-          const savedData = localStorage.getItem(storageKey);
-          if (savedData && (window as any).sd_loadDiagramElements) {
-            try {
-              const diagramData = JSON.parse(savedData);
-              (window as any).sd_loadDiagramElements(diagramData.elements || []);
-            } catch (error) {
-              console.error(`Error parsing diagram data from localStorage key "${storageKey}". Removing corrupted data.`, error);
-              localStorage.removeItem(storageKey);
-            }
+          const diagramData = safeGetJSON<any>(storageKey);
+          if (diagramData && (window as any).sd_loadDiagramElements) {
+            (window as any).sd_loadDiagramElements(diagramData.elements || []);
           }
         }, 100);
       } catch (err) {
@@ -101,15 +96,9 @@ export default function DrawPage() {
         // Reload canvas state when exiting
         setTimeout(() => {
           const storageKey = `diagram-free-draw-${diagramType?.toLowerCase()}`;
-          const savedData = localStorage.getItem(storageKey);
-          if (savedData && (window as any).sd_loadDiagramElements) {
-            try {
-              const diagramData = JSON.parse(savedData);
-              (window as any).sd_loadDiagramElements(diagramData.elements || []);
-            } catch (error) {
-              console.error(`Error parsing diagram data from localStorage key "${storageKey}". Removing corrupted data.`, error);
-              localStorage.removeItem(storageKey);
-            }
+          const diagramData = safeGetJSON<any>(storageKey);
+          if (diagramData && (window as any).sd_loadDiagramElements) {
+            (window as any).sd_loadDiagramElements(diagramData.elements || []);
           }
         }, 100);
       }

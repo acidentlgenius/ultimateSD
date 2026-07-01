@@ -68,7 +68,7 @@ describe('DiagramCanvas Load Design from localStorage', () => {
 
     // Check that we logged the error and didn't crash
     await waitFor(() => {
-      expect(consoleSpy).toHaveBeenCalledWith('Error loading design:', expect.any(Error));
+      expect(consoleSpy).toHaveBeenCalledWith('Failed to parse JSON for key "saved-design-corrupt-design".', expect.any(SyntaxError));
     });
 
     // Check that it removed the bad key from localStorage

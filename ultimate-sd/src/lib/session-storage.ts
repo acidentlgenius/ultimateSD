@@ -13,6 +13,8 @@ interface SavedStepData {
   completed: boolean;
 }
 
+import { safeGetJSON, safeSetJSON, isStorageAvailable } from './localStorageUtils';
+
 interface SessionState {
   currentPhase: string;
   currentStepIndex: number;
@@ -32,20 +34,6 @@ function getStorageKey(problemSlug: string): string {
 }
 
 /**
- * Check if localStorage is available and accessible
- */
-function isStorageAvailable(): boolean {
-  try {
-    const test = '__storage_test__';
-    localStorage.setItem(test, test);
-    localStorage.removeItem(test);
-    return true;
-  } catch (e) {
-    return false;
-  }
-}
-
-/**
  * Save session state to localStorage
  */
 export function saveSessionState(
@@ -62,47 +50,25 @@ export function saveSessionState(
     return false;
   }
 
-  try {
-    const sessionState: SessionState = {
-      currentPhase: state.currentPhase,
-      currentStepIndex: state.currentStepIndex,
-      savedStepData: Object.fromEntries(state.savedStepData),
-      completedSteps: Array.from(state.completedSteps),
-      lastUpdated: new Date().toISOString(),
-    };
+  const sessionState: SessionState = {
+    currentPhase: state.currentPhase,
+    currentStepIndex: state.currentStepIndex,
+    savedStepData: Object.fromEntries(state.savedStepData),
+    completedSteps: Array.from(state.completedSteps),
+    lastUpdated: new Date().toISOString(),
+  };
 
-    const key = getStorageKey(problemSlug);
-    const serialized = JSON.stringify(sessionState);
-    
-    localStorage.setItem(key, serialized);
-    return true;
-  } catch (error) {
-    console.error('Failed to save session state:', error);
-    
-    // Handle quota exceeded error
-    if (error instanceof Error && error.name === 'QuotaExceededError') {
-      console.warn('localStorage quota exceeded - clearing old sessions');
-      clearOldSessions(problemSlug);
-      
-      // Try again after clearing
-      try {
-        const sessionState: SessionState = {
-          currentPhase: state.currentPhase,
-          currentStepIndex: state.currentStepIndex,
-          savedStepData: Object.fromEntries(state.savedStepData),
-          completedSteps: Array.from(state.completedSteps),
-          lastUpdated: new Date().toISOString(),
-        };
-        localStorage.setItem(getStorageKey(problemSlug), JSON.stringify(sessionState));
-        return true;
-      } catch (retryError) {
-        console.error('Failed to save even after clearing:', retryError);
-        return false;
-      }
-    }
-    
-    return false;
+  const key = getStorageKey(problemSlug);
+  const success = safeSetJSON(key, sessionState);
+
+  if (!success) {
+    // If it failed, it might be due to quota. Try clearing old sessions and retry.
+    console.warn('Attempting to clear old sessions to free up space for saving.');
+    clearOldSessions(problemSlug);
+    return safeSetJSON(key, sessionState);
   }
+
+  return true;
 }
 
 /**
@@ -121,35 +87,27 @@ export function loadSessionState(
     return null;
   }
 
-  try {
-    const key = getStorageKey(problemSlug);
-    const stored = localStorage.getItem(key);
-    
-    if (!stored) {
-      return null;
-    }
+  const key = getStorageKey(problemSlug);
+  const parsed = safeGetJSON<SessionState>(key, null, true);
 
-    const parsed: SessionState = JSON.parse(stored);
-    
-    // Validate the structure
-    if (!parsed.currentPhase || typeof parsed.currentStepIndex !== 'number') {
-      console.warn('Invalid session state structure - clearing');
-      clearSessionState(problemSlug);
-      return null;
-    }
+  if (!parsed) {
+    return null;
+  }
 
-    return {
-      currentPhase: parsed.currentPhase,
-      currentStepIndex: parsed.currentStepIndex,
-      savedStepData: new Map(Object.entries(parsed.savedStepData || {})),
-      completedSteps: new Set(parsed.completedSteps || []),
-      lastUpdated: parsed.lastUpdated ? new Date(parsed.lastUpdated) : null,
-    };
-  } catch (error) {
-    console.error('Failed to load session state:', error);
+  // Validate the structure
+  if (!parsed.currentPhase || typeof parsed.currentStepIndex !== 'number') {
+    console.warn('Invalid session state structure - clearing');
     clearSessionState(problemSlug);
     return null;
   }
+
+  return {
+    currentPhase: parsed.currentPhase,
+    currentStepIndex: parsed.currentStepIndex,
+    savedStepData: new Map(Object.entries(parsed.savedStepData || {})),
+    completedSteps: new Set(parsed.completedSteps || []),
+    lastUpdated: parsed.lastUpdated ? new Date(parsed.lastUpdated) : null,
+  };
 }
 
 /**
@@ -216,28 +174,24 @@ export function getAllSessions(): Array<{
   }> = [];
 
   try {
-    for (let i = 0; i < localStorage.length; i++) {
+    // Iterate backwards so that removing an item doesn't affect the indices of unprocessed items
+    for (let i = localStorage.length - 1; i >= 0; i--) {
       const key = localStorage.key(i);
       if (key && key.startsWith(STORAGE_PREFIX)) {
-        const stored = localStorage.getItem(key);
-        if (stored) {
-          try {
-            const parsed: SessionState = JSON.parse(stored);
-            const problemSlug = key.replace(`${STORAGE_PREFIX}${STORAGE_VERSION}-`, '');
+        // safeGetJSON handles JSON.parse and will auto-remove corrupted data.
+        const parsed = safeGetJSON<SessionState>(key, null, true);
+        if (parsed && typeof parsed === 'object') {
+          const problemSlug = key.replace(`${STORAGE_PREFIX}${STORAGE_VERSION}-`, '');
 
-            sessions.push({
-              problemSlug,
-              lastUpdated: new Date(parsed.lastUpdated),
-              stepCount: Object.keys(parsed.savedStepData).length,
-            });
-          } catch (parseError) {
-            // SQUASH: Root Cause: Wrapping the whole loop in a try/catch meant a single corrupted item (e.g. invalid JSON) caused getAllSessions to fail completely, missing valid items.
-            // SQUASH: Fix: Wrap parsing in its own try/catch per item. If one item is corrupted, log, remove it, and continue parsing the rest.
-            console.error(`Failed to parse session data for key ${key}. Removing corrupted data.`, parseError);
-            localStorage.removeItem(key);
-            // Also adjust iterator since we just removed an item, preventing skipping the next item.
-            i--;
-          }
+          sessions.push({
+            problemSlug,
+            lastUpdated: new Date(parsed.lastUpdated),
+            stepCount: parsed.savedStepData ? Object.keys(parsed.savedStepData).length : 0,
+          });
+        } else if (!parsed) {
+          // If parsed is falsy but safeGetJSON didn't remove it (e.g. valid JSON string "null" or ""),
+          // we should forcefully remove it to prevent issues, since we expect a SessionState object.
+          localStorage.removeItem(key);
         }
       }
     }

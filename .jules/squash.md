@@ -33,3 +33,9 @@
 2. Ensure cloud write/sync `useEffect`s are strictly guarded by a flag (e.g., `sessionRestored`) that is *only* set to `true` after the asynchronous load attempt has fully resolved.
 3. Always debounce backend writes (e.g., using `setTimeout` within the `useEffect` cleanup pattern) when syncing local interactive state to prevent DDoS-ing the database.
 4. Always verify database schemas (like Prisma relations) to ensure the correct ID type (e.g., CUID vs Slug) is passed to foreign key queries.
+
+## 2025-05-24 - Handling QuotaExceededError in localStorage Checks
+
+**Learning:** When writing utility functions to check for `localStorage` availability, the common practice of performing a test write (`localStorage.setItem(test, test)`) is fundamentally flawed in contexts where `localStorage` quotas are frequently reached (like saving canvas data). If the quota is full, the test write throws a `QuotaExceededError`, causing the availability check to return `false`. If this check gates reading (`getItem`) or deleting (`removeItem`) operations, the application locks the user out of their own data and prevents them from clearing space. The correct approach is to simply check for the existence of `window.localStorage` (e.g. `!!window.localStorage`) and wrap actual reads/writes in `try/catch` blocks. Furthermore, when iterating over `localStorage` keys to clean up data, always iterate backward (`for (let i = localStorage.length - 1; i >= 0; i--)`) to prevent index shifting bugs when items are deleted.
+
+**Action:** Refactored `localStorageUtils.ts` to use `!!window.localStorage` for availability checks and updated `session-storage.ts` to iterate backwards when retrieving and validating session states.

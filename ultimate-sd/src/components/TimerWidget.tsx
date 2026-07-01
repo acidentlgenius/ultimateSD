@@ -5,6 +5,7 @@ import { Play, Pause, RotateCcw, Timer as TimerIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { safeGetString, safeSetString } from '@/lib/localStorageUtils';
 
 interface TimerWidgetProps {
     initialTimeSeconds?: number; // Default 45 mins = 2700s
@@ -80,9 +81,9 @@ export function TimerWidget({
         // Local storage fallback (Legacy/Client-only mode)
         const loadState = () => {
             try {
-                const storedStatus = localStorage.getItem(`timer_${problemId}_status`);
-                const storedTime = localStorage.getItem(`timer_${problemId}_timeLeft`);
-                const storedTimestamp = localStorage.getItem(`timer_${problemId}_lastTimestamp`);
+                const storedStatus = safeGetString(`timer_${problemId}_status`);
+                const storedTime = safeGetString(`timer_${problemId}_timeLeft`);
+                const storedTimestamp = safeGetString(`timer_${problemId}_lastTimestamp`);
 
                 if (storedStatus === 'active' && storedTime && storedTimestamp) {
                     const now = Date.now();
@@ -143,21 +144,21 @@ export function TimerWidget({
                     if (newValue <= 300) setIsLowTime(true);
 
                     if (problemId && !startedAt) {
-                        localStorage.setItem(`timer_${problemId}_status`, 'active');
-                        localStorage.setItem(`timer_${problemId}_timeLeft`, newValue.toString());
-                        localStorage.setItem(`timer_${problemId}_lastTimestamp`, Date.now().toString());
+                        safeSetString(`timer_${problemId}_status`, 'active');
+                        safeSetString(`timer_${problemId}_timeLeft`, newValue.toString());
+                        safeSetString(`timer_${problemId}_lastTimestamp`, Date.now().toString());
                     }
                     return newValue;
                 });
             }, 1000);
         } else {
             if (timeLeft === 0 && problemId && !startedAt) {
-                localStorage.setItem(`timer_${problemId}_status`, 'finished');
-                localStorage.setItem(`timer_${problemId}_timeLeft`, '0');
+                safeSetString(`timer_${problemId}_status`, 'finished');
+                safeSetString(`timer_${problemId}_timeLeft`, '0');
             } else if (problemId && !startedAt && isInitialized) {
-                localStorage.setItem(`timer_${problemId}_status`, 'paused');
-                localStorage.setItem(`timer_${problemId}_timeLeft`, timeLeft.toString());
-                localStorage.setItem(`timer_${problemId}_lastTimestamp`, Date.now().toString());
+                safeSetString(`timer_${problemId}_status`, 'paused');
+                safeSetString(`timer_${problemId}_timeLeft`, timeLeft.toString());
+                safeSetString(`timer_${problemId}_lastTimestamp`, Date.now().toString());
             }
         }
 

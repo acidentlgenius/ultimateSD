@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
 import { exportPNG } from '@/lib/exportUtils';
+import { safeGetJSON, safeSetJSON, isStorageAvailable } from '@/lib/localStorageUtils';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
@@ -167,7 +168,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
       setHistoryIndex(0);
       setSelectedElements(new Set());
       // Clear localStorage if requested
-      if (clearStorage && storageKey) {
+      if (clearStorage && storageKey && isStorageAvailable()) {
         localStorage.removeItem(`diagram-${storageKey}`);
       }
     };
@@ -179,7 +180,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
           timestamp: new Date().toISOString()
         };
 
-        localStorage.setItem(`diagram-${stepKey}`, JSON.stringify(diagramData));
+        safeSetJSON(`diagram-${stepKey}`, diagramData);
       }
     };
     (window as any).sd_getDiagramDescription = () => {
@@ -226,13 +227,15 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
           elements,
           timestamp: new Date().toISOString()
         };
-        localStorage.setItem(`diagram-${stepKey}`, JSON.stringify(diagramData));
+        safeSetJSON(`diagram-${stepKey}`, diagramData);
       } else {
         // If explicitly cleared (empty array), we remove it
         // Note: Initial empty state is handled by not saving if empty, but if user deletes all...
         // We only clear if we had something before?
         // To be safe and consistent with previous logic:
-        localStorage.removeItem(`diagram-${stepKey}`);
+        if (isStorageAvailable()) {
+          localStorage.removeItem(`diagram-${stepKey}`);
+        }
       }
     };
 
@@ -1263,7 +1266,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
     setShowClearDialog(false);
 
     // Immediately clear localStorage for this step
-    if (stepKey) {
+    if (stepKey && isStorageAvailable()) {
       localStorage.removeItem(`diagram-${stepKey}`);
     }
   };
@@ -1465,13 +1468,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
   // Save design to localStorage
 
   const getSafeSavedDesignsList = () => {
-    try {
-      return JSON.parse(localStorage.getItem('saved-designs-list') || '[]');
-    } catch (e) {
-      console.error('Corrupted saved-designs-list found in localStorage, clearing it.');
-      localStorage.removeItem('saved-designs-list');
-      return [];
-    }
+    return safeGetJSON<any[]>('saved-designs-list', []) || [];
   };
 
   const saveDesignToLocalStorage = () => {
@@ -1500,7 +1497,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
 
     // Save to localStorage with design name as key
     const storageKey = `saved-design-${designName.replace(/[^a-z0-9]/gi, '-').toLowerCase()}`;
-    localStorage.setItem(storageKey, JSON.stringify(diagramData));
+    safeSetJSON(storageKey, diagramData);
 
     // Update saved designs list
     const savedDesignsList = getSafeSavedDesignsList();
@@ -1512,7 +1509,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
       savedDesignsList.push({ name: designName, timestamp: diagramData.timestamp });
     }
 
-    localStorage.setItem('saved-designs-list', JSON.stringify(savedDesignsList));
+    safeSetJSON('saved-designs-list', savedDesignsList);
     loadSavedDesignsList();
 
     const toast = document.createElement('div');
@@ -1531,60 +1528,43 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
   // Load design from localStorage
   const loadDesignFromLocalStorage = (name: string) => {
     const storageKey = `saved-design-${name.replace(/[^a-z0-9]/gi, '-').toLowerCase()}`;
-    const savedData = localStorage.getItem(storageKey);
+    const diagramData = safeGetJSON<any>(storageKey);
 
-    if (!savedData) {
+    if (!diagramData) {
       const toast = document.createElement('div');
       toast.className = 'fixed bottom-4 right-4 z-50 bg-red-500 text-white px-4 py-3 rounded-lg shadow-lg animate-fade-in';
       toast.innerHTML = `<div class="flex items-center gap-2">
         <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        <span>Design not found!</span>
+        <span>Design not found or corrupted!</span>
       </div>`;
       document.body.appendChild(toast);
       setTimeout(() => toast.remove(), 3000);
+      setShowLoadDialog(false);
       return;
     }
 
-    try {
-      const diagramData = JSON.parse(savedData);
-      setElements(diagramData.elements);
-      saveHistory(diagramData.elements);
-      setSelectedElements(new Set());
-      setDesignName(diagramData.name || name);
+    setElements(diagramData.elements || []);
+    saveHistory(diagramData.elements || []);
+    setSelectedElements(new Set());
+    setDesignName(diagramData.name || name);
 
-      if (diagramData.settings && typeof diagramData.settings.showGrid === 'boolean') {
-        setShowGrid(diagramData.settings.showGrid);
-      }
-
-      const toast = document.createElement('div');
-      toast.className = 'fixed bottom-4 right-4 z-50 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg animate-fade-in';
-      toast.innerHTML = `<div class="flex items-center gap-2">
-        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-        </svg>
-        <span>"${name}" loaded successfully!</span>
-      </div>`;
-      document.body.appendChild(toast);
-      setTimeout(() => toast.remove(), 3000);
-      setShowLoadDialog(false);
-    } catch (error) {
-      console.error('Error loading design:', error);
-      localStorage.removeItem(storageKey);
-
-      const toast = document.createElement('div');
-      toast.className = 'fixed bottom-4 right-4 z-50 bg-red-500 text-white px-4 py-3 rounded-lg shadow-lg animate-fade-in';
-      toast.innerHTML = `<div class="flex items-center gap-2">
-        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <span>Design corrupted! Removed from storage.</span>
-      </div>`;
-      document.body.appendChild(toast);
-      setTimeout(() => toast.remove(), 4000);
-      setShowLoadDialog(false);
+    if (diagramData.settings && typeof diagramData.settings.showGrid === 'boolean') {
+      setShowGrid(diagramData.settings.showGrid);
     }
+
+    const toast = document.createElement('div');
+    toast.className = 'fixed bottom-4 right-4 z-50 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg animate-fade-in';
+    toast.innerHTML = `<div class="flex items-center gap-2">
+      <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+      </svg>
+      <span>"${name}" loaded successfully!</span>
+    </div>`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+    setShowLoadDialog(false);
   };
 
   // Load saved designs list
@@ -1596,11 +1576,13 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
   // Delete design from localStorage
   const deleteDesignFromLocalStorage = (name: string) => {
     const storageKey = `saved-design-${name.replace(/[^a-z0-9]/gi, '-').toLowerCase()}`;
-    localStorage.removeItem(storageKey);
+    if (isStorageAvailable()) {
+      localStorage.removeItem(storageKey);
+    }
 
     const savedDesignsList = getSafeSavedDesignsList();
     const filtered = savedDesignsList.filter((d: any) => d.name !== name);
-    localStorage.setItem('saved-designs-list', JSON.stringify(filtered));
+    safeSetJSON('saved-designs-list', filtered);
     loadSavedDesignsList();
   };
 
@@ -2332,17 +2314,11 @@ export default function DiagramCanvas({ stepKey }: { stepKey: string }) {
   useEffect(() => {
     if (stepKey && mounted) {
       const storageKey = `diagram-${stepKey}`;
-      const savedData = localStorage.getItem(storageKey);
-      if (savedData) {
-        try {
-          const diagramData = JSON.parse(savedData);
-          // Load the diagram data into the canvas
-          if ((window as any).sd_loadDiagramElements) {
-            (window as any).sd_loadDiagramElements(diagramData.elements || []);
-          }
-        } catch (error) {
-          console.error(`Error parsing diagram data from localStorage key "${storageKey}". Removing corrupted data.`, error);
-          localStorage.removeItem(storageKey);
+      const diagramData = safeGetJSON<any>(storageKey);
+      if (diagramData) {
+        // Load the diagram data into the canvas
+        if ((window as any).sd_loadDiagramElements) {
+          (window as any).sd_loadDiagramElements(diagramData.elements || []);
         }
       } else {
         // Clear canvas for new step
@@ -2443,7 +2419,7 @@ export default function DiagramCanvas({ stepKey }: { stepKey: string }) {
           timestamp: new Date().toISOString()
         };
 
-        localStorage.setItem(`diagram-${stepKey}`, JSON.stringify(diagramData));
+        safeSetJSON(`diagram-${stepKey}`, diagramData);
       }
 
       // Dispatch custom event with diagram data
