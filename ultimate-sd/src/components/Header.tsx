@@ -1,5 +1,6 @@
+import Image from 'next/image';
 import Link from 'next/link';
-import { Home, BookOpen, Sparkles, Map } from 'lucide-react';
+import { Home, Sparkles, Map } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 import { auth } from "@/auth";
@@ -16,10 +17,15 @@ export async function Header() {
 
       <div className="container mx-auto px-4 h-16 grid grid-cols-[1fr_auto_1fr] items-center relative z-10">
         <Link href="/" className="flex items-center gap-3 group justify-self-start min-w-0">
-          <div className="relative w-10 h-10 flex items-center justify-center rounded-xl bg-gradient-to-tr from-primary to-purple-600 text-white shadow-lg shadow-primary/25 transition-all duration-300 group-hover:shadow-primary/40 group-hover:scale-105 group-hover:rotate-3 ring-1 ring-black/10 dark:ring-white/10">
-            <BookOpen className="h-5 w-5 absolute inset-0 m-auto transition-transform duration-500 group-hover:rotate-12" />
-            <div className="absolute inset-0 rounded-xl bg-black/10 dark:bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            <Sparkles className="h-3 w-3 absolute -top-1 -right-1 text-yellow-300 animate-pulse" />
+          <div className="relative w-10 h-10 shrink-0 overflow-hidden rounded-xl shadow-lg shadow-primary/25 ring-1 ring-black/10 transition-all duration-300 group-hover:scale-105 group-hover:shadow-primary/40 dark:ring-white/10">
+            <Image
+              src="/icon.png"
+              alt=""
+              width={40}
+              height={40}
+              className="h-full w-full object-cover"
+              priority
+            />
           </div>
           <div className="hidden sm:flex flex-col">
             <span className="font-bold text-xl leading-tight tracking-tight bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent group-hover:from-primary group-hover:to-purple-600 transition-all duration-300">
