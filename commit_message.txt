@@ -1,0 +1,13 @@
+🪲 Squash: Fix silent floating promise failures in Server Actions
+
+💥 The Bug:
+Next.js Server Actions used in `StepByStepChat.tsx` (`syncSessionState`) and `SubmissionHistory.tsx` (`getStepSubmissions`) were called as floating promises inside `setTimeout` and `useEffect`. Because they return `{ error: string }` instead of throwing, `.catch()` chains silently swallowed the errors.
+
+🔍 Root Cause:
+The `.catch()` handler only triggers on thrown exceptions, but Server Actions in this project follow a "return error objects" pattern. The components were using standard promise chaining that assumed errors would be thrown.
+
+🛠️ The Fix:
+Wrapped the Server Action calls inside an inner `async () => {}` function (e.g., `doSync` and `loadSubmissions`). This wrapper correctly `await`s the response, checks the object for `.error` properties to log them, and wraps the execution in a `try/catch` to handle actual network errors properly.
+
+🛡️ Prevention:
+Added a new regression test suite `StepByStepChat_sync.test.tsx` that uses `vi.useFakeTimers()` to verify that both Server Action error objects and thrown exceptions from `syncSessionState` are correctly logged to `console.error`.

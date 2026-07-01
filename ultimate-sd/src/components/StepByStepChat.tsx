@@ -252,9 +252,17 @@ export default function StepByStepChat({ problem }: Props) {
           lastUpdated: new Date().toISOString()
         };
 
-        syncSessionState(problem.id, cloudState).catch(error => {
-           console.error("Failed to sync session state to cloud:", error);
-        });
+        const doSync = async () => {
+          try {
+            const result = await syncSessionState(problem.id, cloudState);
+            if (result && 'error' in result && result.error) {
+              console.error("Failed to sync session state to cloud:", result.error);
+            }
+          } catch (error) {
+             console.error("Error syncing session state to cloud:", error);
+          }
+        };
+        doSync();
       }, 2000); // 2 second debounce
     }
 
