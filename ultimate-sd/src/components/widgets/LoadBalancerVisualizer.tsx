@@ -182,8 +182,8 @@ export default function LoadBalancerVisualizer() {
                                     <Button
                                         onClick={() => toggleHealth(s.id)}
                                         size="icon" variant="ghost" className="h-6 w-6"
-                                        aria-label={`Toggle health for server ${s.id}`}
-                                        title={`Toggle health for server ${s.id}`}
+                                        aria-label={s.status === 'healthy' ? `Mark server ${s.id} unhealthy` : `Mark server ${s.id} healthy`}
+                                        title={s.status === 'healthy' ? "Healthy" : "Unhealthy"}
                                     >
                                         {s.status === 'healthy' ?
                                             <ShieldCheck className="h-4 w-4 text-green-500" /> :
