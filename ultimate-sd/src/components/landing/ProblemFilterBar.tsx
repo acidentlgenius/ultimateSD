@@ -65,12 +65,12 @@ export function ProblemFilterBar({
     user
 }: ProblemFilterBarProps) {
     return (
-        <div className="sticky top-20 z-40 backdrop-blur-2xl bg-background/60 rounded-3xl border border-black/10 dark:border-white/10 shadow-2xl shadow-primary/5 mb-12 max-w-5xl mx-auto transition-all duration-300 group">
+        <div className="sticky top-20 z-40 backdrop-blur-2xl bg-background/60 rounded-3xl border border-black/10 dark:border-white/10 shadow-2xl shadow-primary/5 w-full transition-all duration-300 group">
             <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-purple-500/5 rounded-3xl opacity-50 pointer-events-none" />
 
-            <div className="relative p-2 flex flex-col md:flex-row gap-2">
+            <div className="relative p-2 flex flex-col gap-2">
                 {/* Search Field */}
-                <div className="relative flex-1 group/search">
+                <div className="relative w-full group/search">
                     <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center justify-center transition-colors duration-300">
                         <Search className="h-5 w-5 text-muted-foreground group-focus-within/search:text-primary" />
                     </div>
@@ -87,7 +87,7 @@ export function ProblemFilterBar({
                 </div>
 
                 {/* Filters Row */}
-                <div className="flex gap-2 overflow-x-auto pb-1 md:pb-0 no-scrollbar touch-pan-x">
+                <div className="flex flex-wrap gap-2">
 
                     {/* Category Dropdown */}
                     <div className="relative min-w-[140px] md:w-auto md:min-w-[160px]">
