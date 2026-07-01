@@ -52,6 +52,7 @@ import {
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import WidgetLoader from './widgets/WidgetLoader';
+import CompletionUI from './CompletionUI';
 
 import SubmissionHistory from './SubmissionHistory';
 import { History } from 'lucide-react';
@@ -261,6 +262,7 @@ export default function StepByStepChat({ problem }: Props) {
   // Store all step data
   const [savedStepData, setSavedStepData] = useState<Map<string, SavedStepData>>(new Map());
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [isSessionCompleted, setIsSessionCompleted] = useState(false);
 
   // Session restoration state
   const [sessionRestored, setSessionRestored] = useState(false);
@@ -391,6 +393,12 @@ export default function StepByStepChat({ problem }: Props) {
             );
             if (isMounted) {
               sessionLoadedForRef.current = loadKey;
+            }
+
+            // Check if all steps are completed
+            const allStepsCount = Object.values(PHASE_STEPS).reduce((sum, steps) => sum + (steps?.length ?? 0), 0);
+            if (dbCompleted.size >= allStepsCount && allStepsCount > 0) {
+              setIsSessionCompleted(true);
             }
             return;
           }
@@ -546,6 +554,7 @@ export default function StepByStepChat({ problem }: Props) {
     setFeedback(null);
     setShowFeedback(false);
     setCompletedSteps(new Set());
+    setIsSessionCompleted(false);
     setSavedStepData(new Map());
     setSessionRestored(true);
     setRestoredDate(null);
@@ -787,6 +796,7 @@ export default function StepByStepChat({ problem }: Props) {
         setCurrentPhase(phases[currentPhaseIndex + 1]);
         setCurrentStepIndex(0);
       } else {
+        setIsSessionCompleted(true);
         toast.success('🎉 Congratulations! You have completed all sections!');
       }
     }
@@ -863,7 +873,18 @@ export default function StepByStepChat({ problem }: Props) {
     );
   }
 
-  return (
+
+  if (isSessionCompleted) {
+    return (
+      <CompletionUI
+        problem={problem}
+        onReview={() => setIsSessionCompleted(false)}
+        onReset={() => setShowStartOverConfirm(true)}
+      />
+    );
+  }
+
+return (
     <div className="w-full flex flex-col gap-6">
       {showRestoreBanner && (
         <div
