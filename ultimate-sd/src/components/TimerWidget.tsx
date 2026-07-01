@@ -234,6 +234,7 @@ export function TimerWidget({
                 <Button
                     variant="ghost"
                     size="icon"
+                    aria-label={isActive ? "Pause timer" : "Start timer"}
                     className="h-7 w-7"
                     onClick={toggleTimer}
                     disabled={isLoading}
@@ -245,6 +246,7 @@ export function TimerWidget({
                     <Button
                         variant="ghost"
                         size="icon"
+                        aria-label="Reset timer"
                         className="h-7 w-7 text-muted-foreground hover:text-foreground"
                         onClick={resetTimer}
                         title="Reset"

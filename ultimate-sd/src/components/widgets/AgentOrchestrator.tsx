@@ -130,6 +130,8 @@ const AgentOrchestrator: React.FC = () => {
                             <Button
                                 variant="outline"
                                 size="icon"
+                                aria-label={isPlaying ? "Pause scenario" : "Play scenario"}
+                                title={isPlaying ? "Pause scenario" : "Play scenario"}
                                 onClick={() => setIsPlaying(!isPlaying)}
                                 className="border-slate-700 hover:bg-slate-800"
                                 disabled={currentStepIndex >= SCENARIO.steps.length - 1}
@@ -139,6 +141,8 @@ const AgentOrchestrator: React.FC = () => {
                             <Button
                                 variant="outline"
                                 size="icon"
+                                aria-label="Reset scenario"
+                                title="Reset scenario"
                                 onClick={reset}
                                 className="border-slate-700 hover:bg-slate-800"
                             >
