@@ -283,6 +283,8 @@ export default function SchemaBuilder({ value, onChange, readOnly = false }: Pro
                       }}
                       className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
                       disabled={readOnly}
+                      aria-label="Remove entity"
+                      title="Remove entity"
                     >
                       <X className="h-4 w-4" />
                     </Button>
@@ -372,6 +374,8 @@ export default function SchemaBuilder({ value, onChange, readOnly = false }: Pro
                         onClick={() => removeField(entity.id, field.id)}
                         className={`h-9 w-9 p-0 text-red-500 hover:text-red-700 ${readOnly ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}
                         disabled={readOnly}
+                        aria-label="Remove field"
+                        title="Remove field"
                       >
                         <X className="h-4 w-4" />
                       </Button>
@@ -466,6 +470,8 @@ export default function SchemaBuilder({ value, onChange, readOnly = false }: Pro
                         onClick={() => removeIndex(entity.id, index.id)}
                         className={`h-9 w-9 p-0 text-red-500 hover:text-red-700 ${readOnly ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}
                         disabled={readOnly}
+                        aria-label="Remove index"
+                        title="Remove index"
                       >
                         <X className="h-4 w-4" />
                       </Button>
