@@ -143,10 +143,10 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
               <TableOfContents sections={sections} />
 
               <div className="mt-12 pt-8 border-t border-border/50">
-                 <Link href="#" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="inline-flex items-center text-sm text-muted-foreground hover:text-primary transition-colors">
+                 <a href="#" className="inline-flex items-center text-sm text-muted-foreground hover:text-primary transition-colors">
                    <ArrowUp className="mr-2 h-4 w-4" />
                    Back to top
-                 </Link>
+                 </a>
               </div>
             </div>
           </aside>
