@@ -31,6 +31,8 @@ interface LaunchOfferSectionProps {
   isLoggedIn: boolean;
   /** Less padding when nested inside another page (e.g. pricing). */
   embedded?: boolean;
+  /** Hide the informational AI lucky draw card (e.g. on the home dashboard). */
+  showAiDrawCard?: boolean;
 }
 
 export function LaunchOfferSection({
@@ -38,6 +40,7 @@ export function LaunchOfferSection({
   userState,
   isLoggedIn,
   embedded = false,
+  showAiDrawCard = true,
 }: LaunchOfferSectionProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -115,12 +118,19 @@ export function LaunchOfferSection({
             </>
           )}
           <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto px-2">
-            Sign in and claim your free Platform plan. Every claimant is automatically entered into
-            a lucky draw for {LAUNCH_AI_WINNER_SLOTS} AI plans.
+            {showAiDrawCard
+              ? `Sign in and claim your free Platform plan. Every claimant is automatically entered into a lucky draw for ${LAUNCH_AI_WINNER_SLOTS} AI plans.`
+              : 'Sign in and claim your free Platform plan — first-come, first-served.'}
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+        <div
+          className={
+            showAiDrawCard
+              ? 'grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8'
+              : 'max-w-xl mx-auto'
+          }
+        >
           <Card className="border-blue-500/30 bg-card/50 backdrop-blur-sm">
             <CardHeader>
               <CardTitle className="text-xl sm:text-2xl flex flex-wrap items-center gap-2">
@@ -183,57 +193,59 @@ export function LaunchOfferSection({
             </CardFooter>
           </Card>
 
-          <Card className="border-indigo-500/40 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 ring-1 ring-indigo-500/20">
-            <CardHeader>
-              <CardTitle className="text-xl sm:text-2xl flex flex-wrap items-center gap-2">
-                AI Plan Lucky Draw <Sparkles className="h-5 w-5 text-indigo-500" />
-              </CardTitle>
-              <CardDescription>
-                {LAUNCH_AI_WINNER_SLOTS} winners · {LAUNCH_OFFER_MONTHS} months free
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
-                <Trophy className="h-8 w-8 text-indigo-500 shrink-0" />
-                <div className="text-sm">
-                  <p className="font-medium">{stats.aiEligible} claimants eligible</p>
-                  <p className="text-muted-foreground">
-                    {stats.aiWinners} / {LAUNCH_AI_WINNER_SLOTS} winners selected
-                  </p>
+          {showAiDrawCard && (
+            <Card className="border-indigo-500/40 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 ring-1 ring-indigo-500/20">
+              <CardHeader>
+                <CardTitle className="text-xl sm:text-2xl flex flex-wrap items-center gap-2">
+                  AI Plan Lucky Draw <Sparkles className="h-5 w-5 text-indigo-500" />
+                </CardTitle>
+                <CardDescription>
+                  {LAUNCH_AI_WINNER_SLOTS} winners · {LAUNCH_OFFER_MONTHS} months free
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
+                  <Trophy className="h-8 w-8 text-indigo-500 shrink-0" />
+                  <div className="text-sm">
+                    <p className="font-medium">{stats.aiEligible} claimants eligible</p>
+                    <p className="text-muted-foreground">
+                      {stats.aiWinners} / {LAUNCH_AI_WINNER_SLOTS} winners selected
+                    </p>
+                  </div>
                 </div>
-              </div>
-              <ul className="space-y-2 text-sm">
-                {[
-                  'No separate signup — claim Platform above',
-                  'Winners upgraded to AI plan with credits',
-                  'Winners notified by email',
-                ].map((item) => (
-                  <li key={item} className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-indigo-500 shrink-0" />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-            <CardFooter className="flex flex-col gap-2">
-              {aiWon ? (
-                <div className="w-full rounded-md border border-indigo-500/30 bg-indigo-500/10 px-4 py-3 text-center text-sm font-medium">
-                  You won the AI lucky draw!
-                </div>
-              ) : isEligibleForAiDraw ? (
-                <div className="w-full rounded-md border border-green-500/30 bg-green-500/10 px-4 py-3 text-center text-sm font-medium">
-                  You&apos;re in the AI lucky draw ✓
-                </div>
-              ) : (
-                <div className="w-full rounded-md border border-muted px-4 py-3 text-center text-sm text-muted-foreground">
-                  Claim Platform above to be entered automatically
-                </div>
-              )}
-              <Button asChild variant="ghost" size="sm" className="w-full text-muted-foreground">
-                <Link href="/pricing">View full pricing</Link>
-              </Button>
-            </CardFooter>
-          </Card>
+                <ul className="space-y-2 text-sm">
+                  {[
+                    'No separate signup — claim Platform above',
+                    'Winners upgraded to AI plan with credits',
+                    'Winners notified by email',
+                  ].map((item) => (
+                    <li key={item} className="flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-indigo-500 shrink-0" />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+              <CardFooter className="flex flex-col gap-2">
+                {aiWon ? (
+                  <div className="w-full rounded-md border border-indigo-500/30 bg-indigo-500/10 px-4 py-3 text-center text-sm font-medium">
+                    You won the AI lucky draw!
+                  </div>
+                ) : isEligibleForAiDraw ? (
+                  <div className="w-full rounded-md border border-green-500/30 bg-green-500/10 px-4 py-3 text-center text-sm font-medium">
+                    You&apos;re in the AI lucky draw ✓
+                  </div>
+                ) : (
+                  <div className="w-full rounded-md border border-muted px-4 py-3 text-center text-sm text-muted-foreground">
+                    Claim Platform above to be entered automatically
+                  </div>
+                )}
+                <Button asChild variant="ghost" size="sm" className="w-full text-muted-foreground">
+                  <Link href="/pricing">View full pricing</Link>
+                </Button>
+              </CardFooter>
+            </Card>
+          )}
         </div>
       </div>
     </section>

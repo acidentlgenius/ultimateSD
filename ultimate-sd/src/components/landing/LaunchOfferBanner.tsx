@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { Gift, Sparkles } from 'lucide-react';
 import type { LaunchOfferPublicStats } from '@/lib/launch-offer';
-import { LAUNCH_AI_WINNER_SLOTS, LAUNCH_PLATFORM_SLOTS } from '@/lib/launch-offer';
+import { LaunchOfferCountdown } from '@/components/landing/LaunchOfferCountdown';
 
 interface LaunchOfferBannerProps {
   stats: LaunchOfferPublicStats;
@@ -11,8 +11,6 @@ interface LaunchOfferBannerProps {
 
 export function LaunchOfferBanner({ stats }: LaunchOfferBannerProps) {
   if (!stats.isActive) return null;
-
-  const soldOut = stats.platformRemaining === 0;
 
   return (
     <div className="inline-flex max-w-full flex-col sm:flex-row items-center gap-2 sm:gap-3 px-4 py-3 sm:py-2 rounded-2xl sm:rounded-full bg-gradient-to-r from-primary/10 via-purple-500/10 to-indigo-500/10 border border-primary/20 mb-8 backdrop-blur-sm">
@@ -22,20 +20,10 @@ export function LaunchOfferBanner({ stats }: LaunchOfferBannerProps) {
       </div>
       <span className="hidden sm:inline text-muted-foreground">·</span>
       <span className="text-sm text-muted-foreground text-center sm:text-left max-w-xs sm:max-w-none">
-        {soldOut ? (
-          <>
-            All Platform slots claimed — {LAUNCH_AI_WINNER_SLOTS} AI plans will be drawn from
-            claimants
-          </>
-        ) : (
-          <>
-            <strong className="text-foreground">{stats.platformRemaining}</strong> of{' '}
-            {LAUNCH_PLATFORM_SLOTS} free Platform plans left · claim to enter AI lucky draw
-          </>
-        )}
+        <LaunchOfferCountdown className="tabular-nums" /> · claim to enter AI lucky draw
       </span>
       <Link
-        href="/pricing#launch-offer"
+        href="/login?callbackUrl=/"
         className="text-sm font-semibold text-primary hover:underline flex items-center gap-1"
       >
         <Gift className="w-3.5 h-3.5" />

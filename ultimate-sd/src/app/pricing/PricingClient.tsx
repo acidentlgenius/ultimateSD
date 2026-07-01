@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { CheckCircle2, Zap, Key, Sparkles, Gift } from 'lucide-react';
+import { CheckCircle2, Zap, Key, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
@@ -14,12 +14,6 @@ import {
   type PlanType,
 } from '@/lib/plans';
 import { FREE_PROBLEM_SLUGS } from '@/lib/access';
-import { claimLaunchPlatformAction } from '@/app/actions/launch-offer';
-import {
-  LAUNCH_OFFER_MONTHS,
-  type LaunchOfferPublicStats,
-  type LaunchOfferUserState,
-} from '@/lib/launch-offer';
 
 declare global {
   interface Window {
@@ -31,8 +25,6 @@ interface PricingClientProps {
   isLoggedIn: boolean;
   currentPlan: PlanType;
   razorpayKeyId?: string;
-  launchStats: LaunchOfferPublicStats;
-  launchUserState: LaunchOfferUserState | null;
 }
 
 const PLATFORM_FEATURES = [
@@ -79,42 +71,9 @@ export function PricingClient({
   isLoggedIn,
   currentPlan,
   razorpayKeyId,
-  launchStats,
-  launchUserState,
 }: PricingClientProps) {
   const router = useRouter();
   const [loadingPlan, setLoadingPlan] = useState<Exclude<PlanType, 'free'> | null>(null);
-  const [claimPending, startClaimTransition] = useTransition();
-
-  const platformLaunchAvailable =
-    launchStats.isActive &&
-    launchStats.platformRemaining > 0 &&
-    !launchUserState?.hasRedeemed &&
-    currentPlan === 'free';
-
-  const handleClaimLaunch = () => {
-    if (!isLoggedIn) {
-      router.push('/login?callbackUrl=/pricing');
-      return;
-    }
-
-    startClaimTransition(async () => {
-      const result = await claimLaunchPlatformAction();
-      if ('error' in result) {
-        const messages: Record<string, string> = {
-          not_authenticated: 'Please sign in to claim.',
-          offer_ended: 'Launch offer has ended.',
-          already_redeemed: 'You already redeemed a launch offer.',
-          sold_out: 'All launch slots are claimed.',
-          has_paid_plan: 'You already have an active paid plan.',
-        };
-        toast.error(messages[result.error] ?? 'Could not claim');
-        return;
-      }
-      toast.success(`Enjoy ${LAUNCH_OFFER_MONTHS} months of Platform access!`);
-      router.refresh();
-    });
-  };
 
   const startCheckout = async (planType: Exclude<PlanType, 'free'>) => {
     if (!isLoggedIn) {
@@ -219,12 +178,7 @@ export function PricingClient({
       </Card>
 
       <Card className="relative border-blue-500/30 bg-card/50 backdrop-blur-sm">
-        {platformLaunchAvailable && (
-          <div className="absolute top-0 right-0 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-bl-lg">
-            LAUNCH: FREE {LAUNCH_OFFER_MONTHS} MO
-          </div>
-        )}
-        <CardHeader className={platformLaunchAvailable ? 'pt-10' : undefined}>
+        <CardHeader>
           <CardTitle className="text-xl sm:text-2xl flex flex-wrap items-center gap-2">
             Platform <Key className="h-5 w-5 text-blue-500" />
           </CardTitle>
@@ -244,38 +198,17 @@ export function PricingClient({
             ))}
           </ul>
         </CardContent>
-        <CardFooter className="flex flex-col gap-2">
-          {platformLaunchAvailable ? (
-            <Button
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-              size="lg"
-              disabled={claimPending}
-              onClick={handleClaimLaunch}
-            >
-              {claimPending ? (
-                'Claiming…'
-              ) : (
-                <>
-                  <Gift className="mr-2 h-4 w-4 shrink-0" />
-                  <span className="sm:hidden">Claim free offer ({launchStats.platformRemaining} left)</span>
-                  <span className="hidden sm:inline">
-                    Claim free launch offer ({launchStats.platformRemaining} left)
-                  </span>
-                </>
-              )}
-            </Button>
-          ) : null}
+        <CardFooter>
           <Button
             className="w-full bg-blue-600 hover:bg-blue-700 text-white"
             size="lg"
-            variant={platformLaunchAvailable ? 'outline' : 'default'}
             disabled={loadingPlan === 'platform' || currentPlan === 'platform' || currentPlan === 'ai'}
             onClick={() => startCheckout('platform')}
           >
             {currentPlan === 'platform' ? 'Current Plan' : loadingPlan === 'platform' ? 'Processing…' : (
               <>
                 <Zap className="mr-2 h-4 w-4 fill-white" />
-                {platformLaunchAvailable ? 'Subscribe instead' : 'Subscribe Platform'}
+                Subscribe Platform
               </>
             )}
           </Button>

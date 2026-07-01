@@ -21,7 +21,7 @@ import { Hero } from '@/components/landing/Hero';
 import { FeatureShowcase } from '@/components/landing/FeatureShowcase';
 import { RoadmapPreview } from '@/components/landing/RoadmapPreview';
 import { UserHero } from '@/components/landing/UserHero';
-import { LaunchOfferSection } from '@/components/landing/LaunchOfferSection';
+import { ClaimPlatformAccessBanner } from '@/components/landing/ClaimPlatformAccessBanner';
 import type { LaunchOfferPublicStats, LaunchOfferUserState } from '@/lib/launch-offer';
 
 import Link from 'next/link';
@@ -224,21 +224,22 @@ export function DashboardClient({
 
             {/* 1. High Impact Hero - Personalized if Logged In */}
             {user ? (
-                <UserHero
-                    user={user}
-                    recommendations={recommendations}
-                    setShowOnboarding={setShowOnboarding}
-                />
+                <>
+                    <UserHero
+                        user={user}
+                        recommendations={recommendations}
+                        setShowOnboarding={setShowOnboarding}
+                    />
+                    {launchStats && (
+                        <ClaimPlatformAccessBanner
+                            launchStats={launchStats}
+                            launchUserState={launchUserState}
+                            planType={user.planType ?? 'free'}
+                        />
+                    )}
+                </>
             ) : (
                 <Hero launchStats={launchStats?.isActive ? launchStats : undefined} />
-            )}
-
-            {launchStats?.isActive && (
-                <LaunchOfferSection
-                    stats={launchStats}
-                    userState={launchUserState}
-                    isLoggedIn={Boolean(user)}
-                />
             )}
 
             {/* 2. Interactive Feature Showcase (Hide if logged in) */}
