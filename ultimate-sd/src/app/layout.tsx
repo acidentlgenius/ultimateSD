@@ -19,6 +19,10 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
+  icons: {
+    icon: [{ url: "/icon.png", sizes: "512x512", type: "image/png" }],
+    apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
+  },
   title: `${SITE_NAME} - AI System Design Practice`,
   description:
     "Master system design interviews with AI-powered interactive practice, real-world simulations, and expert feedback.",
