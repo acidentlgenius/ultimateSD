@@ -4,6 +4,10 @@
  */
 
 import jsPDF from 'jspdf';
+import {
+  buildPhaseExportGroups,
+  phaseIncludesDiagram,
+} from '@/lib/pdf-export-helpers';
 import { SystemDesignProblem } from '@/types';
 
 const COLORS = {
@@ -20,6 +24,7 @@ const COLORS = {
 interface PDFExportOptions {
   problem: SystemDesignProblem;
   savedStepData: Map<string, any>;
+  getDiagramPng?: () => Promise<Blob | null>;
 }
 
 export class CompactPDFExporter {
@@ -42,7 +47,7 @@ export class CompactPDFExporter {
   async export(): Promise<void> {
     try {
       this.addHeader();
-      this.addContent();
+      await this.addContent();
       this.addFooter();
       this.addPageNumbers();
       
@@ -98,44 +103,34 @@ export class CompactPDFExporter {
     this.yPosition = 40;
   }
 
-  private addContent(): void {
-    const phases: { [key: string]: string } = {
-      requirements: 'Requirements',
-      hld: 'High-Level Design',
-      lld: 'Low-Level Design',
-      tradeoffs: 'Trade-offs',
-      scalability: 'Scalability',
-    };
+  private async addContent(): Promise<void> {
+    const phaseGroups = buildPhaseExportGroups(
+      this.options.problem,
+      this.options.savedStepData
+    );
 
-    for (const [phaseKey, phaseName] of Object.entries(phases)) {
-      const phaseData = Array.from(this.options.savedStepData.entries()).filter(
-        ([key]) => key.startsWith(phaseKey)
-      );
-
-      if (phaseData.length === 0) continue;
-
+    for (const { phaseKey, phaseName, steps } of phaseGroups) {
       this.checkPageBreak(20);
-      
+
       // Phase header
       this.doc.setFontSize(12);
       this.doc.setFont('helvetica', 'bold');
       this.doc.setTextColor(COLORS.primary[0], COLORS.primary[1], COLORS.primary[2]);
       this.doc.text(phaseName, this.margin, this.yPosition);
       this.yPosition += 6;
-      
+
       // Underline
       this.doc.setDrawColor(COLORS.primary[0], COLORS.primary[1], COLORS.primary[2]);
       this.doc.setLineWidth(0.5);
       this.doc.line(this.margin, this.yPosition, this.pageWidth - this.margin, this.yPosition);
       this.yPosition += 5;
 
-      phaseData.forEach(([key, data]) => {
-        this.addStepContent(data);
-      });
+      for (const step of steps) {
+        this.addStepContent(step.stepTitle, step.data);
+      }
 
-      // Add diagram for HLD/LLD
-      if ((phaseKey === 'hld' || phaseKey === 'lld') && phaseData.some(([_, d]) => d.completed)) {
-        this.addDiagram();
+      if (phaseIncludesDiagram(phaseKey) && steps.some((step) => step.data.completed)) {
+        await this.addDiagram();
       }
 
       this.yPosition += 4;
@@ -145,11 +140,18 @@ export class CompactPDFExporter {
     this.addSummary();
   }
 
-  private addStepContent(data: any): void {
+  private addStepContent(stepTitle: string, data: any): void {
     this.checkPageBreak(15);
 
-    // Answers - show FULL text with proper wrapping
+    this.doc.setFontSize(10);
+    this.doc.setFont('helvetica', 'bold');
+    this.doc.setTextColor(COLORS.text[0], COLORS.text[1], COLORS.text[2]);
+    this.doc.text(stepTitle, this.margin + 2, this.yPosition);
+    this.yPosition += 6;
+
+    let hasAnswerContent = false;
     if (data.listItems && data.listItems.length > 0) {
+      hasAnswerContent = true;
       data.listItems.forEach((item: string) => {
         // Split long items into multiple lines
         const lines = this.doc.splitTextToSize(item, this.contentWidth - 8);
@@ -166,6 +168,7 @@ export class CompactPDFExporter {
         this.yPosition += 1; // Small gap between items
       });
     } else if (data.textInput && data.textInput.trim()) {
+      hasAnswerContent = true;
       this.doc.setFontSize(9);
       this.doc.setFont('helvetica', 'normal');
       this.doc.setTextColor(COLORS.text[0], COLORS.text[1], COLORS.text[2]);
@@ -177,6 +180,7 @@ export class CompactPDFExporter {
         this.yPosition += 4.5;
       });
     } else if (data.schemaData && data.schemaData.length > 0) {
+      hasAnswerContent = true;
       data.schemaData.forEach((entity: any) => {
         this.checkPageBreak(8);
         this.doc.setFontSize(9);
@@ -202,18 +206,40 @@ export class CompactPDFExporter {
       });
     }
 
+    if (!hasAnswerContent && !data.feedback) {
+      this.doc.setFontSize(8);
+      this.doc.setFont('helvetica', 'italic');
+      this.doc.setTextColor(COLORS.textLight[0], COLORS.textLight[1], COLORS.textLight[2]);
+      this.doc.text('No response recorded.', this.margin + 2, this.yPosition);
+      this.yPosition += 5;
+    }
+
     // Feedback - show FULL feedback
     if (data.feedback) {
       this.checkPageBreak(15);
       this.yPosition += 2;
-      
+
       // Score line
       this.doc.setFontSize(9);
       this.doc.setFont('helvetica', 'bold');
       const scoreColor = data.feedback.score >= 7 ? COLORS.success : data.feedback.score >= 5 ? COLORS.warning : COLORS.danger;
       this.doc.setTextColor(scoreColor[0], scoreColor[1], scoreColor[2]);
       this.doc.text(`Score: ${data.feedback.score}/10`, this.margin + 2, this.yPosition);
-      this.yPosition += 6;
+      this.yPosition += 5;
+
+      if (typeof data.feedback.accuracy === 'number') {
+        const accuracyColor =
+          data.feedback.accuracy >= 70
+            ? COLORS.success
+            : data.feedback.accuracy >= 50
+              ? COLORS.warning
+              : COLORS.danger;
+        this.doc.setTextColor(accuracyColor[0], accuracyColor[1], accuracyColor[2]);
+        this.doc.text(`Accuracy: ${data.feedback.accuracy}%`, this.margin + 2, this.yPosition);
+        this.yPosition += 6;
+      } else {
+        this.yPosition += 1;
+      }
       
       // Weaknesses - show ALL, not just first one
       if (data.feedback.weaknesses && data.feedback.weaknesses.length > 0) {
@@ -287,37 +313,38 @@ export class CompactPDFExporter {
     this.yPosition += 5;
   }
 
-  private addDiagram(): void {
+  private async addDiagram(): Promise<void> {
     try {
-      const canvas = document.querySelector('canvas') as HTMLCanvasElement;
-      if (!canvas) return;
+      const pngBlob = this.options.getDiagramPng ? await this.options.getDiagramPng() : null;
+      if (!pngBlob) return;
 
+      const bitmap = await createImageBitmap(pngBlob);
       const tempCanvas = document.createElement('canvas');
-      tempCanvas.width = Math.min(canvas.width, 800);
-      tempCanvas.height = Math.min(canvas.height, 500);
-      
+      tempCanvas.width = Math.min(bitmap.width, 800);
+      tempCanvas.height = Math.min(bitmap.height, 500);
+
       const ctx = tempCanvas.getContext('2d');
       if (!ctx) return;
 
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-      
-      const scale = Math.min(tempCanvas.width / canvas.width, tempCanvas.height / canvas.height, 1);
-      const scaledWidth = canvas.width * scale;
-      const scaledHeight = canvas.height * scale;
+
+      const scale = Math.min(tempCanvas.width / bitmap.width, tempCanvas.height / bitmap.height, 1);
+      const scaledWidth = bitmap.width * scale;
+      const scaledHeight = bitmap.height * scale;
       const offsetX = (tempCanvas.width - scaledWidth) / 2;
       const offsetY = (tempCanvas.height - scaledHeight) / 2;
-      
-      ctx.drawImage(canvas, offsetX, offsetY, scaledWidth, scaledHeight);
-      
+
+      ctx.drawImage(bitmap, offsetX, offsetY, scaledWidth, scaledHeight);
+
       const imgData = tempCanvas.toDataURL('image/jpeg', 0.7);
-      
+
       const imgWidth = this.contentWidth - 5;
       const imgHeight = Math.min((tempCanvas.height / tempCanvas.width) * imgWidth, 70);
-      
+
       this.checkPageBreak(imgHeight + 10);
       this.yPosition += 3;
-      
+
       this.doc.addImage(imgData, 'JPEG', this.margin + 2.5, this.yPosition, imgWidth, imgHeight);
       this.yPosition += imgHeight + 5;
     } catch (error) {
@@ -335,6 +362,16 @@ export class CompactPDFExporter {
     const avgScore = stepsWithFeedback.length > 0
       ? Math.round(stepsWithFeedback.reduce((sum, step) => sum + step.feedback.score, 0) / stepsWithFeedback.length * 10) / 10
       : 0;
+
+    const stepsWithAccuracy = stepsWithFeedback.filter(
+      (step) => typeof step.feedback.accuracy === 'number'
+    );
+    const avgAccuracy = stepsWithAccuracy.length > 0
+      ? Math.round(
+          stepsWithAccuracy.reduce((sum, step) => sum + step.feedback.accuracy, 0) /
+            stepsWithAccuracy.length
+        )
+      : null;
 
     this.checkPageBreak(30);
     this.yPosition += 6;
@@ -359,6 +396,13 @@ export class CompactPDFExporter {
     const scoreColor = avgScore >= 7 ? COLORS.success : avgScore >= 5 ? COLORS.warning : COLORS.danger;
     this.doc.setTextColor(scoreColor[0], scoreColor[1], scoreColor[2]);
     this.doc.text(`Avg Score: ${avgScore}/10`, this.margin + 60, this.yPosition);
+
+    if (avgAccuracy !== null) {
+      this.yPosition += 5;
+      this.doc.setFont('helvetica', 'normal');
+      this.doc.setTextColor(COLORS.text[0], COLORS.text[1], COLORS.text[2]);
+      this.doc.text(`Avg Accuracy: ${avgAccuracy}%`, this.margin + 3, this.yPosition);
+    }
     
     this.yPosition += 5;
     this.doc.setFontSize(7);

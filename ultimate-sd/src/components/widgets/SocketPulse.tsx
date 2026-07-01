@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,13 +18,24 @@ export default function SocketPulse() {
     const [isConnected, setIsConnected] = useState(false);
     const [messages, setMessages] = useState<Message[]>([]);
     const [inputValue, setInputValue] = useState('');
+    const timeoutIds = useRef(new Set<NodeJS.Timeout>());
+
+
+    // Clean up timeouts on unmount
+    useEffect(() => {
+        return () => {
+            timeoutIds.current.forEach(clearTimeout);
+            timeoutIds.current.clear();
+        };
+    }, []);
 
     const connect = () => {
         // Simulate handshake
-        setTimeout(() => {
+        const tId2 = setTimeout(() => {
             setIsConnected(true);
             addMessage('System', 'Connected (101 Switching Protocols)');
         }, 800);
+        timeoutIds.current.add(tId2);
     };
 
     const disconnect = () => {
@@ -47,11 +58,12 @@ export default function SocketPulse() {
         setInputValue('');
 
         // Auto-echo simulation
-        setTimeout(() => {
+        const tId3 = setTimeout(() => {
             if (isConnected) {
                 addMessage('Server', `Echo: ${inputValue}`);
             }
         }, 1000);
+        timeoutIds.current.add(tId3);
     };
 
     // Simulate Push from Server
@@ -167,7 +179,7 @@ export default function SocketPulse() {
                                     onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
                                     disabled={!isConnected}
                                 />
-                                <Button onClick={sendMessage} disabled={!isConnected} size="icon" aria-label="Send message" className="h-6 w-6 shrink-0">
+                                <Button onClick={sendMessage} disabled={!isConnected} size="icon" aria-label="Send message" title="Send message" className="h-6 w-6 shrink-0">
                                     <ArrowUp className="h-3 w-3" />
                                 </Button>
                             </div>

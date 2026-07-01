@@ -1,7 +1,17 @@
 'use client';
+/* eslint-disable react-hooks/refs */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -16,7 +26,14 @@ import {
   loadSessionState,
   clearSessionState
 } from '@/lib/session-storage';
-import { updateProblemProgress, completeStep, syncSessionState, getSavedSessionState } from '@/app/actions/progress';
+import {
+  startPracticeSession,
+  recordStepSubmission,
+  awardStepXp,
+  completeSession,
+  abandonSession,
+  getActiveSession,
+} from '@/app/actions/progress';
 import FeedbackModal from './FeedbackModal';
 import { useSession } from 'next-auth/react';
 import {
@@ -35,10 +52,31 @@ import {
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import WidgetLoader from './widgets/WidgetLoader';
+import CompletionUI from './CompletionUI';
 
 import SubmissionHistory from './SubmissionHistory';
 import { History } from 'lucide-react';
 import { DEFAULT_PHASE_STEPS } from '@/lib/steps';
+import {
+  buildStepKey,
+  clampStepIndex,
+  getDiagramStepKeysForProblem,
+  isDiagramSubStep,
+  isFirstJourneyStep,
+  resolveEffectivePhase,
+  resolvePhaseSteps,
+} from '@/lib/step-journey';
+import { useDiagramCanvasRef } from '@/components/diagram/DiagramCanvasContext';
+import {
+  blobToDataUrl,
+  exportSceneToPng,
+  loadDiagram,
+  resolveBestDiagramSnapshot,
+  trimSceneForDbSnapshot,
+} from '@/lib/diagram-persistence';
+import { buildDiagramDescription } from '@/lib/diagram-description';
+import { shouldUseLocalSessionDraft } from '@/lib/session-persistence-policy';
+import type { StepDiagramData } from '@/types/diagram';
 
 // Dynamic imports for widgets to improve initial load performance
 const WIDGETS: Record<string, React.ComponentType> = {
@@ -88,6 +126,7 @@ const WIDGETS: Record<string, React.ComponentType> = {
   'job-scheduler-viz': dynamic(() => import('./widgets/JobSchedulerViz'), { loading: () => <WidgetLoader /> }),
   'flash-sale-demo': dynamic(() => import('./widgets/FlashSaleDemo'), { loading: () => <WidgetLoader /> }),
   'payment-ledger': dynamic(() => import('./widgets/PaymentLedger'), { loading: () => <WidgetLoader /> }),
+  'bloom-filter-viz': dynamic(() => import('./widgets/BloomFilterViz'), { loading: () => <WidgetLoader /> }),
 };
 
 interface FeedbackResult {
@@ -105,19 +144,110 @@ interface SavedStepData {
   schemaData: any[];
   feedback: FeedbackResult | null;
   completed: boolean;
-  diagramData?: {
-    imageData?: string;
-    elements?: any[];
-    description?: string;
-  } | null;
+  diagramData?: StepDiagramData | null;
 }
 
 interface Props {
   problem: SystemDesignProblem;
 }
 
+type DbSubmission = {
+  stepId: string;
+  content: string;
+  feedback: string | null;
+  score: number | null;
+  isPassing: boolean;
+  createdAt: Date | string;
+};
+
+function parseStepIndex(stepId: string): number {
+  const lastDash = stepId.lastIndexOf('-');
+  return lastDash === -1 ? 0 : parseInt(stepId.slice(lastDash + 1), 10);
+}
+
+function reconstructFromSubmissions(
+  submissions: DbSubmission[],
+  completedStepIds: string[],
+  phaseSteps: Record<string, { inputType?: string }[]>
+): { savedStepData: Map<string, SavedStepData>; completedSteps: Set<string> } {
+  const latestByStep = new Map<string, DbSubmission>();
+  for (const sub of submissions) {
+    latestByStep.set(sub.stepId, sub);
+  }
+
+  const savedStepData = new Map<string, SavedStepData>();
+  const completedSteps = new Set<string>(completedStepIds);
+
+  for (const [stepId, sub] of latestByStep) {
+    const lastDash = stepId.lastIndexOf('-');
+    const phaseKey = lastDash === -1 ? stepId : stepId.slice(0, lastDash);
+    const stepIndex = parseStepIndex(stepId);
+    const step = phaseSteps[phaseKey]?.[stepIndex];
+
+    let listItems: string[] = [];
+    let textInput = '';
+    let schemaData: unknown[] = [];
+
+    if (step?.inputType === 'list') {
+      listItems = sub.content.split('\n').filter(Boolean);
+    } else if (step?.inputType === 'schema') {
+      try {
+        schemaData = JSON.parse(sub.content) as unknown[];
+      } catch {
+        schemaData = [];
+      }
+    } else {
+      textInput = sub.content;
+    }
+
+    let parsedFeedback: FeedbackResult | null = null;
+    if (sub.feedback) {
+      try {
+        parsedFeedback = JSON.parse(sub.feedback) as FeedbackResult;
+      } catch {
+        parsedFeedback = null;
+      }
+    }
+
+    savedStepData.set(stepId, {
+      listItems,
+      textInput,
+      schemaData,
+      feedback: parsedFeedback,
+      completed: sub.isPassing,
+    });
+
+    if (sub.isPassing) {
+      completedSteps.add(stepId);
+    }
+  }
+
+  return { savedStepData, completedSteps };
+}
+
+function findResumePosition(
+  phaseSteps: Record<string, unknown[]>,
+  completedSteps: Set<string>
+): { phase: string; stepIndex: number } {
+  const phaseKeys = Object.keys(phaseSteps);
+  for (const phaseKey of phaseKeys) {
+    const steps = phaseSteps[phaseKey];
+    for (let i = 0; i < steps.length; i++) {
+      if (!completedSteps.has(`${phaseKey}-${i}`)) {
+        return { phase: phaseKey, stepIndex: i };
+      }
+    }
+  }
+  const lastPhase = phaseKeys[phaseKeys.length - 1];
+  const lastSteps = phaseSteps[lastPhase] ?? [];
+  return { phase: lastPhase ?? 'requirements', stepIndex: Math.max(0, lastSteps.length - 1) };
+}
+
 export default function StepByStepChat({ problem }: Props) {
-  const [currentPhase, setCurrentPhase] = useState('requirements');
+  const [currentPhase, setCurrentPhase] = useState(() => {
+    const keys = Object.keys(resolvePhaseSteps(problem.steps, DEFAULT_PHASE_STEPS));
+    return keys[0] ?? 'requirements';
+  });
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [listItems, setListItems] = useState<string[]>([]);
   const [textInput, setTextInput] = useState('');
@@ -131,87 +261,175 @@ export default function StepByStepChat({ problem }: Props) {
 
   // Store all step data
   const [savedStepData, setSavedStepData] = useState<Map<string, SavedStepData>>(new Map());
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [isSessionCompleted, setIsSessionCompleted] = useState(false);
 
   // Session restoration state
   const [sessionRestored, setSessionRestored] = useState(false);
   const [restoredDate, setRestoredDate] = useState<Date | null>(null);
+  const [dismissedRestoreBanner, setDismissedRestoreBanner] = useState(false);
+  const [showStartOverConfirm, setShowStartOverConfirm] = useState(false);
 
-  // Diagram tracking - now per step
-  const [diagramData, setDiagramData] = useState<{
-    imageData?: string;
-    elements?: any[];
-    description?: string;
-  } | null>(null);
+  // Diagram tracking removed — read live from canvas ref + savedStepData
 
-  const PHASE_STEPS = problem.steps || DEFAULT_PHASE_STEPS;
+  const diagramRef = useDiagramCanvasRef();
+
+  const PHASE_STEPS = resolvePhaseSteps(problem.steps, DEFAULT_PHASE_STEPS);
+  const diagramStepKeys = useMemo(
+    () => getDiagramStepKeysForProblem(PHASE_STEPS),
+    [PHASE_STEPS]
+  );
   const phases = Object.keys(PHASE_STEPS);
-  // Ensure currentPhase is valid for this problem, fallback to first phase if not
-  const validCurrentPhase = phases.includes(currentPhase) ? currentPhase : phases[0];
+  const effectivePhase = resolveEffectivePhase(currentPhase, phases);
+  const currentSteps = PHASE_STEPS[effectivePhase] ?? [];
+  const safeStepIndex = clampStepIndex(currentStepIndex, currentSteps.length);
+  const currentStep = currentSteps[safeStepIndex];
+  const currentStepKey = buildStepKey(effectivePhase, safeStepIndex);
 
-  // If we had to correct the phase, update state effectively
-  if (currentPhase !== validCurrentPhase && phases.length > 0) {
-    // This side effect in render is not ideal but prevents crashing.
-    // Better would be a useEffect, but let's just use the valid one for now.
-    // We can't call setCurrentPhase here directly.
-  }
+  const currentSubStep = currentStep?.subStep;
 
-  const effectivePhase = phases.includes(currentPhase) ? currentPhase : phases[0];
-  const currentSteps = PHASE_STEPS[effectivePhase];
-  const currentStep = currentSteps[currentStepIndex];
+  const getDiagramDataForStep = useCallback(
+    (stepKey: string): StepDiagramData | null => {
+      if (stepKey === currentStepKey && currentSubStep && isDiagramSubStep(currentSubStep)) {
+        const live = diagramRef.current?.getScene();
+        if (live && live.elements.some((el) => !el.isDeleted)) {
+          return {
+            scene: live,
+            description:
+              diagramRef.current?.getDescription() ?? buildDiagramDescription(live.elements),
+          };
+        }
+      }
+      const fromSaved = savedStepData.get(stepKey)?.diagramData;
+      if (fromSaved?.scene) return fromSaved;
+      const stored = loadDiagram(stepKey);
+      if (stored) {
+        return {
+          scene: stored.scene,
+          description: buildDiagramDescription(stored.scene.elements),
+          timestamp: stored.timestamp,
+        };
+      }
+      return fromSaved ?? null;
+    },
+    [currentStepKey, currentSubStep, diagramRef, savedStepData]
+  );
 
-  // Get step key for storage
-  const getStepKey = (phase: string, stepIdx: number) => `${phase}-${stepIdx}`;
-  const currentStepKey = getStepKey(currentPhase, currentStepIndex);
+  useEffect(() => {
+    const phaseKeys = Object.keys(resolvePhaseSteps(problem.steps, DEFAULT_PHASE_STEPS));
+    const nextPhase = resolveEffectivePhase(currentPhase, phaseKeys);
+    const stepsInPhase = resolvePhaseSteps(problem.steps, DEFAULT_PHASE_STEPS)[nextPhase] ?? [];
+    const nextIndex = clampStepIndex(currentStepIndex, stepsInPhase.length);
+
+    if (nextPhase !== currentPhase) {
+      setCurrentPhase(nextPhase);
+    }
+    if (nextIndex !== currentStepIndex) {
+      setCurrentStepIndex(nextIndex);
+    }
+  }, [problem.slug, problem.steps, currentPhase, currentStepIndex]);
 
   const { data: session, status: sessionStatus } = useSession();
+  const sessionLoadedForRef = useRef<string | null>(null);
 
-  // Load session on mount
   useEffect(() => {
-    // Only attempt to load once we know the session status (authenticated or unauthenticated)
+    if (restoredDate) {
+      setDismissedRestoreBanner(false);
+    }
+  }, [restoredDate]);
+
+  useEffect(() => {
+    if (!restoredDate || dismissedRestoreBanner) return;
+
+    const timer = window.setTimeout(() => {
+      setDismissedRestoreBanner(true);
+    }, 5000);
+
+    return () => window.clearTimeout(timer);
+  }, [restoredDate, dismissedRestoreBanner]);
+
+  // Load session once per problem visit. Re-running on session refresh (e.g. after
+  // updateStreak in FeedbackModal) would call findResumePosition and skip ahead
+  // before the user clicks "Continue to Next Step".
+  useEffect(() => {
     if (sessionStatus === 'loading') return;
+
+    const loadKey = `${problem.id}:${session?.user?.id ?? 'guest'}`;
+    if (sessionLoadedForRef.current === loadKey) return;
 
     let isMounted = true;
 
     const loadData = async () => {
-      let restored = null;
-
-      // Try fetching from cloud if user has premium plan or BYOK setup
-      if (session?.user && (session.user.hasActivePlan || session.user.hasGeminiKey || session.user.hasXaiKey)) {
+      if (session?.user) {
         try {
-          const res = await getSavedSessionState(problem.id);
-          if (res.success && res.sessionState) {
-            const parsed = res.sessionState as any;
-            restored = {
-              currentPhase: parsed.currentPhase,
-              currentStepIndex: parsed.currentStepIndex,
-              savedStepData: new Map(Object.entries(parsed.savedStepData || {})),
-              completedSteps: new Set(parsed.completedSteps || []),
-              lastUpdated: parsed.lastUpdated ? new Date(parsed.lastUpdated) : new Date()
-            };
+          const startResult = await startPracticeSession(problem.id);
+          if (isMounted && startResult.success && startResult.sessionId) {
+            setActiveSessionId(startResult.sessionId);
+          }
+
+          const activeResult = await getActiveSession(problem.id);
+          if (
+            isMounted &&
+            activeResult.success &&
+            activeResult.submissions &&
+            activeResult.submissions.length > 0
+          ) {
+            const { savedStepData: dbSaved, completedSteps: dbCompleted } = reconstructFromSubmissions(
+              activeResult.submissions,
+              activeResult.completedStepIds ?? [],
+              PHASE_STEPS
+            );
+            const resume = findResumePosition(PHASE_STEPS, dbCompleted);
+
+            setCurrentPhase(resume.phase);
+            setCurrentStepIndex(resume.stepIndex);
+            setSavedStepData(dbSaved);
+            setCompletedSteps(dbCompleted);
+            setSessionRestored(true);
+            setRestoredDate(
+              activeResult.session?.startedAt
+                ? new Date(activeResult.session.startedAt)
+                : new Date()
+            );
+            if (isMounted) {
+              sessionLoadedForRef.current = loadKey;
+            }
+
+            // Check if all steps are completed
+            const allStepsCount = Object.values(PHASE_STEPS).reduce((sum, steps) => sum + (steps?.length ?? 0), 0);
+            if (dbCompleted.size >= allStepsCount && allStepsCount > 0) {
+              setIsSessionCompleted(true);
+            }
+            return;
+          }
+
+          if (isMounted) {
+            setSessionRestored(true);
+            sessionLoadedForRef.current = loadKey;
           }
         } catch (error) {
-          console.error("Failed to load cloud session state:", error);
+          console.error('Failed to load session from account:', error);
+          if (isMounted) {
+            setSessionRestored(true);
+            sessionLoadedForRef.current = loadKey;
+          }
         }
+        return;
       }
 
-      // Fallback to local storage
-      if (!restored) {
-        restored = loadSessionState(problem.slug);
-      }
-
+      const restored = loadSessionState(problem.slug);
       if (isMounted) {
         if (restored) {
           setCurrentPhase(restored.currentPhase);
           setCurrentStepIndex(restored.currentStepIndex);
-          setSavedStepData(restored.savedStepData as any);
-          setCompletedSteps(restored.completedSteps as any);
+          setSavedStepData(restored.savedStepData as Map<string, SavedStepData>);
+          setCompletedSteps(restored.completedSteps as Set<string>);
           setSessionRestored(true);
           setRestoredDate(restored.lastUpdated);
-
-          console.log('Session restored from', restored.lastUpdated);
         } else {
-          setSessionRestored(true); // Always set to true eventually to allow saving
+          setSessionRestored(true);
         }
+        sessionLoadedForRef.current = loadKey;
       }
     };
 
@@ -220,11 +438,12 @@ export default function StepByStepChat({ problem }: Props) {
     return () => {
       isMounted = false;
     };
-  }, [problem.id, problem.slug, session, sessionStatus]);
+  }, [problem.id, problem.slug, problem.steps, session?.user?.id, sessionStatus]);
 
-  // Save session whenever state changes (debounced for cloud sync)
+  // Save session to localStorage as draft buffer (guests only; signed-in users use DB)
   useEffect(() => {
     if (!sessionRestored) return;
+    if (!shouldUseLocalSessionDraft(Boolean(session?.user))) return;
 
     const stateToSave = {
       currentPhase,
@@ -233,37 +452,20 @@ export default function StepByStepChat({ problem }: Props) {
       completedSteps,
     };
 
-    // Always save locally immediately
-    const saved = saveSessionState(problem.slug, stateToSave);
+    const timer = window.setTimeout(() => {
+      saveSessionState(problem.slug, stateToSave);
+    }, 500);
 
-    if (saved) {
-      console.log('Session saved to localStorage');
-    }
-
-    // Sync to cloud if user has premium plan or BYOK setup (Debounced)
-    let syncTimeoutId: NodeJS.Timeout;
-    if (session?.user && (session.user.hasActivePlan || session.user.hasGeminiKey || session.user.hasXaiKey)) {
-      syncTimeoutId = setTimeout(() => {
-        const cloudState = {
-          currentPhase,
-          currentStepIndex,
-          savedStepData: Object.fromEntries(savedStepData),
-          completedSteps: Array.from(completedSteps),
-          lastUpdated: new Date().toISOString()
-        };
-
-        syncSessionState(problem.id, cloudState).catch(error => {
-           console.error("Failed to sync session state to cloud:", error);
-        });
-      }, 2000); // 2 second debounce
-    }
-
-    return () => {
-      if (syncTimeoutId) {
-        clearTimeout(syncTimeoutId);
-      }
-    };
-  }, [problem.id, problem.slug, currentPhase, currentStepIndex, savedStepData, completedSteps, sessionRestored, session]);
+    return () => window.clearTimeout(timer);
+  }, [
+    problem.slug,
+    currentPhase,
+    currentStepIndex,
+    savedStepData,
+    completedSteps,
+    sessionRestored,
+    session?.user,
+  ]);
 
   // Listen for navigation events from Sidebar
   useEffect(() => {
@@ -317,17 +519,33 @@ export default function StepByStepChat({ problem }: Props) {
   }, [textInput, listItems, schemaData, currentStepKey, loading, showFeedback]);
 
   // Clear session handler
-  const handleClearSession = useCallback(() => {
+  const handleClearSession = useCallback(async () => {
     clearSessionState(problem.slug);
 
-    // Clear diagram data from localStorage
     Object.keys(localStorage).forEach(key => {
       if (key.startsWith('diagram-')) {
         localStorage.removeItem(key);
       }
     });
 
-    // Reset all state
+    if (session?.user) {
+      try {
+        const abandonResult = await abandonSession(problem.id);
+        if (abandonResult.success && abandonResult.sessionId) {
+          setActiveSessionId(abandonResult.sessionId);
+        } else {
+          const startResult = await startPracticeSession(problem.id);
+          if (startResult.success && startResult.sessionId) {
+            setActiveSessionId(startResult.sessionId);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to abandon session:', error);
+      }
+    } else {
+      setActiveSessionId(null);
+    }
+
     setCurrentPhase('requirements');
     setCurrentStepIndex(0);
     setListItems([]);
@@ -336,51 +554,18 @@ export default function StepByStepChat({ problem }: Props) {
     setFeedback(null);
     setShowFeedback(false);
     setCompletedSteps(new Set());
+    setIsSessionCompleted(false);
     setSavedStepData(new Map());
-    setSessionRestored(false);
+    setSessionRestored(true);
     setRestoredDate(null);
-    setDiagramData(null);
+
+    sessionLoadedForRef.current = null;
 
     toast.success('Session cleared! Starting fresh.');
-  }, [problem.slug]);
+  }, [problem.id, problem.slug, session?.user]);
 
-  // Listen for diagram sharing events
-  useEffect(() => {
-    const handleDiagramShared = (e: any) => {
-      if (e?.detail) {
-        const newDiagramData = {
-          imageData: e.detail.imageData,
-          elements: e.detail.elements,
-          description: e.detail.description
-        };
-        setDiagramData(newDiagramData);
-
-        // Save diagram data to current step
-        const newSavedData = new Map(savedStepData);
-        const currentSaved = newSavedData.get(currentStepKey) || {
-          listItems: [],
-          textInput: '',
-          schemaData: [],
-          feedback: null,
-          completed: false
-        };
-        newSavedData.set(currentStepKey, {
-          ...currentSaved,
-          diagramData: newDiagramData
-        });
-        setSavedStepData(newSavedData);
-
-        console.log('Diagram captured for step:', currentStepKey, e.detail.description);
-      }
-    };
-
-    window.addEventListener('sd-diagram-shared', handleDiagramShared as EventListener);
-    return () => {
-      window.removeEventListener('sd-diagram-shared', handleDiagramShared as EventListener);
-    };
-  }, [currentStepKey, savedStepData]);
-
-  // Load saved data when step changes
+  // Load saved form data when navigating between steps. Feedback modal opens only
+  // from handleSubmit — never re-open from saved state (that caused modal flicker/loops).
   useEffect(() => {
     const saved = savedStepData.get(currentStepKey);
     if (saved) {
@@ -388,18 +573,15 @@ export default function StepByStepChat({ problem }: Props) {
       setTextInput(saved.textInput);
       setSchemaData(saved.schemaData || []);
       setFeedback(saved.feedback);
-      setShowFeedback(saved.feedback !== null);
-      setDiagramData(saved.diagramData || null);
     } else {
       setListItems([]);
       setTextInput('');
       setSchemaData([]);
       setFeedback(null);
-      setShowFeedback(false);
-      setDiagramData(null);
     }
+    setShowFeedback(false);
     setNewItemInput('');
-  }, [currentStepKey, savedStepData]);
+  }, [currentStepKey]);
 
   // Dispatch phase change events
   useEffect(() => {
@@ -442,7 +624,7 @@ export default function StepByStepChat({ problem }: Props) {
     if (!userAnswer.trim() || (currentStep.inputType === 'schema' && schemaData.length === 0)) return;
 
     // Check if diagram should be included (for High Level Architecture and Data Flow steps)
-    const shouldIncludeDiagram = currentStep.subStep === 'architecture' || currentStep.subStep === 'data-flow';
+    const shouldIncludeDiagram = isDiagramSubStep(currentStep.subStep);
 
     setLoading(true);
     setShowFeedback(false);
@@ -451,40 +633,24 @@ export default function StepByStepChat({ problem }: Props) {
       const requestBody: any = {
         problem: problem.slug,
         phase: currentStep.phase,
+        phaseKey: effectivePhase,
         subStep: currentStep.subStep,
         userAnswer,
         problemDetails: problem
       };
 
-      // Add diagram data if available and relevant
-      // Add diagram data if available and relevant
-      // Try to get live data from global helpers first
-      const getElements = (window as any).sd_getDiagramElements;
-      const getDescription = (window as any).sd_getDiagramDescription;
-      let usedDiagramData = diagramData;
+      let usedDiagramData: StepDiagramData | null = null;
 
-      if (getElements && getDescription) {
-        const elements = getElements();
-        const description = getDescription();
-        if (elements && elements.length > 0) {
-          usedDiagramData = {
-            elements,
-            description,
-            // imageData not needed for evaluation
-          };
+      if (shouldIncludeDiagram) {
+        const stepDiagram = getDiagramDataForStep(currentStepKey);
+        if (stepDiagram?.scene) {
+          usedDiagramData = stepDiagram;
+          const description =
+            stepDiagram.description ?? buildDiagramDescription(stepDiagram.scene.elements);
+          requestBody.userAnswer = `${userAnswer}\n\n[Diagram included: ${description}]`;
+        } else {
+          requestBody.userAnswer = `${userAnswer}\n\n[Note: No diagram was created for this architecture description]`;
         }
-      }
-
-      if (shouldIncludeDiagram && usedDiagramData) {
-        requestBody.diagramData = {
-          description: usedDiagramData.description,
-          elementCount: usedDiagramData.elements?.length || 0,
-          components: usedDiagramData.elements?.map((el: any) => el.type).filter((t: string) => t !== 'arrow' && t !== 'line')
-        };
-        requestBody.userAnswer = `${userAnswer}\n\n[Diagram included with ${usedDiagramData.elements?.length || 0} components: ${usedDiagramData.description}]`;
-      } else if (shouldIncludeDiagram && !usedDiagramData) {
-        // Warn if diagram is expected but not provided
-        requestBody.userAnswer = `${userAnswer}\n\n[Note: No diagram was created for this architecture description]`;
       }
 
       const res = await fetchWithRetry('/api/ai/evaluate', {
@@ -499,7 +665,6 @@ export default function StepByStepChat({ problem }: Props) {
       setFeedback(data.feedback);
       setShowFeedback(true);
 
-      // Save step data
       const newSavedData = new Map(savedStepData);
       newSavedData.set(currentStepKey, {
         listItems: [...listItems],
@@ -507,58 +672,103 @@ export default function StepByStepChat({ problem }: Props) {
         schemaData: [...schemaData],
         feedback: data.feedback,
         completed: data.feedback.isAcceptable,
-        diagramData: diagramData
+        diagramData: usedDiagramData ?? savedStepData.get(currentStepKey)?.diagramData ?? null,
       });
       setSavedStepData(newSavedData);
 
-      if (data.feedback.isAcceptable) {
-        const newCompleted = new Set(completedSteps).add(currentStepKey);
-        setCompletedSteps(newCompleted);
+      const wasAlreadyCompleted = completedSteps.has(currentStepKey);
 
-        // Check if ALL steps are completed
-        let totalStepsCount = 0;
-        Object.values(PHASE_STEPS).forEach(steps => totalStepsCount += steps.length);
+      (async () => {
+        if (data.feedback.isAcceptable && !wasAlreadyCompleted) {
+          try {
+            const result = await awardStepXp(problem.id, currentStepKey);
+            if (result.success) {
+              const xpAwarded = result.xpAwarded || 0;
 
-        if (newCompleted.size >= totalStepsCount) {
-          // Calculate average score (simplified for now, just using last acceptable score)
-          // In a real app we might average all step scores
-          await updateProblemProgress(problem.id, 'COMPLETED', Math.round(data.feedback.score));
-          toast.success('🎉 Problem Completed! You have finished all steps!');
+              if (xpAwarded > 0) {
+                toast.success(`Step Complete! +${xpAwarded} XP`, {
+                  icon: '⚡',
+                  className: 'bg-blue-500/10 border-blue-500/20 text-blue-600'
+                });
+
+                if (result.levelUp) {
+                  toast.success(`Level Up! You are now Level ${result.newLevel}!`, {
+                    icon: '🎓',
+                    className: 'bg-purple-500/10 border-purple-500/20 text-purple-600 font-bold'
+                  });
+                }
+              }
+            }
+          } catch (error) {
+            console.error('Failed to award XP:', error);
+          }
+        } else if (data.feedback.isAcceptable && wasAlreadyCompleted) {
+          toast.info('Step Updated (Already Completed)', {
+            icon: '✓',
+            className: 'bg-muted border-border text-muted-foreground'
+          });
         }
 
-        // Award XP for completing the step
-        try {
-          const result = await completeStep(problem.id, currentStepKey, {
-            content: userAnswer,
-            feedback: JSON.stringify(data.feedback),
-            score: Math.round(data.feedback.score),
-            isPassing: data.feedback.isAcceptable
-          });
-          if (result.success) {
-            const xpAwarded = result.xpAwarded || 0;
+        if (activeSessionId && userAnswer.trim()) {
+          try {
+            await recordStepSubmission({
+              sessionId: activeSessionId,
+              problemId: problem.id,
+              stepId: currentStepKey,
+              phase: effectivePhase,
+              content: userAnswer,
+              feedback: JSON.stringify(data.feedback),
+              score: Math.round(data.feedback.score),
+              isPassing: data.feedback.isAcceptable,
+              problemSlug: problem.slug,
+            });
+          } catch (error) {
+            console.error('Failed to record step submission:', error);
+          }
+        }
 
-            if (xpAwarded > 0) {
-              toast.success(`Step Complete! +${xpAwarded} XP`, {
-                icon: '⚡',
-                className: 'bg-blue-500/10 border-blue-500/20 text-blue-600'
-              });
+        if (data.feedback.isAcceptable) {
+          let totalStepsCount = 0;
+          Object.values(PHASE_STEPS).forEach(steps => totalStepsCount += steps.length);
 
-              if (result.levelUp) {
-                toast.success(`Level Up! You are now Level ${result.newLevel}!`, {
-                  icon: '🎓',
-                  className: 'bg-purple-500/10 border-purple-500/20 text-purple-600 font-bold'
-                });
+          const newCompletedSize = wasAlreadyCompleted
+            ? completedSteps.size
+            : completedSteps.size + 1;
+
+          if (newCompletedSize >= totalStepsCount && activeSessionId) {
+            try {
+              let snapshot = resolveBestDiagramSnapshot(diagramStepKeys, newSavedData);
+              if (snapshot?.scene && !snapshot.imageData) {
+                const png = await exportSceneToPng(snapshot.scene);
+                if (png) {
+                  snapshot.imageData = await blobToDataUrl(png);
+                }
               }
-            } else {
-              toast.info('Step Updated (Already Completed)', {
-                icon: '✓',
-                className: 'bg-muted border-border text-muted-foreground'
-              });
+              if (snapshot?.scene) {
+                snapshot = {
+                  ...snapshot,
+                  scene: trimSceneForDbSnapshot(snapshot.scene),
+                  description:
+                    snapshot.description ??
+                    buildDiagramDescription(snapshot.scene.elements) ??
+                    undefined,
+                };
+              }
+              await completeSession(
+                activeSessionId,
+                Math.round(data.feedback.score),
+                snapshot ?? undefined
+              );
+              toast.success('🎉 Problem Completed! You have finished all steps!');
+            } catch (error) {
+              console.error('Failed to complete session:', error);
             }
           }
-        } catch (error) {
-          console.error('Failed to update XP:', error);
         }
+      })().catch(err => console.error('Background updates failed:', err));
+
+      if (data.feedback.isAcceptable) {
+        setCompletedSteps(new Set(completedSteps).add(currentStepKey));
       }
     } catch (error) {
       console.error('Error evaluating answer:', error);
@@ -577,27 +787,26 @@ export default function StepByStepChat({ problem }: Props) {
   };
 
   const handleNext = () => {
-    if (currentStepIndex < currentSteps.length - 1) {
-      setCurrentStepIndex(currentStepIndex + 1);
+    setShowFeedback(false);
+    if (safeStepIndex < currentSteps.length - 1) {
+      setCurrentStepIndex(safeStepIndex + 1);
     } else {
-      // Move to next phase
-      const currentPhaseIndex = phases.indexOf(currentPhase);
+      const currentPhaseIndex = phases.indexOf(effectivePhase);
       if (currentPhaseIndex < phases.length - 1) {
         setCurrentPhase(phases[currentPhaseIndex + 1]);
         setCurrentStepIndex(0);
       } else {
-        // All done
+        setIsSessionCompleted(true);
         toast.success('🎉 Congratulations! You have completed all sections!');
       }
     }
   };
 
   const handlePrevious = () => {
-    if (currentStepIndex > 0) {
-      setCurrentStepIndex(currentStepIndex - 1);
+    if (safeStepIndex > 0) {
+      setCurrentStepIndex(safeStepIndex - 1);
     } else {
-      // Move to previous phase
-      const currentPhaseIndex = phases.indexOf(currentPhase);
+      const currentPhaseIndex = phases.indexOf(effectivePhase);
       if (currentPhaseIndex > 0) {
         const prevPhase = phases[currentPhaseIndex - 1];
         setCurrentPhase(prevPhase);
@@ -615,7 +824,7 @@ export default function StepByStepChat({ problem }: Props) {
       schemaData: [],
       feedback: null,
       completed: false,
-      diagramData: diagramData
+      diagramData: getDiagramDataForStep(currentStepKey),
     });
     setSavedStepData(newSavedData);
     handleNext();
@@ -632,15 +841,78 @@ export default function StepByStepChat({ problem }: Props) {
     return tokens.colors.phase[phaseKey] || tokens.colors.info;
   };
 
-  const progress = ((currentStepIndex + 1) / currentSteps.length) * 100;
-  const isFirstStep = currentPhase === 'requirements' && currentStepIndex === 0;
+  const progress = currentSteps.length > 0 ? ((safeStepIndex + 1) / currentSteps.length) * 100 : 0;
+  const isFirstStep = isFirstJourneyStep(effectivePhase, safeStepIndex, phases);
   const canGoBack = !isFirstStep;
 
-  return (
-    <div className="w-full flex flex-col gap-6">
-      {/* Session Restoration Banner Removed */}
+  const totalStepCount = useMemo(
+    () => phases.reduce((sum, p) => sum + (PHASE_STEPS[p]?.length ?? 0), 0),
+    [phases, PHASE_STEPS]
+  );
 
-      {/* Navigation and Header removed for Sidebar Layout Refactor */}
+  const globalStepPosition = useMemo(() => {
+    let position = 0;
+    for (const p of phases) {
+      if (p === effectivePhase) {
+        position += safeStepIndex + 1;
+        break;
+      }
+      position += PHASE_STEPS[p]?.length ?? 0;
+    }
+    return position;
+  }, [phases, effectivePhase, safeStepIndex, PHASE_STEPS]);
+
+  const showRestoreBanner = restoredDate !== null && !dismissedRestoreBanner;
+
+  if (!currentStep) {
+    return (
+      <div className="flex items-center justify-center p-8 text-muted-foreground">
+        <Loader2 className="h-5 w-5 animate-spin mr-2" />
+        Loading practice steps...
+      </div>
+    );
+  }
+
+
+  if (isSessionCompleted) {
+    return (
+      <CompletionUI
+        problem={problem}
+        onReview={() => setIsSessionCompleted(false)}
+        onReset={() => setShowStartOverConfirm(true)}
+      />
+    );
+  }
+
+return (
+    <div className="w-full flex flex-col gap-6">
+      {showRestoreBanner && (
+        <div
+          role="status"
+          className="flex items-start justify-between gap-3 rounded-xl border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-900 dark:text-green-100"
+        >
+          <div className="flex items-start gap-2 min-w-0">
+            <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5 text-green-600 dark:text-green-400" />
+            <p>
+              <span className="font-medium">Session restored</span>
+              {' '}from {format(restoredDate, 'MMM d, yyyy · h:mm a')}
+              {totalStepCount > 0 && (
+                <> — continuing at step {globalStepPosition} of {totalStepCount}</>
+              )}
+            </p>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 shrink-0 text-green-700 hover:text-green-900 hover:bg-green-500/20 dark:text-green-300"
+            onClick={() => setDismissedRestoreBanner(true)}
+            aria-label="Dismiss restoration notice"
+            title="Dismiss restoration notice"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
 
       {/* Step Content */}
       <Card className="glass border-2 border-border">
@@ -672,40 +944,20 @@ export default function StepByStepChat({ problem }: Props) {
           )}
 
           {/* Diagram Status Indicator - Show for High Level Architecture and Data Flow steps */}
-          {(currentStep.subStep === 'architecture' || currentStep.subStep === 'data-flow') && (
-            <div className={`p-3 rounded-lg border-2 ${diagramData
-              ? 'bg-green-500/10 border-green-500/30'
-              : 'bg-orange-500/10 border-orange-500/30'
-              }`}>
-              <div className="flex items-center gap-2">
-                {diagramData ? (
-                  <>
-                    <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-green-900 dark:text-green-100">
-                        Diagram Captured! ✓
-                      </p>
-                      <p className="text-xs text-green-700 dark:text-green-300">
-                        {diagramData.description} • Will be included in AI evaluation
-                      </p>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <AlertCircle className="h-5 w-5 text-orange-600 dark:text-orange-400" />
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-orange-900 dark:text-orange-100">
-                        Tip: Create a Diagram
-                      </p>
-                      <p className="text-xs text-orange-700 dark:text-orange-300">
-                        Draw your architecture in the diagram canvas below, then click "Share with AI" before submitting
-                      </p>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-          )}
+          {isDiagramSubStep(currentStep.subStep) && (() => {
+            const hasDiagram = !!getDiagramDataForStep(currentStepKey)?.scene?.elements?.some(
+              (el) => !el.isDeleted
+            );
+            return hasDiagram ? (
+              <p className="rounded-lg border-2 border-green-500/30 bg-green-500/10 p-3 text-sm text-green-600">
+                ✓ Diagram ready — included automatically when you submit.
+              </p>
+            ) : (
+              <p className="rounded-lg border-2 border-border/60 bg-muted/30 p-3 text-sm text-muted-foreground">
+                Draw your architecture below — it will be included automatically when you submit.
+              </p>
+            );
+          })()}
 
 
           {/* Persistent Retry Feedback Banner */}
@@ -850,7 +1102,7 @@ export default function StepByStepChat({ problem }: Props) {
                     </>
                   ) : (
                     <>
-                      {(currentStep.subStep === 'architecture' || currentStep.subStep === 'data-flow')
+                      {isDiagramSubStep(currentStep.subStep)
                         ? 'Analyze Design'
                         : 'Submit for Review'}
                       <ArrowRight className="h-4 w-4 ml-2" />
@@ -884,7 +1136,59 @@ export default function StepByStepChat({ problem }: Props) {
 
       {/* Progress History and Mini Indicator removed for clean Sidebar layout */}
 
-      {/* Session Info Footer Removed */}
+      <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
+        <div className="flex items-center gap-2">
+          {session?.user ? (
+            <>
+              <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+              <span>Saved to account</span>
+            </>
+          ) : (
+            <>
+              <Info className="h-3.5 w-3.5" />
+              <span>Draft saved locally</span>
+            </>
+          )}
+        </div>
+        {session?.user && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs text-muted-foreground hover:text-foreground"
+            onClick={() => setShowStartOverConfirm(true)}
+          >
+            <RotateCcw className="h-3.5 w-3.5 mr-1" />
+            Start Over
+          </Button>
+        )}
+      </div>
+
+      <Dialog open={showStartOverConfirm} onOpenChange={setShowStartOverConfirm}>
+        <DialogContent showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle>Start over?</DialogTitle>
+            <DialogDescription>
+              This will clear your current answers, feedback, and diagram drafts for this
+              problem. Your previous session will be saved in history, but you will begin a
+              new attempt from step one.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowStartOverConfirm(false)}>
+              Keep practicing
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                setShowStartOverConfirm(false);
+                void handleClearSession();
+              }}
+            >
+              Start over
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

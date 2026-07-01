@@ -1,11 +1,17 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Sparkles, Zap, Shield, Search } from "lucide-react";
+import { ArrowRight, Sparkles, Zap } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import type { LaunchOfferPublicStats } from "@/lib/launch-offer";
+import { LaunchOfferBanner } from "@/components/landing/LaunchOfferBanner";
 
-export function Hero() {
+interface HeroProps {
+    launchStats?: LaunchOfferPublicStats;
+}
+
+export function Hero({ launchStats }: HeroProps) {
     return (
         <div className="relative overflow-hidden pt-20 pb-32 lg:pt-32 lg:pb-40">
             {/* Background Gradients */}
@@ -15,15 +21,19 @@ export function Hero() {
             </div>
 
             <div className="container mx-auto px-4 relative z-10 text-center">
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6 }}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/50 border border-secondary mb-8 backdrop-blur-sm"
-                >
-                    <Sparkles className="w-4 h-4 text-primary animate-pulse" />
-                    <span className="text-sm font-medium">The Future of System Design Practice</span>
-                </motion.div>
+                {launchStats ? (
+                    <LaunchOfferBanner stats={launchStats} />
+                ) : (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6 }}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/50 border border-secondary mb-8 backdrop-blur-sm"
+                    >
+                        <Sparkles className="w-4 h-4 text-primary animate-pulse" />
+                        <span className="text-sm font-medium">Now launching — interactive system design practice</span>
+                    </motion.div>
+                )}
 
                 <motion.h1
                     initial={{ opacity: 0, y: 20 }}
@@ -33,7 +43,7 @@ export function Hero() {
                 >
                     Master Systems <br className="hidden md:block" />
                     <span className="bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
-                        That Scale to Billions
+                        Through Hands-On Practice
                     </span>
                 </motion.h1>
 
@@ -43,8 +53,8 @@ export function Hero() {
                     transition={{ duration: 0.6, delay: 0.4 }}
                     className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto mb-12 leading-relaxed"
                 >
-                    Experience the chaos of real-world distributed systems in a risk-free environment.
-                    Simulate <strong>flash sales</strong>, secure <strong>secrets</strong>, and optimize <strong>databases</strong> with AI guidance.
+                    Whether you are preparing for your first system design round or leveling up to senior,
+                    practice with <strong>interactive simulations</strong>, structured steps, and AI feedback.
                 </motion.p>
 
                 <motion.div
@@ -65,25 +75,29 @@ export function Hero() {
                     </Button>
                 </motion.div>
 
-                {/* Trust Signals */}
+                {/* Launch signals */}
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.6, delay: 0.8 }}
                     className="mt-12 flex flex-col items-center gap-4"
                 >
-                    <p className="text-sm text-muted-foreground font-medium">Trusted by engineers from</p>
-                    <div className="flex items-center justify-center gap-8 grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all duration-300">
-                        {/* Simple text-based logos for now, can replace with SVGs later */}
-                        <span className="font-bold text-lg text-slate-400">Google</span>
-                        <span className="font-bold text-lg text-slate-400">Meta</span>
-                        <span className="font-bold text-lg text-slate-400">Amazon</span>
-                        <span className="font-bold text-lg text-slate-400">Netflix</span>
-                        <span className="font-bold text-lg text-slate-400">Uber</span>
+                    <p className="text-sm text-muted-foreground font-medium">
+                        From your first HLD to staff-level tradeoffs — practice at your level
+                    </p>
+                    <div className="flex flex-wrap items-center justify-center gap-3 max-w-2xl">
+                        {['8 free starter problems', '47 simulations', 'AI step-by-step practice', 'Free canvas'].map((item) => (
+                            <span
+                                key={item}
+                                className="text-xs font-medium text-muted-foreground bg-secondary/30 px-3 py-1.5 rounded-full border border-secondary/50"
+                            >
+                                {item}
+                            </span>
+                        ))}
                     </div>
-                    <div className="flex items-center gap-2 mt-4 text-xs text-muted-foreground/80 bg-secondary/30 px-3 py-1 rounded-full border border-secondary/50">
-                        <span className="flex h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
-                        128 engineers practicing right now
+                    <div className="flex items-center gap-2 mt-2 text-xs text-primary/90 bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
+                        <span className="flex h-2 w-2 rounded-full bg-primary animate-pulse" />
+                        Launching today — try it free, feedback welcome
                     </div>
                 </motion.div>
 
@@ -95,9 +109,9 @@ export function Hero() {
                     className="mt-20 relative mx-auto max-w-5xl aspect-[16/9] hidden md:block"
                 >
                     <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-border/50 to-transparent p-[1px] shadow-2xl">
-                        <div className="w-full h-full rounded-2xl bg-background/50 backdrop-blur-xl overflow-hidden border border-white/10 relative group">
+                        <div className="w-full h-full rounded-2xl bg-background/50 backdrop-blur-xl overflow-hidden border border-black/10 dark:border-white/10 relative group">
                             {/* Mock Interface Header */}
-                            <div className="h-12 border-b border-white/10 flex items-center px-4 gap-2 bg-white/5">
+                            <div className="h-12 border-b border-black/10 dark:border-white/10 flex items-center px-4 gap-2 bg-black/5 dark:bg-white/5">
                                 <div className="flex gap-2">
                                     <div className="w-3 h-3 rounded-full bg-red-500/50" />
                                     <div className="w-3 h-3 rounded-full bg-yellow-500/50" />

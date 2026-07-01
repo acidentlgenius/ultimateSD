@@ -1,7 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
 import { Metadata } from 'next';
 import { PROBLEMS } from '@/lib/problems';
-import { getStepsForProblem } from '@/lib/problem-steps';
+import { getPracticeSteps } from '@/lib/interview-lite-steps';
 import PracticeUI from '@/components/PracticeUI';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
@@ -47,17 +47,28 @@ export default async function PracticePage({ params }: { params: Promise<{ slug:
     redirect(`/pricing?locked=${slug}`);
   }
 
-  const steps = getStepsForProblem(slug);
+  const { steps, mode: stepMode } = getPracticeSteps(slug, problemMetadata.difficulty);
   const problem = { ...problemMetadata, steps };
 
   const existingProgress = await prisma.problemProgress.findUnique({
     where: {
       userId_problemId: {
         userId: session.user.id,
-        problemId: problem.id
-      }
-    }
+        problemId: problem.id,
+      },
+    },
+    include: { activeSession: true },
   });
 
-  return <PracticeUI problem={problem} existingProgress={existingProgress} />;
+  const progressForUI = existingProgress
+    ? {
+        ...existingProgress,
+        startedAt: existingProgress.startedAt ?? existingProgress.activeSession?.startedAt,
+        isTimerRunning: existingProgress.activeSession?.isTimerRunning ?? true,
+        totalPausedSeconds: existingProgress.activeSession?.totalPausedSeconds ?? 0,
+        lastPausedAt: existingProgress.activeSession?.lastPausedAt ?? null,
+      }
+    : null;
+
+  return <PracticeUI problem={problem} stepMode={stepMode} existingProgress={progressForUI} />;
 }

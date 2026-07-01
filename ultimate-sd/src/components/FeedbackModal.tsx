@@ -8,6 +8,7 @@ import { CheckCircle, AlertCircle, Lightbulb, TrendingUp, Award, Trophy, Sparkle
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { updateStreak } from '@/app/actions/gamification';
+import { FEATURES } from '@/lib/features';
 
 interface FeedbackData {
   score: number;
@@ -85,6 +86,13 @@ export default function FeedbackModal({ feedback, isOpen, onClose, onContinue, x
       const startScore = 0;
       const endScore = feedback.score;
 
+      // SQUASH: Root Cause: requestAnimationFrame calls within useEffect were not being canceled on unmount,
+      // leading to memory leaks and state updates on unmounted components.
+      // SQUASH: Fix: Store the animation frame IDs and clearTimeout, then clean them up in the useEffect return function.
+      let animationFrameScoreId: number = 0;
+      let animationFrameAccuracyId: number = 0;
+      let accuracyTimeoutId: NodeJS.Timeout;
+
       const animateScore = (timestamp: number) => {
         if (!startTime) startTime = timestamp;
         const progress = Math.min((timestamp - startTime) / duration, 1);
@@ -92,7 +100,7 @@ export default function FeedbackModal({ feedback, isOpen, onClose, onContinue, x
         setAnimatedScore(Math.floor(startScore + (endScore - startScore) * easeOutQuart));
 
         if (progress < 1) {
-          requestAnimationFrame(animateScore);
+          animationFrameScoreId = requestAnimationFrame(animateScore);
         }
       };
 
@@ -109,12 +117,20 @@ export default function FeedbackModal({ feedback, isOpen, onClose, onContinue, x
         setAnimatedAccuracy(Math.floor(startAccuracy + (endAccuracy - startAccuracy) * easeOutQuart));
 
         if (progress < 1) {
-          requestAnimationFrame(animateAccuracy);
+          animationFrameAccuracyId = requestAnimationFrame(animateAccuracy);
         }
       };
 
-      requestAnimationFrame(animateScore);
-      setTimeout(() => requestAnimationFrame(animateAccuracy), 200);
+      animationFrameScoreId = requestAnimationFrame(animateScore);
+      accuracyTimeoutId = setTimeout(() => {
+        animationFrameAccuracyId = requestAnimationFrame(animateAccuracy);
+      }, 200);
+
+      return () => {
+        cancelAnimationFrame(animationFrameScoreId);
+        cancelAnimationFrame(animationFrameAccuracyId);
+        clearTimeout(accuracyTimeoutId);
+      };
     } else {
       setAnimatedScore(0);
       setAnimatedAccuracy(0);
@@ -370,14 +386,16 @@ export default function FeedbackModal({ feedback, isOpen, onClose, onContinue, x
           </div>
 
           {/* Footer Actions - Enhanced */}
-          <div className="flex flex-col-reverse sm:flex-row justify-between items-center gap-4 px-6 py-4 border-t border-border/50 bg-muted/20">
-            <Button 
-              variant="outline" 
-              onClick={exportToPDF} 
-              className="w-full sm:w-auto hover:bg-muted transition-all hover:scale-105"
-            >
-              Export PDF
-            </Button>
+          <div className={`flex flex-col-reverse sm:flex-row ${FEATURES.feedbackPdfExport ? 'justify-between' : 'justify-end'} items-center gap-4 px-6 py-4 border-t border-border/50 bg-muted/20`}>
+            {FEATURES.feedbackPdfExport && (
+              <Button 
+                variant="outline" 
+                onClick={exportToPDF} 
+                className="w-full sm:w-auto hover:bg-muted transition-all hover:scale-105"
+              >
+                Export PDF
+              </Button>
+            )}
             <Button 
               onClick={handleContinue} 
               className={`w-full sm:w-auto gradient-bg hover:opacity-90 transition-all hover:scale-105 shadow-lg ${

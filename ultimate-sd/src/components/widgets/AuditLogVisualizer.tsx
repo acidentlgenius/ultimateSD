@@ -151,7 +151,7 @@ export default function AuditLogVisualizer() {
                         >
                             <div className={`
                 relative p-4 rounded-lg border-2 transition-all
-                ${log.isTampered ? 'bg-red-50 border-red-300' : 'bg-white border-slate-200'}
+                ${log.isTampered ? 'bg-red-50 border-red-300' : 'bg-black dark:bg-white border-slate-200'}
                 ${!isValid && !log.isTampered && index > logs.findIndex(l => l.isTampered) ? 'opacity-50' : ''}
               `}>
                                 {/* Connector Line */}
@@ -202,6 +202,7 @@ export default function AuditLogVisualizer() {
                                                 className="h-8 w-8 text-slate-400 hover:text-red-500"
                                                 onClick={() => tamperLog(log.id)}
                                                 title="Simulate Attack (Tamper Data)"
+                                                aria-label="Simulate Attack (Tamper Data)"
                                             >
                                                 <Lock className="w-4 h-4" />
                                             </Button>

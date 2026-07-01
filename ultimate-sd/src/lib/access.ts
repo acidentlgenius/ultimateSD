@@ -1,4 +1,9 @@
-import { FREE_PROBLEM_SLUGS, AI_MONTHLY_CREDITS, type PlanType } from '@/lib/plans';
+import {
+  FREE_PROBLEM_SLUGS,
+  AI_MONTHLY_CREDITS,
+  FREE_MONTHLY_CREDITS,
+  type PlanType,
+} from '@/lib/plans';
 
 export { FREE_PROBLEM_SLUGS };
 
@@ -135,19 +140,29 @@ export function canUseAI(
   const plan = getEffectivePlanType(user);
 
   if (plan === 'free' && problemSlug && isProblemFree(problemSlug)) {
+    if (user.aiCredits > 0) {
+      return { allowed: true, source: 'platform_credits' };
+    }
     if (hasByokKey(user)) {
       return { allowed: true, source: 'byok' };
     }
-    return { allowed: true, source: 'server' };
+    return {
+      allowed: false,
+      reason: `You've used your ${FREE_MONTHLY_CREDITS} free AI credits this month. Add an API key in Settings or upgrade for more.`,
+    };
   }
 
   if (plan === 'ai') {
     if (user.aiCredits > 0) {
       return { allowed: true, source: 'platform_credits' };
     }
+    if (hasByokKey(user)) {
+      return { allowed: true, source: 'byok' };
+    }
     return {
       allowed: false,
-      reason: 'You have used all AI credits for this month. Credits reset on your next billing cycle.',
+      reason:
+        'You have used all AI credits for this month. Add an API key in Settings or wait for credits to reset.',
     };
   }
 
@@ -201,6 +216,36 @@ export function getPlanExpiryDate(from = new Date()): Date {
   return expiry;
 }
 
+/** Expiry for plans granted manually by an admin (3 months). */
+export function getAdminGrantExpiryDate(from = new Date()): Date {
+  const expiry = new Date(from);
+  expiry.setMonth(expiry.getMonth() + 3);
+  return expiry;
+}
+
 export function getInitialAiCreditsForPlan(planType: PlanType): number {
-  return planType === 'ai' ? AI_MONTHLY_CREDITS : 0;
+  switch (planType) {
+    case 'ai':
+      return AI_MONTHLY_CREDITS;
+    case 'free':
+      return FREE_MONTHLY_CREDITS;
+    default:
+      return 0;
+  }
+}
+
+export function canViewExpertSolution(
+  user: Pick<UserAccess, 'planType' | 'planExpiresAt'> | null | undefined,
+  options: { hasSolution: boolean; isFullyComplete: boolean }
+): boolean {
+  if (!options.hasSolution) {
+    return false;
+  }
+  if (options.isFullyComplete) {
+    return true;
+  }
+  if (user && hasPlatformAccess(user)) {
+    return true;
+  }
+  return false;
 }

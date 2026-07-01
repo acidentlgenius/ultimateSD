@@ -148,7 +148,7 @@ export default function LoadBalancerVisualizer() {
                                             opacity: [0, 1, 0]
                                         }}
                                         transition={{ duration: 0.8, delay: i * 0.1 }}
-                                        className="absolute w-3 h-3 bg-white rounded-full shadow-sm z-20"
+                                        className="absolute w-3 h-3 bg-black dark:bg-white rounded-full shadow-sm z-20"
                                     />
                                 ))}
                             </AnimatePresence>

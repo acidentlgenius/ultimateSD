@@ -112,10 +112,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                     return null;
                 }
 
-                const email = credentials.email as string;
+                const email = (credentials.email as string).toLowerCase();
 
-                const user = await prisma.user.findUnique({
-                    where: { email },
+                const user = await prisma.user.findFirst({
+                    where: { email: { equals: email, mode: 'insensitive' } },
                 });
 
                 if (!user || !user.password) {
@@ -128,6 +128,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 );
 
                 if (!isPasswordValid) {
+                    return null;
+                }
+
+                if (!user.emailVerified) {
                     return null;
                 }
 

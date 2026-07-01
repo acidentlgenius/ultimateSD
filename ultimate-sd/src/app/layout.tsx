@@ -4,6 +4,7 @@ import { ThemeProvider } from "next-themes";
 import { Header } from "@/components/Header";
 import { SessionProvider } from "@/components/SessionProvider";
 import { Toaster } from "@/components/ui/sonner";
+import { SITE_NAME, SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -17,29 +18,28 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Ultimate SD - AI System Design Practice",
-  description: "Master system design interviews with AI-powered interactive practice, real-world simulations, and expert feedback.",
+  metadataBase: new URL(SITE_URL),
+  icons: {
+    icon: [{ url: "/icon.png", sizes: "512x512", type: "image/png" }],
+    apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
+  },
+  title: `${SITE_NAME} - AI System Design Practice`,
+  description:
+    "Master system design interviews with AI-powered interactive practice, real-world simulations, and expert feedback.",
   openGraph: {
-    title: "Ultimate SD - AI System Design Practice",
-    description: "Master system design interviews with AI-powered interactive practice.",
-    url: "https://ultimatesd.ai",
-    siteName: "Ultimate SD",
-    images: [
-      {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "Ultimate SD - System Design Practice",
-      },
-    ],
+    title: `${SITE_NAME} - AI System Design Practice`,
+    description:
+      "Break flash sales, secure secrets, and practice 86+ system design problems with AI feedback.",
+    url: SITE_URL,
+    siteName: SITE_NAME,
     locale: "en_US",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Ultimate SD - AI System Design Practice",
-    description: "AI-powered system design interview practice platform",
-    images: ["/og-image.png"],
+    title: `${SITE_NAME} - AI System Design Practice`,
+    description:
+      "Interactive system design practice with simulations, diagrams, and AI feedback.",
   },
 };
 

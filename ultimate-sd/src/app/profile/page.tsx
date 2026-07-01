@@ -5,11 +5,24 @@ import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { StatsOverview } from "@/components/profile/StatsOverview";
 import { HistoryList, HistoryItemData } from "@/components/profile/HistoryList";
 import { PROBLEMS } from "@/lib/problems";
+import { deriveDisplayStatus } from "@/lib/progress-utils";
+import { SessionStatus } from "@prisma/client";
 
 export const metadata = {
     title: "User Profile | Ultimate SD",
     description: "Your system design practice progress and history.",
 };
+
+function computeDurationMinutes(
+    startedAt: Date,
+    completedAt: Date | null,
+    totalPausedSeconds: number
+): number {
+    const end = completedAt ?? new Date();
+    const elapsedSeconds = (end.getTime() - startedAt.getTime()) / 1000;
+    const effectiveSeconds = Math.max(0, elapsedSeconds - totalPausedSeconds);
+    return Math.round(effectiveSeconds / 60);
+}
 
 export default async function ProfilePage() {
     const session = await auth();
@@ -18,7 +31,6 @@ export default async function ProfilePage() {
         redirect("/login");
     }
 
-    // Fetch full user data including stats
     const user = await prisma.user.findUnique({
         where: { email: session.user.email },
     });
@@ -27,50 +39,108 @@ export default async function ProfilePage() {
         redirect("/login");
     }
 
-    // Fetch problem progress history
-    // Ordered by lastAttemptAt descending, limit 50
-    const progressHistory = await prisma.problemProgress.findMany({
-        where: {
-            userId: user.id,
-            // Only show items that have at least started
-            status: { not: "NOT_STARTED" },
-        },
-        orderBy: {
-            lastAttemptAt: "desc",
-        },
-        take: 50,
-    });
+    const [progressRows, sessionsByProblemRows, latestCompletedSessions] = await Promise.all([
+        prisma.problemProgress.findMany({
+            where: {
+                userId: user.id,
+                status: { not: "NOT_STARTED" },
+            },
+            orderBy: { lastAttemptAt: "desc" },
+            take: 50,
+            include: {
+                activeSession: true,
+            },
+        }),
+        prisma.practiceSession.findMany({
+            where: { userId: user.id },
+            select: { problemId: true, status: true },
+        }),
+        prisma.practiceSession.findMany({
+            where: {
+                userId: user.id,
+                status: SessionStatus.COMPLETED,
+            },
+            orderBy: { completedAt: "desc" },
+            select: {
+                id: true,
+                problemId: true,
+                finalScore: true,
+                startedAt: true,
+                completedAt: true,
+                totalPausedSeconds: true,
+            },
+        }),
+    ]);
 
-    // Calculate stats if they aren't fully tracked on user model yet
-    // (Though schema has them, we can double check or rely on schema)
-    const completedCount = progressHistory.filter((p: any) => p.status === 'COMPLETED').length;
+    const sessionsByProblem = new Map<string, { status: SessionStatus }[]>();
+    for (const row of sessionsByProblemRows) {
+        const list = sessionsByProblem.get(row.problemId) ?? [];
+        list.push({ status: row.status });
+        sessionsByProblem.set(row.problemId, list);
+    }
 
-    // Calculate average score
-    const itemsWithScore = progressHistory.filter((p: any) => p.lastScore !== null);
-    const avgScore = itemsWithScore.length > 0
-        ? itemsWithScore.reduce((acc: number, curr: any) => acc + (curr.lastScore || 0), 0) / itemsWithScore.length
-        : null;
+    const latestCompletedByProblem = new Map<
+        string,
+        (typeof latestCompletedSessions)[number]
+    >();
+    for (const completedSession of latestCompletedSessions) {
+        if (!latestCompletedByProblem.has(completedSession.problemId)) {
+            latestCompletedByProblem.set(completedSession.problemId, completedSession);
+        }
+    }
 
-    // Transform to HistoryItemData
-    const historyItems: HistoryItemData[] = progressHistory.map((item: any) => {
-        // Find problem title from static data
-        const problem = PROBLEMS.find(p => p.id === item.problemId);
+    const completedCount = progressRows.filter((p) => p.status === "COMPLETED").length;
+    const itemsWithScore = progressRows.filter((p) => p.lastScore !== null);
+    const avgScore =
+        itemsWithScore.length > 0
+            ? itemsWithScore.reduce((acc, curr) => acc + (curr.lastScore ?? 0), 0) /
+              itemsWithScore.length
+            : null;
+
+    const historyItems: HistoryItemData[] = progressRows.map((progress) => {
+        const problem = PROBLEMS.find((p) => p.id === progress.problemId);
+        const sessions = sessionsByProblem.get(progress.problemId) ?? [];
+        const status = deriveDisplayStatus({
+            sessions: sessions.map((s) => ({ status: s.status })),
+            summaryStatus: progress.status,
+            nextRepetitionDate: progress.nextRepetitionDate,
+        });
+
+        const latestCompleted = latestCompletedByProblem.get(progress.problemId);
+        const activeSession = progress.activeSession;
+        const timingSession =
+            activeSession?.status === SessionStatus.ACTIVE
+                ? activeSession
+                : latestCompleted ?? activeSession;
 
         return {
-            id: item.id,
-            problemId: item.problemId,
-            problemSlug: problem?.slug || item.problemId,
-            problemTitle: problem?.title || `Problem ${item.problemId}`,
-            status: item.status,
-            score: item.lastScore,
-            lastAttemptAt: item.lastAttemptAt,
+            id: progress.id,
+            sessionId:
+                status === "COMPLETED" || status === "REVIEW_NEEDED"
+                    ? latestCompleted?.id
+                    : undefined,
+            problemId: progress.problemId,
+            problemSlug: problem?.slug ?? progress.problemId,
+            problemTitle: problem?.title ?? `Problem ${progress.problemId}`,
+            status,
+            score: progress.bestScore ?? progress.lastScore ?? latestCompleted?.finalScore ?? null,
+            lastAttemptAt: progress.lastAttemptAt,
+            attemptNumber: progress.totalAttempts,
+            stepsCompleted: progress.completedStepIds.length,
+            durationMinutes: timingSession
+                ? computeDurationMinutes(
+                      timingSession.startedAt,
+                      timingSession.completedAt ?? null,
+                      timingSession.totalPausedSeconds
+                  )
+                : undefined,
         };
     });
 
     const stats = {
         totalSolved: user.completedProblems || completedCount,
         activeDays: user.streak,
-        avgScore: avgScore,
+        avgScore,
     };
 
     return (

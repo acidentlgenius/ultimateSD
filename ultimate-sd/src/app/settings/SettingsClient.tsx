@@ -51,8 +51,13 @@ export default function SettingsClient({ user }: SettingsClientProps) {
     const [ollamaEndpoint, setOllamaEndpoint] = useState('');
     const [ollamaModel, setOllamaModel] = useState('');
     const [preferredProvider, setPreferredProvider] = useState(user.preferredProvider ?? 'gemini');
-    const [hasGeminiKey, setHasGeminiKey] = useState(Boolean(user.geminiApiKey));
-    const [hasXaiKey, setHasXaiKey] = useState(Boolean(user.xaiApiKey));
+    const [hasGeminiKey, setHasGeminiKey] = useState(false);
+    const [hasXaiKey, setHasXaiKey] = useState(false);
+    const [hasOpenaiKey, setHasOpenaiKey] = useState(false);
+    const [hasAnthropicKey, setHasAnthropicKey] = useState(false);
+    const [hasAzureOpenaiKey, setHasAzureOpenaiKey] = useState(false);
+    const [hasAwsBedrockKey, setHasAwsBedrockKey] = useState(false);
+    const [hasOllamaEndpoint, setHasOllamaEndpoint] = useState(false);
     const [isPending, startTransition] = useTransition();
     const [isSavingKeys, setIsSavingKeys] = useState(false);
 
@@ -65,6 +70,11 @@ export default function SettingsClient({ user }: SettingsClientProps) {
             .then(data => {
                 if (data.hasGeminiKey !== undefined) setHasGeminiKey(data.hasGeminiKey);
                 if (data.hasXaiKey !== undefined) setHasXaiKey(data.hasXaiKey);
+                if (data.hasOpenaiKey !== undefined) setHasOpenaiKey(data.hasOpenaiKey);
+                if (data.hasAnthropicKey !== undefined) setHasAnthropicKey(data.hasAnthropicKey);
+                if (data.hasAzureOpenaiKey !== undefined) setHasAzureOpenaiKey(data.hasAzureOpenaiKey);
+                if (data.hasAwsBedrockKey !== undefined) setHasAwsBedrockKey(data.hasAwsBedrockKey);
+                if (data.hasOllamaEndpoint !== undefined) setHasOllamaEndpoint(data.hasOllamaEndpoint);
                 if (data.preferredProvider) setPreferredProvider(data.preferredProvider);
             })
             .catch(() => undefined);
@@ -117,6 +127,11 @@ export default function SettingsClient({ user }: SettingsClientProps) {
 
             if (geminiKey) setHasGeminiKey(true);
             if (xaiKey) setHasXaiKey(true);
+            if (openaiKey) setHasOpenaiKey(true);
+            if (anthropicKey) setHasAnthropicKey(true);
+            if (azureOpenaiKey) setHasAzureOpenaiKey(true);
+            if (awsBedrockAccessKey) setHasAwsBedrockKey(true);
+            if (ollamaEndpoint) setHasOllamaEndpoint(true);
             setGeminiKey('');
             setXaiKey('');
             setOpenaiKey('');
@@ -226,7 +241,7 @@ export default function SettingsClient({ user }: SettingsClientProps) {
                                             Renews / expires {new Date(user.planExpiresAt).toLocaleDateString()}
                                         </p>
                                     )}
-                                    {planType === 'ai' && (
+                                    {(planType === 'ai' || planType === 'free') && (
                                         <p className="text-xs text-muted-foreground mt-1">
                                             {user.aiCredits ?? 0} AI credits remaining this month
                                         </p>
@@ -247,14 +262,19 @@ export default function SettingsClient({ user }: SettingsClientProps) {
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2"><Key className="h-5 w-5" /> Bring Your Own Key</CardTitle>
                             <CardDescription>
-                                Platform plan users must add a Gemini API key to use AI features. Keys are stored securely and never shown again.
+                                Add your API key to use AI when credits run out (free plan) or as your primary AI source (platform plan). Keys are stored securely and never shown again.
                             </CardDescription>
                         </CardHeader>
                         <form onSubmit={handleSaveKeys}>
                             <CardContent className="space-y-6">
-                                {planType !== 'platform' && planType !== 'ai' && (
+                                {planType === 'platform' && (
                                     <p className="text-sm text-amber-600 bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
-                                        Subscribe to the Platform plan to use your own API keys for AI feedback.
+                                        Platform plan requires an API key to use AI on all problems.
+                                    </p>
+                                )}
+                                {planType === 'free' && (
+                                    <p className="text-sm text-muted-foreground bg-muted/50 border border-border rounded-lg p-3">
+                                        Free plan: use included monthly credits on starter problems, or add your own API key for unlimited AI on those problems.
                                     </p>
                                 )}
                                 <div className="space-y-2">
@@ -278,15 +298,15 @@ export default function SettingsClient({ user }: SettingsClientProps) {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="openai-key">OpenAI API Key {(user as any).hasOpenaiKey && <span className="text-green-600">(saved)</span>}</Label>
+                                    <Label htmlFor="openai-key">OpenAI API Key {hasOpenaiKey && <span className="text-green-600">(saved)</span>}</Label>
                                     <Input id="openai-key" type="password" value={openaiKey} onChange={(e) => setOpenaiKey(e.target.value)} placeholder="sk-..." />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="anthropic-key">Anthropic API Key {(user as any).hasAnthropicKey && <span className="text-green-600">(saved)</span>}</Label>
+                                    <Label htmlFor="anthropic-key">Anthropic API Key {hasAnthropicKey && <span className="text-green-600">(saved)</span>}</Label>
                                     <Input id="anthropic-key" type="password" value={anthropicKey} onChange={(e) => setAnthropicKey(e.target.value)} placeholder="sk-ant-..." />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="azure-key">Azure OpenAI API Key {(user as any).hasAzureOpenaiKey && <span className="text-green-600">(saved)</span>}</Label>
+                                    <Label htmlFor="azure-key">Azure OpenAI API Key {hasAzureOpenaiKey && <span className="text-green-600">(saved)</span>}</Label>
                                     <Input id="azure-key" type="password" value={azureOpenaiKey} onChange={(e) => setAzureOpenaiKey(e.target.value)} placeholder="Enter Azure API Key" />
                                 </div>
                                 <div className="space-y-2">
@@ -298,7 +318,7 @@ export default function SettingsClient({ user }: SettingsClientProps) {
                                     <Input id="aws-region" type="text" value={awsBedrockRegion} onChange={(e) => setAwsBedrockRegion(e.target.value)} placeholder="us-east-1" />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="aws-access-key">AWS Bedrock Access Key {(user as any).hasAwsBedrockKey && <span className="text-green-600">(saved)</span>}</Label>
+                                    <Label htmlFor="aws-access-key">AWS Bedrock Access Key {hasAwsBedrockKey && <span className="text-green-600">(saved)</span>}</Label>
                                     <Input id="aws-access-key" type="password" value={awsBedrockAccessKey} onChange={(e) => setAwsBedrockAccessKey(e.target.value)} placeholder="AKIA..." />
                                 </div>
                                 <div className="space-y-2">
@@ -306,7 +326,7 @@ export default function SettingsClient({ user }: SettingsClientProps) {
                                     <Input id="aws-secret-key" type="password" value={awsBedrockSecretKey} onChange={(e) => setAwsBedrockSecretKey(e.target.value)} placeholder="Enter Secret Key" />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="ollama-endpoint">Ollama Endpoint {(user as any).hasOllamaEndpoint && <span className="text-green-600">(saved)</span>}</Label>
+                                    <Label htmlFor="ollama-endpoint">Ollama Endpoint {hasOllamaEndpoint && <span className="text-green-600">(saved)</span>}</Label>
                                     <Input id="ollama-endpoint" type="text" value={ollamaEndpoint} onChange={(e) => setOllamaEndpoint(e.target.value)} placeholder="http://127.0.0.1:11434" />
                                 </div>
                                 <div className="space-y-2">

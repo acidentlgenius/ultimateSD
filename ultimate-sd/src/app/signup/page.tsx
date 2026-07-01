@@ -1,14 +1,13 @@
 "use client"
 
 import { Suspense, useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useSearchParams } from "next/navigation"
 import { signIn } from "next-auth/react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
 function SignupForm() {
-    const router = useRouter()
     const searchParams = useSearchParams()
     const callbackUrl = searchParams.get("callbackUrl") ?? "/"
     const loginHref = callbackUrl !== "/"
@@ -19,6 +18,29 @@ function SignupForm() {
     const [password, setPassword] = useState("")
     const [error, setError] = useState("")
     const [isLoading, setIsLoading] = useState(false)
+    const [signupComplete, setSignupComplete] = useState(false)
+    const [emailSent, setEmailSent] = useState(true)
+    const [resendMessage, setResendMessage] = useState("")
+    const [isResending, setIsResending] = useState(false)
+
+    const handleResendVerification = async () => {
+        setResendMessage("")
+        setIsResending(true)
+
+        try {
+            const res = await fetch("/api/auth/resend-verification", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email }),
+            })
+            const data = await res.json()
+            setResendMessage(data.message || "Verification email sent.")
+        } catch {
+            setResendMessage("Failed to resend verification email.")
+        } finally {
+            setIsResending(false)
+        }
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -39,7 +61,10 @@ function SignupForm() {
             })
 
             if (res.ok) {
-                router.push(loginHref)
+                const data = await res.json()
+                setEmailSent(data.emailSent !== false)
+                setSignupComplete(true)
+                setIsLoading(false)
             } else {
                 const data = await res.json()
                 setError(data.message || "Something went wrong")
@@ -97,13 +122,52 @@ function SignupForm() {
 
                 <div className="w-full max-w-sm space-y-8 animate-fade-in">
                     <div className="text-center space-y-2">
-                        <h2 className="text-3xl font-bold tracking-tight">Create an account</h2>
+                        <h2 className="text-3xl font-bold tracking-tight">
+                            {signupComplete ? "Check your email" : "Create an account"}
+                        </h2>
                         <p className="text-muted-foreground">
-                            Get started with your account today
+                            {signupComplete
+                                ? emailSent
+                                    ? `We sent a verification link to ${email}`
+                                    : "Your account was created, but we couldn't send a verification email."
+                                : "Get started with your account today"}
                         </p>
                     </div>
 
                     <div className="glass-card p-8 border border-border/50 bg-card/50 backdrop-blur-xl">
+                        {signupComplete ? (
+                            <div className="space-y-6">
+                                {emailSent ? (
+                                    <div className="p-3 text-sm text-green-700 bg-green-50 dark:bg-green-900/20 rounded-md border border-green-200 dark:border-green-900/50">
+                                        Verify your email before signing in. The link expires in 24 hours.
+                                    </div>
+                                ) : (
+                                    <div className="p-3 text-sm text-amber-700 bg-amber-50 dark:bg-amber-900/20 rounded-md border border-amber-200 dark:border-amber-900/50">
+                                        Email service is unavailable. Use resend below once it is configured, or contact support.
+                                    </div>
+                                )}
+
+                                {resendMessage && (
+                                    <div className="p-3 text-sm text-muted-foreground bg-muted/50 rounded-md border border-border">
+                                        {resendMessage}
+                                    </div>
+                                )}
+
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="w-full"
+                                    disabled={isResending}
+                                    onClick={handleResendVerification}
+                                >
+                                    {isResending ? "Sending..." : "Resend verification email"}
+                                </Button>
+
+                                <Button asChild className="w-full">
+                                    <Link href={loginHref}>Go to sign in</Link>
+                                </Button>
+                            </div>
+                        ) : (
                         <form className="space-y-6" onSubmit={handleSubmit}>
                             <div className="space-y-2">
                                 <label htmlFor="name" className="text-sm font-medium leading-none">
@@ -171,7 +235,10 @@ function SignupForm() {
                                 )}
                             </Button>
                         </form>
+                        )}
 
+                        {!signupComplete && (
+                        <>
                         <div className="relative my-6">
                             <div className="absolute inset-0 flex items-center">
                                 <span className="w-full border-t border-border" />
@@ -203,6 +270,8 @@ function SignupForm() {
                                 </Link>
                             </p>
                         </div>
+                        </>
+                        )}
                     </div>
                 </div>
             </div>

@@ -49,6 +49,7 @@ export function MobileMenu({ user }: MobileMenuProps) {
         size="icon"
         onClick={toggleMenu}
         aria-label="Toggle menu"
+        title="Toggle menu"
         className="relative z-50"
       >
         {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}

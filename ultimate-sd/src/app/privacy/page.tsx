@@ -28,7 +28,7 @@ export default function PrivacyPage() {
             <p>We do not sell your personal data. We only share data with service providers necessary to run the application (e.g., database hosting, authentication providers).</p>
 
             <h2>5. Contact Us</h2>
-            <p>If you have any questions about this Privacy Policy, please contact us at support@ultimatesd.com.</p>
+            <p>If you have any questions about this Privacy Policy, please reach out through the Ultimate SD website.</p>
         </div>
     );
 }

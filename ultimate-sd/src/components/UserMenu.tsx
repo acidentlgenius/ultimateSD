@@ -24,7 +24,7 @@ export function UserMenu({ user }: UserMenuProps) {
         return (
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="relative h-9 w-9 rounded-full ring-offset-background hover:bg-muted/50 focus:ring-2 focus:ring-primary/20 transition-all p-0 overflow-hidden">
+                    <Button variant="ghost" aria-label="User menu" title="User menu" className="relative h-9 w-9 rounded-full ring-offset-background hover:bg-muted/50 focus:ring-2 focus:ring-primary/20 transition-all p-0 overflow-hidden">
                         <Avatar className="h-9 w-9 border border-border/50">
                             <AvatarImage src={user.image || ""} alt={user.name || ""} />
                             <AvatarFallback className="bg-primary/10 text-primary font-medium">

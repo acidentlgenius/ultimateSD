@@ -2,7 +2,13 @@
 
 ## Overview
 
-The SysDesignAI platform now includes **automatic session persistence** using browser localStorage. Your practice sessions are automatically saved and will be restored even if you:
+The SysDesignAI platform includes **automatic session persistence** so your practice sessions survive page refreshes, browser restarts, and navigation away from a problem.
+
+**Logged-in users:** Progress is stored in the database (practice sessions, step submissions, and progress summary). The server is the source of truth for completed work, scores, and session history.
+
+**All users (including logged-in):** Browser `localStorage` acts as a **draft buffer only**—it holds in-progress UI state (current phase/step, unsaved answers) for fast restore on refresh. It is not synced to the cloud and is not used to recover completed submissions for authenticated users.
+
+Your practice sessions are automatically saved and will be restored even if you:
 
 - 🔄 Refresh the page
 - 🚪 Close and reopen your browser
@@ -10,6 +16,21 @@ The SysDesignAI platform now includes **automatic session persistence** using br
 - ⚡ Experience a browser crash
 
 ## How It Works
+
+### Logged-in users (database)
+
+When you are signed in:
+
+- **Practice sessions** are created and tracked server-side (`PracticeSession`).
+- **Step submissions** (answers, feedback, scores) are persisted to the database on submit.
+- **Progress summary** (status, completed steps, active session) lives on `ProblemProgress`.
+- On page load, the app reconstructs your session from the database—not from the legacy `sessionState` JSON column (removed).
+
+localStorage still runs in the background as a **draft buffer** for the current tab (phase, step index, in-flight answers). If you refresh mid-step, that buffer restores the UI quickly; completed work always comes from the DB.
+
+### Anonymous users (localStorage only)
+
+Without an account, localStorage is the only persistence layer. Completed steps and answers are stored entirely in the browser until you sign up or clear the session.
 
 ### Automatic Saving
 
@@ -110,9 +131,10 @@ For **each problem** you practice:
 
 ### Storage Location
 
-- **Browser**: localStorage (per-browser, per-device)
-- **Scope**: Per problem slug (multiple problems can be saved simultaneously)
-- **Privacy**: Data never leaves your browser—100% local
+- **Logged-in users:** PostgreSQL via server actions (`src/app/actions/progress/`). localStorage is a per-tab draft cache only.
+- **Anonymous users:** Browser localStorage (per-browser, per-device).
+- **Scope:** Per problem slug (multiple problems can be saved simultaneously).
+- **Privacy:** Draft buffer stays local; authenticated progress is tied to your account in the database.
 
 ### Storage Capacity
 
@@ -225,14 +247,13 @@ clearSessionState(problemSlug);
 
 ### What's Private
 
-✅ **Stored locally only** - Data never sent to servers  
-✅ **No tracking** - No analytics on saved sessions  
-✅ **No accounts** - No association with user identity  
-✅ **No sharing** - Sessions can't be transferred between devices  
+✅ **Draft buffer stays local** — Unsubmitted in-progress UI state in localStorage never leaves your browser  
+✅ **Account progress is yours** — Logged-in submissions and sessions are stored securely server-side  
+✅ **No sharing** — Sessions can't be transferred between devices without signing in  
 
 ### What's Shared
 
-❌ Nothing! Session data is 100% local to your browser.
+❌ Draft localStorage is not synced across devices. Sign in to persist completed work in the cloud.
 
 ### Data Retention
 
@@ -313,7 +334,10 @@ Planned improvements:
 ## FAQ
 
 **Q: Can I access my session on a different device?**  
-A: No, localStorage is per-browser, per-device. Use PDF export to transfer manually.
+A: Sign in—completed progress is stored in your account. The localStorage draft buffer is still per-browser only.
+
+**Q: Does localStorage sync to the cloud when I'm logged in?**  
+A: No. Logged-in users rely on the database for submissions and session history. localStorage is only a draft buffer for the current browser tab.
 
 **Q: How long are sessions kept?**  
 A: Forever, until you clear them or clear browser data.

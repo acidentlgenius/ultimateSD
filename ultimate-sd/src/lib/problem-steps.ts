@@ -965,6 +965,17 @@ const WEB_CRAWLER_STEPS: Record<string, StepData[]> = {
       placeholder: 'Explain politeness...',
       widgetId: 'crawler-frontier'
     }
+  ],
+  "deduplication": [
+    {
+      phase: 'Deduplication',
+      subStep: 'bloom-filter',
+      title: 'URL Deduplication',
+      prompt: 'How do you avoid downloading the same URL twice? Visualize using a Bloom Filter.',
+      inputType: 'textarea',
+      placeholder: 'Explain deduplication strategy...',
+      widgetId: 'bloom-filter-viz'
+    }
   ]
 };
 
@@ -1257,15 +1268,17 @@ const WEBSOCKET_STEPS: Record<string, StepData[]> = {
 };
 
 const COLLAB_EDITOR_STEPS: Record<string, StepData[]> = {
-  'collaborative-editor-flow': [
+  requirements: [
     {
       phase: 'Requirements',
-      subStep: 'Core Features',
+      subStep: 'functional',
       title: 'Real-time Constraints',
       prompt: 'For a smooth typing experience, what is the maximum acceptable latency for seeing your own keystrokes vs remote ones?',
       inputType: 'textarea',
       placeholder: 'e.g. 100ms',
     },
+  ],
+  algorithm: [
     {
       phase: 'Core Algorithm',
       subStep: 'Conflict Resolution',
@@ -1279,7 +1292,17 @@ const COLLAB_EDITOR_STEPS: Record<string, StepData[]> = {
 };
 
 const AD_SERVING_STEPS: Record<string, StepData[]> = {
-  'ad-serving-flow': [
+  requirements: [
+    {
+      phase: 'Requirements',
+      subStep: 'functional',
+      title: 'Ad Serving Goals',
+      prompt: 'What must the system optimize for? Consider latency budgets, targeting, billing accuracy, and fraud prevention.',
+      inputType: 'list',
+      placeholder: 'e.g. Serve an ad in <100ms, support geo targeting...',
+    },
+  ],
+  hld: [
     {
       phase: 'The Auction',
       subStep: 'Real-Time Bidding',
@@ -1293,7 +1316,17 @@ const AD_SERVING_STEPS: Record<string, StepData[]> = {
 };
 
 const FEED_STEPS: Record<string, StepData[]> = {
-  'personalized-feed-flow': [
+  requirements: [
+    {
+      phase: 'Requirements',
+      subStep: 'functional',
+      title: 'Feed Goals',
+      prompt: 'What should the personalized feed optimize for? Consider freshness, relevance, diversity, and latency.',
+      inputType: 'list',
+      placeholder: 'e.g. Rank posts by relevance, avoid duplicates...',
+    },
+  ],
+  hld: [
     {
       phase: 'Ranking',
       subStep: 'Scoring Algorithm',
@@ -1460,7 +1493,17 @@ const AGENT_STEPS: Record<string, StepData[]> = {
 };
 
 const FEATURE_FLAG_STEPS: Record<string, StepData[]> = {
-  'feature-flag-flow': [
+  requirements: [
+    {
+      phase: 'Requirements',
+      subStep: 'functional',
+      title: 'Rollout Requirements',
+      prompt: 'What do product and engineering need from a feature flag system? Consider targeting, safety, and observability.',
+      inputType: 'list',
+      placeholder: 'e.g. Gradual rollout, kill switch, per-user bucketing...',
+    },
+  ],
+  hld: [
     {
       phase: 'Requirements',
       subStep: 'Rollout Strategy',
@@ -1474,7 +1517,17 @@ const FEATURE_FLAG_STEPS: Record<string, StepData[]> = {
 };
 
 const SERVICE_MESH_STEPS: Record<string, StepData[]> = {
-  'service-mesh-flow': [
+  requirements: [
+    {
+      phase: 'Requirements',
+      subStep: 'functional',
+      title: 'Mesh Requirements',
+      prompt: 'What cross-cutting concerns should the service mesh handle without changing application code?',
+      inputType: 'list',
+      placeholder: 'e.g. Retries, timeouts, mTLS, traffic shaping...',
+    },
+  ],
+  hld: [
     {
       phase: 'Architecture',
       subStep: 'Sidecar Pattern',
@@ -1488,7 +1541,17 @@ const SERVICE_MESH_STEPS: Record<string, StepData[]> = {
 };
 
 const TRACING_STEPS: Record<string, StepData[]> = {
-  'tracing-flow': [
+  requirements: [
+    {
+      phase: 'Requirements',
+      subStep: 'functional',
+      title: 'Tracing Requirements',
+      prompt: 'What questions must distributed tracing answer for engineers during incidents?',
+      inputType: 'list',
+      placeholder: 'e.g. End-to-end latency, bottleneck service, error propagation...',
+    },
+  ],
+  hld: [
     {
       phase: 'Observability',
       subStep: 'Span Visualization',
@@ -1641,7 +1704,7 @@ export const GENERIC_STEPS: Record<string, StepData[]> = {
   ],
   architecture: [
     {
-      phase: 'Architecture',
+      phase: 'HLD',
       subStep: 'high-level',
       title: 'High-Level Design',
       prompt: 'Identify the core components and outline the high-level architecture.',
@@ -1651,7 +1714,7 @@ export const GENERIC_STEPS: Record<string, StepData[]> = {
   ],
   deep_dive: [
     {
-      phase: 'Deep Dive',
+      phase: 'LLD',
       subStep: 'core_components',
       title: 'Core Components',
       prompt: 'Explain the internal logic and design of the critical components in your architecture.',
@@ -1659,7 +1722,7 @@ export const GENERIC_STEPS: Record<string, StepData[]> = {
       placeholder: 'Explain data structures, algorithms, etc...'
     },
     {
-      phase: 'Deep Dive',
+      phase: 'LLD',
       subStep: 'data_flow',
       title: 'Data Flow',
       prompt: 'Describe step-by-step how data flows through your system for a key operation.',

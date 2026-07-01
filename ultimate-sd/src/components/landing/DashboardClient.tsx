@@ -3,7 +3,9 @@
 import { PROBLEMS } from '@/lib/problems';
 import ProblemCard from '@/components/ProblemCard';
 import { useState, useMemo } from 'react';
-import { Search, ArrowRight, Building2, TrendingUp, Lock } from 'lucide-react';
+import { Search, ArrowRight, Building2, TrendingUp, Lock, CheckCircle, Clock, RotateCcw } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import type { ProgressStatus } from '@/types';
 import {
     Table,
     TableBody,
@@ -19,6 +21,8 @@ import { Hero } from '@/components/landing/Hero';
 import { FeatureShowcase } from '@/components/landing/FeatureShowcase';
 import { RoadmapPreview } from '@/components/landing/RoadmapPreview';
 import { UserHero } from '@/components/landing/UserHero';
+import { LaunchOfferSection } from '@/components/landing/LaunchOfferSection';
+import type { LaunchOfferPublicStats, LaunchOfferUserState } from '@/lib/launch-offer';
 
 import Link from 'next/link';
 import OnboardingModal from '@/components/OnboardingModal';
@@ -28,6 +32,19 @@ import { cn } from '@/lib/utils';
 import { canAccessProblem } from '@/lib/access';
 import { ProModal } from '@/components/ProModal';
 import { type PlanType } from '@/lib/plans';
+import { getAllFilterTags, getProblemTags, problemMatchesTag } from '@/lib/problem-tags';
+import { ProblemTagList } from '@/components/ProblemTagBadge';
+import { MostAskedSection } from '@/components/landing/MostAskedSection';
+import { problemInCollection } from '@/lib/company-collections';
+import Fuse from 'fuse.js';
+
+type StatusFilter =
+    | 'All'
+    | 'Not Started'
+    | 'Attempted'
+    | 'In Progress'
+    | 'Completed'
+    | 'Review Due';
 
 interface DashboardClientProps {
     user?: {
@@ -46,12 +63,73 @@ interface DashboardClientProps {
         recommended: ProblemWithStatus[];
     };
     onboardingCompleted?: boolean;
+    problems?: ProblemWithStatus[];
+    launchStats?: LaunchOfferPublicStats;
+    launchUserState?: LaunchOfferUserState | null;
 }
 
-export function DashboardClient({ user, recommendations, onboardingCompleted = false }: DashboardClientProps) {
+function getStatusBadgeConfig(status?: ProgressStatus) {
+    switch (status) {
+        case 'COMPLETED':
+            return { icon: CheckCircle, label: 'Completed', className: 'border-green-500/30 text-green-600 bg-green-500/10' };
+        case 'REVIEW_NEEDED':
+            return { icon: RotateCcw, label: 'Review Due', className: 'border-amber-500/30 text-amber-600 bg-amber-500/10' };
+        case 'IN_PROGRESS':
+            return { icon: Clock, label: 'In Progress', className: 'border-blue-500/30 text-blue-600 bg-blue-500/10' };
+        case 'NOT_STARTED':
+        case undefined:
+            return null;
+        default: {
+            const _exhaustive: never = status;
+            return _exhaustive;
+        }
+    }
+}
+
+function matchesStatusFilter(
+    problem: ProblemWithStatus,
+    filter: StatusFilter
+): boolean {
+    if (filter === 'All') return true;
+
+    const status = problem.status;
+    switch (filter) {
+        case 'Not Started':
+            return !status || status === 'NOT_STARTED';
+        case 'Attempted':
+            return (
+                (problem.totalAttempts ?? 0) > 0 &&
+                status !== 'COMPLETED' &&
+                status !== 'REVIEW_NEEDED'
+            );
+        case 'In Progress':
+            return status === 'IN_PROGRESS';
+        case 'Completed':
+            return status === 'COMPLETED';
+        case 'Review Due':
+            return status === 'REVIEW_NEEDED';
+        default: {
+            const _exhaustive: never = filter;
+            return _exhaustive;
+        }
+    }
+}
+
+export function DashboardClient({
+    user,
+    recommendations,
+    onboardingCompleted = false,
+    problems: problemsProp,
+    launchStats,
+    launchUserState = null,
+}: DashboardClientProps) {
+    const problems: ProblemWithStatus[] = problemsProp ?? PROBLEMS;
     const [search, setSearch] = useState('');
     const [category, setCategory] = useState('All');
     const [difficulty, setDifficulty] = useState('All');
+    const [statusFilter, setStatusFilter] = useState<StatusFilter>('All');
+    const [topicFilter, setTopicFilter] = useState('All');
+    const [companyCollection, setCompanyCollection] = useState<string | null>(null);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [lockedProblem, setLockedProblem] = useState<ProblemWithStatus | null>(null);
 
@@ -64,9 +142,38 @@ export function DashboardClient({ user, recommendations, onboardingCompleted = f
 
     const isProblemLocked = (slug: string) => !canAccessProblem(accessUser, slug);
 
+    const topicOptions = useMemo(() => getAllFilterTags(problems), [problems]);
+
+    const handleTagClick = (tagId: string) => {
+        setTopicFilter(tagId);
+        document.getElementById('problems')?.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    // Memoize the search index so it's not rebuilt on every keystroke
+    const fuseIndex = useMemo(() => {
+        const problemsWithTags = problems.map(p => ({
+            ...p,
+            tagLabels: getProblemTags(p.slug, p.tags).map(t => t.label)
+        }));
+
+        return new Fuse(problemsWithTags, {
+            keys: [
+                { name: 'title', weight: 2 },
+                { name: 'companies', weight: 1.5 },
+                { name: 'tagLabels', weight: 1.5 },
+                { name: 'description', weight: 1 }
+            ],
+            threshold: 0.3,
+            ignoreLocation: true
+        });
+    }, [problems]);
 
     const filtered = useMemo(() => {
-        let filteredProblems = PROBLEMS;
+        let filteredProblems = problems;
+
+        if (search) {
+            filteredProblems = fuseIndex.search(search).map(result => result.item);
+        }
 
         if (category !== 'All') {
             filteredProblems = filteredProblems.filter(p => p.category === category);
@@ -76,19 +183,28 @@ export function DashboardClient({ user, recommendations, onboardingCompleted = f
             filteredProblems = filteredProblems.filter(p => p.difficulty === difficulty);
         }
 
-        if (search) {
-            const searchLower = search.toLowerCase();
-            filteredProblems = filteredProblems.filter(p =>
-                p.title.toLowerCase().includes(searchLower) ||
-                p.description.toLowerCase().includes(searchLower) ||
-                p.companies.some(c => c.toLowerCase().includes(searchLower))
+        if (user && statusFilter !== 'All') {
+            filteredProblems = filteredProblems.filter((p) =>
+                matchesStatusFilter(p, statusFilter)
+            );
+        }
+
+        if (topicFilter !== 'All') {
+            filteredProblems = filteredProblems.filter((p) =>
+                problemMatchesTag(p.slug, p.tags, topicFilter)
+            );
+        }
+
+        if (companyCollection) {
+            filteredProblems = filteredProblems.filter((p) =>
+                problemInCollection(p.slug, companyCollection)
             );
         }
 
         return filteredProblems;
-    }, [search, category, difficulty]);
+    }, [problems, search, category, difficulty, statusFilter, topicFilter, companyCollection, user, fuseIndex]);
 
-    const categories = ['All', ...new Set(PROBLEMS.map(p => p.category))];
+    const categories = ['All', ...new Set(problems.map(p => p.category))];
     const difficulties = ['All', 'Easy', 'Medium', 'Hard'];
 
     return (
@@ -114,7 +230,15 @@ export function DashboardClient({ user, recommendations, onboardingCompleted = f
                     setShowOnboarding={setShowOnboarding}
                 />
             ) : (
-                <Hero />
+                <Hero launchStats={launchStats?.isActive ? launchStats : undefined} />
+            )}
+
+            {launchStats?.isActive && (
+                <LaunchOfferSection
+                    stats={launchStats}
+                    userState={launchUserState}
+                    isLoggedIn={Boolean(user)}
+                />
             )}
 
             {/* 2. Interactive Feature Showcase (Hide if logged in) */}
@@ -122,6 +246,16 @@ export function DashboardClient({ user, recommendations, onboardingCompleted = f
 
             {/* 2.5 Roadmap Preview */}
             <RoadmapPreview />
+
+            <MostAskedSection
+                selectedCollectionId={companyCollection}
+                onSelectCollection={(id) => {
+                    setCompanyCollection(id);
+                    if (id) {
+                        document.getElementById('problems')?.scrollIntoView({ behavior: 'smooth' });
+                    }
+                }}
+            />
 
             {/* 3. Problem Explorer */}
             <div id="problems" className="container mx-auto px-4 py-24 relative z-10 max-w-7xl">
@@ -137,18 +271,26 @@ export function DashboardClient({ user, recommendations, onboardingCompleted = f
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                     <div className="flex-1 w-full">
                         <ProblemFilterBar
-                    search={search}
-                    setSearch={setSearch}
-                    category={category}
-                    setCategory={setCategory}
-                    difficulty={difficulty}
-                    setDifficulty={setDifficulty}
-                    viewMode={viewMode}
-                    setViewMode={setViewMode}
-                    categories={categories}
-                    difficulties={difficulties}
-                    user={user}
-                />
+                            search={search}
+                            setSearch={setSearch}
+                            category={category}
+                            setCategory={setCategory}
+                            difficulty={difficulty}
+                            setDifficulty={setDifficulty}
+                            statusFilter={statusFilter}
+                            setStatusFilter={setStatusFilter}
+                            showStatusFilter={!!user}
+                            viewMode={viewMode}
+                            setViewMode={setViewMode}
+                            categories={categories}
+                            difficulties={difficulties}
+                            topicFilter={topicFilter}
+                            setTopicFilter={setTopicFilter}
+                            topicOptions={topicOptions}
+                            companyCollection={companyCollection}
+                            setCompanyCollection={setCompanyCollection}
+                            user={user}
+                        />
                     </div>
                     <Link href="/custom">
                         <Button className="shrink-0 h-12 px-6 rounded-xl font-bold bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5">
@@ -172,17 +314,20 @@ export function DashboardClient({ user, recommendations, onboardingCompleted = f
                                             problem={problem}
                                             locked={isProblemLocked(problem.slug)}
                                             onLockedClick={setLockedProblem}
+                                            onTagClick={handleTagClick}
                                         />
                                     </div>
                                 ))}
                             </div>
                         ) : (
-                            <div className="rounded-3xl border border-white/10 bg-card/40 backdrop-blur-xl shadow-2xl shadow-black/5 overflow-hidden animate-slide-up">
+                            <div className="rounded-3xl border border-black/10 dark:border-white/10 bg-card/40 backdrop-blur-xl shadow-2xl shadow-black/5 dark:shadow-white/5 overflow-hidden animate-slide-up">
                                 <Table>
                                     <TableHeader>
-                                        <TableRow className="border-white/5 hover:bg-transparent">
-                                            <TableHead className="w-[45%] font-semibold pl-6 h-14">Problem</TableHead>
+                                        <TableRow className="border-black/5 dark:border-white/5 hover:bg-transparent">
+                                            <TableHead className="w-[35%] font-semibold pl-6 h-14">Problem</TableHead>
                                             <TableHead className="font-semibold h-14">Difficulty</TableHead>
+                                            {user && <TableHead className="font-semibold h-14">Status</TableHead>}
+                                            {user && <TableHead className="font-semibold h-14">Progress</TableHead>}
                                             <TableHead className="font-semibold h-14">Category</TableHead>
                                             <TableHead className="hidden md:table-cell font-semibold h-14">Tags</TableHead>
                                             <TableHead className="hidden md:table-cell font-semibold h-14">Companies</TableHead>
@@ -191,7 +336,7 @@ export function DashboardClient({ user, recommendations, onboardingCompleted = f
                                     </TableHeader>
                                     <TableBody>
                                         {filtered.map((problem) => (
-                                            <TableRow key={problem.id} className="group hover:bg-white/5 transition-colors border-white/5">
+                                            <TableRow key={problem.id} className="group hover:bg-black/5 dark:hover:bg-white/5 transition-colors border-black/5 dark:border-white/5">
                                                 <TableCell className="font-medium pl-6 py-4">
                                                     <div className="flex flex-col gap-1">
                                                         <span className="text-base font-bold group-hover:text-primary transition-colors">{problem.title}</span>
@@ -211,6 +356,37 @@ export function DashboardClient({ user, recommendations, onboardingCompleted = f
                                                         {problem.difficulty}
                                                     </Badge>
                                                 </TableCell>
+                                                {user && (
+                                                    <TableCell className="py-4">
+                                                        {(() => {
+                                                            const statusConfig = getStatusBadgeConfig(problem.status);
+                                                            if (!statusConfig) {
+                                                                return <span className="text-xs text-muted-foreground">—</span>;
+                                                            }
+                                                            const StatusIcon = statusConfig.icon;
+                                                            return (
+                                                                <Badge variant="outline" className={cn("font-semibold gap-1 shadow-none", statusConfig.className)}>
+                                                                    <StatusIcon className="h-3 w-3" />
+                                                                    {statusConfig.label}
+                                                                </Badge>
+                                                            );
+                                                        })()}
+                                                    </TableCell>
+                                                )}
+                                                {user && (
+                                                    <TableCell className="py-4">
+                                                        {problem.progress != null && problem.progress > 0 ? (
+                                                            <div className="flex items-center gap-2 w-24">
+                                                                <Progress value={problem.progress} className="h-1.5 flex-1 bg-secondary/80" />
+                                                                <span className="text-[10px] font-bold text-muted-foreground w-8">
+                                                                    {Math.round(problem.progress)}%
+                                                                </span>
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-xs text-muted-foreground">—</span>
+                                                        )}
+                                                    </TableCell>
+                                                )}
                                                 <TableCell className="py-4">
                                                     <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
                                                         <TrendingUp className="h-4 w-4 opacity-50" />
@@ -218,15 +394,12 @@ export function DashboardClient({ user, recommendations, onboardingCompleted = f
                                                     </div>
                                                 </TableCell>
                                                 <TableCell className="hidden md:table-cell py-4">
-                                                    {(problem.tags && problem.tags.length > 0) && (
-                                                        <div className="flex flex-wrap gap-1.5">
-                                                            {problem.tags.slice(0, 2).map(tag => (
-                                                                <span key={tag} className="text-[10px] font-semibold text-primary/80 bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
-                                                                    #{tag}
-                                                                </span>
-                                                            ))}
-                                                        </div>
-                                                    )}
+                                                    <ProblemTagList
+                                                        slug={problem.slug}
+                                                        legacyTags={problem.tags}
+                                                        limit={3}
+                                                        onTagClick={handleTagClick}
+                                                    />
                                                 </TableCell>
                                                 <TableCell className="hidden md:table-cell py-4">
                                                     {problem.companies.length > 0 && (
@@ -272,7 +445,7 @@ export function DashboardClient({ user, recommendations, onboardingCompleted = f
                             </div>
                         )
                     ) : (
-                        <div className="text-center py-24 bg-card/30 backdrop-blur-md rounded-3xl border border-dashed border-white/10 flex flex-col items-center justify-center">
+                        <div className="text-center py-24 bg-card/30 backdrop-blur-md rounded-3xl border border-dashed border-black/10 dark:border-white/10 flex flex-col items-center justify-center">
                             <div className="w-24 h-24 mb-6 rounded-full bg-primary/5 flex items-center justify-center animate-pulse">
                                 <Search className="h-10 w-10 text-primary/40" />
                             </div>
@@ -285,6 +458,9 @@ export function DashboardClient({ user, recommendations, onboardingCompleted = f
                                     setSearch('');
                                     setCategory('All');
                                     setDifficulty('All');
+                                    setStatusFilter('All');
+                                    setTopicFilter('All');
+                                    setCompanyCollection(null);
                                 }}
                                 variant="outline"
                                 size="lg"
@@ -300,12 +476,12 @@ export function DashboardClient({ user, recommendations, onboardingCompleted = f
                 {!user && (
                     <div className="mt-32 rounded-[3rem] relative overflow-hidden bg-gradient-to-br from-primary to-purple-700 px-6 py-24 text-center shadow-2xl shadow-primary/30">
                         <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-20 mix-blend-overlay" />
-                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-white/10 blur-[120px] rounded-full pointer-events-none" />
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-black/10 dark:bg-white/10 blur-[120px] rounded-full pointer-events-none" />
 
                         <div className="relative z-10 space-y-8 max-w-2xl mx-auto">
                             <h2 className="text-4xl md:text-6xl font-bold text-white tracking-tight">Ready to Design?</h2>
                             <p className="text-white/80 text-xl font-light leading-relaxed">
-                                Your journey to mastering distributed systems starts with a single component. Join thousands of engineers growing today.
+                                Your journey to mastering distributed systems starts with a single component. Try the free canvas or start with TinyURL today.
                             </p>
                             <div className="pt-6 flex justify-center gap-4">
                                 <Link href="/draw">
@@ -319,9 +495,21 @@ export function DashboardClient({ user, recommendations, onboardingCompleted = f
                 )}
             </div>
 
-            {/* Footer Placeholder */}
-            <footer className="py-12 border-t border-border/40 bg-muted/5 text-center text-sm text-muted-foreground">
-                <p>&copy; {new Date().getFullYear()} Ultimate SD. Built for Engineers.</p>
+            <footer className="py-12 border-t border-border/40 bg-muted/5">
+                <div className="container mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
+                    <p>&copy; {new Date().getFullYear()} Ultimate SD. Built for Engineers.</p>
+                    <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+                        <Link href="/pricing" className="hover:text-foreground transition-colors">
+                            Pricing
+                        </Link>
+                        <Link href="/terms" className="hover:text-foreground transition-colors">
+                            Terms
+                        </Link>
+                        <Link href="/privacy" className="hover:text-foreground transition-colors">
+                            Privacy
+                        </Link>
+                    </nav>
+                </div>
             </footer>
         </div>
     );

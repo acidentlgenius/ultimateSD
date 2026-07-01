@@ -1,7 +1,25 @@
-import { Search, Filter, LayoutGrid, List, ChevronDown } from 'lucide-react';
+import { Search, LayoutGrid, List, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
+import type { ProblemTag } from '@/lib/problem-tags';
+import { MOST_ASKED_COLLECTIONS } from '@/lib/company-collections';
+
+type StatusFilter =
+    | 'All'
+    | 'Not Started'
+    | 'Attempted'
+    | 'In Progress'
+    | 'Completed'
+    | 'Review Due';
+
+const STATUS_OPTIONS: StatusFilter[] = [
+    'All',
+    'Not Started',
+    'Attempted',
+    'In Progress',
+    'Completed',
+    'Review Due',
+];
 
 interface ProblemFilterBarProps {
     search: string;
@@ -10,11 +28,19 @@ interface ProblemFilterBarProps {
     setCategory: (value: string) => void;
     difficulty: string;
     setDifficulty: (value: string) => void;
+    statusFilter?: StatusFilter;
+    setStatusFilter?: (value: StatusFilter) => void;
+    showStatusFilter?: boolean;
     viewMode: 'grid' | 'list';
     setViewMode: (mode: 'grid' | 'list') => void;
     categories: string[];
     difficulties: string[];
-    user?: any;
+    topicFilter?: string;
+    setTopicFilter?: (value: string) => void;
+    topicOptions?: ProblemTag[];
+    companyCollection?: string | null;
+    setCompanyCollection?: (value: string | null) => void;
+    user?: unknown;
 }
 
 export function ProblemFilterBar({
@@ -24,14 +50,22 @@ export function ProblemFilterBar({
     setCategory,
     difficulty,
     setDifficulty,
+    statusFilter = 'All',
+    setStatusFilter,
+    showStatusFilter = false,
     viewMode,
     setViewMode,
     categories,
     difficulties,
+    topicFilter = 'All',
+    setTopicFilter,
+    topicOptions = [],
+    companyCollection = null,
+    setCompanyCollection,
     user
 }: ProblemFilterBarProps) {
     return (
-        <div className="sticky top-20 z-40 backdrop-blur-2xl bg-background/60 rounded-3xl border border-white/10 shadow-2xl shadow-primary/5 mb-12 max-w-5xl mx-auto transition-all duration-300 group">
+        <div className="sticky top-20 z-40 backdrop-blur-2xl bg-background/60 rounded-3xl border border-black/10 dark:border-white/10 shadow-2xl shadow-primary/5 mb-12 max-w-5xl mx-auto transition-all duration-300 group">
             <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-purple-500/5 rounded-3xl opacity-50 pointer-events-none" />
 
             <div className="relative p-2 flex flex-col md:flex-row gap-2">
@@ -47,7 +81,7 @@ export function ProblemFilterBar({
                         placeholder="Search problems..."
                         value={search}
                         onChange={e => setSearch(e.target.value)}
-                        className="w-full pl-12 pr-4 h-12 bg-white/5 border border-transparent focus:border-primary/30 rounded-2xl outline-none text-foreground placeholder:text-muted-foreground/60 transition-all duration-300 focus:bg-white/10 focus:shadow-glow-sm"
+                        className="w-full pl-12 pr-4 h-12 bg-black/5 dark:bg-white/5 border border-transparent focus:border-primary/30 rounded-2xl outline-none text-foreground placeholder:text-muted-foreground/60 transition-all duration-300 focus:bg-black/10 dark:bg-white/10 focus:shadow-glow-sm"
                         autoFocus={!!user}
                     />
                 </div>
@@ -61,7 +95,7 @@ export function ProblemFilterBar({
                             value={category}
                             onChange={e => setCategory(e.target.value)}
                             aria-label="Filter by Category"
-                            className="w-full h-12 pl-4 pr-10 bg-white/5 border border-white/5 hover:border-sidebar-border rounded-2xl outline-none cursor-pointer text-sm font-medium appearance-none transition-all hover:bg-white/10 focus:ring-2 focus:ring-primary/20 text-muted-foreground focus:text-foreground"
+                            className="w-full h-12 pl-4 pr-10 bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 hover:border-sidebar-border rounded-2xl outline-none cursor-pointer text-sm font-medium appearance-none transition-all hover:bg-black/10 dark:bg-white/10 focus:ring-2 focus:ring-primary/20 text-muted-foreground focus:text-foreground"
                         >
                             {categories.map(cat => <option key={cat} value={cat} className="bg-popover text-popover-foreground">{cat}</option>)}
                         </select>
@@ -74,7 +108,7 @@ export function ProblemFilterBar({
                             value={difficulty}
                             onChange={e => setDifficulty(e.target.value)}
                             aria-label="Filter by Difficulty"
-                            className="w-full h-12 pl-4 pr-10 bg-white/5 border border-white/5 hover:border-sidebar-border rounded-2xl outline-none cursor-pointer text-sm font-medium appearance-none transition-all hover:bg-white/10 focus:ring-2 focus:ring-primary/20 text-muted-foreground focus:text-foreground"
+                            className="w-full h-12 pl-4 pr-10 bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 hover:border-sidebar-border rounded-2xl outline-none cursor-pointer text-sm font-medium appearance-none transition-all hover:bg-black/10 dark:bg-white/10 focus:ring-2 focus:ring-primary/20 text-muted-foreground focus:text-foreground"
                         >
                             {difficulties.map(diff => <option key={diff} value={diff} className="bg-popover text-popover-foreground">{diff}</option>)}
                         </select>
@@ -86,8 +120,69 @@ export function ProblemFilterBar({
                         )} />
                     </div>
 
+                    {topicOptions.length > 0 && setTopicFilter && (
+                        <div className="relative min-w-[140px] md:w-auto md:min-w-[160px]">
+                            <select
+                                value={topicFilter}
+                                onChange={e => setTopicFilter(e.target.value)}
+                                aria-label="Filter by Topic"
+                                className="w-full h-12 pl-4 pr-10 bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 hover:border-sidebar-border rounded-2xl outline-none cursor-pointer text-sm font-medium appearance-none transition-all hover:bg-black/10 dark:bg-white/10 focus:ring-2 focus:ring-primary/20 text-muted-foreground focus:text-foreground"
+                            >
+                                <option value="All" className="bg-popover text-popover-foreground">All Topics</option>
+                                {topicOptions.map((tag) => (
+                                    <option key={tag.id} value={tag.id} className="bg-popover text-popover-foreground">
+                                        {tag.label}
+                                    </option>
+                                ))}
+                            </select>
+                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                        </div>
+                    )}
+
+                    {setCompanyCollection && (
+                        <div className="relative min-w-[140px] md:w-auto md:min-w-[160px]">
+                            <select
+                                value={companyCollection ?? 'All'}
+                                onChange={e =>
+                                    setCompanyCollection(e.target.value === 'All' ? null : e.target.value)
+                                }
+                                aria-label="Filter by Company"
+                                className={cn(
+                                    'w-full h-12 pl-4 pr-10 bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 hover:border-sidebar-border rounded-2xl outline-none cursor-pointer text-sm font-medium appearance-none transition-all hover:bg-black/10 dark:bg-white/10 focus:ring-2 focus:ring-primary/20 text-muted-foreground focus:text-foreground',
+                                    companyCollection && 'border-primary/30 text-foreground',
+                                )}
+                            >
+                                <option value="All" className="bg-popover text-popover-foreground">All Companies</option>
+                                {MOST_ASKED_COLLECTIONS.map((collection) => (
+                                    <option key={collection.id} value={collection.id} className="bg-popover text-popover-foreground">
+                                        {collection.company}
+                                    </option>
+                                ))}
+                            </select>
+                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                        </div>
+                    )}
+
+                    {showStatusFilter && setStatusFilter && (
+                        <div className="relative min-w-[140px] md:w-auto md:min-w-[160px]">
+                            <select
+                                value={statusFilter}
+                                onChange={e => setStatusFilter(e.target.value as StatusFilter)}
+                                aria-label="Filter by Status"
+                                className="w-full h-12 pl-4 pr-10 bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 hover:border-sidebar-border rounded-2xl outline-none cursor-pointer text-sm font-medium appearance-none transition-all hover:bg-black/10 dark:bg-white/10 focus:ring-2 focus:ring-primary/20 text-muted-foreground focus:text-foreground"
+                            >
+                                {STATUS_OPTIONS.map((status) => (
+                                    <option key={status} value={status} className="bg-popover text-popover-foreground">
+                                        {status}
+                                    </option>
+                                ))}
+                            </select>
+                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                        </div>
+                    )}
+
                     {/* View Toggle */}
-                    <div className="flex bg-white/5 p-1 rounded-2xl h-12 items-center gap-1 shrink-0 border border-white/5">
+                    <div className="flex bg-black/5 dark:bg-white/5 p-1 rounded-2xl h-12 items-center gap-1 shrink-0 border border-black/5 dark:border-white/5">
                         <Button
                             variant="ghost"
                             size="sm"
@@ -96,7 +191,7 @@ export function ProblemFilterBar({
                                 "h-full px-3 rounded-xl transition-all duration-300",
                                 viewMode === 'grid'
                                     ? "bg-background shadow-sm text-primary"
-                                    : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                                    : "text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-black dark:hover:bg-white/5"
                             )}
                         >
                             <LayoutGrid className="h-4 w-4" />
@@ -109,7 +204,7 @@ export function ProblemFilterBar({
                                 "h-full px-3 rounded-xl transition-all duration-300",
                                 viewMode === 'list'
                                     ? "bg-background shadow-sm text-primary"
-                                    : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                                    : "text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-black dark:hover:bg-white/5"
                             )}
                         >
                             <List className="h-4 w-4" />

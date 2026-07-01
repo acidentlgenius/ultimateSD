@@ -9,10 +9,11 @@ import { prisma } from '@/lib/prisma';
 import {
   canUseAI,
   getEffectivePlanType,
+  getInitialAiCreditsForPlan,
+  getNextAiCreditsResetDate,
   type UserAccess,
 } from '@/lib/access';
-import { AI_MONTHLY_CREDITS, type PlanType } from '@/lib/plans';
-import { getNextAiCreditsResetDate } from '@/lib/access';
+import { type PlanType } from '@/lib/plans';
 
 export type LLMSource = 'byok' | 'platform_credits' | 'server';
 
@@ -132,6 +133,46 @@ function createOllamaLLM(baseUrl: string, model: string, temperature = 0.7): Cha
   });
 }
 
+async function ensureCreditsReset(userId: string, user: UserAccess): Promise<number> {
+  const plan = getEffectivePlanType(user);
+  if (plan !== 'ai' && plan !== 'free') {
+    return user.aiCredits;
+  }
+
+  const monthlyCredits = getInitialAiCreditsForPlan(plan);
+
+  const dbUser = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { aiCreditsResetAt: true },
+  });
+
+  if (!dbUser?.aiCreditsResetAt) {
+    const now = new Date();
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        aiCredits: monthlyCredits,
+        aiCreditsResetAt: getNextAiCreditsResetDate(now),
+      },
+    });
+    return monthlyCredits;
+  }
+
+  if (new Date() >= dbUser.aiCreditsResetAt) {
+    const now = new Date();
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        aiCredits: monthlyCredits,
+        aiCreditsResetAt: getNextAiCreditsResetDate(now),
+      },
+    });
+    return monthlyCredits;
+  }
+
+  return user.aiCredits;
+}
+
 async function loadUserAccess(userId: string): Promise<UserAccess | null> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -188,6 +229,8 @@ export async function getUserLLM(
   if (!user) {
     throw new AIAccessError('User not found.');
   }
+
+  user.aiCredits = await ensureCreditsReset(userId, user);
 
   const access = canUseAI(user, options?.problemSlug);
   if (!access.allowed) {
@@ -268,7 +311,7 @@ export async function activateUserPlan(
       planType,
       planActivatedAt: now,
       planExpiresAt: new Date(now.getFullYear(), now.getMonth() + 1, now.getDate()),
-      aiCredits: planType === 'ai' ? AI_MONTHLY_CREDITS : 0,
+      aiCredits: getInitialAiCreditsForPlan(planType),
       aiCreditsResetAt: planType === 'ai' ? getNextAiCreditsResetDate(now) : null,
     },
   });

@@ -1,4 +1,4 @@
-## $(date +%Y-%m-%d) - [Silent Loop Failure via LocalStorage Parsing Error]
+## 2026-06-30 - [Silent Loop Failure via LocalStorage Parsing Error]
 
 **Learning:** When iterating over a collection (like `localStorage` keys) and parsing their contents, wrapping the *entire* loop in a `try/catch` block creates a severe vulnerability: a single corrupted item will throw an error, abort the entire loop, and silently hide all subsequent valid items. In `getAllSessions`, this meant one corrupt session key made the system report *zero* total sessions for a user, effectively wiping their history until the bad key was manually cleared.
 
@@ -33,3 +33,32 @@
 2. Ensure cloud write/sync `useEffect`s are strictly guarded by a flag (e.g., `sessionRestored`) that is *only* set to `true` after the asynchronous load attempt has fully resolved.
 3. Always debounce backend writes (e.g., using `setTimeout` within the `useEffect` cleanup pattern) when syncing local interactive state to prevent DDoS-ing the database.
 4. Always verify database schemas (like Prisma relations) to ensure the correct ID type (e.g., CUID vs Slug) is passed to foreign key queries.
+## 2025-02-21 - Dangling references in list storage pattern
+
+**Learning:** When storing individual items in `localStorage` alongside a master "list" key (e.g. `saved-designs-list` containing references), a corruption in the individual item could lead to state inconsistency. When the item fails to parse, clearing only the item key leaves a dangling reference in the master list, causing "ghost" UI entries.
+
+**Action:** Whenever implementing or debugging a manual `localStorage` list-and-item pattern, always verify that deleting or handling a corrupted item also correctly removes its reference from the master list index.
+
+## 2026-06-24 - [Floating Promise with Next.js Server Actions]
+
+**Learning:** Next.js Server Actions in this project (like `syncSessionState`) are designed to return error objects (e.g., `{ error: 'message' }`) rather than throwing exceptions. This means that appending `.catch(console.error)` to them in a `useEffect` will *never* catch the application-level errors, creating silent failures on the client side while appearing handled.
+
+**Action:** Always verify the actual return type of a Next.js Server Action. When calling async functions inside `useEffect` or timeouts, use an inner `async() => {}` wrapper to properly `await` the result, check for returned error objects (e.g., `result.error`), and wrap the entire call in a `try/catch` block to handle true network or execution failures.
+
+## 2026-06-25 - [Memory Leaks with requestAnimationFrame in React]
+
+**Learning:** When using `requestAnimationFrame` inside a React `useEffect` hook for custom animations, failing to capture the returned animation frame ID and clean it up via `cancelAnimationFrame` on component unmount causes severe memory leaks. The animation loop continues running in the background, attempting to update state on an unmounted component, which pollutes the JS heap and triggers React warnings.
+
+**Action:** Always capture the ID returned by `requestAnimationFrame` (and any associated `setTimeout` wrappers) in variables initialized to `0`. In the `useEffect` cleanup function, explicitly call `cancelAnimationFrame(id)` and `clearTimeout(id)` to ensure all scheduled updates are safely aborted.
+
+## 2026-06-28 - [Memory Leaks with setTimeout inside intervals in React]
+
+**Learning:** When using `setTimeout` inside an interval (like `setInterval`) within a React `useEffect` hook, the interval cleanup function `clearInterval` only stops future executions of the interval, but it does NOT cancel any `setTimeout` calls that have already been scheduled. This can lead to state updates on unmounted components and memory leaks if the component unmounts before the nested timeouts fire.
+
+**Action:** Always track all active `setTimeout` IDs in a persistent structure (like a `Set`) within the effect. In the `useEffect` cleanup function, iterate through the tracked timeout IDs and call `clearTimeout` on each one in addition to calling `clearInterval`. Remember to remove timeout IDs from the tracked set once they have successfully executed to avoid memory leaks from an ever-growing array or set over long sessions.
+
+## 2026-06-30 - [Memory Leaks with setTimeout inside intervals and useEffect dependency triggers in React]
+
+**Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
+
+**Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.

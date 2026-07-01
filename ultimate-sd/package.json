@@ -2,12 +2,21 @@
   "name": "ultimate-sd",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@11.9.0",
+  "engines": {
+    "node": ">=22.13.0",
+    "pnpm": ">=11.9.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "npx tsx scripts/check-env.ts && next build",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:report": "playwright show-report",
+    "seed:e2e": "npx tsx scripts/seed-e2e.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {
@@ -32,7 +41,6 @@
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-switch": "^1.2.6",
     "@radix-ui/react-tabs": "^1.1.13",
-    "@types/nodemailer": "^8.0.1",
     "@types/uuid": "^11.0.0",
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
@@ -48,19 +56,21 @@
     "next": "16.0.10",
     "next-auth": "^5.0.0-beta.30",
     "next-themes": "^0.4.6",
-    "nodemailer": "^9.0.1",
     "pg": "^8.16.3",
     "razorpay": "^2.9.6",
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "recharts": "^3.3.0",
+    "resend": "^6.16.0",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.3.1",
     "uuid": "^14.0.1",
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "^4",
+    "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
     "@types/dotenv": "^8.2.3",

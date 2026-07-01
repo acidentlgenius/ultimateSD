@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UserX, Database, CheckCircle, Search, Trash2, ShieldCheck, Server } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,16 @@ export default function PrivacyRequestManager() {
     const [stores, setStores] = useState<DataStore[]>(INITIAL_STORES);
     const [requestState, setRequestState] = useState<'idle' | 'scanning' | 'ready' | 'purging' | 'completed'>('idle');
     const [scanProgress, setScanProgress] = useState(0);
+    const timeoutIds = useRef(new Set<NodeJS.Timeout>());
+    const intervalId = useRef<NodeJS.Timeout | null>(null);
+
+    useEffect(() => {
+        return () => {
+            if (intervalId.current) clearInterval(intervalId.current);
+            timeoutIds.current.forEach(clearTimeout);
+            timeoutIds.current.clear();
+        };
+    }, []);
 
     const startScan = () => {
         setRequestState('scanning');
@@ -31,7 +41,7 @@ export default function PrivacyRequestManager() {
 
         // Simulate scan duration
         let progress = 0;
-        const interval = setInterval(() => {
+        intervalId.current = setInterval(() => {
             progress += 5;
             setScanProgress(progress);
 
@@ -40,7 +50,8 @@ export default function PrivacyRequestManager() {
             }
 
             if (progress >= 100) {
-                clearInterval(interval);
+                if (intervalId.current) clearInterval(intervalId.current);
+
                 setRequestState('ready');
                 setStores(prev => prev.map(s => ({ ...s, status: 'infected' })));
                 toast.info("PII Data Discovered", { description: "Found user data across 4 systems." });
@@ -53,24 +64,27 @@ export default function PrivacyRequestManager() {
 
         // Animate purge one by one
         stores.forEach((store, index) => {
-            setTimeout(() => {
+            const t1 = setTimeout(() => {
                 setStores(prev => prev.map(s =>
                     s.id === store.id ? { ...s, status: 'purging' } : s
                 ));
 
-                setTimeout(() => {
+                const t2 = setTimeout(() => {
                     setStores(prev => prev.map(s =>
                         s.id === store.id ? { ...s, status: 'clean', recordsFound: 0 } : s
                     ));
                 }, 800);
+                timeoutIds.current.add(t2);
 
             }, index * 1000);
+            timeoutIds.current.add(t1);
         });
 
-        setTimeout(() => {
+        const t3 = setTimeout(() => {
             setRequestState('completed');
             toast.success("Right to Be Forgotten Executed", { description: "User data permanently removed." });
         }, stores.length * 1000 + 500);
+        timeoutIds.current.add(t3);
     };
 
     const reset = () => {
@@ -128,7 +142,7 @@ export default function PrivacyRequestManager() {
                         layout
                         className={`
               relative p-4 rounded-lg border-2 flex flex-col items-center text-center transition-colors
-              ${store.status === 'clean' ? 'bg-white border-teal-200' : 'bg-white border-red-100'}
+              ${store.status === 'clean' ? 'bg-black dark:bg-white border-teal-200' : 'bg-black dark:bg-white border-red-100'}
               ${store.status === 'purging' ? 'scale-95 border-red-400 bg-red-50' : ''}
               ${store.status === 'scanning' ? 'animate-pulse border-teal-300' : ''}
             `}

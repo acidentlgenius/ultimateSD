@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { ArrowRight, Building2, TrendingUp, CheckCircle, Clock, RotateCcw, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ProblemTagList } from '@/components/ProblemTagBadge';
 
 interface ProblemCardProps {
   problem: ProblemWithStatus;
@@ -15,9 +16,10 @@ interface ProblemCardProps {
   index?: number;
   badge?: string;
   onLockedClick?: (problem: ProblemWithStatus) => void;
+  onTagClick?: (tagId: string) => void;
 }
 
-export default function ProblemCard({ problem, featured, locked, badge, onLockedClick }: ProblemCardProps) {
+export default function ProblemCard({ problem, featured, locked, badge, onLockedClick, onTagClick }: ProblemCardProps) {
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
       case 'Easy': return 'bg-green-500/10 text-green-600 border-green-200 dark:bg-green-500/20 dark:text-green-400 dark:border-green-500/30';
@@ -40,7 +42,7 @@ export default function ProblemCard({ problem, featured, locked, badge, onLocked
   const cardInner = (
     <Card className={cn(
       "h-full relative overflow-hidden flex flex-col transition-all duration-300",
-      "bg-card/80 backdrop-blur-md border border-white/10 dark:border-white/5",
+      "bg-card/80 backdrop-blur-md border border-black/10 dark:border-white/10",
       locked ? "opacity-80 cursor-pointer" : "group-hover:scale-[1.02] group-hover:-translate-y-1",
       featured ? "shadow-glow-sm border-primary/20" : "shadow-sm hover:shadow-glow-sm"
     )}>
@@ -86,22 +88,20 @@ export default function ProblemCard({ problem, featured, locked, badge, onLocked
             {problem.description}
           </p>
 
-          {(problem.tags && problem.tags.length > 0) && (
-            <div className="flex flex-wrap gap-1.5 mt-2">
-              {problem.tags.map(tag => (
-                <span key={tag} className="text-[10px] font-semibold text-primary/80 bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
-                  #{tag}
-                </span>
-              ))}
-            </div>
-          )}
+          <ProblemTagList
+            slug={problem.slug}
+            legacyTags={problem.tags}
+            limit={4}
+            className="mt-2"
+            onTagClick={onTagClick}
+          />
 
           {problem.companies.length > 0 && (
             <div className="flex items-center gap-2">
               <Building2 className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0" />
               <div className="flex flex-wrap gap-1.5 flex-1 min-w-0">
                 {Array.from(new Set(problem.companies)).slice(0, 3).map(c => (
-                  <span key={c} className="text-xs font-medium text-muted-foreground/80 bg-secondary/50 px-2 py-0.5 rounded-md border border-white/5">
+                  <span key={c} className="text-xs font-medium text-muted-foreground/80 bg-secondary/50 px-2 py-0.5 rounded-md border border-black/5 dark:border-white/5">
                     {c}
                   </span>
                 ))}
@@ -111,14 +111,21 @@ export default function ProblemCard({ problem, featured, locked, badge, onLocked
 
           <div className="mt-auto space-y-4">
             <div className="flex items-center justify-between min-h-[1.5rem]">
-              {status ? (
-                <div className={cn("flex items-center gap-1.5 text-xs font-semibold px-2 py-1 rounded-full", status.bg, status.color)}>
-                  {StatusIcon && <StatusIcon className="h-3 w-3" />}
-                  <span>{status.text}</span>
-                </div>
-              ) : (
-                <div className="h-6" />
-              )}
+              <div className="flex items-center gap-2 flex-wrap">
+                {status ? (
+                  <div className={cn("flex items-center gap-1.5 text-xs font-semibold px-2 py-1 rounded-full", status.bg, status.color)}>
+                    {StatusIcon && <StatusIcon className="h-3 w-3" />}
+                    <span>{status.text}</span>
+                  </div>
+                ) : (
+                  <div className="h-6" />
+                )}
+                {(problem.totalAttempts ?? 0) > 0 && problem.status !== 'COMPLETED' && (
+                  <Badge variant="outline" className="text-[10px] font-semibold px-2 py-0.5 rounded-full shadow-none">
+                    {problem.totalAttempts} attempt{problem.totalAttempts !== 1 ? 's' : ''}
+                  </Badge>
+                )}
+              </div>
 
               {(problem.progress && problem.progress > 0 && problem.status !== 'COMPLETED') && (
                 <div className="flex items-center gap-2 w-24">
@@ -154,17 +161,24 @@ export default function ProblemCard({ problem, featured, locked, badge, onLocked
 
   if (locked) {
     return (
-      <button
-        type="button"
+      <div
+        role="button"
+        tabIndex={0}
         aria-label={`Unlock ${problem.title}`}
-        className="block group h-full relative w-full text-left"
+        className="block group h-full relative w-full text-left cursor-pointer"
         onClick={() => onLockedClick?.(problem)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onLockedClick?.(problem);
+          }
+        }}
       >
         <div className={cn(
           "absolute -inset-0.5 rounded-2xl bg-gradient-to-r from-amber-500/20 to-orange-500/20 opacity-40 blur transition-all duration-500"
         )} />
         {cardInner}
-      </button>
+      </div>
     );
   }
 
