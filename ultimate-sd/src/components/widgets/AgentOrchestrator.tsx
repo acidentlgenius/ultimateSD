@@ -135,8 +135,6 @@ const AgentOrchestrator: React.FC = () => {
                                 onClick={() => setIsPlaying(!isPlaying)}
                                 className="border-slate-700 hover:bg-slate-800"
                                 disabled={currentStepIndex >= SCENARIO.steps.length - 1}
-                                aria-label={isPlaying ? "Pause execution" : "Play execution"}
-                                title={isPlaying ? "Pause execution" : "Play execution"}
                             >
                                 {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                             </Button>
@@ -147,8 +145,6 @@ const AgentOrchestrator: React.FC = () => {
                                 title="Reset scenario"
                                 onClick={reset}
                                 className="border-slate-700 hover:bg-slate-800"
-                                aria-label="Reset execution"
-                                title="Reset execution"
                             >
                                 <RefreshCw className="w-4 h-4" />
                             </Button>
