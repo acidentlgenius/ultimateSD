@@ -120,7 +120,7 @@ export async function awardStepXp(problemId: string, stepId: string) {
       return { success: true, xpAwarded: 0, message: 'Step already completed' };
     }
 
-    const user = await prisma.user.findUnique({ where: { email: userEmail } });
+    const user = await prisma.user.findFirst({ where: { email: { equals: userEmail, mode: 'insensitive' } } });
     if (!user) throw new Error('User not found');
 
     const currentXp = user.xp || 0;
