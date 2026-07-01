@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -42,6 +42,17 @@ const JobSchedulerViz: React.FC = () => {
     const [workers, setWorkers] = useState<Worker[]>(INITIAL_WORKERS);
     const [logs, setLogs] = useState<string[]>([]);
     const [isRunning, setIsRunning] = useState(false);
+    const timeoutIds = useRef(new Set<NodeJS.Timeout>());
+
+
+
+    // Clean up timeouts on unmount
+    useEffect(() => {
+        return () => {
+            timeoutIds.current.forEach(clearTimeout);
+            timeoutIds.current.clear();
+        };
+    }, []);
 
     // Helper to add log
     const addLog = useCallback((message: string) => {
@@ -75,8 +86,7 @@ const JobSchedulerViz: React.FC = () => {
     useEffect(() => {
         if (!isRunning) return;
 
-        const timeoutIds = new Set<NodeJS.Timeout>();
-        const interval = setInterval(() => {
+                const interval = setInterval(() => {
             // Find idle workers
             const idleWorkers = workers.filter(w => !w.busy);
             if (idleWorkers.length === 0) return;
@@ -121,19 +131,15 @@ const JobSchedulerViz: React.FC = () => {
                     const task = tasks.find(t => t.id === taskId);
                     const timeoutId = setTimeout(() => {
                         completeTask(taskId, workerId);
-                        timeoutIds.delete(timeoutId);
+                        timeoutIds.current.delete(timeoutId);
                     }, task?.duration || 1000);
-                    timeoutIds.add(timeoutId);
+                    timeoutIds.current.add(timeoutId);
                 });
             }
 
         }, 1000);
 
-        return () => {
-            clearInterval(interval);
-            timeoutIds.forEach(clearTimeout);
-            timeoutIds.clear();
-        };
+        return () => clearInterval(interval);
     }, [isRunning, workers, tasks, addLog]);
 
     const completeTask = useCallback((taskId: string, workerId: number) => {
