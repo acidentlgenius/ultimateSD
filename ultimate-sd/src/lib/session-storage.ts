@@ -1,3 +1,4 @@
+import { safeLocalStorageGet } from './local-storage';
 /**
  * Local Storage Session Persistence
  * 
@@ -123,13 +124,10 @@ export function loadSessionState(
 
   try {
     const key = getStorageKey(problemSlug);
-    const stored = localStorage.getItem(key);
-    
-    if (!stored) {
+    const parsed = safeLocalStorageGet<SessionState | null>(key, null);
+    if (!parsed) {
       return null;
     }
-
-    const parsed: SessionState = JSON.parse(stored);
     
     // Validate the structure
     if (!parsed.currentPhase || typeof parsed.currentStepIndex !== 'number') {
@@ -219,25 +217,18 @@ export function getAllSessions(): Array<{
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (key && key.startsWith(STORAGE_PREFIX)) {
-        const stored = localStorage.getItem(key);
-        if (stored) {
-          try {
-            const parsed: SessionState = JSON.parse(stored);
-            const problemSlug = key.replace(`${STORAGE_PREFIX}${STORAGE_VERSION}-`, '');
+        const parsed = safeLocalStorageGet<SessionState | null>(key, null);
+        if (parsed) {
+          const problemSlug = key.replace(`${STORAGE_PREFIX}${STORAGE_VERSION}-`, '');
 
-            sessions.push({
-              problemSlug,
-              lastUpdated: new Date(parsed.lastUpdated),
-              stepCount: Object.keys(parsed.savedStepData).length,
-            });
-          } catch (parseError) {
-            // SQUASH: Root Cause: Wrapping the whole loop in a try/catch meant a single corrupted item (e.g. invalid JSON) caused getAllSessions to fail completely, missing valid items.
-            // SQUASH: Fix: Wrap parsing in its own try/catch per item. If one item is corrupted, log, remove it, and continue parsing the rest.
-            console.error(`Failed to parse session data for key ${key}. Removing corrupted data.`, parseError);
-            localStorage.removeItem(key);
-            // Also adjust iterator since we just removed an item, preventing skipping the next item.
-            i--;
-          }
+          sessions.push({
+            problemSlug,
+            lastUpdated: new Date(parsed.lastUpdated),
+            stepCount: Object.keys(parsed.savedStepData).length,
+          });
+        } else if (localStorage.getItem(key) === null) {
+          // safeLocalStorageGet removed the corrupted item. Adjust the loop iterator.
+          i--;
         }
       }
     }

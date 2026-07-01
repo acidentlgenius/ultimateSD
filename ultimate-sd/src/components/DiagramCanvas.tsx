@@ -16,6 +16,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { safeLocalStorageGet } from '../lib/local-storage';
 import {
   Download,
   Share,
@@ -1465,13 +1466,7 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
   // Save design to localStorage
 
   const getSafeSavedDesignsList = () => {
-    try {
-      return JSON.parse(localStorage.getItem('saved-designs-list') || '[]');
-    } catch (e) {
-      console.error('Corrupted saved-designs-list found in localStorage, clearing it.');
-      localStorage.removeItem('saved-designs-list');
-      return [];
-    }
+    return safeLocalStorageGet<{ name: string; timestamp: string }[]>('saved-designs-list', []);
   };
 
   const saveDesignToLocalStorage = () => {
@@ -1548,7 +1543,8 @@ function SystemDesignCanvas({ stepKey }: { stepKey?: string }) {
     }
 
     try {
-      const diagramData = JSON.parse(savedData);
+      const diagramData = safeLocalStorageGet<any>(storageKey, null);
+      if (!diagramData) throw new Error("Failed to parse diagram data");
       setElements(diagramData.elements);
       saveHistory(diagramData.elements);
       setSelectedElements(new Set());
@@ -2334,15 +2330,12 @@ export default function DiagramCanvas({ stepKey }: { stepKey: string }) {
       const storageKey = `diagram-${stepKey}`;
       const savedData = localStorage.getItem(storageKey);
       if (savedData) {
-        try {
-          const diagramData = JSON.parse(savedData);
+        const diagramData = safeLocalStorageGet<any>(storageKey, null);
+        if (diagramData) {
           // Load the diagram data into the canvas
           if ((window as any).sd_loadDiagramElements) {
             (window as any).sd_loadDiagramElements(diagramData.elements || []);
           }
-        } catch (error) {
-          console.error(`Error parsing diagram data from localStorage key "${storageKey}". Removing corrupted data.`, error);
-          localStorage.removeItem(storageKey);
         }
       } else {
         // Clear canvas for new step

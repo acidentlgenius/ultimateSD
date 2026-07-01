@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Download, Layers, Workflow, X } from 'lucide-react';
+import { safeLocalStorageGet } from '@/lib/local-storage';
 import DiagramCanvas from '@/components/DiagramCanvas';
 import { exportPNG } from '@/lib/exportUtils';
 
@@ -64,12 +65,9 @@ export default function DrawPage() {
           const storageKey = `diagram-free-draw-${diagramType?.toLowerCase()}`;
           const savedData = localStorage.getItem(storageKey);
           if (savedData && (window as any).sd_loadDiagramElements) {
-            try {
-              const diagramData = JSON.parse(savedData);
+            const diagramData = safeLocalStorageGet<any>(storageKey, null);
+            if (diagramData) {
               (window as any).sd_loadDiagramElements(diagramData.elements || []);
-            } catch (error) {
-              console.error(`Error parsing diagram data from localStorage key "${storageKey}". Removing corrupted data.`, error);
-              localStorage.removeItem(storageKey);
             }
           }
         }, 100);
@@ -103,12 +101,9 @@ export default function DrawPage() {
           const storageKey = `diagram-free-draw-${diagramType?.toLowerCase()}`;
           const savedData = localStorage.getItem(storageKey);
           if (savedData && (window as any).sd_loadDiagramElements) {
-            try {
-              const diagramData = JSON.parse(savedData);
+            const diagramData = safeLocalStorageGet<any>(storageKey, null);
+            if (diagramData) {
               (window as any).sd_loadDiagramElements(diagramData.elements || []);
-            } catch (error) {
-              console.error(`Error parsing diagram data from localStorage key "${storageKey}". Removing corrupted data.`, error);
-              localStorage.removeItem(storageKey);
             }
           }
         }, 100);
