@@ -22,8 +22,8 @@ export async function updateProgress(xpAmount: number) {
     }
 
     try {
-        const userRaw = await prisma.user.findUnique({
-            where: { email },
+        const userRaw = await prisma.user.findFirst({
+            where: { email: { equals: email, mode: 'insensitive' } },
         });
 
         if (!userRaw) {
@@ -68,8 +68,8 @@ export async function updateStreak() {
     }
 
     try {
-        const userRaw = await prisma.user.findUnique({
-            where: { email },
+        const userRaw = await prisma.user.findFirst({
+            where: { email: { equals: email, mode: 'insensitive' } },
         });
 
         if (!userRaw) {
