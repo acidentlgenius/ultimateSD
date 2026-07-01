@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +22,7 @@ export default function CrawlerFrontier() {
     });
     const [crawledCount, setCrawledCount] = useState(0);
     const [activeUrl, setActiveUrl] = useState<string | null>(null);
+    const timeoutIds = useRef(new Set<NodeJS.Timeout>());
 
     const addSeed = () => {
         const domains = ['wikipedia.org', 'cnn.com', 'reddit.com', 'mit.edu'];
@@ -38,6 +39,14 @@ export default function CrawlerFrontier() {
             return { ...prev, [key]: [...prev[key], newItem] };
         });
     };
+
+    // Clean up timeouts on unmount
+    useEffect(() => {
+        return () => {
+            timeoutIds.current.forEach(clearTimeout);
+            timeoutIds.current.clear();
+        };
+    }, []);
 
     // Simulate Crawler Loop
     useEffect(() => {
@@ -65,7 +74,7 @@ export default function CrawlerFrontier() {
                 setActiveUrl(nextItem.url);
 
                 // Finish Crawl after delay
-                setTimeout(() => {
+                const timeoutId1 = setTimeout(() => {
                     setCrawledCount(c => c + 1);
                     setActiveUrl(null);
 
@@ -80,19 +89,24 @@ export default function CrawlerFrontier() {
                         // Enforce politeness (push to Wait queue briefly)
                         setQueues(prev => ({ ...prev, 'Politeness Wait': [...prev['Politeness Wait'], newItem] }));
 
-                        setTimeout(() => {
+                        const timeoutId2 = setTimeout(() => {
                             setQueues(prev => ({
                                 ...prev,
                                 'Politeness Wait': prev['Politeness Wait'].filter(i => i.id !== newItem.id),
                                 'Standard': [...prev['Standard'], newItem]
                             }));
+                            timeoutIds.current.delete(timeoutId2);
                         }, 2000);
+                        timeoutIds.current.add(timeoutId2);
                     }
 
+                    timeoutIds.current.delete(timeoutId1);
                 }, 1500);
+                timeoutIds.current.add(timeoutId1);
             }
 
         }, 1000);
+
         return () => clearInterval(interval);
     }, [queues['High Priority'].length, queues['Standard'].length, activeUrl]);
 

@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable react-hooks/refs */
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
@@ -51,6 +52,7 @@ import {
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import WidgetLoader from './widgets/WidgetLoader';
+import CompletionUI from './CompletionUI';
 
 import SubmissionHistory from './SubmissionHistory';
 import { History } from 'lucide-react';
@@ -58,11 +60,23 @@ import { DEFAULT_PHASE_STEPS } from '@/lib/steps';
 import {
   buildStepKey,
   clampStepIndex,
+  getDiagramStepKeysForProblem,
   isDiagramSubStep,
   isFirstJourneyStep,
   resolveEffectivePhase,
   resolvePhaseSteps,
 } from '@/lib/step-journey';
+import { useDiagramCanvasRef } from '@/components/diagram/DiagramCanvasContext';
+import {
+  blobToDataUrl,
+  exportSceneToPng,
+  loadDiagram,
+  resolveBestDiagramSnapshot,
+  trimSceneForDbSnapshot,
+} from '@/lib/diagram-persistence';
+import { buildDiagramDescription } from '@/lib/diagram-description';
+import { shouldUseLocalSessionDraft } from '@/lib/session-persistence-policy';
+import type { StepDiagramData } from '@/types/diagram';
 
 // Dynamic imports for widgets to improve initial load performance
 const WIDGETS: Record<string, React.ComponentType> = {
@@ -130,11 +144,7 @@ interface SavedStepData {
   schemaData: any[];
   feedback: FeedbackResult | null;
   completed: boolean;
-  diagramData?: {
-    imageData?: string;
-    elements?: any[];
-    description?: string;
-  } | null;
+  diagramData?: StepDiagramData | null;
 }
 
 interface Props {
@@ -252,6 +262,7 @@ export default function StepByStepChat({ problem }: Props) {
   // Store all step data
   const [savedStepData, setSavedStepData] = useState<Map<string, SavedStepData>>(new Map());
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [isSessionCompleted, setIsSessionCompleted] = useState(false);
 
   // Session restoration state
   const [sessionRestored, setSessionRestored] = useState(false);
@@ -259,20 +270,50 @@ export default function StepByStepChat({ problem }: Props) {
   const [dismissedRestoreBanner, setDismissedRestoreBanner] = useState(false);
   const [showStartOverConfirm, setShowStartOverConfirm] = useState(false);
 
-  // Diagram tracking - now per step
-  const [diagramData, setDiagramData] = useState<{
-    imageData?: string;
-    elements?: any[];
-    description?: string;
-  } | null>(null);
+  // Diagram tracking removed — read live from canvas ref + savedStepData
+
+  const diagramRef = useDiagramCanvasRef();
 
   const PHASE_STEPS = resolvePhaseSteps(problem.steps, DEFAULT_PHASE_STEPS);
+  const diagramStepKeys = useMemo(
+    () => getDiagramStepKeysForProblem(PHASE_STEPS),
+    [PHASE_STEPS]
+  );
   const phases = Object.keys(PHASE_STEPS);
   const effectivePhase = resolveEffectivePhase(currentPhase, phases);
   const currentSteps = PHASE_STEPS[effectivePhase] ?? [];
   const safeStepIndex = clampStepIndex(currentStepIndex, currentSteps.length);
   const currentStep = currentSteps[safeStepIndex];
   const currentStepKey = buildStepKey(effectivePhase, safeStepIndex);
+
+  const currentSubStep = currentStep?.subStep;
+
+  const getDiagramDataForStep = useCallback(
+    (stepKey: string): StepDiagramData | null => {
+      if (stepKey === currentStepKey && currentSubStep && isDiagramSubStep(currentSubStep)) {
+        const live = diagramRef.current?.getScene();
+        if (live && live.elements.some((el) => !el.isDeleted)) {
+          return {
+            scene: live,
+            description:
+              diagramRef.current?.getDescription() ?? buildDiagramDescription(live.elements),
+          };
+        }
+      }
+      const fromSaved = savedStepData.get(stepKey)?.diagramData;
+      if (fromSaved?.scene) return fromSaved;
+      const stored = loadDiagram(stepKey);
+      if (stored) {
+        return {
+          scene: stored.scene,
+          description: buildDiagramDescription(stored.scene.elements),
+          timestamp: stored.timestamp,
+        };
+      }
+      return fromSaved ?? null;
+    },
+    [currentStepKey, currentSubStep, diagramRef, savedStepData]
+  );
 
   useEffect(() => {
     const phaseKeys = Object.keys(resolvePhaseSteps(problem.steps, DEFAULT_PHASE_STEPS));
@@ -353,6 +394,12 @@ export default function StepByStepChat({ problem }: Props) {
             if (isMounted) {
               sessionLoadedForRef.current = loadKey;
             }
+
+            // Check if all steps are completed
+            const allStepsCount = Object.values(PHASE_STEPS).reduce((sum, steps) => sum + (steps?.length ?? 0), 0);
+            if (dbCompleted.size >= allStepsCount && allStepsCount > 0) {
+              setIsSessionCompleted(true);
+            }
             return;
           }
 
@@ -393,9 +440,10 @@ export default function StepByStepChat({ problem }: Props) {
     };
   }, [problem.id, problem.slug, problem.steps, session?.user?.id, sessionStatus]);
 
-  // Save session to localStorage as draft buffer
+  // Save session to localStorage as draft buffer (guests only; signed-in users use DB)
   useEffect(() => {
     if (!sessionRestored) return;
+    if (!shouldUseLocalSessionDraft(Boolean(session?.user))) return;
 
     const stateToSave = {
       currentPhase,
@@ -404,8 +452,20 @@ export default function StepByStepChat({ problem }: Props) {
       completedSteps,
     };
 
-    saveSessionState(problem.slug, stateToSave);
-  }, [problem.slug, currentPhase, currentStepIndex, savedStepData, completedSteps, sessionRestored]);
+    const timer = window.setTimeout(() => {
+      saveSessionState(problem.slug, stateToSave);
+    }, 500);
+
+    return () => window.clearTimeout(timer);
+  }, [
+    problem.slug,
+    currentPhase,
+    currentStepIndex,
+    savedStepData,
+    completedSteps,
+    sessionRestored,
+    session?.user,
+  ]);
 
   // Listen for navigation events from Sidebar
   useEffect(() => {
@@ -494,51 +554,15 @@ export default function StepByStepChat({ problem }: Props) {
     setFeedback(null);
     setShowFeedback(false);
     setCompletedSteps(new Set());
+    setIsSessionCompleted(false);
     setSavedStepData(new Map());
     setSessionRestored(true);
     setRestoredDate(null);
-    setDiagramData(null);
 
     sessionLoadedForRef.current = null;
 
     toast.success('Session cleared! Starting fresh.');
   }, [problem.id, problem.slug, session?.user]);
-
-  // Listen for diagram sharing events
-  useEffect(() => {
-    const handleDiagramShared = (e: any) => {
-      if (e?.detail) {
-        const newDiagramData = {
-          imageData: e.detail.imageData,
-          elements: e.detail.elements,
-          description: e.detail.description
-        };
-        setDiagramData(newDiagramData);
-
-        // Save diagram data to current step
-        const newSavedData = new Map(savedStepData);
-        const currentSaved = newSavedData.get(currentStepKey) || {
-          listItems: [],
-          textInput: '',
-          schemaData: [],
-          feedback: null,
-          completed: false
-        };
-        newSavedData.set(currentStepKey, {
-          ...currentSaved,
-          diagramData: newDiagramData
-        });
-        setSavedStepData(newSavedData);
-
-        console.log('Diagram captured for step:', currentStepKey, e.detail.description);
-      }
-    };
-
-    window.addEventListener('sd-diagram-shared', handleDiagramShared as EventListener);
-    return () => {
-      window.removeEventListener('sd-diagram-shared', handleDiagramShared as EventListener);
-    };
-  }, [currentStepKey, savedStepData]);
 
   // Load saved form data when navigating between steps. Feedback modal opens only
   // from handleSubmit — never re-open from saved state (that caused modal flicker/loops).
@@ -549,17 +573,14 @@ export default function StepByStepChat({ problem }: Props) {
       setTextInput(saved.textInput);
       setSchemaData(saved.schemaData || []);
       setFeedback(saved.feedback);
-      setDiagramData(saved.diagramData || null);
     } else {
       setListItems([]);
       setTextInput('');
       setSchemaData([]);
       setFeedback(null);
-      setDiagramData(null);
     }
     setShowFeedback(false);
     setNewItemInput('');
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only reset form on step navigation
   }, [currentStepKey]);
 
   // Dispatch phase change events
@@ -618,35 +639,18 @@ export default function StepByStepChat({ problem }: Props) {
         problemDetails: problem
       };
 
-      // Add diagram data if available and relevant
-      // Add diagram data if available and relevant
-      // Try to get live data from global helpers first
-      const getElements = (window as any).sd_getDiagramElements;
-      const getDescription = (window as any).sd_getDiagramDescription;
-      let usedDiagramData = diagramData;
+      let usedDiagramData: StepDiagramData | null = null;
 
-      if (getElements && getDescription) {
-        const elements = getElements();
-        const description = getDescription();
-        if (elements && elements.length > 0) {
-          usedDiagramData = {
-            elements,
-            description,
-            // imageData not needed for evaluation
-          };
+      if (shouldIncludeDiagram) {
+        const stepDiagram = getDiagramDataForStep(currentStepKey);
+        if (stepDiagram?.scene) {
+          usedDiagramData = stepDiagram;
+          const description =
+            stepDiagram.description ?? buildDiagramDescription(stepDiagram.scene.elements);
+          requestBody.userAnswer = `${userAnswer}\n\n[Diagram included: ${description}]`;
+        } else {
+          requestBody.userAnswer = `${userAnswer}\n\n[Note: No diagram was created for this architecture description]`;
         }
-      }
-
-      if (shouldIncludeDiagram && usedDiagramData) {
-        requestBody.diagramData = {
-          description: usedDiagramData.description,
-          elementCount: usedDiagramData.elements?.length || 0,
-          components: usedDiagramData.elements?.map((el: any) => el.type).filter((t: string) => t !== 'arrow' && t !== 'line')
-        };
-        requestBody.userAnswer = `${userAnswer}\n\n[Diagram included with ${usedDiagramData.elements?.length || 0} components: ${usedDiagramData.description}]`;
-      } else if (shouldIncludeDiagram && !usedDiagramData) {
-        // Warn if diagram is expected but not provided
-        requestBody.userAnswer = `${userAnswer}\n\n[Note: No diagram was created for this architecture description]`;
       }
 
       const res = await fetchWithRetry('/api/ai/evaluate', {
@@ -668,79 +672,103 @@ export default function StepByStepChat({ problem }: Props) {
         schemaData: [...schemaData],
         feedback: data.feedback,
         completed: data.feedback.isAcceptable,
-        diagramData: diagramData
+        diagramData: usedDiagramData ?? savedStepData.get(currentStepKey)?.diagramData ?? null,
       });
       setSavedStepData(newSavedData);
 
       const wasAlreadyCompleted = completedSteps.has(currentStepKey);
 
-      if (data.feedback.isAcceptable && !wasAlreadyCompleted) {
-        try {
-          const result = await awardStepXp(problem.id, currentStepKey);
-          if (result.success) {
-            const xpAwarded = result.xpAwarded || 0;
+      (async () => {
+        if (data.feedback.isAcceptable && !wasAlreadyCompleted) {
+          try {
+            const result = await awardStepXp(problem.id, currentStepKey);
+            if (result.success) {
+              const xpAwarded = result.xpAwarded || 0;
 
-            if (xpAwarded > 0) {
-              toast.success(`Step Complete! +${xpAwarded} XP`, {
-                icon: '⚡',
-                className: 'bg-blue-500/10 border-blue-500/20 text-blue-600'
-              });
-
-              if (result.levelUp) {
-                toast.success(`Level Up! You are now Level ${result.newLevel}!`, {
-                  icon: '🎓',
-                  className: 'bg-purple-500/10 border-purple-500/20 text-purple-600 font-bold'
+              if (xpAwarded > 0) {
+                toast.success(`Step Complete! +${xpAwarded} XP`, {
+                  icon: '⚡',
+                  className: 'bg-blue-500/10 border-blue-500/20 text-blue-600'
                 });
+
+                if (result.levelUp) {
+                  toast.success(`Level Up! You are now Level ${result.newLevel}!`, {
+                    icon: '🎓',
+                    className: 'bg-purple-500/10 border-purple-500/20 text-purple-600 font-bold'
+                  });
+                }
               }
             }
+          } catch (error) {
+            console.error('Failed to award XP:', error);
           }
-        } catch (error) {
-          console.error('Failed to award XP:', error);
-        }
-      } else if (data.feedback.isAcceptable && wasAlreadyCompleted) {
-        toast.info('Step Updated (Already Completed)', {
-          icon: '✓',
-          className: 'bg-muted border-border text-muted-foreground'
-        });
-      }
-
-      if (activeSessionId && userAnswer.trim()) {
-        try {
-          await recordStepSubmission({
-            sessionId: activeSessionId,
-            problemId: problem.id,
-            stepId: currentStepKey,
-            phase: effectivePhase,
-            content: userAnswer,
-            feedback: JSON.stringify(data.feedback),
-            score: Math.round(data.feedback.score),
-            isPassing: data.feedback.isAcceptable,
-            problemSlug: problem.slug,
+        } else if (data.feedback.isAcceptable && wasAlreadyCompleted) {
+          toast.info('Step Updated (Already Completed)', {
+            icon: '✓',
+            className: 'bg-muted border-border text-muted-foreground'
           });
-        } catch (error) {
-          console.error('Failed to record step submission:', error);
         }
-      }
+
+        if (activeSessionId && userAnswer.trim()) {
+          try {
+            await recordStepSubmission({
+              sessionId: activeSessionId,
+              problemId: problem.id,
+              stepId: currentStepKey,
+              phase: effectivePhase,
+              content: userAnswer,
+              feedback: JSON.stringify(data.feedback),
+              score: Math.round(data.feedback.score),
+              isPassing: data.feedback.isAcceptable,
+              problemSlug: problem.slug,
+            });
+          } catch (error) {
+            console.error('Failed to record step submission:', error);
+          }
+        }
+
+        if (data.feedback.isAcceptable) {
+          let totalStepsCount = 0;
+          Object.values(PHASE_STEPS).forEach(steps => totalStepsCount += steps.length);
+
+          const newCompletedSize = wasAlreadyCompleted
+            ? completedSteps.size
+            : completedSteps.size + 1;
+
+          if (newCompletedSize >= totalStepsCount && activeSessionId) {
+            try {
+              let snapshot = resolveBestDiagramSnapshot(diagramStepKeys, newSavedData);
+              if (snapshot?.scene && !snapshot.imageData) {
+                const png = await exportSceneToPng(snapshot.scene);
+                if (png) {
+                  snapshot.imageData = await blobToDataUrl(png);
+                }
+              }
+              if (snapshot?.scene) {
+                snapshot = {
+                  ...snapshot,
+                  scene: trimSceneForDbSnapshot(snapshot.scene),
+                  description:
+                    snapshot.description ??
+                    buildDiagramDescription(snapshot.scene.elements) ??
+                    undefined,
+                };
+              }
+              await completeSession(
+                activeSessionId,
+                Math.round(data.feedback.score),
+                snapshot ?? undefined
+              );
+              toast.success('🎉 Problem Completed! You have finished all steps!');
+            } catch (error) {
+              console.error('Failed to complete session:', error);
+            }
+          }
+        }
+      })().catch(err => console.error('Background updates failed:', err));
 
       if (data.feedback.isAcceptable) {
-        const newCompleted = new Set(completedSteps).add(currentStepKey);
-        setCompletedSteps(newCompleted);
-
-        let totalStepsCount = 0;
-        Object.values(PHASE_STEPS).forEach(steps => totalStepsCount += steps.length);
-
-        if (newCompleted.size >= totalStepsCount && activeSessionId) {
-          try {
-            await completeSession(
-              activeSessionId,
-              Math.round(data.feedback.score),
-              diagramData ?? undefined
-            );
-            toast.success('🎉 Problem Completed! You have finished all steps!');
-          } catch (error) {
-            console.error('Failed to complete session:', error);
-          }
-        }
+        setCompletedSteps(new Set(completedSteps).add(currentStepKey));
       }
     } catch (error) {
       console.error('Error evaluating answer:', error);
@@ -768,6 +796,7 @@ export default function StepByStepChat({ problem }: Props) {
         setCurrentPhase(phases[currentPhaseIndex + 1]);
         setCurrentStepIndex(0);
       } else {
+        setIsSessionCompleted(true);
         toast.success('🎉 Congratulations! You have completed all sections!');
       }
     }
@@ -795,7 +824,7 @@ export default function StepByStepChat({ problem }: Props) {
       schemaData: [],
       feedback: null,
       completed: false,
-      diagramData: diagramData
+      diagramData: getDiagramDataForStep(currentStepKey),
     });
     setSavedStepData(newSavedData);
     handleNext();
@@ -844,7 +873,18 @@ export default function StepByStepChat({ problem }: Props) {
     );
   }
 
-  return (
+
+  if (isSessionCompleted) {
+    return (
+      <CompletionUI
+        problem={problem}
+        onReview={() => setIsSessionCompleted(false)}
+        onReset={() => setShowStartOverConfirm(true)}
+      />
+    );
+  }
+
+return (
     <div className="w-full flex flex-col gap-6">
       {showRestoreBanner && (
         <div
@@ -867,6 +907,7 @@ export default function StepByStepChat({ problem }: Props) {
             className="h-7 w-7 shrink-0 text-green-700 hover:text-green-900 hover:bg-green-500/20 dark:text-green-300"
             onClick={() => setDismissedRestoreBanner(true)}
             aria-label="Dismiss restoration notice"
+            title="Dismiss restoration notice"
           >
             <X className="h-4 w-4" />
           </Button>
@@ -903,40 +944,20 @@ export default function StepByStepChat({ problem }: Props) {
           )}
 
           {/* Diagram Status Indicator - Show for High Level Architecture and Data Flow steps */}
-          {isDiagramSubStep(currentStep.subStep) && (
-            <div className={`p-3 rounded-lg border-2 ${diagramData
-              ? 'bg-green-500/10 border-green-500/30'
-              : 'bg-orange-500/10 border-orange-500/30'
-              }`}>
-              <div className="flex items-center gap-2">
-                {diagramData ? (
-                  <>
-                    <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-green-900 dark:text-green-100">
-                        Diagram Captured! ✓
-                      </p>
-                      <p className="text-xs text-green-700 dark:text-green-300">
-                        {diagramData.description} • Will be included in AI evaluation
-                      </p>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <AlertCircle className="h-5 w-5 text-orange-600 dark:text-orange-400" />
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-orange-900 dark:text-orange-100">
-                        Tip: Create a Diagram
-                      </p>
-                      <p className="text-xs text-orange-700 dark:text-orange-300">
-                        Draw your architecture in the diagram canvas below, then click "Share with AI" before submitting
-                      </p>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-          )}
+          {isDiagramSubStep(currentStep.subStep) && (() => {
+            const hasDiagram = !!getDiagramDataForStep(currentStepKey)?.scene?.elements?.some(
+              (el) => !el.isDeleted
+            );
+            return hasDiagram ? (
+              <p className="rounded-lg border-2 border-green-500/30 bg-green-500/10 p-3 text-sm text-green-600">
+                ✓ Diagram ready — included automatically when you submit.
+              </p>
+            ) : (
+              <p className="rounded-lg border-2 border-border/60 bg-muted/30 p-3 text-sm text-muted-foreground">
+                Draw your architecture below — it will be included automatically when you submit.
+              </p>
+            );
+          })()}
 
 
           {/* Persistent Retry Feedback Banner */}

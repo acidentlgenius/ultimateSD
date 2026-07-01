@@ -34,6 +34,9 @@ import { ProModal } from '@/components/ProModal';
 import { type PlanType } from '@/lib/plans';
 import { getAllFilterTags, getProblemTags, problemMatchesTag } from '@/lib/problem-tags';
 import { ProblemTagList } from '@/components/ProblemTagBadge';
+import { MostAskedSection } from '@/components/landing/MostAskedSection';
+import { problemInCollection } from '@/lib/company-collections';
+import Fuse from 'fuse.js';
 
 type StatusFilter =
     | 'All'
@@ -126,6 +129,7 @@ export function DashboardClient({
     const [difficulty, setDifficulty] = useState('All');
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('All');
     const [topicFilter, setTopicFilter] = useState('All');
+    const [companyCollection, setCompanyCollection] = useState<string | null>(null);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [lockedProblem, setLockedProblem] = useState<ProblemWithStatus | null>(null);
 
@@ -145,8 +149,31 @@ export function DashboardClient({
         document.getElementById('problems')?.scrollIntoView({ behavior: 'smooth' });
     };
 
+    // Memoize the search index so it's not rebuilt on every keystroke
+    const fuseIndex = useMemo(() => {
+        const problemsWithTags = problems.map(p => ({
+            ...p,
+            tagLabels: getProblemTags(p.slug, p.tags).map(t => t.label)
+        }));
+
+        return new Fuse(problemsWithTags, {
+            keys: [
+                { name: 'title', weight: 2 },
+                { name: 'companies', weight: 1.5 },
+                { name: 'tagLabels', weight: 1.5 },
+                { name: 'description', weight: 1 }
+            ],
+            threshold: 0.3,
+            ignoreLocation: true
+        });
+    }, [problems]);
+
     const filtered = useMemo(() => {
         let filteredProblems = problems;
+
+        if (search) {
+            filteredProblems = fuseIndex.search(search).map(result => result.item);
+        }
 
         if (category !== 'All') {
             filteredProblems = filteredProblems.filter(p => p.category === category);
@@ -168,23 +195,14 @@ export function DashboardClient({
             );
         }
 
-        if (search) {
-            const searchLower = search.toLowerCase();
-            filteredProblems = filteredProblems.filter(p => {
-                const tagLabels = getProblemTags(p.slug, p.tags)
-                    .map((t) => t.label.toLowerCase())
-                    .join(' ');
-                return (
-                    p.title.toLowerCase().includes(searchLower) ||
-                    p.description.toLowerCase().includes(searchLower) ||
-                    p.companies.some(c => c.toLowerCase().includes(searchLower)) ||
-                    tagLabels.includes(searchLower)
-                );
-            });
+        if (companyCollection) {
+            filteredProblems = filteredProblems.filter((p) =>
+                problemInCollection(p.slug, companyCollection)
+            );
         }
 
         return filteredProblems;
-    }, [problems, search, category, difficulty, statusFilter, topicFilter, user]);
+    }, [problems, search, category, difficulty, statusFilter, topicFilter, companyCollection, user, fuseIndex]);
 
     const categories = ['All', ...new Set(problems.map(p => p.category))];
     const difficulties = ['All', 'Easy', 'Medium', 'Hard'];
@@ -229,6 +247,16 @@ export function DashboardClient({
             {/* 2.5 Roadmap Preview */}
             <RoadmapPreview />
 
+            <MostAskedSection
+                selectedCollectionId={companyCollection}
+                onSelectCollection={(id) => {
+                    setCompanyCollection(id);
+                    if (id) {
+                        document.getElementById('problems')?.scrollIntoView({ behavior: 'smooth' });
+                    }
+                }}
+            />
+
             {/* 3. Problem Explorer */}
             <div id="problems" className="container mx-auto px-4 py-24 relative z-10 max-w-7xl">
                 <div className="text-center mb-20 space-y-6">
@@ -259,6 +287,8 @@ export function DashboardClient({
                             topicFilter={topicFilter}
                             setTopicFilter={setTopicFilter}
                             topicOptions={topicOptions}
+                            companyCollection={companyCollection}
+                            setCompanyCollection={setCompanyCollection}
                             user={user}
                         />
                     </div>
@@ -429,6 +459,8 @@ export function DashboardClient({
                                     setCategory('All');
                                     setDifficulty('All');
                                     setStatusFilter('All');
+                                    setTopicFilter('All');
+                                    setCompanyCollection(null);
                                 }}
                                 variant="outline"
                                 size="lg"

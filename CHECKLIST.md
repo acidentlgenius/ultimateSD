@@ -40,7 +40,7 @@
 
 ## Step 6: Deployment, Testing, and Iteration
 - [x] Deploy to Vercel with environment variables
-- [ ] Set up comprehensive testing (unit with Vitest, E2E with Cypress)
+- [x] Set up comprehensive testing (unit with Vitest, E2E with Playwright)
 - [x] Iterate based on testing and add final touches
 - [x] Ensure full E2E flow works and matches HelloInterview UX
 

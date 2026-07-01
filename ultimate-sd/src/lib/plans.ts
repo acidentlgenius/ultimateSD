@@ -4,6 +4,11 @@ export const FREE_PROBLEM_SLUGS = [
   'design-tinyurl',
   'design-parking-lot',
   'design-elevator-system',
+  'design-unique-id-generator',
+  'design-typeahead-suggestion',
+  'design-distributed-cache',
+  'design-dropbox',
+  'design-whatsapp',
 ] as const;
 
 export const PLAN_PRICES_INR: Record<Exclude<PlanType, 'free'>, number> = {

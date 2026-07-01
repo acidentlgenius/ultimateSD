@@ -26,23 +26,25 @@ export async function POST(req: Request) {
             );
         }
 
+        const exactEmail = user.email;
+
         const token = uuidv4();
         const expires = new Date();
         expires.setHours(expires.getHours() + 1);
 
         await prisma.verificationToken.deleteMany({
-            where: { identifier: email },
+            where: { identifier: exactEmail },
         });
 
         await prisma.verificationToken.create({
             data: {
-                identifier: email,
+                identifier: exactEmail,
                 token,
                 expires,
             },
         });
 
-        await sendPasswordResetEmail(email, token);
+        await sendPasswordResetEmail(exactEmail, token);
 
         return NextResponse.json(
             { message: "If an account with that email exists, we sent a password reset link." },

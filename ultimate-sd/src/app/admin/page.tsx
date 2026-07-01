@@ -11,12 +11,30 @@ import { AdminDashboard } from './AdminDashboard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LAUNCH_AI_WINNER_SLOTS, LAUNCH_PLATFORM_SLOTS } from '@/lib/launch-offer';
 
+export const ADMIN_PAGE_SIZE = 50;
+
+const adminUserSelect = {
+  id: true,
+  name: true,
+  email: true,
+  role: true,
+  planType: true,
+  planExpiresAt: true,
+  xp: true,
+  level: true,
+  streak: true,
+  completedProblems: true,
+  createdAt: true,
+} as const;
+
 export default async function AdminPage({
   searchParams,
 }: {
-  searchParams: Promise<{ user?: string }>;
+  searchParams: Promise<{ user?: string; page?: string }>;
 }) {
-  const { user: filterUserId } = await searchParams;
+  const { user: filterUserId, page: pageParam } = await searchParams;
+  const page = Math.max(1, parseInt(pageParam ?? '1', 10) || 1);
+
   const session = await auth();
   if (!session?.user?.id) {
     redirect('/');
@@ -24,28 +42,42 @@ export default async function AdminPage({
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { role: true }
+    select: { role: true },
   });
 
   if (user?.role !== 'ADMIN') {
     redirect('/');
   }
 
-  const [users, sessions, launchStats, launchRedemptions, launchClaimants] = await Promise.all([
+  const [
+    users,
+    totalUsers,
+    premiumUsers,
+    aiUsers,
+    completedAggregate,
+    sessions,
+    launchStats,
+    launchRedemptions,
+    launchClaimants,
+  ] = await Promise.all([
     prisma.user.findMany({
       orderBy: { createdAt: 'desc' },
+      take: ADMIN_PAGE_SIZE,
+      skip: (page - 1) * ADMIN_PAGE_SIZE,
+      select: adminUserSelect,
     }),
+    prisma.user.count(),
+    prisma.user.count({ where: { planType: { not: 'free' } } }),
+    prisma.user.count({ where: { planType: 'ai' } }),
+    prisma.user.aggregate({ _sum: { completedProblems: true } }),
     getAdminSessions(200),
     getLaunchOfferStats(),
     getLaunchOfferRedemptions(),
     getLaunchOfferPlatformClaimants(),
   ]);
 
-  // Analytics
-  const totalUsers = users.length;
-  const premiumUsers = users.filter((u: any) => u.planType !== 'free').length;
-  const aiUsers = users.filter((u: any) => u.planType === 'ai').length;
-  const totalCompletedProblems = users.reduce((acc: number, u: any) => acc + u.completedProblems, 0);
+  const totalCompletedProblems = completedAggregate._sum.completedProblems ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalUsers / ADMIN_PAGE_SIZE));
 
   return (
     <div className="container mx-auto py-10 px-4 md:px-0">
@@ -134,6 +166,9 @@ export default async function AdminPage({
         launchStats={launchStats}
         launchRedemptions={launchRedemptions}
         launchClaimants={launchClaimants}
+        userPage={page}
+        userTotalPages={totalPages}
+        userTotalCount={totalUsers}
       />
     </div>
   );

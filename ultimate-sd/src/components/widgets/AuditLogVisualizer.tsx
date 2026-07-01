@@ -202,6 +202,7 @@ export default function AuditLogVisualizer() {
                                                 className="h-8 w-8 text-slate-400 hover:text-red-500"
                                                 onClick={() => tamperLog(log.id)}
                                                 title="Simulate Attack (Tamper Data)"
+                                                aria-label="Simulate Attack (Tamper Data)"
                                             >
                                                 <Lock className="w-4 h-4" />
                                             </Button>

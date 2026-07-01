@@ -2,13 +2,21 @@
   "name": "ultimate-sd",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "pnpm@10.8.0",
+  "packageManager": "pnpm@11.9.0",
+  "engines": {
+    "node": ">=22.13.0",
+    "pnpm": ">=11.9.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "npx tsx scripts/check-env.ts && next build",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:report": "playwright show-report",
+    "seed:e2e": "npx tsx scripts/seed-e2e.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {
@@ -60,7 +68,9 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "^4",
+    "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
     "@types/dotenv": "^8.2.3",

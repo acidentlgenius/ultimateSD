@@ -43,7 +43,7 @@ export function Hero({ launchStats }: HeroProps) {
                 >
                     Master Systems <br className="hidden md:block" />
                     <span className="bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
-                        That Scale to Billions
+                        Through Hands-On Practice
                     </span>
                 </motion.h1>
 
@@ -53,8 +53,8 @@ export function Hero({ launchStats }: HeroProps) {
                     transition={{ duration: 0.6, delay: 0.4 }}
                     className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto mb-12 leading-relaxed"
                 >
-                    Experience the chaos of real-world distributed systems in a risk-free environment.
-                    Simulate <strong>flash sales</strong>, secure <strong>secrets</strong>, and optimize <strong>databases</strong> with AI guidance.
+                    Whether you are preparing for your first system design round or leveling up to senior,
+                    practice with <strong>interactive simulations</strong>, structured steps, and AI feedback.
                 </motion.p>
 
                 <motion.div
@@ -83,10 +83,10 @@ export function Hero({ launchStats }: HeroProps) {
                     className="mt-12 flex flex-col items-center gap-4"
                 >
                     <p className="text-sm text-muted-foreground font-medium">
-                        Built for engineers preparing for senior &amp; staff system design interviews
+                        From your first HLD to staff-level tradeoffs — practice at your level
                     </p>
                     <div className="flex flex-wrap items-center justify-center gap-3 max-w-2xl">
-                        {['86+ problems', 'Interactive simulations', 'AI step-by-step practice', 'Free canvas'].map((item) => (
+                        {['8 free starter problems', '47 simulations', 'AI step-by-step practice', 'Free canvas'].map((item) => (
                             <span
                                 key={item}
                                 className="text-xs font-medium text-muted-foreground bg-secondary/30 px-3 py-1.5 rounded-full border border-secondary/50"
