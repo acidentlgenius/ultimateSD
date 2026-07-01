@@ -130,25 +130,21 @@ const AgentOrchestrator: React.FC = () => {
                             <Button
                                 variant="outline"
                                 size="icon"
-                                aria-label={isPlaying ? "Pause scenario" : "Play scenario"}
-                                title={isPlaying ? "Pause scenario" : "Play scenario"}
                                 onClick={() => setIsPlaying(!isPlaying)}
                                 className="border-slate-700 hover:bg-slate-800"
                                 disabled={currentStepIndex >= SCENARIO.steps.length - 1}
-                                aria-label={isPlaying ? "Pause execution" : "Play execution"}
-                                title={isPlaying ? "Pause execution" : "Play execution"}
+                                aria-label={isPlaying ? "Pause scenario execution" : "Play scenario execution"}
+                                title={isPlaying ? "Pause scenario execution" : "Play scenario execution"}
                             >
                                 {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                             </Button>
                             <Button
                                 variant="outline"
                                 size="icon"
-                                aria-label="Reset scenario"
-                                title="Reset scenario"
                                 onClick={reset}
                                 className="border-slate-700 hover:bg-slate-800"
-                                aria-label="Reset execution"
-                                title="Reset execution"
+                                aria-label="Reset scenario execution"
+                                title="Reset scenario execution"
                             >
                                 <RefreshCw className="w-4 h-4" />
                             </Button>
