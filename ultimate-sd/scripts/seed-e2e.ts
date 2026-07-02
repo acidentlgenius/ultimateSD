@@ -124,6 +124,17 @@ export async function resetE2eFeatureFlags() {
   await prisma.featureFlag.deleteMany({});
 }
 
+export async function setFeatureFlagStateForE2e(
+  key: string,
+  enabledPlans: string[],
+) {
+  await prisma.featureFlag.upsert({
+    where: { key },
+    update: { enabledPlans },
+    create: { key, enabledPlans },
+  });
+}
+
 async function main() {
   const tinyUrlCompleted = process.argv.includes('--with-progress');
   await seedE2eUser({ tinyUrlCompleted, resetProgress: true });
