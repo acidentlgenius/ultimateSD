@@ -95,6 +95,8 @@ export default async function PracticePage({
       }
     : null;
 
+  const voiceEnabled = await canAccessFeature(session.user.id, 'voiceInterview');
+
   return (
     <PracticeUI
       problem={problem}
@@ -103,6 +105,7 @@ export default async function PracticePage({
       interviewConfig={interviewConfig}
       interviewAllowed={interviewAllowed}
       probeEnabled={probeAllowed}
+      voiceEnabled={voiceEnabled}
     />
   );
 }
