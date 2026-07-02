@@ -113,6 +113,17 @@ export async function seedE2eAdminUser() {
   });
 }
 
+/**
+ * Resets FeatureFlag/FeatureFlagOverride state to a clean dark baseline.
+ * A missing FeatureFlag row is interpreted as dark (falls back to
+ * FEATURE_SEED_DEFAULTS in feature-flags-server.ts), so deleting rows here
+ * is sufficient — no need to recreate them with `enabledPlans: []`.
+ */
+export async function resetE2eFeatureFlags() {
+  await prisma.featureFlagOverride.deleteMany({});
+  await prisma.featureFlag.deleteMany({});
+}
+
 async function main() {
   const tinyUrlCompleted = process.argv.includes('--with-progress');
   await seedE2eUser({ tinyUrlCompleted, resetProgress: true });
