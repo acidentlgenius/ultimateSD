@@ -116,11 +116,11 @@ export function TimerWidget({
     }, [problemId, initialTimeSeconds, startedAt, isTimerRunning, totalPausedSeconds, lastPausedAt]);
 
     useEffect(() => {
-        if (timeLeft === 0 && isActive && startedAt) {
+        if (timeLeft === 0 && isActive) {
             setIsActive(false);
             if (onComplete) onComplete();
         }
-    }, [timeLeft, isActive, startedAt, onComplete]);
+    }, [timeLeft, isActive, onComplete]);
 
     // Timer interval
     useEffect(() => {
@@ -139,7 +139,7 @@ export function TimerWidget({
                     }
 
                     // Local logic
-                    const newValue = prev - 1;
+                    const newValue = Math.max(0, prev - 1);
                     if (newValue <= 300) setIsLowTime(true);
 
                     if (problemId && !startedAt) {
