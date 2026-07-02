@@ -96,3 +96,27 @@ test.describe('interview mode & probe stay dark', () => {
     expect(res.status()).toBe(403);
   });
 });
+
+test.describe('voice APIs are unreachable while voiceInterview is dark', () => {
+  test('JSON voice routes return 403 for a signed-in unentitled user', async ({ request }) => {
+    const cases: Array<[string, Record<string, string>]> = [
+      ['/api/voice/session', { slug: 'design-tinyurl' }],
+      ['/api/voice/reply', { sessionId: 'nope', transcript: 'hello' }],
+      ['/api/voice/speak', { sessionId: 'nope', text: 'hello' }],
+    ];
+    for (const [path, data] of cases) {
+      const res = await request.post(path, { data });
+      expect(res.status(), path).toBe(403);
+    }
+  });
+
+  test('transcribe route returns 403 before touching the audio', async ({ request }) => {
+    const res = await request.post('/api/voice/transcribe', {
+      multipart: {
+        sessionId: 'nope',
+        audio: { name: 'a.webm', mimeType: 'audio/webm', buffer: Buffer.from('fake') },
+      },
+    });
+    expect(res.status()).toBe(403);
+  });
+});
