@@ -7,6 +7,12 @@ export const E2E_TEST_PASSWORD =
   process.env.E2E_TEST_PASSWORD ?? 'E2eTestPassword123!';
 export const E2E_TEST_USER_NAME = 'E2E Tester';
 
+export const E2E_ADMIN_EMAIL =
+  process.env.E2E_ADMIN_EMAIL ?? 'admin@e2e.sysdesignai.local';
+export const E2E_ADMIN_PASSWORD =
+  process.env.E2E_ADMIN_PASSWORD ?? 'E2eAdminPassword123!';
+export const E2E_ADMIN_USER_NAME = 'E2E Admin';
+
 const TINYURL_PROBLEM_ID = '1';
 
 export interface SeedE2eOptions {
@@ -82,10 +88,37 @@ export async function seedE2eUser(options: SeedE2eOptions = {}) {
   return user;
 }
 
+/** Seeds a dedicated admin user for e2e tests that exercise /admin (e.g. feature flags). */
+export async function seedE2eAdminUser() {
+  const passwordHash = await bcrypt.hash(E2E_ADMIN_PASSWORD, 10);
+
+  return prisma.user.upsert({
+    where: { email: E2E_ADMIN_EMAIL },
+    create: {
+      email: E2E_ADMIN_EMAIL,
+      name: E2E_ADMIN_USER_NAME,
+      password: passwordHash,
+      emailVerified: new Date(),
+      onboardingCompleted: true,
+      planType: 'free',
+      role: 'ADMIN',
+    },
+    update: {
+      name: E2E_ADMIN_USER_NAME,
+      password: passwordHash,
+      emailVerified: new Date(),
+      onboardingCompleted: true,
+      role: 'ADMIN',
+    },
+  });
+}
+
 async function main() {
   const tinyUrlCompleted = process.argv.includes('--with-progress');
   await seedE2eUser({ tinyUrlCompleted, resetProgress: true });
+  await seedE2eAdminUser();
   console.log(`E2E user ready: ${E2E_TEST_EMAIL}`);
+  console.log(`E2E admin ready: ${E2E_ADMIN_EMAIL}`);
 }
 
 const isDirectRun = process.argv[1]?.replace(/\\/g, '/').includes('seed-e2e');

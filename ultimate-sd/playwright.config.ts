@@ -1,6 +1,6 @@
 import { config as loadEnv } from 'dotenv';
 import { defineConfig, devices } from '@playwright/test';
-import { USER_AUTH_FILE } from './e2e/constants';
+import { ADMIN_AUTH_FILE, USER_AUTH_FILE } from './e2e/constants';
 
 loadEnv({ path: '.env' });
 loadEnv({ path: '.env.local' });
@@ -46,6 +46,20 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         storageState: USER_AUTH_FILE,
+      },
+    },
+    {
+      name: 'admin-setup',
+      testMatch: /auth\.admin\.setup\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'admin',
+      testMatch: /admin-.*\.spec\.ts/,
+      dependencies: ['admin-setup'],
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: ADMIN_AUTH_FILE,
       },
     },
   ],
