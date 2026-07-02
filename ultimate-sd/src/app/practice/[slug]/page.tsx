@@ -7,6 +7,12 @@ import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { canAccessProblem } from '@/lib/access';
 import { type PlanType } from '@/lib/plans';
+import { canAccessFeature } from '@/lib/feature-flags-server';
+import {
+  getInterviewConfig,
+  getInterviewSteps,
+  parseInterviewParam,
+} from '@/lib/interview-mode';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
@@ -22,8 +28,15 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   };
 }
 
-export default async function PracticePage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function PracticePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ interview?: string }>;
+}) {
   const { slug } = await params;
+  const { interview } = await searchParams;
   const problemMetadata = PROBLEMS.find(p => p.slug === slug);
 
   if (!problemMetadata) {
@@ -47,8 +60,19 @@ export default async function PracticePage({ params }: { params: Promise<{ slug:
     redirect(`/pricing?locked=${slug}`);
   }
 
+  const interviewAllowed = await canAccessFeature(session.user.id, 'interviewMode');
+  const requestedVariant = parseInterviewParam(interview);
+  if (requestedVariant && !interviewAllowed) {
+    redirect(`/practice/${slug}`); // dark flag: strip the interview param entirely
+  }
+  const interviewConfig =
+    requestedVariant && interviewAllowed ? getInterviewConfig(requestedVariant) : null;
+
   const { steps, mode: stepMode } = getPracticeSteps(slug, problemMetadata.difficulty);
-  const problem = { ...problemMetadata, steps };
+  const activeSteps = interviewConfig
+    ? getInterviewSteps(slug, problemMetadata.difficulty, interviewConfig.variant)
+    : steps;
+  const problem = { ...problemMetadata, steps: activeSteps };
 
   const existingProgress = await prisma.problemProgress.findUnique({
     where: {
@@ -70,5 +94,13 @@ export default async function PracticePage({ params }: { params: Promise<{ slug:
       }
     : null;
 
-  return <PracticeUI problem={problem} stepMode={stepMode} existingProgress={progressForUI} />;
+  return (
+    <PracticeUI
+      problem={problem}
+      stepMode={stepMode}
+      existingProgress={progressForUI}
+      interviewConfig={interviewConfig}
+      interviewAllowed={interviewAllowed}
+    />
+  );
 }

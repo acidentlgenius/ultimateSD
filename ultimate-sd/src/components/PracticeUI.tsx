@@ -37,19 +37,31 @@ import { startPracticeSession, togglePracticeTimer } from '@/app/actions/progres
 import { CheckCircle, Sparkles } from 'lucide-react';
 import type { PracticeStepMode } from '@/lib/interview-lite-steps';
 import { Badge } from '@/components/ui/badge';
+import { StartInterviewDialog } from './StartInterviewDialog';
+import type { InterviewConfig } from '@/lib/interview-mode';
 
 export default function PracticeUI({
   problem,
   stepMode = 'full',
   existingProgress,
+  interviewConfig = null,
+  interviewAllowed = false,
 }: {
   problem: SystemDesignProblem;
   stepMode?: PracticeStepMode;
   existingProgress?: any;
+  interviewConfig?: InterviewConfig | null;
+  interviewAllowed?: boolean;
 }) {
   return (
     <DiagramCanvasProvider>
-      <PracticeUIContent problem={problem} stepMode={stepMode} existingProgress={existingProgress} />
+      <PracticeUIContent
+        problem={problem}
+        stepMode={stepMode}
+        existingProgress={existingProgress}
+        interviewConfig={interviewConfig}
+        interviewAllowed={interviewAllowed}
+      />
     </DiagramCanvasProvider>
   );
 }
@@ -58,10 +70,14 @@ function PracticeUIContent({
   problem,
   stepMode,
   existingProgress,
+  interviewConfig = null,
+  interviewAllowed = false,
 }: {
   problem: SystemDesignProblem;
   stepMode: PracticeStepMode;
   existingProgress?: any;
+  interviewConfig?: InterviewConfig | null;
+  interviewAllowed?: boolean;
 }) {
   const diagramRef = useDiagramCanvasRef();
   const { data: session, status } = useSession();
@@ -355,6 +371,10 @@ function PracticeUIContent({
           >
             {solution ? 'View Solution' : 'Solution Unavailable'}
           </Button>
+        )}
+
+        {interviewAllowed && !interviewConfig && (
+          <StartInterviewDialog slug={problem.slug} />
         )}
 
         <Button
