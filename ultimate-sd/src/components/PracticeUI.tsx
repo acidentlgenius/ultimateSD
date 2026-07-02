@@ -112,6 +112,33 @@ function PracticeUIContent({
   const dispatchInterview = (event: InterviewEvent) =>
     setInterviewStatus((s) => interviewStatusReducer(s, event));
 
+  // Reset interview session state whenever a fresh interview attempt starts
+  // (guards against a stale 'complete'/'summary-error' status leaking across
+  // re-entry into a new interview on the same mounted component instance).
+  useEffect(() => {
+    if (interviewConfig) {
+      setInterviewStatus('running');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [interviewConfig?.variant, problem.id]);
+
+  // Clear the interview timer's local-storage state once a session ends, so a
+  // later retry of the same problem+variant doesn't read stale finished/expired
+  // timer state and start already-expired.
+  useEffect(() => {
+    if (!interviewConfig) return;
+    if (interviewStatus === 'running') return;
+
+    const interviewProblemId = `interview-${interviewConfig.variant}-${problem.id}`;
+    try {
+      localStorage.removeItem(`timer_${interviewProblemId}_status`);
+      localStorage.removeItem(`timer_${interviewProblemId}_timeLeft`);
+      localStorage.removeItem(`timer_${interviewProblemId}_lastTimestamp`);
+    } catch (e) {
+      console.error('Failed to clear stale interview timer state:', e);
+    }
+  }, [interviewStatus, interviewConfig, problem.id]);
+
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -273,7 +300,7 @@ function PracticeUIContent({
 
         {/* Interview Timer */}
         <div className="mb-4">
-          {interviewConfig ? (
+          {interviewConfig && interviewStatus === 'running' ? (
             <TimerWidget
               className="w-full justify-between"
               problemId={`interview-${interviewConfig.variant}-${problem.id}`}
@@ -283,7 +310,7 @@ function PracticeUIContent({
                 dispatchInterview('TIME_EXPIRED');
               }}
             />
-          ) : (
+          ) : !interviewConfig ? (
             <TimerWidget
               className="w-full justify-between"
               problemId={problem.id}
@@ -310,7 +337,7 @@ function PracticeUIContent({
                 toast.warning("Time's up! The practice session has ended.");
               }}
             />
-          )}
+          ) : null}
         </div>
       </div>
 
