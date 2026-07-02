@@ -13,6 +13,13 @@ const databaseUrl =
   'postgresql://postgres:postgres@localhost:5432/sysdesignai_test?schema=public';
 const authSecret =
   process.env.AUTH_SECRET ?? 'dev-secret-at-least-32-characters-long';
+// Dummy Razorpay credentials so isRazorpayConfigured() is true in e2e — this lets
+// /api/orders reach its feature-flag check instead of short-circuiting with 503
+// for "payments not configured". No real Razorpay API call happens for a dark
+// (flag-gated) plan, since the flag check returns 403 before the client is used.
+const razorpayKeyId = process.env.RAZORPAY_KEY_ID ?? 'rzp_test_e2e_dummy_key_id';
+const razorpayKeySecret =
+  process.env.RAZORPAY_KEY_SECRET ?? 'e2e_dummy_key_secret';
 
 export default defineConfig({
   testDir: './e2e',
@@ -41,7 +48,7 @@ export default defineConfig({
     },
     {
       name: 'authenticated',
-      testMatch: /(auth|practice|roadmap)\.spec\.ts/,
+      testMatch: /(auth|practice|roadmap|flag-gating)\.spec\.ts/,
       dependencies: ['setup'],
       use: {
         ...devices['Desktop Chrome'],
@@ -73,6 +80,8 @@ export default defineConfig({
       DATABASE_URL: databaseUrl,
       AUTH_SECRET: authSecret,
       NEXTAUTH_URL: baseURL,
+      RAZORPAY_KEY_ID: razorpayKeyId,
+      RAZORPAY_KEY_SECRET: razorpayKeySecret,
     },
   },
 });
