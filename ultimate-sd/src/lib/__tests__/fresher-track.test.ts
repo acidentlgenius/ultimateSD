@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getRoadmapData, FRESHER_TRACK_INFO } from '@/components/roadmap/RoadmapData';
+import { getRoadmapData, FRESHER_TRACK_INFO, getVisibleTracks, TRACKS } from '@/components/roadmap/RoadmapData';
 import { PROBLEMS } from '@/lib/problems';
 
 const fresherPhases = getRoadmapData('fresher');
@@ -60,5 +60,24 @@ describe('fresher track data integrity', () => {
   it('has no duplicate step ids', () => {
     const ids = fresherPhases.flatMap((p) => p.steps.map((s) => s.id));
     expect(new Set(ids).size).toBe(ids.length);
+  });
+});
+
+describe('getVisibleTracks', () => {
+  it('hides the fresher track when the flag is off (zero change)', () => {
+    expect(getVisibleTracks(false)).toEqual(TRACKS);
+    expect(getVisibleTracks(false).some((t) => t.id === 'fresher')).toBe(false);
+  });
+
+  it('puts the fresher track first when the flag is on', () => {
+    const visible = getVisibleTracks(true);
+    expect(visible[0]).toEqual(FRESHER_TRACK_INFO);
+    expect(visible.slice(1)).toEqual(TRACKS);
+  });
+
+  it('never mutates the base TRACKS array', () => {
+    const before = [...TRACKS];
+    getVisibleTracks(true);
+    expect(TRACKS).toEqual(before);
   });
 });

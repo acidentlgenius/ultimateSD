@@ -5,6 +5,8 @@ import { RoadmapClient } from './RoadmapClient';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
+import { auth } from '@/auth';
+import { canAccessFeature } from '@/lib/feature-flags-server';
 
 function RoadmapFallback() {
   return (
@@ -32,12 +34,19 @@ function RoadmapFallback() {
 }
 
 export default async function RoadmapPage() {
-  const progressMap = await getUserProgressMap();
+  const session = await auth();
+  const [progressMap, fresherTrackEnabled] = await Promise.all([
+    getUserProgressMap(),
+    canAccessFeature(session?.user?.id ?? null, 'fresherTrack'),
+  ]);
   const progressBySlug = progressMapToSlugStatuses(progressMap);
 
   return (
     <Suspense fallback={<RoadmapFallback />}>
-      <RoadmapClient progressBySlug={progressBySlug} />
+      <RoadmapClient
+        progressBySlug={progressBySlug}
+        fresherTrackEnabled={fresherTrackEnabled}
+      />
     </Suspense>
   );
 }

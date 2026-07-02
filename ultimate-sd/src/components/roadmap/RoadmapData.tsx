@@ -69,6 +69,14 @@ export const FRESHER_TRACK_INFO: TrackInfo = {
     icon: GraduationCap
 };
 
+/**
+ * Track selection respecting the fresherTrack feature flag.
+ * Flag off ⇒ exactly the existing four role tracks (zero visual change).
+ */
+export function getVisibleTracks(fresherTrackEnabled: boolean): TrackInfo[] {
+    return fresherTrackEnabled ? [FRESHER_TRACK_INFO, ...TRACKS] : [...TRACKS];
+}
+
 const FRESHER_ROADMAP: RoadmapPhase[] = [
     {
         id: 'phase-0-fresher',
