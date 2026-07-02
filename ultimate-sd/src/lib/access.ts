@@ -58,6 +58,9 @@ export function isPlanActive(user: Pick<UserAccess, 'planType' | 'planExpiresAt'
   if (planType === 'free') {
     return false;
   }
+  if (planType === 'lifetime') {
+    return true; // lifetime never expires, even if a stray expiry date exists
+  }
   if (!user.planExpiresAt) {
     return true;
   }
