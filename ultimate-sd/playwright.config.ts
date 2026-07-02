@@ -31,7 +31,7 @@ export default defineConfig({
   projects: [
     {
       name: 'guest',
-      testMatch: /smoke\.spec\.ts/,
+      testMatch: /(smoke|lifetime-pricing)\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
     {
