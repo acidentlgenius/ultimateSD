@@ -83,3 +83,75 @@ Score 1-10 on: Structure, Scalability, Trade-offs, Communication. Provide 3 tips
     };
   }
 }
+
+export interface InterviewSummaryInput {
+  phase: string;
+  title: string;
+  answer: string;
+  passed: boolean;
+}
+
+export interface InterviewSummary {
+  overallScore: number; // 1-10
+  verdict: string; // 'Strong Hire' | 'Hire' | 'Lean Hire' | 'No Hire'
+  strengths: string[];
+  improvements: string[];
+  phaseNotes: { phase: string; comment: string }[];
+}
+
+/** End-of-interview hiring-committee-style debrief. Returns null when unavailable. */
+export async function getInterviewSummary(
+  problem: SystemDesignProblem,
+  answers: InterviewSummaryInput[],
+  llmOverride?: BaseChatModel | null
+): Promise<InterviewSummary | null> {
+  const llm = llmOverride !== undefined ? llmOverride : getDefaultLLM();
+  if (!llm) {
+    return null;
+  }
+
+  const transcript = answers
+    .map(
+      (a) =>
+        `### ${a.phase} — ${a.title} (${a.passed ? 'passed evaluation' : 'not passed'})\n${a.answer}`
+    )
+    .join('\n\n');
+
+  const prompt = `You are a FAANG system design interviewer (ex-Meta) writing the post-interview debrief for a TIMED mock interview.
+Problem: "${problem.title}" — ${problem.description}
+
+Candidate transcript, step by step:
+${transcript}
+
+Write an honest hiring-committee-style summary. Weigh unattempted steps as time-management signal, not zero knowledge.
+Respond with VALID JSON only (no markdown, no extra text):
+{
+  "overallScore": <number 1-10>,
+  "verdict": "<Strong Hire | Hire | Lean Hire | No Hire>",
+  "strengths": ["specific strength 1", "specific strength 2"],
+  "improvements": ["specific improvement 1", "specific improvement 2"],
+  "phaseNotes": [{ "phase": "<phase name>", "comment": "<one-sentence note>" }]
+}`;
+
+  try {
+    const response = await llm.invoke([new HumanMessage(prompt)]);
+    const content = (response.content as string)
+      .replace(/```json\n?/g, '')
+      .replace(/```\n?/g, '')
+      .trim();
+    const parsed = JSON.parse(content);
+    if (
+      typeof parsed.overallScore !== 'number' ||
+      typeof parsed.verdict !== 'string' ||
+      !Array.isArray(parsed.strengths) ||
+      !Array.isArray(parsed.improvements) ||
+      !Array.isArray(parsed.phaseNotes)
+    ) {
+      return null;
+    }
+    return parsed as InterviewSummary;
+  } catch (error) {
+    console.error('getInterviewSummary error:', error);
+    return null;
+  }
+}
