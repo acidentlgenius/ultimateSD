@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { verifyPaymentSignature } from '@/lib/razorpay';
 import { activateUserPlan } from '@/lib/user-llm';
-import { type PlanType } from '@/lib/plans';
+import { type PlanType, PLAN_LABELS } from '@/lib/plans';
 
 export async function POST(req: NextRequest) {
   try {
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing payment details' }, { status: 400 });
     }
 
-    if (planType !== 'platform' && planType !== 'ai') {
+    if (planType !== 'platform' && planType !== 'ai' && planType !== 'lifetime') {
       return NextResponse.json({ error: 'Invalid plan type' }, { status: 400 });
     }
 
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       planType,
-      message: `${planType === 'ai' ? 'AI' : 'Platform'} plan activated successfully.`,
+      message: `${PLAN_LABELS[planType]} plan activated successfully.`,
     });
   } catch (error) {
     console.error('Verify payment error:', error);

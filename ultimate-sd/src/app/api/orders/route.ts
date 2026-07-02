@@ -6,6 +6,7 @@ import {
   isRazorpayConfigured,
 } from '@/lib/razorpay';
 import { type PlanType } from '@/lib/plans';
+import { canAccessFeature } from '@/lib/feature-flags-server';
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,8 +23,11 @@ export async function POST(req: NextRequest) {
     }
 
     const { planType } = await req.json() as { planType?: PlanType };
-    if (planType !== 'platform' && planType !== 'ai') {
+    if (planType !== 'platform' && planType !== 'ai' && planType !== 'lifetime') {
       return NextResponse.json({ error: 'Invalid plan type' }, { status: 400 });
+    }
+    if (planType === 'lifetime' && !(await canAccessFeature(session.user.id, 'lifetimePlan'))) {
+      return NextResponse.json({ error: 'Not available' }, { status: 403 });
     }
 
     const razorpay = getRazorpayClient();
