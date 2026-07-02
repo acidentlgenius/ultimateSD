@@ -1,7 +1,8 @@
 import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
-import { HumanMessage } from '@langchain/core/messages';
+import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 import { SystemDesignProblem, ChatMessage } from '@/types';
+import { PROBE_INTERVIEWER_PERSONA, buildProbePrompt } from '@/lib/probe';
 
 function getDefaultLLM(): BaseChatModel | null {
   if (!process.env.GOOGLE_API_KEY) {
@@ -153,5 +154,56 @@ Respond with VALID JSON only (no markdown, no extra text):
   } catch (error) {
     console.error('getInterviewSummary error:', error);
     return null;
+  }
+}
+
+/** Adversarial probe question after a passed step evaluation (F3). */
+export async function getProbeResponse(
+  problem: SystemDesignProblem,
+  phase: string,
+  stepAnswer: string,
+  probeMessages: ChatMessage[],
+  round: number,
+  llmOverride?: BaseChatModel | null
+): Promise<ChatMessage> {
+  const llm = llmOverride !== undefined ? llmOverride : getDefaultLLM();
+  if (!llm) {
+    return {
+      role: 'ai',
+      content: 'Probe interviewer is not available right now.',
+      id: Date.now().toString(),
+      timestamp: new Date(),
+    };
+  }
+
+  const history = probeMessages
+    .map((m) => `${m.role === 'ai' ? 'Interviewer' : 'Candidate'}: ${m.content}`)
+    .join('\n');
+
+  const prompt = `${buildProbePrompt({ problemTitle: problem.title, phase, stepAnswer, round })}
+
+Conversation so far:
+${history || '(none yet — open the probe)'}`;
+
+  try {
+    const response = await llm.invoke([
+      new SystemMessage(PROBE_INTERVIEWER_PERSONA),
+      new HumanMessage(prompt),
+    ]);
+    return {
+      role: 'ai',
+      content: response.content as string,
+      id: Date.now().toString(),
+      timestamp: new Date(),
+    };
+  } catch (error) {
+    console.error('getProbeResponse error:', error);
+    const errMsg = error instanceof Error ? error.message : String(error);
+    return {
+      role: 'ai',
+      content: `Error communicating with AI service: ${errMsg}`,
+      id: Date.now().toString(),
+      timestamp: new Date(),
+    };
   }
 }
