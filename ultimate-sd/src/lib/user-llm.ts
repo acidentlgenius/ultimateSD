@@ -302,7 +302,7 @@ export async function getUserLLM(
 
 export async function activateUserPlan(
   userId: string,
-  planType: 'platform' | 'ai'
+  planType: 'platform' | 'ai' | 'lifetime'
 ): Promise<void> {
   const now = new Date();
   await prisma.user.update({
@@ -310,7 +310,10 @@ export async function activateUserPlan(
     data: {
       planType,
       planActivatedAt: now,
-      planExpiresAt: new Date(now.getFullYear(), now.getMonth() + 1, now.getDate()),
+      planExpiresAt:
+        planType === 'lifetime'
+          ? null
+          : new Date(now.getFullYear(), now.getMonth() + 1, now.getDate()),
       aiCredits: getInitialAiCreditsForPlan(planType),
       aiCreditsResetAt: planType === 'ai' ? getNextAiCreditsResetDate(now) : null,
     },

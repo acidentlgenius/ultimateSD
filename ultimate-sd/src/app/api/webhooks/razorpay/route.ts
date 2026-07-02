@@ -33,7 +33,10 @@ export async function POST(req: NextRequest) {
     const userId = notes?.userId;
     const planType = notes?.planType as PlanType | undefined;
 
-    if (!userId || (planType !== 'platform' && planType !== 'ai')) {
+    if (
+      !userId ||
+      (planType !== 'platform' && planType !== 'ai' && planType !== 'lifetime')
+    ) {
       return NextResponse.json({ received: true });
     }
 

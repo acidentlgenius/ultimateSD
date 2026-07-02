@@ -43,7 +43,9 @@ export async function updateUserPlan(
 
   const now = new Date();
   let planExpiresAt =
-    planType !== 'free' ? getAdminGrantExpiryDate(now) : null;
+    planType !== 'free' && planType !== 'lifetime'
+      ? getAdminGrantExpiryDate(now)
+      : null;
   let launchOfferSlotUsed = false;
 
   try {

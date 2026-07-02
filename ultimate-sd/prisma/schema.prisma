@@ -75,7 +75,8 @@ model User {
   practiceSessions        PracticeSession[]
   launchOfferRedemption   LaunchOfferRedemption?
   launchOfferEntry        LaunchOfferEntry?
-  
+  featureFlagOverrides    FeatureFlagOverride[]
+
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }
@@ -212,4 +213,22 @@ model StepSubmission {
   
   @@index([userId, problemId, stepId])
   @@index([sessionId])
+}
+
+model FeatureFlag {
+  key          String   @id
+  enabledPlans String[] @default([])
+  updatedAt    DateTime @updatedAt
+}
+
+model FeatureFlagOverride {
+  id        String   @id @default(cuid())
+  flagKey   String
+  userId    String
+  mode      String // "granted" | "denied"
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([flagKey, userId])
+  @@index([userId])
 }

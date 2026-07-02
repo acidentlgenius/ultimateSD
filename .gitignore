@@ -58,3 +58,4 @@ Thumbs.db
 
 # pnpm
 .pnpm-store/
+.superpowers/

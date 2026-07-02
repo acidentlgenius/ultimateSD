@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { CheckCircle2, Zap, Key, Sparkles } from 'lucide-react';
+import { CheckCircle2, Zap, Key, Sparkles, Infinity as InfinityIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
@@ -25,6 +25,7 @@ interface PricingClientProps {
   isLoggedIn: boolean;
   currentPlan: PlanType;
   razorpayKeyId?: string;
+  showLifetime?: boolean;
 }
 
 const PLATFORM_FEATURES = [
@@ -41,6 +42,13 @@ const AI_FEATURES = [
   'No API keys required',
   'Help assistant + step evaluation',
   'Premium solutions access',
+];
+
+const LIFETIME_FEATURES = [
+  'Full 86-problem library',
+  'Expert solutions',
+  'Interview mode',
+  'Bring your own API key — platform AI credits not included',
 ];
 
 const FREE_FEATURES = [
@@ -71,6 +79,7 @@ export function PricingClient({
   isLoggedIn,
   currentPlan,
   razorpayKeyId,
+  showLifetime,
 }: PricingClientProps) {
   const router = useRouter();
   const [loadingPlan, setLoadingPlan] = useState<Exclude<PlanType, 'free'> | null>(null);
@@ -110,7 +119,12 @@ export function PricingClient({
         amount: orderData.amount,
         currency: orderData.currency,
         name: 'Ultimate SD',
-        description: `${planType === 'ai' ? 'AI' : 'Platform'} Plan — Monthly`,
+        description:
+          planType === 'ai'
+            ? 'AI Plan — Monthly'
+            : planType === 'lifetime'
+              ? 'Lifetime Plan — One-time'
+              : 'Platform Plan — Monthly',
         order_id: orderData.orderId,
         handler: async (response: {
           razorpay_order_id: string;
@@ -148,7 +162,9 @@ export function PricingClient({
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 max-w-6xl mx-auto">
+    <div
+      className={`grid grid-cols-1 md:grid-cols-3 ${showLifetime ? 'lg:grid-cols-4' : ''} gap-6 md:gap-8 max-w-6xl mx-auto`}
+    >
       <Card className="relative border-border bg-card/50 backdrop-blur-sm">
         <CardHeader>
           <CardTitle className="text-2xl">Free</CardTitle>
@@ -202,7 +218,7 @@ export function PricingClient({
           <Button
             className="w-full bg-blue-600 hover:bg-blue-700 text-white"
             size="lg"
-            disabled={loadingPlan === 'platform' || currentPlan === 'platform' || currentPlan === 'ai'}
+            disabled={loadingPlan === 'platform' || currentPlan === 'platform' || currentPlan === 'lifetime' || currentPlan === 'ai'}
             onClick={() => startCheckout('platform')}
           >
             {currentPlan === 'platform' ? 'Current Plan' : loadingPlan === 'platform' ? 'Processing…' : (
@@ -255,6 +271,46 @@ export function PricingClient({
           </Button>
         </CardFooter>
       </Card>
+
+      {showLifetime && (
+        <Card className="relative border-amber-500/40 bg-card/50 backdrop-blur-sm">
+          <CardHeader>
+            <CardTitle className="text-xl sm:text-2xl flex flex-wrap items-center gap-2">
+              Lifetime <InfinityIcon className="h-5 w-5 text-amber-500" />
+            </CardTitle>
+            <CardDescription>Pay once, own it forever</CardDescription>
+            <div className="mt-4">
+              <span className="text-4xl font-bold">₹{PLAN_PRICES_INR.lifetime}</span>
+              <span className="text-muted-foreground"> one-time</span>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-3">
+              {LIFETIME_FEATURES.map((feature) => (
+                <li key={feature} className="flex items-center gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-amber-500 shrink-0" />
+                  <span>{feature}</span>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+          <CardFooter>
+            <Button
+              className="w-full bg-amber-600 hover:bg-amber-700 text-white"
+              size="lg"
+              disabled={loadingPlan === 'lifetime' || currentPlan === 'lifetime'}
+              onClick={() => startCheckout('lifetime')}
+            >
+              {currentPlan === 'lifetime' ? 'Current Plan' : loadingPlan === 'lifetime' ? 'Processing…' : (
+                <>
+                  <Zap className="mr-2 h-4 w-4 fill-white" />
+                  Get Lifetime Access
+                </>
+              )}
+            </Button>
+          </CardFooter>
+        </Card>
+      )}
     </div>
   );
 }

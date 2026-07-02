@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { AdminClient } from './AdminClient';
 import { AdminSessionExplorer } from './AdminSessionExplorer';
 import { LaunchOfferPanel } from './LaunchOfferPanel';
+import { FeatureFlagsPanel } from './FeatureFlagsPanel';
 import type { AdminSessionSummary } from '@/lib/admin-sessions-types';
 import type { LaunchOfferPublicStats } from '@/lib/launch-offer';
 import type { LaunchOfferClaimantRow, LaunchOfferRedemptionRow } from '@/lib/launch-offer-grant';
@@ -23,7 +24,7 @@ interface AdminUser {
   createdAt: Date;
 }
 
-type AdminTab = 'users' | 'activities' | 'launch';
+type AdminTab = 'users' | 'activities' | 'launch' | 'flags';
 
 interface AdminDashboardProps {
   users: AdminUser[];
@@ -95,6 +96,18 @@ export function AdminDashboard({
         >
           Launch Offer
         </button>
+        <button
+          type="button"
+          onClick={() => setTab('flags')}
+          className={cn(
+            'flex-1 sm:flex-none px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-md transition-colors text-center',
+            tab === 'flags'
+              ? 'bg-white dark:bg-zinc-900 text-foreground shadow-sm'
+              : 'text-zinc-500 hover:text-foreground'
+          )}
+        >
+          Feature Flags
+        </button>
       </div>
 
       {tab === 'users' ? (
@@ -112,12 +125,14 @@ export function AdminDashboard({
           users={users.map((u) => ({ id: u.id, name: u.name, email: u.email }))}
           initialUserId={activityUserFilter !== 'all' ? activityUserFilter : undefined}
         />
-      ) : (
+      ) : tab === 'launch' ? (
         <LaunchOfferPanel
           stats={launchStats}
           redemptions={launchRedemptions}
           claimants={launchClaimants}
         />
+      ) : (
+        <FeatureFlagsPanel />
       )}
     </div>
   );

@@ -3,6 +3,11 @@ import {
   canUseAI,
   canViewExpertSolution,
   getAdminGrantExpiryDate,
+  getEffectivePlanType,
+  getInitialAiCreditsForPlan,
+  hasAiPlan,
+  hasPlatformAccess,
+  isPlanActive,
   type UserAccess,
 } from '@/lib/access';
 import { FREE_MONTHLY_CREDITS, FREE_PROBLEM_SLUGS } from '@/lib/plans';
@@ -158,5 +163,32 @@ describe('canUseAI', () => {
       );
       expect(result).toEqual({ allowed: true, source: 'byok' });
     });
+  });
+});
+
+describe('lifetime plan', () => {
+  const lifetimeUser = { planType: 'lifetime' as const, planExpiresAt: null };
+
+  it('is always active with no expiry', () => {
+    expect(isPlanActive(lifetimeUser)).toBe(true);
+  });
+
+  it('resolves effective plan to lifetime', () => {
+    expect(getEffectivePlanType(lifetimeUser)).toBe('lifetime');
+  });
+
+  it('has platform access but not the AI plan', () => {
+    expect(hasPlatformAccess(lifetimeUser)).toBe(true);
+    expect(hasAiPlan(lifetimeUser)).toBe(false);
+  });
+
+  it('ignores a stray expiry date on lifetime', () => {
+    expect(
+      isPlanActive({ planType: 'lifetime', planExpiresAt: new Date('2000-01-01') })
+    ).toBe(true);
+  });
+
+  it('gets zero platform AI credits', () => {
+    expect(getInitialAiCreditsForPlan('lifetime')).toBe(0);
   });
 });
