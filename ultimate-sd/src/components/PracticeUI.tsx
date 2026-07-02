@@ -52,12 +52,14 @@ export default function PracticeUI({
   existingProgress,
   interviewConfig = null,
   interviewAllowed = false,
+  probeEnabled = false,
 }: {
   problem: SystemDesignProblem;
   stepMode?: PracticeStepMode;
   existingProgress?: any;
   interviewConfig?: InterviewConfig | null;
   interviewAllowed?: boolean;
+  probeEnabled?: boolean;
 }) {
   return (
     <DiagramCanvasProvider>
@@ -67,6 +69,7 @@ export default function PracticeUI({
         existingProgress={existingProgress}
         interviewConfig={interviewConfig}
         interviewAllowed={interviewAllowed}
+        probeEnabled={probeEnabled}
       />
     </DiagramCanvasProvider>
   );
@@ -78,12 +81,14 @@ function PracticeUIContent({
   existingProgress,
   interviewConfig = null,
   interviewAllowed = false,
+  probeEnabled = false,
 }: {
   problem: SystemDesignProblem;
   stepMode: PracticeStepMode;
   existingProgress?: any;
   interviewConfig?: InterviewConfig | null;
   interviewAllowed?: boolean;
+  probeEnabled?: boolean;
 }) {
   const diagramRef = useDiagramCanvasRef();
   const { data: session, status } = useSession();
@@ -500,7 +505,7 @@ function PracticeUIContent({
 
           {/* Main Chat Interface */}
           <div className="animate-fade-in" style={{ animationDelay: '100ms' }}>
-            <StepByStepChat problem={problem} />
+            <StepByStepChat problem={problem} probeEnabled={probeEnabled} />
           </div>
 
           {/* Diagram Section — always mounted when stepKey is set */}

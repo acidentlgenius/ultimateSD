@@ -25,6 +25,7 @@ interface FeedbackModalProps {
   isOpen: boolean;
   onClose: () => void;
   onContinue?: () => void;
+  onStartProbe?: () => void;
   xpEarned?: number;
 }
 
@@ -53,7 +54,7 @@ function Confetti({ show }: { show: boolean }) {
   );
 }
 
-export default function FeedbackModal({ feedback, isOpen, onClose, onContinue, xpEarned = 0 }: FeedbackModalProps) {
+export default function FeedbackModal({ feedback, isOpen, onClose, onContinue, onStartProbe, xpEarned = 0 }: FeedbackModalProps) {
   const [animatedScore, setAnimatedScore] = useState(0);
   const [animatedAccuracy, setAnimatedAccuracy] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
@@ -396,8 +397,13 @@ export default function FeedbackModal({ feedback, isOpen, onClose, onContinue, x
                 Export PDF
               </Button>
             )}
-            <Button 
-              onClick={handleContinue} 
+            {feedback.isAcceptable && onStartProbe && (
+              <Button variant="outline" onClick={onStartProbe}>
+                Probe this answer
+              </Button>
+            )}
+            <Button
+              onClick={handleContinue}
               className={`w-full sm:w-auto gradient-bg hover:opacity-90 transition-all hover:scale-105 shadow-lg ${
                 feedback.isAcceptable 
                   ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700' 

@@ -61,6 +61,7 @@ export default async function PracticePage({
   }
 
   const interviewAllowed = await canAccessFeature(session.user.id, 'interviewMode');
+  const probeAllowed = await canAccessFeature(session.user.id, 'aiProbe');
   const requestedVariant = parseInterviewParam(interview);
   if (requestedVariant && !interviewAllowed) {
     redirect(`/practice/${slug}`); // dark flag: strip the interview param entirely
@@ -101,6 +102,7 @@ export default async function PracticePage({
       existingProgress={progressForUI}
       interviewConfig={interviewConfig}
       interviewAllowed={interviewAllowed}
+      probeEnabled={probeAllowed}
     />
   );
 }
