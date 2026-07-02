@@ -43,7 +43,9 @@ export async function updateUserPlan(
 
   const now = new Date();
   let planExpiresAt =
-    planType !== 'free' ? getAdminGrantExpiryDate(now) : null;
+    planType !== 'free' && planType !== 'lifetime'
+      ? getAdminGrantExpiryDate(now)
+      : null;
   let launchOfferSlotUsed = false;
 
   try {
@@ -78,7 +80,7 @@ export async function updateUserPlan(
 
     let emailSent = false;
 
-    if (planType === 'platform' || planType === 'lifetime' || planType === 'ai') {
+    if (planType === 'platform' || planType === 'ai') {
       const user = await prisma.user.findUnique({
         where: { id: userId },
         select: { email: true, name: true },
