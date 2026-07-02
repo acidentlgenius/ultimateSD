@@ -43,7 +43,7 @@ export interface UserAccessSnapshot {
 }
 
 function normalizePlanType(planType: string | null | undefined): PlanType {
-  if (planType === 'platform' || planType === 'ai') {
+  if (planType === 'platform' || planType === 'lifetime' || planType === 'ai') {
     return planType;
   }
   return 'free';
@@ -73,7 +73,7 @@ export function getEffectivePlanType(user: Pick<UserAccess, 'planType' | 'planEx
 
 export function hasPlatformAccess(user: Pick<UserAccess, 'planType' | 'planExpiresAt'>): boolean {
   const plan = getEffectivePlanType(user);
-  return plan === 'platform' || plan === 'ai';
+  return plan === 'platform' || plan === 'lifetime' || plan === 'ai';
 }
 
 export function hasAiPlan(user: Pick<UserAccess, 'planType' | 'planExpiresAt'>): boolean {
@@ -166,7 +166,7 @@ export function canUseAI(
     };
   }
 
-  if (plan === 'platform') {
+  if (plan === 'platform' || plan === 'lifetime') {
     if (hasByokKey(user)) {
       return { allowed: true, source: 'byok' };
     }
@@ -190,7 +190,7 @@ export function toAccessSnapshot(user: UserAccess): UserAccessSnapshot {
     planType,
     planExpiresAt: user.planExpiresAt,
     hasActivePlan: active && planType !== 'free',
-    hasPlatformPlan: active && (planType === 'platform' || planType === 'ai'),
+    hasPlatformPlan: active && (planType === 'platform' || planType === 'lifetime' || planType === 'ai'),
     hasAiPlan: active && planType === 'ai',
     hasGeminiKey: Boolean(user.geminiApiKey),
     hasXaiKey: Boolean(user.xaiApiKey),
@@ -229,7 +229,8 @@ export function getInitialAiCreditsForPlan(planType: PlanType): number {
       return AI_MONTHLY_CREDITS;
     case 'free':
       return FREE_MONTHLY_CREDITS;
-    default:
+    case 'platform':
+    case 'lifetime':
       return 0;
   }
 }

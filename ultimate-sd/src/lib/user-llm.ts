@@ -302,7 +302,7 @@ export async function getUserLLM(
 
 export async function activateUserPlan(
   userId: string,
-  planType: 'platform' | 'ai'
+  planType: 'platform' | 'lifetime' | 'ai'
 ): Promise<void> {
   const now = new Date();
   await prisma.user.update({

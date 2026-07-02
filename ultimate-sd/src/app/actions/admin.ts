@@ -78,7 +78,7 @@ export async function updateUserPlan(
 
     let emailSent = false;
 
-    if (planType === 'platform' || planType === 'ai') {
+    if (planType === 'platform' || planType === 'lifetime' || planType === 'ai') {
       const user = await prisma.user.findUnique({
         where: { id: userId },
         select: { email: true, name: true },

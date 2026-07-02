@@ -50,7 +50,7 @@ export function AdminClient({ users, launchStats, onViewActivity, page, totalPag
 
   const handleUpdatePlan = async (
     userId: string,
-    planType: 'free' | 'platform' | 'ai',
+    planType: 'free' | 'platform' | 'lifetime' | 'ai',
     options?: { consumeLaunchOfferSlot?: boolean }
   ) => {
     setLoading(userId);

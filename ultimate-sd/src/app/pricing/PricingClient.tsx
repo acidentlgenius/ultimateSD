@@ -202,7 +202,7 @@ export function PricingClient({
           <Button
             className="w-full bg-blue-600 hover:bg-blue-700 text-white"
             size="lg"
-            disabled={loadingPlan === 'platform' || currentPlan === 'platform' || currentPlan === 'ai'}
+            disabled={loadingPlan === 'platform' || currentPlan === 'platform' || currentPlan === 'lifetime' || currentPlan === 'ai'}
             onClick={() => startCheckout('platform')}
           >
             {currentPlan === 'platform' ? 'Current Plan' : loadingPlan === 'platform' ? 'Processing…' : (
