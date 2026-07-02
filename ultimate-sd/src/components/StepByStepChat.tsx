@@ -129,6 +129,8 @@ const WIDGETS: Record<string, React.ComponentType> = {
   'bloom-filter-viz': dynamic(() => import('./widgets/BloomFilterViz'), { loading: () => <WidgetLoader /> }),
 };
 
+const ProbePanel = dynamic(() => import('./ProbePanel'), { ssr: false });
+
 interface FeedbackResult {
   score: number;
   accuracy: number;
@@ -149,6 +151,7 @@ interface SavedStepData {
 
 interface Props {
   problem: SystemDesignProblem;
+  probeEnabled?: boolean;
 }
 
 type DbSubmission = {
@@ -243,7 +246,7 @@ function findResumePosition(
   return { phase: lastPhase ?? 'requirements', stepIndex: Math.max(0, lastSteps.length - 1) };
 }
 
-export default function StepByStepChat({ problem }: Props) {
+export default function StepByStepChat({ problem, probeEnabled = false }: Props) {
   const [currentPhase, setCurrentPhase] = useState(() => {
     const keys = Object.keys(resolvePhaseSteps(problem.steps, DEFAULT_PHASE_STEPS));
     return keys[0] ?? 'requirements';
@@ -258,6 +261,7 @@ export default function StepByStepChat({ problem }: Props) {
   const [showFeedback, setShowFeedback] = useState(false);
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [probeContext, setProbeContext] = useState<{ phase: string; stepAnswer: string } | null>(null);
 
   // Store all step data
   const [savedStepData, setSavedStepData] = useState<Map<string, SavedStepData>>(new Map());
@@ -580,6 +584,7 @@ export default function StepByStepChat({ problem }: Props) {
       setFeedback(null);
     }
     setShowFeedback(false);
+    setProbeContext(null);
     setNewItemInput('');
   }, [currentStepKey]);
 
@@ -1119,6 +1124,20 @@ return (
               isOpen={showFeedback}
               onClose={() => setShowFeedback(false)}
               onContinue={handleNext}
+              onStartProbe={
+                probeEnabled && feedback.isAcceptable
+                  ? () => {
+                      const stepAnswer =
+                        currentStep.inputType === 'list'
+                          ? listItems.join('\n')
+                          : currentStep.inputType === 'schema'
+                            ? JSON.stringify(schemaData, null, 2)
+                            : textInput;
+                      setProbeContext({ phase: currentStep.phase, stepAnswer });
+                      setShowFeedback(false);
+                    }
+                  : undefined
+              }
               feedback={feedback}
               xpEarned={feedback.isAcceptable ? 20 : 0}
             />
@@ -1133,6 +1152,15 @@ return (
           />
         </div>
       </Card>
+
+      {probeContext && (
+        <ProbePanel
+          problem={problem}
+          phase={probeContext.phase}
+          stepAnswer={probeContext.stepAnswer}
+          onClose={() => setProbeContext(null)}
+        />
+      )}
 
       {/* Progress History and Mini Indicator removed for clean Sidebar layout */}
 
