@@ -49,3 +49,42 @@ export async function mockAiRoutes(page: Page) {
     });
   });
 }
+
+const DEFAULT_INTERVIEW_SUMMARY = {
+  overallScore: 8,
+  verdict: 'Hire',
+  strengths: ['Structured requirements', 'Clear trade-off reasoning'],
+  improvements: ['Quantify capacity estimates earlier'],
+  phaseNotes: [{ phase: 'HLD', comment: 'Solid component breakdown.' }],
+};
+
+export async function mockInterviewSummary(page: Page) {
+  await page.route('**/api/interview/summary', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ summary: DEFAULT_INTERVIEW_SUMMARY }),
+    });
+  });
+}
+
+export async function mockAiProbe(page: Page) {
+  await page.route('**/api/ai/chat', async (route) => {
+    const body = route.request().postDataJSON() as { round?: number };
+    const round = body?.round ?? 1;
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        message: {
+          role: 'ai',
+          content: `Probe question ${round}: what breaks first at 10x traffic?`,
+          id: `probe-${round}`,
+          timestamp: new Date().toISOString(),
+        },
+        round,
+        isFinal: round >= 3,
+      }),
+    });
+  });
+}
