@@ -175,7 +175,7 @@ export function TimerWidget({
             } finally {
                 setIsLoading(false);
             }
-        } else {
+        } else if (timeLeft > 0) {
             setIsActive(true);
         }
     };
