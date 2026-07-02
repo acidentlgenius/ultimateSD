@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getAllSessions } from '../../lib/session-storage';
+import { getAllSessions, loadSessionState } from '../../lib/session-storage';
 
 describe('session-storage', () => {
   beforeEach(() => {
@@ -15,5 +15,16 @@ describe('session-storage', () => {
     expect(sessions.length).toBe(2);
     expect(sessions[0].problemSlug).toBe('test3'); // sorted by lastUpdated desc
     expect(sessions[1].problemSlug).toBe('test1');
+  });
+
+  it('loadSessionState clears unparseable session data from localStorage', () => {
+    localStorage.setItem('sd-practice-v1-corrupt', 'not a json');
+
+    // Attempt to load should fail and clear the item
+    const result = loadSessionState('corrupt');
+
+    expect(result).toBeNull();
+    // The key should have been removed
+    expect(localStorage.getItem('sd-practice-v1-corrupt')).toBeNull();
   });
 });

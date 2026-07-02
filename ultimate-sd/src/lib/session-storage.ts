@@ -121,8 +121,9 @@ export function loadSessionState(
     return null;
   }
 
+  const key = getStorageKey(problemSlug);
+
   try {
-    const key = getStorageKey(problemSlug);
     const stored = localStorage.getItem(key);
     
     if (!stored) {
@@ -134,7 +135,7 @@ export function loadSessionState(
     // Validate the structure
     if (!parsed.currentPhase || typeof parsed.currentStepIndex !== 'number') {
       console.warn('Invalid session state structure - clearing');
-      clearSessionState(problemSlug);
+      localStorage.removeItem(key);
       return null;
     }
 
@@ -146,8 +147,10 @@ export function loadSessionState(
       lastUpdated: parsed.lastUpdated ? new Date(parsed.lastUpdated) : null,
     };
   } catch (error) {
+    // SQUASH: Root Cause: Failing to parse invalid JSON didn't actually remove it, leading to unrecoverable UI crashes on next load.
+    // SQUASH: Fix: Explicitly remove the corrupted key from localStorage when JSON.parse throws.
     console.error('Failed to load session state:', error);
-    clearSessionState(problemSlug);
+    localStorage.removeItem(key);
     return null;
   }
 }
