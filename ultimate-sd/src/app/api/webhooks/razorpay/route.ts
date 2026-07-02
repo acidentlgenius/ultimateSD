@@ -3,6 +3,7 @@ import { verifyWebhookSignature } from '@/lib/razorpay';
 import { activateUserPlan } from '@/lib/user-llm';
 import { prisma } from '@/lib/prisma';
 import { type PlanType } from '@/lib/plans';
+import posthog from '@/lib/posthog';
 
 export async function POST(req: NextRequest) {
   try {
@@ -46,8 +47,18 @@ export async function POST(req: NextRequest) {
 
     await activateUserPlan(userId, planType);
 
+    posthog.capture({
+      distinctId: userId,
+      event: 'subscription activated',
+      properties: {
+        plan_type: planType,
+        source: 'razorpay_webhook',
+      },
+    })
+
     return NextResponse.json({ received: true });
   } catch (error) {
+    posthog.captureException(error as Error)
     console.error('Razorpay webhook error:', error);
     return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 });
   }

@@ -7,6 +7,7 @@ import bcrypt from "bcryptjs"
 import { prisma } from "@/lib/prisma"
 import { toAccessSnapshot, type UserAccess } from "@/lib/access"
 import { type PlanType } from "@/lib/plans"
+import posthog from "@/lib/posthog"
 
 const accessSelect = {
     xp: true,
@@ -151,9 +152,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         strategy: "jwt",
     },
     callbacks: {
-        async jwt({ token, user }) {
+        async jwt({ token, user, account }) {
             if (user?.id) {
                 token.id = user.id;
+                posthog.capture({
+                    distinctId: user.id,
+                    event: 'user logged in',
+                    properties: {
+                        $set: { email: user.email, name: user.name },
+                        login_method: account?.provider ?? 'credentials',
+                    },
+                })
             } else if (!token.id && token.sub) {
                 token.id = token.sub;
             }

@@ -4,6 +4,7 @@ import { getRazorpayClient, verifyPaymentSignature } from '@/lib/razorpay';
 import { activateUserPlan } from '@/lib/user-llm';
 import { type PlanType, PLAN_LABELS } from '@/lib/plans';
 import { canAccessFeature } from '@/lib/feature-flags-server';
+import posthog from '@/lib/posthog';
 
 function isPlanType(value: unknown): value is Exclude<PlanType, 'free'> {
   return value === 'platform' || value === 'ai' || value === 'lifetime';
@@ -70,6 +71,16 @@ export async function POST(req: NextRequest) {
     }
 
     await activateUserPlan(session.user.id, orderPlanType);
+
+    posthog.capture({
+      distinctId: session.user.id,
+      event: 'payment verified',
+      properties: {
+        plan_type: orderPlanType,
+        order_id: razorpay_order_id,
+        payment_id: razorpay_payment_id,
+      },
+    })
 
     return NextResponse.json({
       success: true,

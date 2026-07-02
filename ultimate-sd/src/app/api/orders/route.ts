@@ -7,6 +7,7 @@ import {
 } from '@/lib/razorpay';
 import { type PlanType } from '@/lib/plans';
 import { canAccessFeature } from '@/lib/feature-flags-server';
+import posthog from '@/lib/posthog';
 
 export async function POST(req: NextRequest) {
   try {
@@ -45,6 +46,17 @@ export async function POST(req: NextRequest) {
         planType,
       },
     });
+
+    posthog.capture({
+      distinctId: session.user.id,
+      event: 'payment order created',
+      properties: {
+        plan_type: planType,
+        order_id: order.id,
+        amount_paise: order.amount,
+        currency: order.currency,
+      },
+    })
 
     return NextResponse.json({
       orderId: order.id,

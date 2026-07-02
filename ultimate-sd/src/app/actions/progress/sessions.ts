@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { ProgressStatus, SessionStatus } from '@prisma/client';
 import type { Prisma } from '@prisma/client';
+import posthog from '@/lib/posthog';
 
 export async function startPracticeSession(problemId: string) {
   const session = await auth();
@@ -80,6 +81,16 @@ export async function startPracticeSession(problemId: string) {
 
       return practiceSession;
     });
+
+    posthog.capture({
+      distinctId: userId,
+      event: 'practice session started',
+      properties: {
+        problem_id: problemId,
+        session_id: result.id,
+        attempt_number: result.attemptNumber,
+      },
+    })
 
     revalidatePath(`/practice/${problemId}`);
     return {
@@ -224,6 +235,15 @@ export async function completeSession(
       });
     });
 
+    posthog.capture({
+      distinctId: userId,
+      event: 'practice session completed',
+      properties: {
+        session_id: sessionId,
+        final_score: finalScore,
+      },
+    })
+
     revalidatePath('/');
     return { success: true };
   } catch (error) {
@@ -293,6 +313,15 @@ export async function abandonSession(problemId: string) {
 
       return newSession;
     });
+
+    posthog.capture({
+      distinctId: userId,
+      event: 'practice session abandoned',
+      properties: {
+        problem_id: problemId,
+        new_session_id: result.id,
+      },
+    })
 
     revalidatePath(`/practice/${problemId}`);
     revalidatePath('/');
