@@ -35,6 +35,10 @@ vi.mock('@/app/actions/progress', () => ({
   getUserProgressMap: vi.fn(() => Promise.resolve(new Map())),
 }));
 
+vi.mock('@/lib/feature-flags-server', () => ({
+  canAccessFeature: vi.fn(() => Promise.resolve(true)),
+}));
+
 vi.mock('@/app/actions/launch-offer', () => ({
   getLaunchOfferStats: vi.fn(() =>
     Promise.resolve({
@@ -86,6 +90,14 @@ describe('Home', () => {
           }),
         ]),
       })
+    );
+  });
+
+  it('passes the fresherTrack flag decision to DashboardClient', async () => {
+    const Component = await Home();
+    renderToStaticMarkup(Component);
+    expect(dashboardProps).toHaveBeenCalledWith(
+      expect.objectContaining({ fresherTrackEnabled: true })
     );
   });
 });
