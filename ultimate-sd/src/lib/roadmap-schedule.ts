@@ -60,10 +60,64 @@ export const SE_EIGHT_WEEK_SCHEDULE: readonly ScheduleWeek[] = [
   },
 ] as const;
 
+/** 8-week study plan for the Fresher & Campus track (~5–8 hrs/week). */
+export const FRESHER_EIGHT_WEEK_SCHEDULE: readonly ScheduleWeek[] = [
+  {
+    week: 1,
+    title: 'Foundations first',
+    focus: 'Concepts + canvas drills',
+    slugs: [],
+  },
+  {
+    week: 2,
+    title: 'OOP warm-up',
+    focus: 'Classes + allocation',
+    slugs: ['design-parking-lot'],
+  },
+  {
+    week: 3,
+    title: 'State machines',
+    focus: 'Scheduling logic',
+    slugs: ['design-elevator-system'],
+  },
+  {
+    week: 4,
+    title: 'Your first HLD',
+    focus: 'Hashing + redirects',
+    slugs: ['design-tinyurl'],
+  },
+  {
+    week: 5,
+    title: 'APIs done right',
+    focus: 'Resource modeling',
+    slugs: ['design-rest-api'],
+  },
+  {
+    week: 6,
+    title: 'Protect the service',
+    focus: 'Rate limiting',
+    slugs: ['design-rate-limiter'],
+  },
+  {
+    week: 7,
+    title: 'Fan-out basics',
+    focus: 'Pub/sub patterns',
+    slugs: ['design-notification-system'],
+  },
+  {
+    week: 8,
+    title: 'Interview ready',
+    focus: 'Timed mock + chat capstone',
+    slugs: ['design-whatsapp'],
+  },
+] as const;
+
 export function getScheduleForTrack(track: RoadmapTrack): readonly ScheduleWeek[] {
   switch (track) {
     case 'se':
       return SE_EIGHT_WEEK_SCHEDULE;
+    case 'fresher':
+      return FRESHER_EIGHT_WEEK_SCHEDULE;
     case 'sse':
     case 'mlops':
     case 'agentic-ai':

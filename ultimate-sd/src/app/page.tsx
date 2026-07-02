@@ -7,17 +7,19 @@ import {
   getLaunchOfferStats,
   getLaunchOfferUserState,
 } from "@/app/actions/launch-offer";
+import { canAccessFeature } from "@/lib/feature-flags-server";
 import { PROBLEMS } from "@/lib/problems";
 import { ProblemWithStatus } from "@/types";
 
 export default async function Home() {
   const session = await auth();
 
-  const [launchStats, launchUserState] = await Promise.all([
+  const [launchStats, launchUserState, fresherTrackEnabled] = await Promise.all([
     getLaunchOfferStats(),
     session?.user?.id
       ? getLaunchOfferUserState(session.user.id)
       : Promise.resolve(null),
+    canAccessFeature(session?.user?.id ?? null, 'fresherTrack'),
   ]);
 
   // ...
@@ -55,6 +57,7 @@ export default async function Home() {
       problems={problemsWithStatus}
       launchStats={launchStats}
       launchUserState={launchUserState}
+      fresherTrackEnabled={fresherTrackEnabled}
     />
   );
 }
