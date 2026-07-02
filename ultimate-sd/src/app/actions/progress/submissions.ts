@@ -8,6 +8,7 @@ import { calculateLevel, calculateStreak } from '@/lib/gamification-logic';
 import { getStepsForProblem } from '@/lib/problem-steps';
 import { PROBLEMS } from '@/lib/problems';
 import { computeProgressPercent, countTotalSteps, parseStepPhase } from '@/lib/progress-utils';
+import posthog from '@/lib/posthog';
 
 function resolveProblemSlug(problemId: string, problemSlug?: string): string | undefined {
   if (problemSlug) return problemSlug;
@@ -89,6 +90,19 @@ export async function recordStepSubmission(input: {
       });
     });
 
+    posthog.capture({
+      distinctId: userId,
+      event: 'step submitted',
+      properties: {
+        problem_id: input.problemId,
+        step_id: input.stepId,
+        phase: input.phase,
+        score: input.score,
+        is_passing: input.isPassing,
+        session_id: input.sessionId,
+      },
+    })
+
     revalidatePath('/');
     revalidatePath(`/practice/${input.problemId}`);
     return { success: true };
@@ -138,6 +152,31 @@ export async function awardStepXp(problemId: string, stepId: string) {
         lastPracticeAt: now,
       },
     });
+
+    posthog.capture({
+      distinctId: userId,
+      event: 'xp awarded',
+      properties: {
+        problem_id: problemId,
+        step_id: stepId,
+        xp_awarded: XP_PER_STEP,
+        new_xp: newXp,
+        new_level: newLevel,
+        new_streak: newStreak,
+      },
+    })
+
+    if (newLevel > currentLevel) {
+      posthog.capture({
+        distinctId: userId,
+        event: 'level up',
+        properties: {
+          previous_level: currentLevel,
+          new_level: newLevel,
+          total_xp: newXp,
+        },
+      })
+    }
 
     revalidatePath('/');
     revalidatePath(`/practice/${problemId}`);

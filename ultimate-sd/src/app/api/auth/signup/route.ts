@@ -9,6 +9,7 @@ import {
     sendVerificationEmail,
     verificationIdentifier,
 } from "@/lib/email"
+import posthog from "@/lib/posthog"
 
 export async function POST(req: Request) {
     try {
@@ -42,6 +43,15 @@ export async function POST(req: Request) {
                 password: hashedPassword,
                 aiCredits: FREE_MONTHLY_CREDITS,
                 aiCreditsResetAt: getNextAiCreditsResetDate(),
+            },
+        })
+
+        posthog.capture({
+            distinctId: user.id,
+            event: 'user signed up',
+            properties: {
+                $set: { email: user.email, name: user.name },
+                signup_method: 'credentials',
             },
         })
 

@@ -3,6 +3,7 @@ import { auth } from '@/auth';
 import { verifyPaymentSignature } from '@/lib/razorpay';
 import { activateUserPlan } from '@/lib/user-llm';
 import { type PlanType } from '@/lib/plans';
+import posthog from '@/lib/posthog';
 
 export async function POST(req: NextRequest) {
   try {
@@ -39,6 +40,16 @@ export async function POST(req: NextRequest) {
     }
 
     await activateUserPlan(session.user.id, planType);
+
+    posthog.capture({
+      distinctId: session.user.id,
+      event: 'payment verified',
+      properties: {
+        plan_type: planType,
+        order_id: razorpay_order_id,
+        payment_id: razorpay_payment_id,
+      },
+    })
 
     return NextResponse.json({
       success: true,

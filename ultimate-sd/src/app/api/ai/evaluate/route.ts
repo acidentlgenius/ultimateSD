@@ -7,6 +7,7 @@ import {
   resolveEvaluationPhaseKey,
   resolveEvaluationSubStepKey,
 } from '@/lib/step-journey';
+import posthog from '@/lib/posthog';
 
 // Detailed evaluation prompts for each phase
 const EVALUATION_GUIDES = {
@@ -371,6 +372,18 @@ Be constructive, encouraging, but honest. This is practice for a real interview.
     content = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
 
     const feedback = JSON.parse(content);
+
+    posthog.capture({
+      distinctId: session.user.id,
+      event: 'ai evaluation requested',
+      properties: {
+        problem: body.problem,
+        phase: body.phase,
+        sub_step: body.subStep,
+        score: feedback.score,
+        is_acceptable: feedback.isAcceptable,
+      },
+    })
 
     return NextResponse.json({ feedback });
   } catch (error) {
