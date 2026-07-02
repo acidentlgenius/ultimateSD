@@ -48,7 +48,7 @@ export default defineConfig({
     },
     {
       name: 'authenticated',
-      testMatch: /(auth|practice|roadmap|flag-gating|interview-mode|probe)\.spec\.ts/,
+      testMatch: /(auth|practice|roadmap|fresher-track|flag-gating|interview-mode|probe)\.spec\.ts/,
       dependencies: ['setup'],
       use: {
         ...devices['Desktop Chrome'],
