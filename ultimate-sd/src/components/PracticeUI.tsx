@@ -38,7 +38,13 @@ import { CheckCircle, Sparkles } from 'lucide-react';
 import type { PracticeStepMode } from '@/lib/interview-lite-steps';
 import { Badge } from '@/components/ui/badge';
 import { StartInterviewDialog } from './StartInterviewDialog';
-import type { InterviewConfig } from '@/lib/interview-mode';
+import InterviewSummaryPanel from './InterviewSummaryPanel';
+import {
+  interviewStatusReducer,
+  type InterviewConfig,
+  type InterviewEvent,
+  type InterviewStatus,
+} from '@/lib/interview-mode';
 
 export default function PracticeUI({
   problem,
@@ -102,6 +108,9 @@ function PracticeUIContent({
   const [isTimerRunning, setIsTimerRunning] = useState<boolean>((existingProgress as any)?.isTimerRunning ?? true);
   const [serverPausedSeconds, setServerPausedSeconds] = useState<number>((existingProgress as any)?.totalPausedSeconds ?? 0);
   const [lastPausedAt, setLastPausedAt] = useState<Date | string | null>((existingProgress as any)?.lastPausedAt ?? null);
+  const [interviewStatus, setInterviewStatus] = useState<InterviewStatus>('running');
+  const dispatchInterview = (event: InterviewEvent) =>
+    setInterviewStatus((s) => interviewStatusReducer(s, event));
 
   const [isMounted, setIsMounted] = useState(false);
 
@@ -251,37 +260,57 @@ function PracticeUIContent({
                 Interview Lite · 45 min
               </Badge>
             )}
+            {interviewConfig && (
+              <Badge
+                variant="outline"
+                className="mt-1.5 text-[10px] border-red-500/30 text-red-600 bg-red-500/10"
+              >
+                Interview · {interviewConfig.durationSeconds / 60} min
+              </Badge>
+            )}
           </div>
         </div>
 
         {/* Interview Timer */}
         <div className="mb-4">
-          <TimerWidget
-            className="w-full justify-between"
-            problemId={problem.id}
-            initialTimeSeconds={
-              stepMode === 'lite' ? 2700 :
-              problem.difficulty === 'Easy' ? 1800 :
-                problem.difficulty === 'Medium' ? 2700 :
-                  3600
-            }
-            startedAt={serverStartedAt}
-            isTimerRunning={isTimerRunning}
-            totalPausedSeconds={serverPausedSeconds}
-            lastPausedAt={lastPausedAt}
-            onToggle={async () => {
-              if (!isAuthenticated) return;
-              const result = await togglePracticeTimer(problem.id);
-              if (result.success) {
-                setIsTimerRunning(result.isTimerRunning ?? false);
-                setServerPausedSeconds(result.totalPausedSeconds ?? 0);
-                setLastPausedAt(result.lastPausedAt ?? null);
+          {interviewConfig ? (
+            <TimerWidget
+              className="w-full justify-between"
+              problemId={`interview-${interviewConfig.variant}-${problem.id}`}
+              initialTimeSeconds={interviewConfig.durationSeconds}
+              onComplete={() => {
+                toast.warning("Time's up! Your interview has ended.");
+                dispatchInterview('TIME_EXPIRED');
+              }}
+            />
+          ) : (
+            <TimerWidget
+              className="w-full justify-between"
+              problemId={problem.id}
+              initialTimeSeconds={
+                stepMode === 'lite' ? 2700 :
+                problem.difficulty === 'Easy' ? 1800 :
+                  problem.difficulty === 'Medium' ? 2700 :
+                    3600
               }
-            }}
-            onComplete={async () => {
-              toast.warning("Time's up! The practice session has ended.");
-            }}
-          />
+              startedAt={serverStartedAt}
+              isTimerRunning={isTimerRunning}
+              totalPausedSeconds={serverPausedSeconds}
+              lastPausedAt={lastPausedAt}
+              onToggle={async () => {
+                if (!isAuthenticated) return;
+                const result = await togglePracticeTimer(problem.id);
+                if (result.success) {
+                  setIsTimerRunning(result.isTimerRunning ?? false);
+                  setServerPausedSeconds(result.totalPausedSeconds ?? 0);
+                  setLastPausedAt(result.lastPausedAt ?? null);
+                }
+              }}
+              onComplete={async () => {
+                toast.warning("Time's up! The practice session has ended.");
+              }}
+            />
+          )}
         </div>
       </div>
 
@@ -375,6 +404,17 @@ function PracticeUIContent({
 
         {interviewAllowed && !interviewConfig && (
           <StartInterviewDialog slug={problem.slug} />
+        )}
+
+        {interviewConfig && interviewStatus === 'running' && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full justify-start text-red-600 border-red-500/30 hover:bg-red-500/10"
+            onClick={() => dispatchInterview('FINISH_EARLY')}
+          >
+            End Interview
+          </Button>
         )}
 
         <Button
@@ -478,13 +518,29 @@ function PracticeUIContent({
       </main>
 
       {/* Help Assistant */}
-      <HelpAssistant
-        problem={problem}
-        currentPhase={phase}
-        completedSteps={completedSteps}
-        savedStepData={savedStepData}
-      />
+      {!interviewConfig && (
+        <HelpAssistant
+          problem={problem}
+          currentPhase={phase}
+          completedSteps={completedSteps}
+          savedStepData={savedStepData}
+        />
+      )}
 
+
+      {interviewConfig && interviewStatus !== 'running' && (
+        <InterviewSummaryPanel
+          problem={problem}
+          phaseSteps={phaseSteps}
+          savedStepData={savedStepData}
+          status={interviewStatus}
+          onSummaryReady={() => dispatchInterview('SUMMARY_READY')}
+          onSummaryFailed={() => dispatchInterview('SUMMARY_FAILED')}
+          onRetry={() => dispatchInterview('RETRY_SUMMARY')}
+          onExportPdf={exportTranscript}
+          isExporting={isExporting}
+        />
+      )}
 
       {FEATURES.solutionViewer && (
         <>
