@@ -64,6 +64,7 @@ export function getScheduleForTrack(track: RoadmapTrack): readonly ScheduleWeek[
   switch (track) {
     case 'se':
       return SE_EIGHT_WEEK_SCHEDULE;
+    case 'fresher': // temporary — real schedule lands in Task 3
     case 'sse':
     case 'mlops':
     case 'agentic-ai':
