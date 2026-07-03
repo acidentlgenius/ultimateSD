@@ -44,7 +44,7 @@ export async function Header() {
         <nav className="hidden lg:flex items-center gap-1 justify-self-center bg-secondary/30 p-1 rounded-full border border-black/5 dark:border-white/5 backdrop-blur-md shadow-sm shrink-0">
           {NAV_ITEMS.map((item) =>
             isNavGroup(item) ? (
-              <NavDropdown key={item.label} group={item} />
+              <NavDropdown key={item.label} label={item.label} />
             ) : (
               <Link
                 key={item.href}

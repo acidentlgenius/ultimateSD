@@ -40,7 +40,7 @@ export function MobileMenu({ user }: MobileMenuProps) {
   const menuItems = flattenNavLinks();
 
   return (
-    <div className="md:hidden ml-2">
+    <div className="lg:hidden ml-2">
       <Button
         variant="ghost"
         size="icon"

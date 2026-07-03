@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma';
 import { isValidEmail, normalizeEmail } from '@/lib/waitlist';
 
+// TODO: rate-limit before heavy traffic
 export async function joinWaitlist(email: string): Promise<{ success: boolean; error?: string }> {
   const normalized = normalizeEmail(email);
   if (!isValidEmail(normalized)) {

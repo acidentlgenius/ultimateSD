@@ -25,8 +25,8 @@ export const WHATS_NEW_ENTRIES: WhatsNewEntry[] = [
     date: '2026-07-03',
     title: 'AI Interviewer is coming',
     description:
-      'Timed mock interviews with a strict countdown, a voice interview you answer out loud, and an AI hiring-committee debrief at the end. Rolling out soon — join the waitlist from the home page.',
-    href: '/#ai-interviewer',
+      'Timed mock interviews with a strict countdown, a voice interview you answer out loud, and an AI hiring-committee debrief at the end. Rolling out soon — see how it fits your plan on the pricing page.',
+    href: '/pricing?feature=interviewMode',
     plans: ['platform', 'lifetime', 'ai'],
     status: 'coming-soon',
   },

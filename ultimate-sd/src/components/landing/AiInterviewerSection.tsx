@@ -33,13 +33,18 @@ export function AiInterviewerSection() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setStatus('saving');
-    const result = await joinWaitlist(email);
-    if (result.success) {
-      setStatus('done');
-      toast.success("You're on the list!", { description: "We'll email you the moment the AI Interviewer goes live." });
-    } else {
+    try {
+      const result = await joinWaitlist(email);
+      if (result.success) {
+        setStatus('done');
+        toast.success("You're on the list!", { description: "We'll email you the moment the AI Interviewer goes live." });
+      } else {
+        setStatus('idle');
+        toast.error(result.error ?? 'Something went wrong.');
+      }
+    } catch {
       setStatus('idle');
-      toast.error(result.error ?? 'Something went wrong.');
+      toast.error('Something went wrong. Please try again.');
     }
   };
 

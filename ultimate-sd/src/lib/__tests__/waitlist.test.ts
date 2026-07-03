@@ -13,6 +13,11 @@ describe('isValidEmail', () => {
     expect(isValidEmail('a@b')).toBe(false);
     expect(isValidEmail('a b@example.com')).toBe(false);
   });
+
+  it('rejects overly long addresses', () => {
+    expect(isValidEmail('a'.repeat(250) + '@example.com')).toBe(false);
+    expect(isValidEmail('dev@example.com')).toBe(true);
+  });
 });
 
 describe('normalizeEmail', () => {

@@ -5,5 +5,9 @@ export function normalizeEmail(email: string): string {
 }
 
 export function isValidEmail(email: string): boolean {
-  return EMAIL_RE.test(normalizeEmail(email));
+  const normalized = normalizeEmail(email);
+  if (normalized.length > 254) {
+    return false;
+  }
+  return EMAIL_RE.test(normalized);
 }

@@ -9,9 +9,14 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-import type { NavGroup } from '@/lib/navigation';
+import { NAV_ITEMS, isNavGroup } from '@/lib/navigation';
 
-export function NavDropdown({ group }: { group: NavGroup }) {
+export function NavDropdown({ label }: { label: string }) {
+  const group = NAV_ITEMS.find((item) => isNavGroup(item) && item.label === label);
+  if (!group || !isNavGroup(group)) {
+    return null;
+  }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
