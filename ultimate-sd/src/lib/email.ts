@@ -159,7 +159,7 @@ function formatPlanWelcomeSubject(
 }
 
 export function formatPlanWelcomeEmailHtml(params: PlanWelcomeEmailParams): string {
-  const dashboardUrl = `${SITE_URL}/home`;
+  const dashboardUrl = `${SITE_URL}/`;
   const context = params.context ?? 'default';
   const title =
     context === 'launch_ai_draw_win'

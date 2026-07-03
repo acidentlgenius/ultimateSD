@@ -3,11 +3,13 @@
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
+import { isPracticeIntent } from '@/lib/onboarding';
 
 export async function saveUserPreferences(
   targetCompanies: string[],
   preferredDifficulty: string[],
-  focusAreas: string[]
+  focusAreas: string[],
+  practiceIntent: string = ''
 ) {
   const session = await auth();
   if (!session?.user?.id) {
@@ -21,6 +23,7 @@ export async function saveUserPreferences(
         targetCompanies,
         preferredDifficulty,
         focusAreas,
+        practiceIntent: isPracticeIntent(practiceIntent) ? practiceIntent : '',
         onboardingCompleted: true,
       },
     });

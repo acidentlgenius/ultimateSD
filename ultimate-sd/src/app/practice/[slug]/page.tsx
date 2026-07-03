@@ -3,6 +3,7 @@ import { Metadata } from 'next';
 import { PROBLEMS } from '@/lib/problems';
 import { getPracticeSteps } from '@/lib/interview-lite-steps';
 import PracticeUI from '@/components/PracticeUI';
+import { FeatureUpsell } from '@/components/FeatureUpsell';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { canAccessProblem } from '@/lib/access';
@@ -64,7 +65,14 @@ export default async function PracticePage({
   const probeAllowed = await canAccessFeature(session.user.id, 'aiProbe');
   const requestedVariant = parseInterviewParam(interview);
   if (requestedVariant && !interviewAllowed) {
-    redirect(`/practice/${slug}`); // dark flag: strip the interview param entirely
+    // Feature not launched for this user: pitch it instead of silently stripping the param.
+    return (
+      <FeatureUpsell
+        feature="interviewMode"
+        continueHref={`/practice/${slug}`}
+        continueLabel="Practice without interview mode"
+      />
+    );
   }
   const interviewConfig =
     requestedVariant && interviewAllowed ? getInterviewConfig(requestedVariant) : null;

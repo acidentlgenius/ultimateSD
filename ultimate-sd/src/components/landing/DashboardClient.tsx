@@ -19,6 +19,7 @@ import { tokens } from '@/styles/tokens';
 import { Button } from '@/components/ui/button';
 import { Hero } from '@/components/landing/Hero';
 import { FeatureShowcase } from '@/components/landing/FeatureShowcase';
+import { AiInterviewerSection } from '@/components/landing/AiInterviewerSection';
 import { RoadmapPreview } from '@/components/landing/RoadmapPreview';
 import { UserHero } from '@/components/landing/UserHero';
 import { ClaimPlatformAccessBanner } from '@/components/landing/ClaimPlatformAccessBanner';
@@ -249,6 +250,7 @@ export function DashboardClient({
 
             {/* 2. Interactive Feature Showcase (Hide if logged in) */}
             {!user && <FeatureShowcase />}
+            {!user && <AiInterviewerSection />}
 
             {/* 2.5 Roadmap Preview */}
             <RoadmapPreview />

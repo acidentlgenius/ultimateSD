@@ -53,8 +53,18 @@ test.describe('fresher track when the flag is enabled', () => {
 
   test('fresher 8-week schedule renders for the track', async ({ page }) => {
     await page.goto('/roadmap?track=fresher');
-    await expect(page.getByText(/Foundations first/i)).toBeVisible();
-    await expect(page.getByText(/Interview ready/i).first()).toBeVisible();
+    // Wait for the schedule section itself before asserting on week cards —
+    // on slow CI runners the page can briefly hold duplicate hidden copies of
+    // streamed content, which a bare getByText trips over in strict mode.
+    await expect(
+      page.getByRole('heading', { name: '8-week study schedule' }),
+    ).toBeVisible({ timeout: 15_000 });
+    await expect(
+      page.getByRole('heading', { name: 'Foundations first' }).first(),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Interview ready' }).first(),
+    ).toBeVisible();
   });
 
   test.describe('guest hero', () => {

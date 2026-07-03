@@ -1,13 +1,28 @@
 import { auth } from '@/auth';
 import { PricingClient } from '@/app/pricing/PricingClient';
 import { getRazorpayKeyId } from '@/lib/razorpay';
-import { FREE_PROBLEM_SLUGS, type PlanType } from '@/lib/plans';
-import { canAccessFeature } from '@/lib/feature-flags-server';
+import { FREE_PROBLEM_SLUGS, FEATURE_KEYS, type FeatureKey, type PlanType } from '@/lib/plans';
+import { canAccessFeature, getFeatureFlagState } from '@/lib/feature-flags-server';
+import { getFeatureHighlightPlan } from '@/lib/feature-upsell';
 
-export default async function PricingPage() {
+export default async function PricingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ feature?: string; locked?: string }>;
+}) {
   const session = await auth();
   const currentPlan: PlanType = session?.user?.planType ?? 'free';
   const showLifetime = await canAccessFeature(session?.user?.id ?? null, 'lifetimePlan');
+
+  const { feature } = await searchParams;
+  const featureKey = FEATURE_KEYS.includes(feature as FeatureKey) ? (feature as FeatureKey) : null;
+  const highlightPlan = featureKey ? getFeatureHighlightPlan(featureKey) : null;
+
+  const [interviewModePlans, voiceInterviewPlans, aiProbePlans] = await Promise.all([
+    getFeatureFlagState('interviewMode'),
+    getFeatureFlagState('voiceInterview'),
+    getFeatureFlagState('aiProbe'),
+  ]);
 
   return (
     <div className="min-h-screen bg-background pt-24 pb-12">
@@ -38,6 +53,12 @@ export default async function PricingPage() {
           currentPlan={currentPlan}
           razorpayKeyId={getRazorpayKeyId()}
           showLifetime={showLifetime}
+          highlightPlan={highlightPlan}
+          flagshipAvailability={{
+            interviewMode: interviewModePlans,
+            voiceInterview: voiceInterviewPlans,
+            aiProbe: aiProbePlans,
+          }}
         />
       </div>
     </div>

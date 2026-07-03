@@ -1,12 +1,15 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { Home, Sparkles, Map } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 import { auth } from "@/auth";
 import { UserMenu } from "@/components/UserMenu";
 import { cn } from "@/lib/utils";
 import { MobileMenu } from "@/components/MobileMenu";
+import { NAV_ITEMS, isNavGroup } from '@/lib/navigation';
+import { NavDropdown } from '@/components/NavDropdown';
+import { WhatsNewNotifier } from '@/components/WhatsNewNotifier';
 
 export async function Header() {
   const session = await auth();
@@ -39,39 +42,24 @@ export async function Header() {
 
         {/* Desktop Navigation */}
         <nav className="hidden lg:flex items-center gap-1 justify-self-center bg-secondary/30 p-1 rounded-full border border-black/5 dark:border-white/5 backdrop-blur-md shadow-sm shrink-0">
-          <Link
-            href="/"
-            className={cn(
-              "flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-300",
-              "hover:bg-background/80 hover:text-primary hover:shadow-sm",
-              "text-muted-foreground"
-            )}
-          >
-            <Home className="h-4 w-4" />
-            <span>Home</span>
-          </Link>
-          <Link
-            href="/roadmap"
-            className={cn(
-              "flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-300",
-              "hover:bg-background/80 hover:text-primary hover:shadow-sm",
-              "text-muted-foreground"
-            )}
-          >
-            <Map className="h-4 w-4" />
-            <span>Roadmap</span>
-          </Link>
-          <Link
-            href="/pricing"
-            className={cn(
-              "flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-300",
-              "hover:bg-background/80 hover:text-primary hover:shadow-sm",
-              "text-muted-foreground"
-            )}
-          >
-            <Sparkles className="h-3.5 w-3.5 text-amber-500" />
-            <span>Pricing</span>
-          </Link>
+          {NAV_ITEMS.map((item) =>
+            isNavGroup(item) ? (
+              <NavDropdown key={item.label} label={item.label} />
+            ) : (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-300",
+                  "hover:bg-background/80 hover:text-primary hover:shadow-sm",
+                  "text-muted-foreground"
+                )}
+              >
+                <item.icon className={cn("h-4 w-4", item.label === 'Pricing' && "h-3.5 w-3.5 text-amber-500")} />
+                <span>{item.label}</span>
+              </Link>
+            )
+          )}
         </nav>
 
         <div className="flex items-center gap-3 justify-self-end min-w-0">
@@ -81,6 +69,7 @@ export async function Header() {
           </div>
 
           <div className="h-6 w-px bg-border/40 mx-1" />
+          <WhatsNewNotifier />
           <ThemeToggle />
           <UserMenu user={session?.user} />
           <MobileMenu user={session?.user} />

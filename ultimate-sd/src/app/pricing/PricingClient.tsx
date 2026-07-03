@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { CheckCircle2, Zap, Key, Sparkles, Infinity as InfinityIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
 import { toast } from 'sonner';
@@ -11,6 +12,7 @@ import {
   AI_MONTHLY_CREDITS,
   FREE_MONTHLY_CREDITS,
   PLAN_PRICES_INR,
+  type FeatureKey,
   type PlanType,
 } from '@/lib/plans';
 import { FREE_PROBLEM_SLUGS } from '@/lib/access';
@@ -26,6 +28,8 @@ interface PricingClientProps {
   currentPlan: PlanType;
   razorpayKeyId?: string;
   showLifetime?: boolean;
+  highlightPlan?: PlanType | null;
+  flagshipAvailability: Partial<Record<FeatureKey, PlanType[]>>;
 }
 
 const PLATFORM_FEATURES = [
@@ -47,7 +51,6 @@ const AI_FEATURES = [
 const LIFETIME_FEATURES = [
   'Full 86-problem library',
   'Expert solutions',
-  'Interview mode',
   'Bring your own API key — platform AI credits not included',
 ];
 
@@ -58,6 +61,12 @@ const FREE_FEATURES = [
   'Interactive diagram canvas',
   'Architecture widgets & simulators',
   'Progress tracking & gamification',
+];
+
+const FLAGSHIP_ROWS: { feature: FeatureKey; label: string; plans: PlanType[] }[] = [
+  { feature: 'interviewMode', label: 'Interview Mode — timed mock + AI debrief', plans: ['platform', 'lifetime', 'ai'] },
+  { feature: 'voiceInterview', label: 'Voice Interview — practice out loud', plans: ['ai'] },
+  { feature: 'aiProbe', label: 'AI Probe — defend your design under follow-ups', plans: ['ai'] },
 ];
 
 function loadRazorpayScript(): Promise<boolean> {
@@ -80,9 +89,37 @@ export function PricingClient({
   currentPlan,
   razorpayKeyId,
   showLifetime,
+  highlightPlan,
+  flagshipAvailability,
 }: PricingClientProps) {
   const router = useRouter();
   const [loadingPlan, setLoadingPlan] = useState<Exclude<PlanType, 'free'> | null>(null);
+  const cardRefs = useRef<Partial<Record<PlanType, HTMLDivElement | null>>>({});
+
+  useEffect(() => {
+    if (highlightPlan) {
+      cardRefs.current[highlightPlan]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [highlightPlan]);
+
+  const highlightClass = (plan: PlanType) =>
+    highlightPlan === plan ? 'ring-2 ring-primary shadow-2xl shadow-primary/20 scale-[1.02]' : '';
+
+  const flagshipRowsFor = (plan: Exclude<PlanType, 'free'>) =>
+    FLAGSHIP_ROWS.filter((row) => row.plans.includes(plan)).map((row) => {
+      const live = (flagshipAvailability[row.feature] ?? []).includes(plan);
+      return (
+        <li key={row.feature} className="flex items-center gap-2">
+          <CheckCircle2 className="h-5 w-5 text-purple-500 shrink-0" />
+          <span>{row.label}</span>
+          {!live && (
+            <Badge variant="outline" className="ml-1 shrink-0 border-amber-500/50 text-amber-600 dark:text-amber-400 text-[10px]">
+              Coming soon
+            </Badge>
+          )}
+        </li>
+      );
+    });
 
   const startCheckout = async (planType: Exclude<PlanType, 'free'>) => {
     if (!isLoggedIn) {
@@ -165,7 +202,10 @@ export function PricingClient({
     <div
       className={`grid grid-cols-1 md:grid-cols-3 ${showLifetime ? 'lg:grid-cols-4' : ''} gap-6 md:gap-8 max-w-6xl mx-auto`}
     >
-      <Card className="relative border-border bg-card/50 backdrop-blur-sm">
+      <Card
+        ref={(el) => { cardRefs.current.free = el; }}
+        className={`relative border-border bg-card/50 backdrop-blur-sm ${highlightClass('free')}`}
+      >
         <CardHeader>
           <CardTitle className="text-2xl">Free</CardTitle>
           <CardDescription>Perfect for getting started</CardDescription>
@@ -193,7 +233,10 @@ export function PricingClient({
         </CardFooter>
       </Card>
 
-      <Card className="relative border-blue-500/30 bg-card/50 backdrop-blur-sm">
+      <Card
+        ref={(el) => { cardRefs.current.platform = el; }}
+        className={`relative border-blue-500/30 bg-card/50 backdrop-blur-sm ${highlightClass('platform')}`}
+      >
         <CardHeader>
           <CardTitle className="text-xl sm:text-2xl flex flex-wrap items-center gap-2">
             Platform <Key className="h-5 w-5 text-blue-500" />
@@ -212,6 +255,7 @@ export function PricingClient({
                 <span>{feature}</span>
               </li>
             ))}
+            {flagshipRowsFor('platform')}
           </ul>
         </CardContent>
         <CardFooter>
@@ -231,7 +275,10 @@ export function PricingClient({
         </CardFooter>
       </Card>
 
-      <Card className="relative overflow-hidden border-indigo-500/50 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 ring-1 ring-indigo-500/20">
+      <Card
+        ref={(el) => { cardRefs.current.ai = el; }}
+        className={`relative overflow-hidden border-indigo-500/50 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 ring-1 ring-indigo-500/20 ${highlightClass('ai')}`}
+      >
         <div className="absolute top-0 right-0 bg-gradient-to-l from-indigo-500 to-purple-600 text-white text-xs font-bold px-3 py-1 rounded-bl-lg">
           POPULAR
         </div>
@@ -253,6 +300,7 @@ export function PricingClient({
                 <span>{feature}</span>
               </li>
             ))}
+            {flagshipRowsFor('ai')}
           </ul>
         </CardContent>
         <CardFooter>
@@ -273,7 +321,10 @@ export function PricingClient({
       </Card>
 
       {showLifetime && (
-        <Card className="relative border-amber-500/40 bg-card/50 backdrop-blur-sm">
+        <Card
+          ref={(el) => { cardRefs.current.lifetime = el; }}
+          className={`relative border-amber-500/40 bg-card/50 backdrop-blur-sm ${highlightClass('lifetime')}`}
+        >
           <CardHeader>
             <CardTitle className="text-xl sm:text-2xl flex flex-wrap items-center gap-2">
               Lifetime <InfinityIcon className="h-5 w-5 text-amber-500" />
@@ -292,6 +343,7 @@ export function PricingClient({
                   <span>{feature}</span>
                 </li>
               ))}
+              {flagshipRowsFor('lifetime')}
             </ul>
           </CardContent>
           <CardFooter>

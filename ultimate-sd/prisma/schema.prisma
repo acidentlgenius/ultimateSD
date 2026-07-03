@@ -40,7 +40,8 @@ model User {
   preferredDifficulty   String[] @default([])
   focusAreas           String[] @default([])
   onboardingCompleted  Boolean  @default(false)
-  
+  practiceIntent       String   @default("")
+
   // User stats
   xp                   Int      @default(0)
   level                Int      @default(1)
@@ -262,4 +263,11 @@ model VoiceTurn {
   session VoiceSession @relation(fields: [voiceSessionId], references: [id], onDelete: Cascade)
 
   @@index([voiceSessionId, createdAt])
+}
+
+model WaitlistSignup {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  feature   String   @default("aiInterviewer")
+  createdAt DateTime @default(now())
 }
