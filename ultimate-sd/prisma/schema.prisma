@@ -263,3 +263,10 @@ model VoiceTurn {
 
   @@index([voiceSessionId, createdAt])
 }
+
+model WaitlistSignup {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  feature   String   @default("aiInterviewer")
+  createdAt DateTime @default(now())
+}
