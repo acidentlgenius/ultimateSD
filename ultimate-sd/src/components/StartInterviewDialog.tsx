@@ -12,10 +12,30 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { InterviewVariantPicker } from '@/components/InterviewVariantPicker';
+import type { InterviewDebriefVariant } from '@/lib/interview-debrief';
 
-export function StartInterviewDialog({ slug }: { slug: string }) {
+interface StartInterviewDialogProps {
+  slug: string;
+  interviewEntitled?: boolean;
+  voiceEntitled?: boolean;
+}
+
+export function StartInterviewDialog({
+  slug,
+  interviewEntitled = true,
+  voiceEntitled = false,
+}: StartInterviewDialogProps) {
   const [open, setOpen] = useState(false);
+  const [variant, setVariant] = useState<InterviewDebriefVariant>('lite');
   const router = useRouter();
+
+  const handleStart = () => {
+    if (!interviewEntitled) return;
+    if (variant === 'voice' && !voiceEntitled) return;
+    router.push(`/practice/${slug}?interview=${variant}`);
+    setOpen(false);
+  };
 
   return (
     <>
@@ -37,16 +57,20 @@ export function StartInterviewDialog({ slug }: { slug: string }) {
               PDF export at the end. Your current practice draft stays saved.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="flex-col sm:flex-col gap-2">
-            <Button className="w-full" onClick={() => router.push(`/practice/${slug}?interview=lite`)}>
-              45-min lite — Clarify → HLD → Trade-offs
-            </Button>
+          <InterviewVariantPicker
+            selected={variant}
+            onSelect={setVariant}
+            interviewEntitled={interviewEntitled}
+            voiceEntitled={voiceEntitled}
+          />
+          <DialogFooter>
             <Button
-              variant="outline"
               className="w-full"
-              onClick={() => router.push(`/practice/${slug}?interview=full`)}
+              onClick={handleStart}
+              disabled={!interviewEntitled || (variant === 'voice' && !voiceEntitled)}
             >
-              60-min full — complete step set
+              Start {variant === 'lite' ? '45-min lite' : variant === 'full' ? '60-min full' : 'voice'}{' '}
+              interview
             </Button>
           </DialogFooter>
         </DialogContent>
