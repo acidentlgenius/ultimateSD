@@ -12,7 +12,7 @@ export const FEATURE_UPSELL_COPY: Record<FeatureKey, { title: string; pitch: str
       'Answer out loud, exactly like the real thing. Push-to-talk voice practice with an AI interviewer that listens, follows up, and keeps you talking through your design.',
   },
   aiProbe: {
-    title: 'AI Probe',
+    title: 'Defend your design',
     pitch:
       'After you pass a step, an AI skeptic challenges your design with the follow-up questions a real interviewer would ask — defend your choices under pressure.',
   },

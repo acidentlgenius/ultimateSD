@@ -8,6 +8,7 @@ import { CheckCircle, AlertCircle, Lightbulb, TrendingUp, Award, Trophy, Sparkle
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { updateStreak } from '@/app/actions/gamification';
+import { LockedFeatureButton } from '@/components/LockedFeatureButton';
 import { FEATURES } from '@/lib/features';
 
 interface FeedbackData {
@@ -25,7 +26,8 @@ interface FeedbackModalProps {
   isOpen: boolean;
   onClose: () => void;
   onContinue?: () => void;
-  onStartProbe?: () => void;
+  probeEntitled: boolean;
+  onStartProbe: () => void;
   xpEarned?: number;
 }
 
@@ -54,7 +56,15 @@ function Confetti({ show }: { show: boolean }) {
   );
 }
 
-export default function FeedbackModal({ feedback, isOpen, onClose, onContinue, onStartProbe, xpEarned = 0 }: FeedbackModalProps) {
+export default function FeedbackModal({
+  feedback,
+  isOpen,
+  onClose,
+  onContinue,
+  probeEntitled,
+  onStartProbe,
+  xpEarned = 0,
+}: FeedbackModalProps) {
   const [animatedScore, setAnimatedScore] = useState(0);
   const [animatedAccuracy, setAnimatedAccuracy] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
@@ -397,11 +407,18 @@ export default function FeedbackModal({ feedback, isOpen, onClose, onContinue, o
                 Export PDF
               </Button>
             )}
-            {feedback.isAcceptable && onStartProbe && (
-              <Button variant="outline" onClick={onStartProbe}>
-                Probe this answer
-              </Button>
-            )}
+            {feedback.isAcceptable &&
+              (probeEntitled ? (
+                <Button variant="outline" onClick={onStartProbe}>
+                  Defend your design
+                </Button>
+              ) : (
+                <LockedFeatureButton
+                  feature="aiProbe"
+                  label="Defend your design"
+                  tooltip="Available on the AI plan — an AI skeptic challenges your design like a real interviewer"
+                />
+              ))}
             <Button
               onClick={handleContinue}
               className={`w-full sm:w-auto gradient-bg hover:opacity-90 transition-all hover:scale-105 shadow-lg ${

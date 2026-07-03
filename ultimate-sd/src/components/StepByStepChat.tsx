@@ -1124,20 +1124,17 @@ return (
               isOpen={showFeedback}
               onClose={() => setShowFeedback(false)}
               onContinue={handleNext}
-              onStartProbe={
-                probeEnabled && feedback.isAcceptable
-                  ? () => {
-                      const stepAnswer =
-                        currentStep.inputType === 'list'
-                          ? listItems.join('\n')
-                          : currentStep.inputType === 'schema'
-                            ? JSON.stringify(schemaData, null, 2)
-                            : textInput;
-                      setProbeContext({ phase: currentStep.phase, stepAnswer });
-                      setShowFeedback(false);
-                    }
-                  : undefined
-              }
+              onStartProbe={() => {
+                const stepAnswer =
+                  currentStep.inputType === 'list'
+                    ? listItems.join('\n')
+                    : currentStep.inputType === 'schema'
+                      ? JSON.stringify(schemaData, null, 2)
+                      : textInput;
+                setProbeContext({ phase: currentStep.phase, stepAnswer });
+                setShowFeedback(false);
+              }}
+              probeEntitled={probeEnabled}
               feedback={feedback}
               xpEarned={feedback.isAcceptable ? 20 : 0}
             />

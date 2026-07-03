@@ -30,6 +30,8 @@ describe('FeedbackModal', () => {
         isOpen={true}
         feedback={feedback}
         onClose={() => {}}
+        probeEntitled={false}
+        onStartProbe={() => {}}
         xpEarned={10}
       />
     );
@@ -63,6 +65,8 @@ describe('FeedbackModal', () => {
         isOpen={true}
         feedback={feedback}
         onClose={() => {}}
+        probeEntitled={false}
+        onStartProbe={() => {}}
         xpEarned={10}
       />
     );
@@ -99,6 +103,8 @@ describe('FeedbackModal', () => {
         isOpen={true}
         feedback={feedback}
         onClose={() => {}}
+        probeEntitled={false}
+        onStartProbe={() => {}}
         xpEarned={10}
       />
     );
