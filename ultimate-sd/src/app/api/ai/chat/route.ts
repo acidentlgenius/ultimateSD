@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { PROBLEMS } from '@/lib/problems';
 import { getStepsForProblem } from '@/lib/problem-steps';
-import { getAIResponse, getFeedback } from '@/lib/langgraph';
+import { getAIResponse, getFeedback, getProbeResponse } from '@/lib/langgraph';
 import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { ChatMessage } from '@/types';
 import { getUserLLM, AIAccessError } from '@/lib/user-llm';
+import { canAccessFeature } from '@/lib/feature-flags-server';
+import { isFinalProbeRound, isValidProbeRound } from '@/lib/probe';
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -13,10 +15,44 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { input, slug, messages = [], phase = 'init' } = await req.json();
+  const body = await req.json();
+  const { input, slug, messages = [], phase = 'init', mode } = body;
   const problemMetadata = PROBLEMS.find(p => p.slug === slug);
   if (!problemMetadata) {
     return NextResponse.json({ error: 'Problem not found' }, { status: 404 });
+  }
+
+  if (mode === 'probe') {
+    if (!(await canAccessFeature(session.user.id, 'aiProbe'))) {
+      return NextResponse.json({ error: 'Not available' }, { status: 403 });
+    }
+
+    const { stepAnswer, probeMessages = [], round } = body;
+    if (!isValidProbeRound(round) || typeof stepAnswer !== 'string' || !stepAnswer.trim()) {
+      return NextResponse.json({ error: 'Invalid probe request' }, { status: 400 });
+    }
+
+    try {
+      const { llm } = await getUserLLM(session.user.id, { problemSlug: slug });
+      const parsedProbe: ChatMessage[] = (probeMessages as Array<ChatMessage & { timestamp: string }>).map(
+        (msg) => ({ ...msg, timestamp: new Date(msg.timestamp) })
+      );
+      const message = await getProbeResponse(
+        { ...problemMetadata, steps: getStepsForProblem(slug) },
+        phase,
+        stepAnswer,
+        parsedProbe,
+        round,
+        llm
+      );
+      return NextResponse.json({ message, round, isFinal: isFinalProbeRound(round) });
+    } catch (error) {
+      if (error instanceof AIAccessError) {
+        return NextResponse.json({ error: error.message }, { status: 403 });
+      }
+      console.error('Probe error:', error);
+      return NextResponse.json({ error: 'Error generating probe question.' }, { status: 500 });
+    }
   }
 
   const steps = getStepsForProblem(slug);

@@ -76,6 +76,7 @@ model User {
   launchOfferRedemption   LaunchOfferRedemption?
   launchOfferEntry        LaunchOfferEntry?
   featureFlagOverrides    FeatureFlagOverride[]
+  voiceSessions           VoiceSession[]
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -231,4 +232,34 @@ model FeatureFlagOverride {
 
   @@unique([flagKey, userId])
   @@index([userId])
+}
+
+model VoiceSession {
+  id                String        @id @default(cuid())
+  userId            String
+  problemId         String
+  // Loose reference to the interview session from Plan C (PracticeSession.id).
+  // Deliberately NOT a foreign key so voice stays decoupled from the interview flow.
+  practiceSessionId String?
+  engine            String        @default("turn-based")
+  status            SessionStatus @default(ACTIVE)
+  startedAt         DateTime      @default(now())
+  endedAt           DateTime?
+
+  user  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  turns VoiceTurn[]
+
+  @@index([userId, problemId])
+}
+
+model VoiceTurn {
+  id             String   @id @default(cuid())
+  voiceSessionId String
+  role           String // "interviewer" | "candidate"
+  transcript     String   @db.Text
+  createdAt      DateTime @default(now())
+
+  session VoiceSession @relation(fields: [voiceSessionId], references: [id], onDelete: Cascade)
+
+  @@index([voiceSessionId, createdAt])
 }

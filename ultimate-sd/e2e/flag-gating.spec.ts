@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { seedE2eUser, setFeatureFlagStateForE2e } from '../scripts/seed-e2e';
+import { removeFlagOverrideForE2eUser } from './helpers/flags';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -46,5 +47,76 @@ test.describe('fresherTrack dark: zero visual change', () => {
       await expect(page.getByRole('link', { name: /Start Exploring/i })).toBeVisible();
       await expect(page.getByRole('link', { name: /Free Canvas/i })).toBeVisible();
     });
+  });
+});
+
+// NOTE: interview-mode.spec.ts and probe.spec.ts grant overrides to the same
+// e2e user. CI runs with workers=1, so file order (flag-gating → interview-mode
+// → probe) keeps these isolated. Locally run:
+//   npx playwright test e2e/flag-gating.spec.ts e2e/interview-mode.spec.ts e2e/probe.spec.ts --workers=1
+
+test.describe('interview mode & probe stay dark', () => {
+  test.beforeAll(async () => {
+    await removeFlagOverrideForE2eUser('interviewMode');
+    await removeFlagOverrideForE2eUser('aiProbe');
+  });
+
+  test('no Start Interview entry on the practice page', async ({ page }) => {
+    await page.goto('/practice/design-tinyurl');
+    await expect(page.getByRole('heading', { level: 1, name: /Design TinyURL/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Start Interview' })).toHaveCount(0);
+  });
+
+  test('?interview=lite is stripped for unentitled users', async ({ page }) => {
+    await page.goto('/practice/design-tinyurl?interview=lite');
+    await expect(page).toHaveURL(/\/practice\/design-tinyurl$/);
+    await expect(page.getByText(/Interview · 45 min/)).toHaveCount(0);
+  });
+
+  test('interview summary API returns 403 while dark', async ({ request }) => {
+    const res = await request.post('/api/interview/summary', {
+      data: {
+        slug: 'design-tinyurl',
+        answers: [{ phase: 'HLD', title: 'x', answer: 'y', passed: true }],
+      },
+    });
+    expect(res.status()).toBe(403);
+  });
+
+  test('probe chat API returns 403 while dark', async ({ request }) => {
+    const res = await request.post('/api/ai/chat', {
+      data: {
+        mode: 'probe',
+        slug: 'design-tinyurl',
+        phase: 'HLD',
+        stepAnswer: 'answer',
+        round: 1,
+      },
+    });
+    expect(res.status()).toBe(403);
+  });
+});
+
+test.describe('voice APIs are unreachable while voiceInterview is dark', () => {
+  test('JSON voice routes return 403 for a signed-in unentitled user', async ({ request }) => {
+    const cases: Array<[string, Record<string, string>]> = [
+      ['/api/voice/session', { slug: 'design-tinyurl' }],
+      ['/api/voice/reply', { sessionId: 'nope', transcript: 'hello' }],
+      ['/api/voice/speak', { sessionId: 'nope', text: 'hello' }],
+    ];
+    for (const [path, data] of cases) {
+      const res = await request.post(path, { data });
+      expect(res.status(), path).toBe(403);
+    }
+  });
+
+  test('transcribe route returns 403 before touching the audio', async ({ request }) => {
+    const res = await request.post('/api/voice/transcribe', {
+      multipart: {
+        sessionId: 'nope',
+        audio: { name: 'a.webm', mimeType: 'audio/webm', buffer: Buffer.from('fake') },
+      },
+    });
+    expect(res.status()).toBe(403);
   });
 });

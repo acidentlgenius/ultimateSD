@@ -37,19 +37,44 @@ import { startPracticeSession, togglePracticeTimer } from '@/app/actions/progres
 import { CheckCircle, Sparkles } from 'lucide-react';
 import type { PracticeStepMode } from '@/lib/interview-lite-steps';
 import { Badge } from '@/components/ui/badge';
+import { StartInterviewDialog } from './StartInterviewDialog';
+import InterviewSummaryPanel from './InterviewSummaryPanel';
+import VoicePanel from './voice/VoicePanel';
+import {
+  interviewStatusReducer,
+  type InterviewConfig,
+  type InterviewEvent,
+  type InterviewStatus,
+} from '@/lib/interview-mode';
 
 export default function PracticeUI({
   problem,
   stepMode = 'full',
   existingProgress,
+  interviewConfig = null,
+  interviewAllowed = false,
+  probeEnabled = false,
+  voiceEnabled = false,
 }: {
   problem: SystemDesignProblem;
   stepMode?: PracticeStepMode;
   existingProgress?: any;
+  interviewConfig?: InterviewConfig | null;
+  interviewAllowed?: boolean;
+  probeEnabled?: boolean;
+  voiceEnabled?: boolean;
 }) {
   return (
     <DiagramCanvasProvider>
-      <PracticeUIContent problem={problem} stepMode={stepMode} existingProgress={existingProgress} />
+      <PracticeUIContent
+        problem={problem}
+        stepMode={stepMode}
+        existingProgress={existingProgress}
+        interviewConfig={interviewConfig}
+        interviewAllowed={interviewAllowed}
+        probeEnabled={probeEnabled}
+        voiceEnabled={voiceEnabled}
+      />
     </DiagramCanvasProvider>
   );
 }
@@ -58,10 +83,18 @@ function PracticeUIContent({
   problem,
   stepMode,
   existingProgress,
+  interviewConfig = null,
+  interviewAllowed = false,
+  probeEnabled = false,
+  voiceEnabled = false,
 }: {
   problem: SystemDesignProblem;
   stepMode: PracticeStepMode;
   existingProgress?: any;
+  interviewConfig?: InterviewConfig | null;
+  interviewAllowed?: boolean;
+  probeEnabled?: boolean;
+  voiceEnabled?: boolean;
 }) {
   const diagramRef = useDiagramCanvasRef();
   const { data: session, status } = useSession();
@@ -86,6 +119,36 @@ function PracticeUIContent({
   const [isTimerRunning, setIsTimerRunning] = useState<boolean>((existingProgress as any)?.isTimerRunning ?? true);
   const [serverPausedSeconds, setServerPausedSeconds] = useState<number>((existingProgress as any)?.totalPausedSeconds ?? 0);
   const [lastPausedAt, setLastPausedAt] = useState<Date | string | null>((existingProgress as any)?.lastPausedAt ?? null);
+  const [interviewStatus, setInterviewStatus] = useState<InterviewStatus>('running');
+  const dispatchInterview = (event: InterviewEvent) =>
+    setInterviewStatus((s) => interviewStatusReducer(s, event));
+
+  // Reset interview session state whenever a fresh interview attempt starts
+  // (guards against a stale 'complete'/'summary-error' status leaking across
+  // re-entry into a new interview on the same mounted component instance).
+  useEffect(() => {
+    if (interviewConfig) {
+      setInterviewStatus('running');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [interviewConfig?.variant, problem.id]);
+
+  // Clear the interview timer's local-storage state once a session ends, so a
+  // later retry of the same problem+variant doesn't read stale finished/expired
+  // timer state and start already-expired.
+  useEffect(() => {
+    if (!interviewConfig) return;
+    if (interviewStatus === 'running') return;
+
+    const interviewProblemId = `interview-${interviewConfig.variant}-${problem.id}`;
+    try {
+      localStorage.removeItem(`timer_${interviewProblemId}_status`);
+      localStorage.removeItem(`timer_${interviewProblemId}_timeLeft`);
+      localStorage.removeItem(`timer_${interviewProblemId}_lastTimestamp`);
+    } catch (e) {
+      console.error('Failed to clear stale interview timer state:', e);
+    }
+  }, [interviewStatus, interviewConfig, problem.id]);
 
   const [isMounted, setIsMounted] = useState(false);
 
@@ -235,37 +298,57 @@ function PracticeUIContent({
                 Interview Lite · 45 min
               </Badge>
             )}
+            {interviewConfig && (
+              <Badge
+                variant="outline"
+                className="mt-1.5 text-[10px] border-red-500/30 text-red-600 bg-red-500/10"
+              >
+                Interview · {interviewConfig.durationSeconds / 60} min
+              </Badge>
+            )}
           </div>
         </div>
 
         {/* Interview Timer */}
         <div className="mb-4">
-          <TimerWidget
-            className="w-full justify-between"
-            problemId={problem.id}
-            initialTimeSeconds={
-              stepMode === 'lite' ? 2700 :
-              problem.difficulty === 'Easy' ? 1800 :
-                problem.difficulty === 'Medium' ? 2700 :
-                  3600
-            }
-            startedAt={serverStartedAt}
-            isTimerRunning={isTimerRunning}
-            totalPausedSeconds={serverPausedSeconds}
-            lastPausedAt={lastPausedAt}
-            onToggle={async () => {
-              if (!isAuthenticated) return;
-              const result = await togglePracticeTimer(problem.id);
-              if (result.success) {
-                setIsTimerRunning(result.isTimerRunning ?? false);
-                setServerPausedSeconds(result.totalPausedSeconds ?? 0);
-                setLastPausedAt(result.lastPausedAt ?? null);
+          {interviewConfig && interviewStatus === 'running' ? (
+            <TimerWidget
+              className="w-full justify-between"
+              problemId={`interview-${interviewConfig.variant}-${problem.id}`}
+              initialTimeSeconds={interviewConfig.durationSeconds}
+              onComplete={() => {
+                toast.warning("Time's up! Your interview has ended.");
+                dispatchInterview('TIME_EXPIRED');
+              }}
+            />
+          ) : !interviewConfig ? (
+            <TimerWidget
+              className="w-full justify-between"
+              problemId={problem.id}
+              initialTimeSeconds={
+                stepMode === 'lite' ? 2700 :
+                problem.difficulty === 'Easy' ? 1800 :
+                  problem.difficulty === 'Medium' ? 2700 :
+                    3600
               }
-            }}
-            onComplete={async () => {
-              toast.warning("Time's up! The practice session has ended.");
-            }}
-          />
+              startedAt={serverStartedAt}
+              isTimerRunning={isTimerRunning}
+              totalPausedSeconds={serverPausedSeconds}
+              lastPausedAt={lastPausedAt}
+              onToggle={async () => {
+                if (!isAuthenticated) return;
+                const result = await togglePracticeTimer(problem.id);
+                if (result.success) {
+                  setIsTimerRunning(result.isTimerRunning ?? false);
+                  setServerPausedSeconds(result.totalPausedSeconds ?? 0);
+                  setLastPausedAt(result.lastPausedAt ?? null);
+                }
+              }}
+              onComplete={async () => {
+                toast.warning("Time's up! The practice session has ended.");
+              }}
+            />
+          ) : null}
         </div>
       </div>
 
@@ -357,6 +440,21 @@ function PracticeUIContent({
           </Button>
         )}
 
+        {interviewAllowed && !interviewConfig && (
+          <StartInterviewDialog slug={problem.slug} />
+        )}
+
+        {interviewConfig && interviewStatus === 'running' && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full justify-start text-red-600 border-red-500/30 hover:bg-red-500/10"
+            onClick={() => dispatchInterview('FINISH_EARLY')}
+          >
+            End Interview
+          </Button>
+        )}
+
         <Button
           variant="ghost"
           size="sm"
@@ -411,9 +509,17 @@ function PracticeUIContent({
       <main className="flex-1 overflow-y-auto bg-gradient-to-br from-background via-background to-muted/20 relative">
         <div className="max-w-5xl mx-auto p-4 md:p-8 pb-32">
 
+          {voiceEnabled && (
+            <VoicePanel
+              slug={problem.slug}
+              problemTitle={problem.title}
+              practiceSessionId={existingProgress?.activeSessionId ?? null}
+            />
+          )}
+
           {/* Main Chat Interface */}
           <div className="animate-fade-in" style={{ animationDelay: '100ms' }}>
-            <StepByStepChat problem={problem} />
+            <StepByStepChat problem={problem} probeEnabled={probeEnabled} />
           </div>
 
           {/* Diagram Section — always mounted when stepKey is set */}
@@ -458,13 +564,29 @@ function PracticeUIContent({
       </main>
 
       {/* Help Assistant */}
-      <HelpAssistant
-        problem={problem}
-        currentPhase={phase}
-        completedSteps={completedSteps}
-        savedStepData={savedStepData}
-      />
+      {!interviewConfig && (
+        <HelpAssistant
+          problem={problem}
+          currentPhase={phase}
+          completedSteps={completedSteps}
+          savedStepData={savedStepData}
+        />
+      )}
 
+
+      {interviewConfig && interviewStatus !== 'running' && (
+        <InterviewSummaryPanel
+          problem={problem}
+          phaseSteps={phaseSteps}
+          savedStepData={savedStepData}
+          status={interviewStatus}
+          onSummaryReady={() => dispatchInterview('SUMMARY_READY')}
+          onSummaryFailed={() => dispatchInterview('SUMMARY_FAILED')}
+          onRetry={() => dispatchInterview('RETRY_SUMMARY')}
+          onExportPdf={exportTranscript}
+          isExporting={isExporting}
+        />
+      )}
 
       {FEATURES.solutionViewer && (
         <>
