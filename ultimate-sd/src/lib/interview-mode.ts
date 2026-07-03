@@ -1,11 +1,12 @@
 import { getPracticeSteps, INTERVIEW_LITE_PHASE_STEPS } from '@/lib/interview-lite-steps';
 import type { StepData, SystemDesignProblem } from '@/types';
 
-export type InterviewVariant = 'lite' | 'full';
+export type InterviewVariant = 'lite' | 'full' | 'voice';
 
 export const INTERVIEW_DURATION_SECONDS: Record<InterviewVariant, number> = {
   lite: 2700, // 45 min
   full: 3600, // 60 min
+  voice: 2700, // voice interview uses lite step set + voice panel
 };
 
 export interface InterviewConfig {
@@ -16,7 +17,7 @@ export interface InterviewConfig {
 export function parseInterviewParam(
   value: string | string[] | undefined
 ): InterviewVariant | null {
-  if (value === 'lite' || value === 'full') {
+  if (value === 'lite' || value === 'full' || value === 'voice') {
     return value;
   }
   return null;
@@ -35,10 +36,15 @@ export function getInterviewSteps(
   difficulty: SystemDesignProblem['difficulty'],
   variant: InterviewVariant
 ): Record<string, StepData[]> {
-  if (variant === 'lite') {
+  if (variant === 'lite' || variant === 'voice') {
     return INTERVIEW_LITE_PHASE_STEPS;
   }
   return getPracticeSteps(slug, difficulty).steps;
+}
+
+/** Whether this interview variant should mount the voice panel. */
+export function interviewVariantUsesVoice(variant: InterviewVariant): boolean {
+  return variant === 'voice';
 }
 
 export type InterviewStatus = 'running' | 'generating-summary' | 'complete' | 'summary-error';
