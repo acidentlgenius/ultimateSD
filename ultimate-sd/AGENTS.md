@@ -3,7 +3,7 @@
 > Operational briefing for autonomous coding agents (Jules, Cursor, Codex, and peers).
 > Read this file before planning or editing. Prefer these instructions over generic defaults.
 
----
+--- 
 
 ## At a glance
 
