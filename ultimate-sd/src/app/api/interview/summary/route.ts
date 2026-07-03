@@ -5,6 +5,7 @@ import { canAccessFeature } from '@/lib/feature-flags-server';
 import { getUserLLM, AIAccessError } from '@/lib/user-llm';
 import { getInterviewSummary, type InterviewSummaryInput } from '@/lib/langgraph';
 import { prisma } from '@/lib/prisma';
+import type { Prisma } from '@prisma/client';
 import {
   isInterviewDebriefVariant,
   summaryToPersistPayload,
@@ -51,6 +52,7 @@ export async function POST(req: NextRequest) {
       data: {
         userId: session.user.id,
         ...summaryToPersistPayload(variant, problemMetadata.id, slug, summary),
+        summaryJson: summary as unknown as Prisma.InputJsonValue,
       },
     });
 

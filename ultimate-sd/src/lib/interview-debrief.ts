@@ -60,6 +60,5 @@ export function summaryToPersistPayload(
     variant,
     overallScore: summary.overallScore,
     verdict: summary.verdict,
-    summaryJson: summary,
   };
 }
