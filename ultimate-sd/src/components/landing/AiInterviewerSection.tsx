@@ -1,13 +1,13 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Mic, Timer, MessageSquareWarning, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { joinWaitlist } from '@/app/actions/waitlist';
-import { useState } from 'react';
 
 const PILLARS = [
   {

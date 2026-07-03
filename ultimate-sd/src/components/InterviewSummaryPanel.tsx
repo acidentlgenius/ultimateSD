@@ -34,6 +34,7 @@ interface InterviewSummaryPanelProps {
   onExportPdf: () => Promise<void>;
   isExporting: boolean;
   interviewVariant?: InterviewVariant;
+  onClose: () => void;
 }
 
 export default function InterviewSummaryPanel({
@@ -47,6 +48,7 @@ export default function InterviewSummaryPanel({
   onExportPdf,
   isExporting,
   interviewVariant = 'lite',
+  onClose,
 }: InterviewSummaryPanelProps) {
   const [summary, setSummary] = useState<InterviewSummary | null>(null);
   const [debriefId, setDebriefId] = useState<string | null>(null);
@@ -113,9 +115,14 @@ export default function InterviewSummaryPanel({
     exportInterviewDebriefPdf(summary, problem.title);
   };
 
+  // Closing mid-generation would leave the in-flight debrief request orphaned
+  // with no way to see its result, so the dialog can only be dismissed once
+  // it has settled into 'complete' or 'summary-error'.
+  const canClose = status !== 'generating-summary';
+
   return (
-    <Dialog open>
-      <DialogContent showCloseButton={false} className="max-w-lg">
+    <Dialog open onOpenChange={(next) => { if (!next && canClose) onClose(); }}>
+      <DialogContent showCloseButton={canClose} className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Interview Debrief</DialogTitle>
           <DialogDescription>
@@ -135,10 +142,15 @@ export default function InterviewSummaryPanel({
         {status === 'summary-error' && (
           <div className="py-4 space-y-3">
             <p className="text-sm text-red-600">{error}</p>
-            <Button variant="outline" onClick={onRetry}>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Retry
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={onRetry}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Retry
+              </Button>
+              <Button variant="ghost" onClick={onClose}>
+                Close
+              </Button>
+            </div>
           </div>
         )}
 
@@ -194,6 +206,9 @@ export default function InterviewSummaryPanel({
             <Button variant="outline" onClick={handleExportDebriefPdf} disabled={!summary}>
               <Download className="h-4 w-4 mr-2" />
               Export debrief PDF
+            </Button>
+            <Button variant="ghost" onClick={onClose}>
+              Close
             </Button>
             <Button onClick={() => void onExportPdf()} disabled={isExporting}>
               {isExporting ? (
