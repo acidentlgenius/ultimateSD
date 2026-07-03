@@ -66,6 +66,7 @@ interface DashboardClientProps {
     problems?: ProblemWithStatus[];
     launchStats?: LaunchOfferPublicStats;
     launchUserState?: LaunchOfferUserState | null;
+    fresherTrackEnabled?: boolean;
 }
 
 function getStatusBadgeConfig(status?: ProgressStatus) {
@@ -122,6 +123,7 @@ export function DashboardClient({
     problems: problemsProp,
     launchStats,
     launchUserState = null,
+    fresherTrackEnabled = false,
 }: DashboardClientProps) {
     const problems: ProblemWithStatus[] = problemsProp ?? PROBLEMS;
     const [search, setSearch] = useState('');
@@ -239,7 +241,10 @@ export function DashboardClient({
                     )}
                 </>
             ) : (
-                <Hero launchStats={launchStats?.isActive ? launchStats : undefined} />
+                <Hero
+                    launchStats={launchStats?.isActive ? launchStats : undefined}
+                    showFresherPath={fresherTrackEnabled}
+                />
             )}
 
             {/* 2. Interactive Feature Showcase (Hide if logged in) */}

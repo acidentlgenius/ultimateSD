@@ -9,9 +9,10 @@ import { LaunchOfferBanner } from "@/components/landing/LaunchOfferBanner";
 
 interface HeroProps {
     launchStats?: LaunchOfferPublicStats;
+    showFresherPath?: boolean;
 }
 
-export function Hero({ launchStats }: HeroProps) {
+export function Hero({ launchStats, showFresherPath = false }: HeroProps) {
     return (
         <div className="relative overflow-hidden pt-20 pb-32 lg:pt-32 lg:pb-40">
             {/* Background Gradients */}
@@ -74,6 +75,22 @@ export function Hero({ launchStats }: HeroProps) {
                         </Link>
                     </Button>
                 </motion.div>
+
+                {showFresherPath && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.6, delay: 0.7 }}
+                        className="mt-5"
+                    >
+                        <Link
+                            href="/roadmap?track=fresher"
+                            className="text-sm font-medium text-primary hover:underline underline-offset-4"
+                        >
+                            Starting from zero? Fresher Path →
+                        </Link>
+                    </motion.div>
+                )}
 
                 {/* Launch signals */}
                 <motion.div

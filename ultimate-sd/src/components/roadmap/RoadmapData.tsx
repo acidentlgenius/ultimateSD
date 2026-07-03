@@ -20,7 +20,9 @@ import {
     Share2,
     Code,
     Activity,
-    Terminal
+    Terminal,
+    GraduationCap,
+    Car
 } from 'lucide-react';
 
 // Re-using some generic icons
@@ -55,6 +57,195 @@ export const TRACKS: TrackInfo[] = [
         label: 'Agentic AI',
         description: 'Architect autonomous agent systems and memory pipelines.',
         icon: Bot
+    }
+];
+
+// --- Fresher & Campus Track (flag: fresherTrack) ---
+// Rendered only when the fresherTrack feature flag allows (see getVisibleTracks).
+export const FRESHER_TRACK_INFO: TrackInfo = {
+    id: 'fresher',
+    label: 'Fresher & Campus',
+    description: 'Start from zero: OOP classics to your first HLD, placement-ready in 8 weeks.',
+    icon: GraduationCap
+};
+
+/**
+ * Track selection respecting the fresherTrack feature flag.
+ * Flag off ⇒ exactly the existing four role tracks (zero visual change).
+ */
+export function getVisibleTracks(fresherTrackEnabled: boolean): TrackInfo[] {
+    return fresherTrackEnabled ? [FRESHER_TRACK_INFO, ...TRACKS] : [...TRACKS];
+}
+
+const FRESHER_ROADMAP: RoadmapPhase[] = [
+    {
+        id: 'phase-0-fresher',
+        title: 'Phase 0: Foundations',
+        description: 'No code, no problems yet — learn what system design interviews actually expect from freshers.',
+        steps: [
+            {
+                id: 'step-fresher-0a',
+                title: 'What Is System Design?',
+                description: 'HLD vs LLD, and why fresher interviews start with Parking Lot — not Netflix.',
+                difficulty: 'Beginner',
+                status: 'unlocked',
+                icon: BookOpen,
+                resources: [
+                    {
+                        title: 'Warm up on the free diagram canvas',
+                        type: 'widget',
+                        url: '/draw',
+                        duration: '10 min'
+                    }
+                ]
+            },
+            {
+                id: 'step-fresher-0b',
+                title: 'Requirements & Trade-offs',
+                description: 'Functional vs non-functional requirements, CAP, and consistency vs availability with everyday examples.',
+                difficulty: 'Beginner',
+                status: 'unlocked',
+                icon: FileText,
+                resources: [
+                    {
+                        title: 'See TinyURL simulations before you design one',
+                        type: 'widget',
+                        url: '/practice/design-tinyurl',
+                        duration: '10 min'
+                    }
+                ]
+            },
+            {
+                id: 'step-fresher-0c',
+                title: 'The 4-Step Interview Framework',
+                description: 'Clarify → rough scale → 5-box diagram + API → one trade-off. The lite framework fresher rounds expect.',
+                difficulty: 'Beginner',
+                status: 'unlocked',
+                icon: Layout,
+                resources: [
+                    {
+                        title: 'Practice the 5-box diagram on the canvas',
+                        type: 'widget',
+                        url: '/draw',
+                        duration: '15 min'
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        id: 'phase-1-fresher',
+        title: 'Phase 1: OOP & LLD Classics',
+        description: 'The problems service companies actually ask freshers — objects, states, and clean APIs.',
+        steps: [
+            {
+                id: 'step-fresher-1',
+                title: 'Design a Parking Lot',
+                description: 'Classes, entities, and allocation strategy — the canonical fresher LLD problem.',
+                problemId: '11',
+                problemSlug: 'design-parking-lot',
+                difficulty: 'Beginner',
+                status: 'unlocked',
+                icon: Car
+            },
+            {
+                id: 'step-fresher-2',
+                title: 'Design an Elevator',
+                description: 'State machines and scheduling — reason about a system that moves.',
+                problemId: '12',
+                problemSlug: 'design-elevator-system',
+                difficulty: 'Beginner',
+                status: 'locked',
+                icon: Layers
+            }
+        ]
+    },
+    {
+        id: 'phase-2-fresher',
+        title: 'Phase 2: Your First HLD',
+        description: 'Cross into high-level design with the two friendliest HLD problems.',
+        steps: [
+            {
+                id: 'step-fresher-3',
+                title: 'Design TinyURL',
+                description: 'Hashing, base62 encoding, and redirects — the classic first HLD interview.',
+                problemId: '1',
+                problemSlug: 'design-tinyurl',
+                difficulty: 'Beginner',
+                status: 'locked',
+                icon: Globe
+            },
+            {
+                id: 'step-fresher-4',
+                title: 'Design a REST API',
+                description: 'Resource modeling, HTTP methods, and status codes done right.',
+                problemId: '40',
+                problemSlug: 'design-rest-api',
+                difficulty: 'Beginner',
+                status: 'locked',
+                icon: Terminal
+            }
+        ]
+    },
+    {
+        id: 'phase-3-fresher',
+        title: 'Phase 3: Scale Basics',
+        description: 'Your first taste of scalability — protecting services and fanning out messages.',
+        steps: [
+            {
+                id: 'step-fresher-5',
+                title: 'Design a Rate Limiter',
+                description: 'Token bucket and sliding windows — protect an API from abuse.',
+                problemId: '17',
+                problemSlug: 'design-rate-limiter',
+                difficulty: 'Intermediate',
+                status: 'locked',
+                icon: Shield
+            },
+            {
+                id: 'step-fresher-6',
+                title: 'Design a Notification System',
+                description: 'Publish-subscribe basics for push notifications.',
+                problemId: '22',
+                problemSlug: 'design-notification-system',
+                difficulty: 'Intermediate',
+                status: 'locked',
+                icon: MessageSquare
+            }
+        ]
+    },
+    {
+        id: 'phase-4-fresher',
+        title: 'Phase 4: Interview Ready',
+        description: 'Put it together under interview conditions.',
+        steps: [
+            {
+                id: 'step-fresher-7a',
+                title: 'Run a Timed Mock',
+                description: 'Re-attempt Parking Lot or TinyURL in one 45-minute sitting: clarify, diagram, one trade-off.',
+                difficulty: 'Beginner',
+                status: 'unlocked',
+                icon: PlayCircle,
+                resources: [
+                    {
+                        title: 'Re-attempt Parking Lot under time pressure',
+                        type: 'challenge',
+                        url: '/practice/design-parking-lot',
+                        duration: '45 min'
+                    }
+                ]
+            },
+            {
+                id: 'step-fresher-7b',
+                title: 'Design WhatsApp',
+                description: 'Capstone: real-time chat basics — your bridge to the Software Engineer track.',
+                problemId: '7',
+                problemSlug: 'design-whatsapp',
+                difficulty: 'Intermediate',
+                status: 'locked',
+                icon: MessageSquare
+            }
+        ]
     }
 ];
 
@@ -510,6 +701,7 @@ export const getRoadmapData = (trackId: string): RoadmapPhase[] => {
         case 'sse': return SSE_ROADMAP;
         case 'mlops': return MLOPS_ROADMAP;
         case 'agentic-ai': return AGENTIC_ROADMAP;
+        case 'fresher': return FRESHER_ROADMAP;
         default: return SE_ROADMAP;
     }
 };

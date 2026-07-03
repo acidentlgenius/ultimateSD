@@ -59,10 +59,14 @@ export function applyProgressToRoadmap(
     ...phase,
     steps: phase.steps.map((step) => {
       const status = resolveStepStatus(step, progressBySlug, priorStepCompleted);
-      priorStepCompleted = isProblemStepComplete(
-        { ...step, status },
-        progressBySlug
-      );
+      // Concept-only steps (no problemSlug) are informational: they never
+      // block progression, so the unlock chain passes through unchanged.
+      if (step.problemSlug) {
+        priorStepCompleted = isProblemStepComplete(
+          { ...step, status },
+          progressBySlug
+        );
+      }
       return { ...step, status };
     }),
   }));

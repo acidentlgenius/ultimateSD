@@ -1,6 +1,6 @@
 'use client';
 
-import { TRACKS, getRoadmapData } from '@/components/roadmap/RoadmapData';
+import { getRoadmapData, getVisibleTracks } from '@/components/roadmap/RoadmapData';
 import { RoadmapNode } from '@/components/roadmap/RoadmapNode';
 import { RoadmapPath } from '@/components/roadmap/RoadmapPath';
 import { RoadmapSchedule } from '@/components/roadmap/RoadmapSchedule';
@@ -17,14 +17,19 @@ import { useSearchParams, useRouter } from 'next/navigation';
 
 interface RoadmapClientProps {
   progressBySlug: Record<string, ProgressStatus>;
+  fresherTrackEnabled: boolean;
 }
 
-export function RoadmapClient({ progressBySlug }: RoadmapClientProps) {
+export function RoadmapClient({ progressBySlug, fresherTrackEnabled }: RoadmapClientProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const trackParam = searchParams.get('track');
 
-  const isValidTrack = TRACKS.some((t) => t.id === trackParam);
+  const visibleTracks = useMemo(
+    () => getVisibleTracks(fresherTrackEnabled),
+    [fresherTrackEnabled]
+  );
+  const isValidTrack = visibleTracks.some((t) => t.id === trackParam);
   const selectedTrack = (isValidTrack ? trackParam : 'se') as RoadmapTrack;
 
   useEffect(() => {
@@ -78,7 +83,7 @@ export function RoadmapClient({ progressBySlug }: RoadmapClientProps) {
             </p>
 
             <div className="flex flex-wrap justify-center gap-2 p-1.5 bg-muted/30 backdrop-blur-md rounded-2xl border border-border/50 shadow-sm inline-flex">
-              {TRACKS.map((track) => {
+              {visibleTracks.map((track) => {
                 const Icon = track.icon;
                 const isSelected = selectedTrack === track.id;
                 return (

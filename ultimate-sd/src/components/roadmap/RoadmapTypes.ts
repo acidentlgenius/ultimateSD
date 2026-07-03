@@ -1,7 +1,7 @@
 import React from 'react';
 
 export type RoadmapStatus = 'locked' | 'unlocked' | 'in-progress' | 'completed';
-export type RoadmapTrack = 'se' | 'sse' | 'mlops' | 'agentic-ai';
+export type RoadmapTrack = 'se' | 'sse' | 'mlops' | 'agentic-ai' | 'fresher';
 
 export interface Resource {
     title: string;
