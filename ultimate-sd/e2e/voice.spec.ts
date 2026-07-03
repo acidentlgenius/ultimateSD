@@ -22,6 +22,7 @@ test.describe('voice interview (flag granted, audio providers mocked)', () => {
     await mockVoiceRoutes(page);
 
     await page.goto('/practice/design-tinyurl');
+    await page.getByRole('switch', { name: /practice aloud/i }).click();
     await page.getByTestId('voice-start').click();
 
     // Opening interviewer question appears in the transcript.
