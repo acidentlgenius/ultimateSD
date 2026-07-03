@@ -120,6 +120,7 @@ function PracticeUIContent({
   const [serverPausedSeconds, setServerPausedSeconds] = useState<number>((existingProgress as any)?.totalPausedSeconds ?? 0);
   const [lastPausedAt, setLastPausedAt] = useState<Date | string | null>((existingProgress as any)?.lastPausedAt ?? null);
   const [interviewStatus, setInterviewStatus] = useState<InterviewStatus>('running');
+  const [summaryDismissed, setSummaryDismissed] = useState(false);
   const dispatchInterview = (event: InterviewEvent) =>
     setInterviewStatus((s) => interviewStatusReducer(s, event));
 
@@ -129,6 +130,7 @@ function PracticeUIContent({
   useEffect(() => {
     if (interviewConfig) {
       setInterviewStatus('running');
+      setSummaryDismissed(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [interviewConfig?.variant, problem.id]);
@@ -574,7 +576,7 @@ function PracticeUIContent({
       )}
 
 
-      {interviewConfig && interviewStatus !== 'running' && (
+      {interviewConfig && interviewStatus !== 'running' && !summaryDismissed && (
         <InterviewSummaryPanel
           problem={problem}
           phaseSteps={phaseSteps}
@@ -585,6 +587,7 @@ function PracticeUIContent({
           onRetry={() => dispatchInterview('RETRY_SUMMARY')}
           onExportPdf={exportTranscript}
           isExporting={isExporting}
+          onClose={() => setSummaryDismissed(true)}
         />
       )}
 
