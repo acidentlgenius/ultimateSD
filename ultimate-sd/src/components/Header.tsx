@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { MobileMenu } from "@/components/MobileMenu";
 import { NAV_ITEMS, isNavGroup } from '@/lib/navigation';
 import { NavDropdown } from '@/components/NavDropdown';
+import { WhatsNewNotifier } from '@/components/WhatsNewNotifier';
 
 export async function Header() {
   const session = await auth();
@@ -68,6 +69,7 @@ export async function Header() {
           </div>
 
           <div className="h-6 w-px bg-border/40 mx-1" />
+          <WhatsNewNotifier />
           <ThemeToggle />
           <UserMenu user={session?.user} />
           <MobileMenu user={session?.user} />
