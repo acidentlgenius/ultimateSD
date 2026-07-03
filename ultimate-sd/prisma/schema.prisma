@@ -40,7 +40,8 @@ model User {
   preferredDifficulty   String[] @default([])
   focusAreas           String[] @default([])
   onboardingCompleted  Boolean  @default(false)
-  
+  practiceIntent       String   @default("")
+
   // User stats
   xp                   Int      @default(0)
   level                Int      @default(1)
