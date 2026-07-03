@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Mic, Timer, MessageSquareWarning, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { joinWaitlist } from '@/app/actions/waitlist';
+import { useState } from 'react';
 
 const PILLARS = [
   {
@@ -21,12 +22,16 @@ const PILLARS = [
   },
   {
     icon: MessageSquareWarning,
-    title: 'AI Probe',
+    title: 'Defend your design',
     description: 'Passed a step? An AI skeptic challenges your design with real follow-up questions.',
   },
 ];
 
-export function AiInterviewerSection() {
+interface AiInterviewerSectionProps {
+  interviewModeEnabled?: boolean;
+}
+
+export function AiInterviewerSection({ interviewModeEnabled = false }: AiInterviewerSectionProps) {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'saving' | 'done'>('idle');
 
@@ -51,15 +56,17 @@ export function AiInterviewerSection() {
   return (
     <section id="ai-interviewer" className="container mx-auto px-4 py-24">
       <div className="text-center mb-14">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/50 border border-secondary mb-6 backdrop-blur-sm"
-        >
-          <Sparkles className="w-4 h-4 text-primary animate-pulse" />
-          <span className="text-sm font-medium">Coming soon</span>
-        </motion.div>
+        {!interviewModeEnabled && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/50 border border-secondary mb-6 backdrop-blur-sm"
+          >
+            <Sparkles className="w-4 h-4 text-primary animate-pulse" />
+            <span className="text-sm font-medium">Coming soon</span>
+          </motion.div>
+        )}
         <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">
           Meet your{' '}
           <span className="bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
@@ -82,7 +89,11 @@ export function AiInterviewerSection() {
       </div>
 
       <div className="max-w-md mx-auto text-center">
-        {status === 'done' ? (
+        {interviewModeEnabled ? (
+          <Button size="lg" className="h-12 px-8 rounded-full" asChild>
+            <Link href="/interview">Start mock interview</Link>
+          </Button>
+        ) : status === 'done' ? (
           <p className="text-lg font-medium text-primary">You&apos;re on the waitlist 🎉</p>
         ) : (
           <form onSubmit={handleSubmit} className="flex gap-2">
@@ -99,7 +110,9 @@ export function AiInterviewerSection() {
             </Button>
           </form>
         )}
-        <p className="text-xs text-muted-foreground mt-3">Be first in line when it launches. No spam.</p>
+        {!interviewModeEnabled && (
+          <p className="text-xs text-muted-foreground mt-3">Be first in line when it launches. No spam.</p>
+        )}
       </div>
     </section>
   );

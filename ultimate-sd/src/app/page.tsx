@@ -14,12 +14,13 @@ import { ProblemWithStatus } from "@/types";
 export default async function Home() {
   const session = await auth();
 
-  const [launchStats, launchUserState, fresherTrackEnabled] = await Promise.all([
+  const [launchStats, launchUserState, fresherTrackEnabled, interviewModeEnabled] = await Promise.all([
     getLaunchOfferStats(),
     session?.user?.id
       ? getLaunchOfferUserState(session.user.id)
       : Promise.resolve(null),
     canAccessFeature(session?.user?.id ?? null, 'fresherTrack'),
+    canAccessFeature(session?.user?.id ?? null, 'interviewMode'),
   ]);
 
   // ...
@@ -58,6 +59,7 @@ export default async function Home() {
       launchStats={launchStats}
       launchUserState={launchUserState}
       fresherTrackEnabled={fresherTrackEnabled}
+      interviewModeEnabled={interviewModeEnabled}
     />
   );
 }

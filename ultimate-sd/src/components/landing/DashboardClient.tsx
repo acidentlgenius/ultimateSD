@@ -68,6 +68,7 @@ interface DashboardClientProps {
     launchStats?: LaunchOfferPublicStats;
     launchUserState?: LaunchOfferUserState | null;
     fresherTrackEnabled?: boolean;
+    interviewModeEnabled?: boolean;
 }
 
 function getStatusBadgeConfig(status?: ProgressStatus) {
@@ -125,6 +126,7 @@ export function DashboardClient({
     launchStats,
     launchUserState = null,
     fresherTrackEnabled = false,
+    interviewModeEnabled = false,
 }: DashboardClientProps) {
     const problems: ProblemWithStatus[] = problemsProp ?? PROBLEMS;
     const [search, setSearch] = useState('');
@@ -250,7 +252,7 @@ export function DashboardClient({
 
             {/* 2. Interactive Feature Showcase (Hide if logged in) */}
             {!user && <FeatureShowcase />}
-            {!user && <AiInterviewerSection />}
+            {!user && <AiInterviewerSection interviewModeEnabled={interviewModeEnabled} />}
 
             {/* 2.5 Roadmap Preview */}
             <RoadmapPreview />
