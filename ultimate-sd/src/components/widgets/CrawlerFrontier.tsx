@@ -40,30 +40,45 @@ export default function CrawlerFrontier() {
         });
     };
 
+    const queuesRef = useRef(queues);
+    const activeUrlRef = useRef(activeUrl);
+
+    useEffect(() => {
+        queuesRef.current = queues;
+    }, [queues]);
+
+    useEffect(() => {
+        activeUrlRef.current = activeUrl;
+    }, [activeUrl]);
+
     // Clean up timeouts on unmount
     useEffect(() => {
+        const timeouts = timeoutIds.current;
         return () => {
-            timeoutIds.current.forEach(clearTimeout);
-            timeoutIds.current.clear();
+            timeouts.forEach(clearTimeout);
+            timeouts.clear();
         };
     }, []);
 
     // Simulate Crawler Loop
     useEffect(() => {
         const interval = setInterval(() => {
+            const currentQueues = queuesRef.current;
+            const currentActiveUrl = activeUrlRef.current;
+
             // 1. Pick URL (High Priority first)
             let nextItem: QueueItem | undefined;
             let sourceQueue = '';
 
-            if (queues['High Priority'].length > 0) {
-                nextItem = queues['High Priority'][0];
+            if (currentQueues['High Priority'].length > 0) {
+                nextItem = currentQueues['High Priority'][0];
                 sourceQueue = 'High Priority';
-            } else if (queues['Standard'].length > 0) {
-                nextItem = queues['Standard'][0];
+            } else if (currentQueues['Standard'].length > 0) {
+                nextItem = currentQueues['Standard'][0];
                 sourceQueue = 'Standard';
             }
 
-            if (nextItem && !activeUrl) {
+            if (nextItem && !currentActiveUrl) {
                 // Remove from queue
                 setQueues(prev => ({
                     ...prev,
@@ -108,7 +123,7 @@ export default function CrawlerFrontier() {
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [queues['High Priority'].length, queues['Standard'].length, activeUrl]);
+    }, []);
 
     return (
         <div className="space-y-6 animate-fade-in text-sm">

@@ -12,6 +12,36 @@ describe('CrawlerFrontier', () => {
     vi.useRealTimers();
   });
 
+  it('processes queue items continuously without stale closures', () => {
+    render(<CrawlerFrontier />);
+
+    const startButton = screen.getByText(/Add Seed URL/i);
+
+    // Add multiple seeds
+    act(() => {
+      fireEvent.click(startButton);
+      fireEvent.click(startButton);
+      fireEvent.click(startButton);
+    });
+
+    // Initial crawled count should be 0
+    expect(screen.getByText(/Crawled: 0/i)).toBeDefined();
+
+    // Advance timers in chunks to allow React state updates and intervals to tick
+    // We expect it to process items. Each item takes ~1.5s to extract.
+    // Advancing 10 seconds in 1s chunks should be enough to process a few.
+    for (let i = 0; i < 15; i++) {
+      act(() => {
+        vi.advanceTimersByTime(1000);
+      });
+    }
+
+    // Crawled count should be greater than 0, proving the interval loop didn't get stuck
+    // due to stale closures.
+    const crawledBadge = screen.getByText(/Crawled: [1-9]/i);
+    expect(crawledBadge).toBeDefined();
+  });
+
   it('clears timeouts on unmount to prevent memory leaks', async () => {
     // Instead of relying purely on timer count, let's spy on setState if we could,
     // but the timer count reduction is a solid proof since we explicitly check it.
