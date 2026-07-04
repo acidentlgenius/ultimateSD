@@ -32,7 +32,7 @@ export function FeatureFlagsPanel() {
 
   useEffect(() => {
     refresh();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   const togglePlan = (flag: FlagRow, plan: PlanType) => {

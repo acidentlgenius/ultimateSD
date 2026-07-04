@@ -60,7 +60,7 @@ export default function ProbePanel({ problem, phase, stepAnswer, onClose }: Prob
     if (startedRef.current) return;
     startedRef.current = true;
     void fetchProbe(1, []);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   const sendReply = () => {

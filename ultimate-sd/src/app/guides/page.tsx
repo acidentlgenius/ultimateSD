@@ -92,7 +92,7 @@ export default function GuidesIndexPage() {
           interviewer.
         </p>
         <Button asChild size="lg">
-          <Link href="/">
+          <Link href="/problems">
             Browse all {PROBLEMS.length}+ problems
             <ArrowRight className="ml-2 h-4 w-4" />
           </Link>
