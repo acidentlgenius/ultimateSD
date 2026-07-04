@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { redirect, notFound } from "next/navigation";
 import { getSessionDetail } from "@/app/actions/progress";
+import { canAccessFeature } from "@/lib/feature-flags-server";
 import { SessionPhaseReview } from "@/components/profile/SessionPhaseReview";
 
 export async function generateMetadata({ params }: { params: Promise<{ sessionId: string }> }) {
@@ -29,9 +30,11 @@ export default async function SessionDetailPage({
         notFound();
     }
 
+    const probeEntitled = await canAccessFeature(authSession.user.id, 'aiProbe');
+
     return (
         <div className="container max-w-4xl mx-auto py-8 px-4">
-            <SessionPhaseReview session={detail} />
+            <SessionPhaseReview session={detail} probeEntitled={probeEntitled} />
         </div>
     );
 }

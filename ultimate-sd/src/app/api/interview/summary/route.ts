@@ -4,6 +4,13 @@ import { PROBLEMS } from '@/lib/problems';
 import { canAccessFeature } from '@/lib/feature-flags-server';
 import { getUserLLM, AIAccessError } from '@/lib/user-llm';
 import { getInterviewSummary, type InterviewSummaryInput } from '@/lib/langgraph';
+import { prisma } from '@/lib/prisma';
+import type { Prisma } from '@prisma/client';
+import {
+  isInterviewDebriefVariant,
+  summaryToPersistPayload,
+  type InterviewDebriefVariant,
+} from '@/lib/interview-debrief';
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -15,7 +22,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Not available' }, { status: 403 });
   }
 
-  const { slug, answers } = await req.json();
+  const { slug, answers, variant: variantRaw } = await req.json();
+  const variant: InterviewDebriefVariant =
+    typeof variantRaw === 'string' && isInterviewDebriefVariant(variantRaw) ? variantRaw : 'lite';
 
   const problemMetadata = PROBLEMS.find((p) => p.slug === slug);
   if (!problemMetadata) {
@@ -38,7 +47,16 @@ export async function POST(req: NextRequest) {
     if (!summary) {
       return NextResponse.json({ error: 'Failed to generate summary' }, { status: 500 });
     }
-    return NextResponse.json({ summary });
+
+    const debrief = await prisma.interviewDebrief.create({
+      data: {
+        userId: session.user.id,
+        ...summaryToPersistPayload(variant, problemMetadata.id, slug, summary),
+        summaryJson: summary as unknown as Prisma.InputJsonValue,
+      },
+    });
+
+    return NextResponse.json({ summary, debriefId: debrief.id });
   } catch (error) {
     if (error instanceof AIAccessError) {
       return NextResponse.json({ error: error.message }, { status: 403 });

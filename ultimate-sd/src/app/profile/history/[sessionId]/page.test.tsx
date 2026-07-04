@@ -13,6 +13,10 @@ vi.mock("@/app/actions/progress", () => ({
     getSessionDetail: vi.fn(),
 }));
 
+vi.mock("@/lib/feature-flags-server", () => ({
+    canAccessFeature: vi.fn(() => Promise.resolve(false)),
+}));
+
 vi.mock("@/components/profile/SessionPhaseReview", () => ({
     SessionPhaseReview: ({ session }: { session: { problemTitle: string } }) => (
         <div data-testid="session-phase-review">

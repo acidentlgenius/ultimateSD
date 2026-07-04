@@ -13,17 +13,22 @@ vi.mock('@/lib/user-llm', () => {
   return { AIAccessError, getUserLLM: vi.fn() };
 });
 vi.mock('@/lib/langgraph', () => ({ getInterviewSummary: vi.fn() }));
+vi.mock('@/lib/prisma', () => ({
+  prisma: { interviewDebrief: { create: vi.fn() } },
+}));
 
 import { auth } from '@/auth';
 import { canAccessFeature } from '@/lib/feature-flags-server';
 import { AIAccessError, getUserLLM } from '@/lib/user-llm';
 import { getInterviewSummary } from '@/lib/langgraph';
+import { prisma } from '@/lib/prisma';
 import { POST } from '@/app/api/interview/summary/route';
 
 const mockedAuth = vi.mocked(auth);
 const mockedFlag = vi.mocked(canAccessFeature);
 const mockedLLM = vi.mocked(getUserLLM);
 const mockedSummary = vi.mocked(getInterviewSummary);
+const mockedCreate = vi.mocked(prisma.interviewDebrief.create);
 
 const VALID_BODY = {
   slug: 'design-tinyurl',
@@ -86,9 +91,13 @@ describe('POST /api/interview/summary', () => {
       improvements: ['i'],
       phaseNotes: [],
     });
+    mockedCreate.mockResolvedValue({ id: 'd1' } as never);
     const res = await POST(makeRequest(VALID_BODY));
     expect(res.status).toBe(200);
-    expect((await res.json()).summary.verdict).toBe('Hire');
+    const body = await res.json();
+    expect(body.summary.verdict).toBe('Hire');
+    expect(body.debriefId).toBe('d1');
+    expect(mockedCreate).toHaveBeenCalled();
   });
 
   it('returns 500 when the generator yields null', async () => {

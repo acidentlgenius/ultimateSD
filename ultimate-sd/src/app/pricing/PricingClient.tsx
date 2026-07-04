@@ -66,7 +66,7 @@ const FREE_FEATURES = [
 const FLAGSHIP_ROWS: { feature: FeatureKey; label: string; plans: PlanType[] }[] = [
   { feature: 'interviewMode', label: 'Interview Mode — timed mock + AI debrief', plans: ['platform', 'lifetime', 'ai'] },
   { feature: 'voiceInterview', label: 'Voice Interview — practice out loud', plans: ['ai'] },
-  { feature: 'aiProbe', label: 'AI Probe — defend your design under follow-ups', plans: ['ai'] },
+  { feature: 'aiProbe', label: 'Defend your design — AI follow-up challenges', plans: ['ai'] },
 ];
 
 function loadRazorpayScript(): Promise<boolean> {
