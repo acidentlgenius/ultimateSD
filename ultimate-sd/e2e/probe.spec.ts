@@ -39,7 +39,7 @@ test.describe('AI probe mode (flag granted)', () => {
     });
 
     // Opt in to probe mode from the feedback modal
-    await page.getByRole('button', { name: 'Probe this answer' }).click();
+    await page.getByRole('button', { name: 'Defend your design' }).click();
     await expect(page.getByText(/Probe question 1/)).toBeVisible({ timeout: 15_000 });
 
     // Round-trip: answer question 1 → question 2 arrives
