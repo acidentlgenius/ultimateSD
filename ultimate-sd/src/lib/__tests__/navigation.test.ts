@@ -6,19 +6,19 @@ describe('NAV_ITEMS', () => {
     expect(NAV_ITEMS.map((i) => i.label)).toEqual(['Home', 'Learn', 'Practice', 'Interview', 'Pricing']);
   });
 
-  it('groups Roadmap + Guides + Blog under Learn', () => {
+  it('groups Roadmap + Guides under Learn', () => {
     const learn = NAV_ITEMS.find((i) => i.label === 'Learn');
-    expect(learn && isNavGroup(learn) && learn.links.map((l) => l.href)).toEqual(['/roadmap', '/guides', '/blog']);
+    expect(learn && isNavGroup(learn) && learn.links.map((l) => l.href)).toEqual(['/roadmap', '/guides']);
   });
 
   it('groups Problems + Custom Problem + Draw under Practice', () => {
     const practice = NAV_ITEMS.find((i) => i.label === 'Practice');
-    expect(practice && isNavGroup(practice) && practice.links.map((l) => l.href)).toEqual(['/', '/custom', '/draw']);
+    expect(practice && isNavGroup(practice) && practice.links.map((l) => l.href)).toEqual(['/problems', '/custom', '/draw']);
   });
 
   it('flattens to a unique-href list that includes every destination (mobile parity)', () => {
     const hrefs = flattenNavLinks().map((l) => l.href);
-    for (const required of ['/', '/roadmap', '/guides', '/blog', '/custom', '/draw', '/interview', '/pricing']) {
+    for (const required of ['/', '/roadmap', '/guides', '/problems', '/custom', '/draw', '/interview', '/pricing']) {
       expect(hrefs).toContain(required);
     }
     expect(new Set(hrefs).size).toBe(hrefs.length);
