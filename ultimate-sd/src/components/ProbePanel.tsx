@@ -89,7 +89,7 @@ export default function ProbePanel({ problem, phase, stepAnswer, onClose }: Prob
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <ShieldQuestion className="h-4 w-4 text-amber-600" />
-            <h3 className="font-semibold text-sm">Probe mode — The Skeptic</h3>
+            <h3 className="font-semibold text-sm">Defend your design</h3>
           </div>
           <Button
             variant="ghost"
@@ -119,7 +119,7 @@ export default function ProbePanel({ problem, phase, stepAnswer, onClose }: Prob
           {loading && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground p-2">
               <Loader2 className="h-4 w-4 animate-spin" />
-              The Skeptic is thinking…
+              Challenging your design…
             </div>
           )}
           {error && <p className="text-sm text-red-600">{error}</p>}
@@ -128,7 +128,7 @@ export default function ProbePanel({ problem, phase, stepAnswer, onClose }: Prob
         {probeOver ? (
           <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
-              Probe complete — {round} follow-ups survived.
+              Follow-up complete — {round} rounds defended.
             </p>
             <Button size="sm" onClick={onClose}>
               Done

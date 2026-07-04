@@ -8,6 +8,7 @@ import { saveUserPreferences } from '@/app/actions/progress';
 import { toast } from 'sonner';
 import { Check, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { PRACTICE_INTENTS, type PracticeIntent } from '@/lib/onboarding';
 
 const COMPANIES = ['Google', 'Meta', 'Amazon', 'Netflix', 'Uber', 'Microsoft', 'Apple', 'Spotify', 'Twitter/X'];
 const DIFFICULTIES = ['Easy', 'Medium', 'Hard'];
@@ -21,6 +22,7 @@ interface OnboardingModalProps {
 
 export default function OnboardingModal({ isOpen, onClose, userId }: OnboardingModalProps) {
     const [step, setStep] = useState(1);
+    const [selectedIntent, setSelectedIntent] = useState<PracticeIntent | null>(null);
     const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
     const [selectedDifficulty, setSelectedDifficulty] = useState<string[]>([]);
     const [selectedFocus, setSelectedFocus] = useState<string[]>([]);
@@ -37,7 +39,7 @@ export default function OnboardingModal({ isOpen, onClose, userId }: OnboardingM
     const handleFinish = async () => {
         setIsSaving(true);
         try {
-            const result = await saveUserPreferences(selectedCompanies, selectedDifficulty, selectedFocus);
+            const result = await saveUserPreferences(selectedCompanies, selectedDifficulty, selectedFocus, selectedIntent ?? '');
             if (result.success) {
                 toast.success('Preferences saved!', { description: 'We will use these to recommend problems on your dashboard.' });
                 onClose();
@@ -58,7 +60,7 @@ export default function OnboardingModal({ isOpen, onClose, userId }: OnboardingM
                     <motion.div
                         className="h-full bg-primary"
                         initial={{ width: '0%' }}
-                        animate={{ width: `${(step / 3) * 100}%` }}
+                        animate={{ width: `${(step / 4) * 100}%` }}
                     />
                 </div>
 
@@ -67,6 +69,41 @@ export default function OnboardingModal({ isOpen, onClose, userId }: OnboardingM
                         {step === 1 && (
                             <motion.div
                                 key="step1"
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -20 }}
+                                className="space-y-6"
+                            >
+                                <DialogHeader>
+                                    <DialogTitle className="text-2xl font-bold">What brings you here?</DialogTitle>
+                                    <DialogDescription className="text-lg">We&apos;ll tailor your dashboard to your goal.</DialogDescription>
+                                </DialogHeader>
+                                <div className="flex flex-col gap-3">
+                                    {PRACTICE_INTENTS.map(intent => (
+                                        <div
+                                            key={intent.id}
+                                            onClick={() => { setSelectedIntent(intent.id); setStep(2); }}
+                                            className={`
+                                        cursor-pointer p-4 rounded-xl border-2 transition-all duration-200
+                                        ${selectedIntent === intent.id
+                                                    ? 'border-primary bg-primary/10 shadow-sm'
+                                                    : 'border-muted hover:border-primary/50 hover:bg-muted/50'}
+                                    `}
+                                        >
+                                            <div className="flex items-center justify-between">
+                                                <span className={`text-lg font-semibold ${selectedIntent === intent.id ? 'text-primary' : ''}`}>{intent.label}</span>
+                                                {selectedIntent === intent.id && <Check className="w-5 h-5 text-primary" />}
+                                            </div>
+                                            <p className="text-sm text-muted-foreground mt-1">{intent.description}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </motion.div>
+                        )}
+
+                        {step === 2 && (
+                            <motion.div
+                                key="step2"
                                 initial={{ opacity: 0, x: 20 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, x: -20 }}
@@ -96,9 +133,9 @@ export default function OnboardingModal({ isOpen, onClose, userId }: OnboardingM
                             </motion.div>
                         )}
 
-                        {step === 2 && (
+                        {step === 3 && (
                             <motion.div
-                                key="step2"
+                                key="step3"
                                 initial={{ opacity: 0, x: 20 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, x: -20 }}
@@ -128,9 +165,9 @@ export default function OnboardingModal({ isOpen, onClose, userId }: OnboardingM
                             </motion.div>
                         )}
 
-                        {step === 3 && (
+                        {step === 4 && (
                             <motion.div
-                                key="step3"
+                                key="step4"
                                 initial={{ opacity: 0, x: 20 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, x: -20 }}
@@ -168,7 +205,7 @@ export default function OnboardingModal({ isOpen, onClose, userId }: OnboardingM
                         <div />
                     )}
 
-                    {step < 3 ? (
+                    {step < 4 ? (
                         <Button onClick={() => setStep(step + 1)} className="gap-2">
                             Next <ChevronRight className="w-4 h-4" />
                         </Button>

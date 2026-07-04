@@ -67,10 +67,20 @@ test.describe('interview mode & probe stay dark', () => {
     await expect(page.getByRole('button', { name: 'Start Interview' })).toHaveCount(0);
   });
 
-  test('?interview=lite is stripped for unentitled users', async ({ page }) => {
+  test('?interview=lite shows the upsell, never the interview, for unentitled users', async ({ page }) => {
     await page.goto('/practice/design-tinyurl?interview=lite');
-    await expect(page).toHaveURL(/\/practice\/design-tinyurl$/);
+    // The interview UI never renders while dark…
     await expect(page.getByText(/Interview · 45 min/)).toHaveCount(0);
+    // …the user gets the Interview Mode pitch with a pricing CTA instead.
+    await expect(page.getByRole('heading', { level: 1, name: 'Interview Mode' })).toBeVisible();
+    await expect(page.getByRole('link', { name: /See plans/i })).toHaveAttribute(
+      'href',
+      '/pricing?feature=interviewMode',
+    );
+    // The escape hatch drops back to the plain practice page.
+    await page.getByRole('link', { name: /Practice without interview mode/i }).click();
+    await expect(page).toHaveURL(/\/practice\/design-tinyurl$/);
+    await expect(page.getByRole('heading', { level: 1, name: /Design TinyURL/i })).toBeVisible();
   });
 
   test('interview summary API returns 403 while dark', async ({ request }) => {

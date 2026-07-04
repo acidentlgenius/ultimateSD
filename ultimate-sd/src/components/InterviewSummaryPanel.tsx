@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Download, Loader2, RefreshCw } from 'lucide-react';
+import { Copy, Download, Loader2, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -18,7 +18,10 @@ import {
   buildInterviewAnswers,
   type InterviewStatus,
   type InterviewStepDataLike,
+  type InterviewVariant,
 } from '@/lib/interview-mode';
+import { exportInterviewDebriefPdf } from '@/lib/pdf-export-interview-debrief';
+import { toast } from 'sonner';
 
 interface InterviewSummaryPanelProps {
   problem: SystemDesignProblem;
@@ -30,6 +33,8 @@ interface InterviewSummaryPanelProps {
   onRetry: () => void;
   onExportPdf: () => Promise<void>;
   isExporting: boolean;
+  interviewVariant?: InterviewVariant;
+  onClose: () => void;
 }
 
 export default function InterviewSummaryPanel({
@@ -42,8 +47,12 @@ export default function InterviewSummaryPanel({
   onRetry,
   onExportPdf,
   isExporting,
+  interviewVariant = 'lite',
+  onClose,
 }: InterviewSummaryPanelProps) {
   const [summary, setSummary] = useState<InterviewSummary | null>(null);
+  const [debriefId, setDebriefId] = useState<string | null>(null);
+  const [isSharing, setIsSharing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inFlightRef = useRef(false);
 
@@ -57,7 +66,7 @@ export default function InterviewSummaryPanel({
         const res = await fetch('/api/interview/summary', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ slug: problem.slug, answers }),
+          body: JSON.stringify({ slug: problem.slug, answers, variant: interviewVariant }),
         });
         const data = await res.json();
         if (!res.ok || !data.summary) {
@@ -66,6 +75,7 @@ export default function InterviewSummaryPanel({
           return;
         }
         setSummary(data.summary);
+        if (data.debriefId) setDebriefId(data.debriefId);
         onSummaryReady();
       } catch {
         setError('Could not generate your debrief.');
@@ -75,11 +85,44 @@ export default function InterviewSummaryPanel({
       }
     };
     void run();
-  }, [status, phaseSteps, savedStepData, problem.slug, onSummaryReady, onSummaryFailed]);
+  }, [status, phaseSteps, savedStepData, problem.slug, interviewVariant, onSummaryReady, onSummaryFailed]);
+
+  const handleShare = async () => {
+    if (!debriefId) return;
+    setIsSharing(true);
+    try {
+      const res = await fetch('/api/interview/share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ debriefId }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.url) {
+        toast.error(data.error ?? 'Could not create share link.');
+        return;
+      }
+      await navigator.clipboard.writeText(data.url);
+      toast.success('Share link copied to clipboard');
+    } catch {
+      toast.error('Could not create share link.');
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
+  const handleExportDebriefPdf = () => {
+    if (!summary) return;
+    exportInterviewDebriefPdf(summary, problem.title);
+  };
+
+  // Closing mid-generation would leave the in-flight debrief request orphaned
+  // with no way to see its result, so the dialog can only be dismissed once
+  // it has settled into 'complete' or 'summary-error'.
+  const canClose = status !== 'generating-summary';
 
   return (
-    <Dialog open>
-      <DialogContent showCloseButton={false} className="max-w-lg">
+    <Dialog open onOpenChange={(next) => { if (!next && canClose) onClose(); }}>
+      <DialogContent showCloseButton={canClose} className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Interview Debrief</DialogTitle>
           <DialogDescription>
@@ -99,10 +142,15 @@ export default function InterviewSummaryPanel({
         {status === 'summary-error' && (
           <div className="py-4 space-y-3">
             <p className="text-sm text-red-600">{error}</p>
-            <Button variant="outline" onClick={onRetry}>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Retry
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={onRetry}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Retry
+              </Button>
+              <Button variant="ghost" onClick={onClose}>
+                Close
+              </Button>
+            </div>
           </div>
         )}
 
@@ -144,14 +192,31 @@ export default function InterviewSummaryPanel({
         )}
 
         {status === 'complete' && (
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            {debriefId && (
+              <Button variant="outline" onClick={() => void handleShare()} disabled={isSharing}>
+                {isSharing ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Copy className="h-4 w-4 mr-2" />
+                )}
+                Copy share link
+              </Button>
+            )}
+            <Button variant="outline" onClick={handleExportDebriefPdf} disabled={!summary}>
+              <Download className="h-4 w-4 mr-2" />
+              Export debrief PDF
+            </Button>
+            <Button variant="ghost" onClick={onClose}>
+              Close
+            </Button>
             <Button onClick={() => void onExportPdf()} disabled={isExporting}>
               {isExporting ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
                 <Download className="h-4 w-4 mr-2" />
               )}
-              Export PDF
+              Export practice PDF
             </Button>
           </DialogFooter>
         )}

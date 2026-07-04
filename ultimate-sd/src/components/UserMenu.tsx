@@ -4,7 +4,7 @@ import Link from "next/link"
 import { signOut } from "next-auth/react"
 import { User } from "next-auth"
 import { Button } from "@/components/ui/button"
-import { LogOut, User as UserIcon, ChevronDown, Settings, ShieldAlert } from "lucide-react"
+import { LogOut, User as UserIcon, ChevronDown, Settings, ShieldAlert, Sparkles } from "lucide-react"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -61,6 +61,12 @@ export function UserMenu({ user }: UserMenuProps) {
                         <Link href="/settings" className="cursor-pointer">
                             <Settings className="mr-2 h-4 w-4" />
                             <span>Settings</span>
+                        </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                        <Link href="/whats-new" className="cursor-pointer">
+                            <Sparkles className="mr-2 h-4 w-4" />
+                            <span>What&apos;s New</span>
                         </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />

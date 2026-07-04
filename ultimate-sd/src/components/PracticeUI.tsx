@@ -42,10 +42,12 @@ import InterviewSummaryPanel from './InterviewSummaryPanel';
 import VoicePanel from './voice/VoicePanel';
 import {
   interviewStatusReducer,
+  interviewVariantUsesVoice,
   type InterviewConfig,
   type InterviewEvent,
   type InterviewStatus,
 } from '@/lib/interview-mode';
+import { PracticeAloudToggle } from './PracticeAloudToggle';
 
 export default function PracticeUI({
   problem,
@@ -120,6 +122,8 @@ function PracticeUIContent({
   const [serverPausedSeconds, setServerPausedSeconds] = useState<number>((existingProgress as any)?.totalPausedSeconds ?? 0);
   const [lastPausedAt, setLastPausedAt] = useState<Date | string | null>((existingProgress as any)?.lastPausedAt ?? null);
   const [interviewStatus, setInterviewStatus] = useState<InterviewStatus>('running');
+  const [practiceAloudOn, setPracticeAloudOn] = useState(false);
+  const [summaryDismissed, setSummaryDismissed] = useState(false);
   const dispatchInterview = (event: InterviewEvent) =>
     setInterviewStatus((s) => interviewStatusReducer(s, event));
 
@@ -129,6 +133,7 @@ function PracticeUIContent({
   useEffect(() => {
     if (interviewConfig) {
       setInterviewStatus('running');
+      setSummaryDismissed(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [interviewConfig?.variant, problem.id]);
@@ -440,8 +445,20 @@ function PracticeUIContent({
           </Button>
         )}
 
+        {!interviewConfig && (
+          <PracticeAloudToggle
+            enabled={practiceAloudOn}
+            entitled={voiceEnabled}
+            onEnabledChange={setPracticeAloudOn}
+          />
+        )}
+
         {interviewAllowed && !interviewConfig && (
-          <StartInterviewDialog slug={problem.slug} />
+          <StartInterviewDialog
+            slug={problem.slug}
+            interviewEntitled={interviewAllowed}
+            voiceEntitled={voiceEnabled}
+          />
         )}
 
         {interviewConfig && interviewStatus === 'running' && (
@@ -509,13 +526,14 @@ function PracticeUIContent({
       <main className="flex-1 overflow-y-auto bg-gradient-to-br from-background via-background to-muted/20 relative">
         <div className="max-w-5xl mx-auto p-4 md:p-8 pb-32">
 
-          {voiceEnabled && (
+          {(interviewConfig && interviewVariantUsesVoice(interviewConfig.variant)) ||
+          (!interviewConfig && practiceAloudOn && voiceEnabled) ? (
             <VoicePanel
               slug={problem.slug}
               problemTitle={problem.title}
               practiceSessionId={existingProgress?.activeSessionId ?? null}
             />
-          )}
+          ) : null}
 
           {/* Main Chat Interface */}
           <div className="animate-fade-in" style={{ animationDelay: '100ms' }}>
@@ -574,7 +592,7 @@ function PracticeUIContent({
       )}
 
 
-      {interviewConfig && interviewStatus !== 'running' && (
+      {interviewConfig && interviewStatus !== 'running' && !summaryDismissed && (
         <InterviewSummaryPanel
           problem={problem}
           phaseSteps={phaseSteps}
@@ -585,6 +603,8 @@ function PracticeUIContent({
           onRetry={() => dispatchInterview('RETRY_SUMMARY')}
           onExportPdf={exportTranscript}
           isExporting={isExporting}
+          interviewVariant={interviewConfig.variant}
+          onClose={() => setSummaryDismissed(true)}
         />
       )}
 

@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Menu, X, Home, Palette, Map, BookOpen, LogIn, Sparkles } from 'lucide-react';
+import { Menu, X, BookOpen, LogIn, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { usePathname } from 'next/navigation';
 import { User } from 'next-auth';
+import { flattenNavLinks } from '@/lib/navigation';
 
 interface MobileMenuProps {
   user?: User;
@@ -36,14 +37,10 @@ export function MobileMenu({ user }: MobileMenuProps) {
     };
   }, [isOpen]);
 
-  const menuItems = [
-    { href: '/', label: 'Home', icon: Home },
-    { href: '/draw', label: 'Draw', icon: Palette },
-    { href: '/roadmap', label: 'Roadmap', icon: Map },
-  ];
+  const menuItems = flattenNavLinks();
 
   return (
-    <div className="md:hidden ml-2">
+    <div className="lg:hidden ml-2">
       <Button
         variant="ghost"
         size="icon"

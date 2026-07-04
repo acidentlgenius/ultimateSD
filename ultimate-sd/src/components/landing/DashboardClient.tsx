@@ -19,6 +19,7 @@ import { tokens } from '@/styles/tokens';
 import { Button } from '@/components/ui/button';
 import { Hero } from '@/components/landing/Hero';
 import { FeatureShowcase } from '@/components/landing/FeatureShowcase';
+import { AiInterviewerSection } from '@/components/landing/AiInterviewerSection';
 import { RoadmapPreview } from '@/components/landing/RoadmapPreview';
 import { UserHero } from '@/components/landing/UserHero';
 import { ClaimPlatformAccessBanner } from '@/components/landing/ClaimPlatformAccessBanner';
@@ -67,6 +68,7 @@ interface DashboardClientProps {
     launchStats?: LaunchOfferPublicStats;
     launchUserState?: LaunchOfferUserState | null;
     fresherTrackEnabled?: boolean;
+    interviewModeEnabled?: boolean;
 }
 
 function getStatusBadgeConfig(status?: ProgressStatus) {
@@ -124,6 +126,7 @@ export function DashboardClient({
     launchStats,
     launchUserState = null,
     fresherTrackEnabled = false,
+    interviewModeEnabled = false,
 }: DashboardClientProps) {
     const problems: ProblemWithStatus[] = problemsProp ?? PROBLEMS;
     const [search, setSearch] = useState('');
@@ -249,6 +252,7 @@ export function DashboardClient({
 
             {/* 2. Interactive Feature Showcase (Hide if logged in) */}
             {!user && <FeatureShowcase />}
+            {!user && <AiInterviewerSection interviewModeEnabled={interviewModeEnabled} />}
 
             {/* 2.5 Roadmap Preview */}
             <RoadmapPreview />

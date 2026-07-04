@@ -40,7 +40,8 @@ model User {
   preferredDifficulty   String[] @default([])
   focusAreas           String[] @default([])
   onboardingCompleted  Boolean  @default(false)
-  
+  practiceIntent       String   @default("")
+
   // User stats
   xp                   Int      @default(0)
   level                Int      @default(1)
@@ -77,6 +78,7 @@ model User {
   launchOfferEntry        LaunchOfferEntry?
   featureFlagOverrides    FeatureFlagOverride[]
   voiceSessions           VoiceSession[]
+  interviewDebriefs       InterviewDebrief[]
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -262,4 +264,39 @@ model VoiceTurn {
   session VoiceSession @relation(fields: [voiceSessionId], references: [id], onDelete: Cascade)
 
   @@index([voiceSessionId, createdAt])
+}
+
+model InterviewDebrief {
+  id           String   @id @default(cuid())
+  userId       String
+  problemId    String
+  problemSlug  String
+  variant      String   // "lite" | "full" | "voice"
+  overallScore Int
+  verdict      String
+  summaryJson  Json
+  createdAt    DateTime @default(now())
+
+  user   User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shares InterviewDebriefShare[]
+
+  @@index([userId, createdAt])
+}
+
+model InterviewDebriefShare {
+  id        String   @id @default(cuid())
+  debriefId String
+  token     String   @unique @default(cuid())
+  createdAt DateTime @default(now())
+
+  debrief InterviewDebrief @relation(fields: [debriefId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+}
+
+model WaitlistSignup {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  feature   String   @default("aiInterviewer")
+  createdAt DateTime @default(now())
 }

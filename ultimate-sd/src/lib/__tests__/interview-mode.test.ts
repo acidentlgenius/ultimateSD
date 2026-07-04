@@ -19,19 +19,32 @@ describe('interview durations and param parsing', () => {
     expect(getInterviewConfig('full')).toEqual({ variant: 'full', durationSeconds: 3600 });
   });
 
-  it('parses only exact lite/full values', () => {
+  it('parses only exact lite/full/voice values', () => {
     expect(parseInterviewParam('lite')).toBe('lite');
     expect(parseInterviewParam('full')).toBe('full');
+    expect(parseInterviewParam('voice')).toBe('voice');
     expect(parseInterviewParam('LITE')).toBeNull();
     expect(parseInterviewParam(undefined)).toBeNull();
     expect(parseInterviewParam(['lite'])).toBeNull();
     expect(parseInterviewParam('hack')).toBeNull();
+  });
+
+  it('parseInterviewParam accepts voice', () => {
+    expect(parseInterviewParam('voice')).toBe('voice');
+  });
+
+  it('getInterviewConfig returns duration for voice (same as lite)', () => {
+    expect(getInterviewConfig('voice').durationSeconds).toBe(2700);
   });
 });
 
 describe('getInterviewSteps', () => {
   it('lite variant uses the lite phase set even when the problem has custom steps', () => {
     expect(getInterviewSteps('design-tinyurl', 'Easy', 'lite')).toBe(INTERVIEW_LITE_PHASE_STEPS);
+  });
+
+  it('voice variant uses the lite phase set', () => {
+    expect(getInterviewSteps('design-tinyurl', 'Easy', 'voice')).toBe(INTERVIEW_LITE_PHASE_STEPS);
   });
 
   it('full variant uses the normal practice step selection', () => {

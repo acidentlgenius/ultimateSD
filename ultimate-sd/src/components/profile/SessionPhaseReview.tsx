@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { format } from "date-fns";
 import { ArrowLeft, Award, Calendar, Hash } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { LockedFeatureButton } from "@/components/LockedFeatureButton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StepAttemptCard } from "@/components/profile/StepAttemptCard";
 import { DiagramSnapshotViewer } from "@/components/profile/DiagramSnapshotViewer";
@@ -16,6 +18,7 @@ interface SessionPhaseReviewProps {
     showBackLink?: boolean;
     userName?: string | null;
     userEmail?: string;
+    probeEntitled?: boolean;
 }
 
 export function SessionPhaseReview({
@@ -25,6 +28,7 @@ export function SessionPhaseReview({
     showBackLink = true,
     userName,
     userEmail,
+    probeEntitled = false,
 }: SessionPhaseReviewProps) {
     const defaultPhase = session.phases[0]?.phase ?? "";
 
@@ -74,6 +78,22 @@ export function SessionPhaseReview({
                     </div>
                 </div>
             </div>
+
+            {session.status === 'COMPLETED' && (
+                <div className="flex justify-start">
+                    {probeEntitled ? (
+                        <Button asChild>
+                            <Link href={`/practice/${session.problemSlug}`}>Defend this design</Link>
+                        </Button>
+                    ) : (
+                        <LockedFeatureButton
+                            feature="aiProbe"
+                            label="Defend this design"
+                            tooltip="Available on the AI plan — an AI skeptic challenges your design like a real interviewer"
+                        />
+                    )}
+                </div>
+            )}
 
             {session.phases.length > 0 ? (
                 <Tabs defaultValue={defaultPhase} className="space-y-6">

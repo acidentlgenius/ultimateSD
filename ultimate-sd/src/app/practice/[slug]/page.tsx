@@ -3,6 +3,7 @@ import { Metadata } from 'next';
 import { PROBLEMS } from '@/lib/problems';
 import { getPracticeSteps } from '@/lib/interview-lite-steps';
 import PracticeUI from '@/components/PracticeUI';
+import { FeatureUpsell } from '@/components/FeatureUpsell';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { canAccessProblem } from '@/lib/access';
@@ -62,9 +63,26 @@ export default async function PracticePage({
 
   const interviewAllowed = await canAccessFeature(session.user.id, 'interviewMode');
   const probeAllowed = await canAccessFeature(session.user.id, 'aiProbe');
+  const voiceAllowed = await canAccessFeature(session.user.id, 'voiceInterview');
   const requestedVariant = parseInterviewParam(interview);
   if (requestedVariant && !interviewAllowed) {
-    redirect(`/practice/${slug}`); // dark flag: strip the interview param entirely
+    // Feature not launched for this user: pitch it instead of silently stripping the param.
+    return (
+      <FeatureUpsell
+        feature="interviewMode"
+        continueHref={`/practice/${slug}`}
+        continueLabel="Practice without interview mode"
+      />
+    );
+  }
+  if (requestedVariant === 'voice' && interviewAllowed && !voiceAllowed) {
+    return (
+      <FeatureUpsell
+        feature="voiceInterview"
+        continueHref={`/practice/${slug}`}
+        continueLabel="Practice without voice"
+      />
+    );
   }
   const interviewConfig =
     requestedVariant && interviewAllowed ? getInterviewConfig(requestedVariant) : null;
@@ -95,7 +113,7 @@ export default async function PracticePage({
       }
     : null;
 
-  const voiceEnabled = await canAccessFeature(session.user.id, 'voiceInterview');
+  const voiceEnabled = voiceAllowed;
 
   return (
     <PracticeUI
