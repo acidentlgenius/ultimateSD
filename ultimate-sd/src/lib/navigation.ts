@@ -1,4 +1,4 @@
-import { BookOpen, GraduationCap, Home, Layers, Map, Palette, PencilRuler, Sparkles, Timer, type LucideIcon } from 'lucide-react';
+import { BookOpen, Compass, GraduationCap, Home, Layers, Map, Palette, PencilRuler, Sparkles, Timer, type LucideIcon } from 'lucide-react';
 
 export interface NavLink {
   href: string;
@@ -30,6 +30,7 @@ export const NAV_ITEMS: NavItem[] = [
     icon: GraduationCap,
     links: [
       { href: '/roadmap', label: 'Roadmap', icon: Map },
+      { href: '/guides', label: 'Guides', icon: Compass },
       { href: '/blog', label: 'Blog', icon: BookOpen },
     ],
   },
