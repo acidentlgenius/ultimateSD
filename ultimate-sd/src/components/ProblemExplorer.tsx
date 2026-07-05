@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useDeferredValue } from 'react';
 import Link from 'next/link';
 import Fuse from 'fuse.js';
 import { Search, ArrowRight, Building2, TrendingUp, Lock, CheckCircle, Clock, RotateCcw } from 'lucide-react';
@@ -109,6 +109,7 @@ export function ProblemExplorer({
     setCompanyCollection: setCompanyCollectionProp,
 }: ProblemExplorerProps) {
     const [search, setSearch] = useState('');
+    const deferredSearch = useDeferredValue(search);
     const [category, setCategory] = useState('All');
     const [difficulty, setDifficulty] = useState('All');
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('All');
@@ -153,12 +154,15 @@ export function ProblemExplorer({
         });
     }, [problems]);
 
-    const filtered = useMemo(() => {
-        let filteredProblems = problems;
-
-        if (search) {
-            filteredProblems = fuseIndex.search(search).map(result => result.item);
+    const searchedProblems = useMemo(() => {
+        if (deferredSearch) {
+            return fuseIndex.search(deferredSearch).map(result => result.item);
         }
+        return problems;
+    }, [problems, deferredSearch, fuseIndex]);
+
+    const filtered = useMemo(() => {
+        let filteredProblems = searchedProblems;
 
         if (category !== 'All') {
             filteredProblems = filteredProblems.filter(p => p.category === category);
@@ -187,7 +191,7 @@ export function ProblemExplorer({
         }
 
         return filteredProblems;
-    }, [problems, search, category, difficulty, statusFilter, topicFilter, companyCollection, user, fuseIndex]);
+    }, [searchedProblems, category, difficulty, statusFilter, topicFilter, companyCollection, user]);
 
     const categories = ['All', ...new Set(problems.map(p => p.category))];
     const difficulties = ['All', 'Easy', 'Medium', 'Hard'];
