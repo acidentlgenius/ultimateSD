@@ -1,3 +1,6 @@
+// @vitest-environment node
+// Server route test: needs Node's native FormData/Blob/File — under jsdom,
+// undici rejects jsdom's File instances when parsing multipart bodies.
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/auth', () => ({ auth: vi.fn() }));

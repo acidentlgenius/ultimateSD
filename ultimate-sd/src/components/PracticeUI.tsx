@@ -134,7 +134,7 @@ function PracticeUIContent({
       setInterviewStatus('running');
       setSummaryDismissed(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [interviewConfig?.variant, problem.id]);
 
   // Clear the interview timer's local-storage state once a session ends, so a

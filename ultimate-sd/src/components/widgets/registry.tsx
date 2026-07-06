@@ -1,0 +1,57 @@
+"use client";
+
+import React from 'react';
+import dynamic from 'next/dynamic';
+import WidgetLoader from './WidgetLoader';
+
+// Dynamic imports for widgets to improve initial load performance.
+// Shared by the practice flow (StepByStepChat) and public guide pages.
+export const WIDGETS: Record<string, React.ComponentType> = {
+  'encoding-visualizer': dynamic(() => import('./EncodingVisualizer'), { loading: () => <WidgetLoader /> }),
+  'capacity-calculator': dynamic(() => import('./CapacityCalculator'), { loading: () => <WidgetLoader /> }),
+  'fanout-visualizer': dynamic(() => import('./FanoutVisualizer'), { loading: () => <WidgetLoader /> }),
+  'feed-ranking-simulator': dynamic(() => import('./FeedRankingSimulator'), { loading: () => <WidgetLoader /> }),
+  'quadtree-visualizer': dynamic(() => import('./QuadTreeVisualizer'), { loading: () => <WidgetLoader /> }),
+  'abr-simulator': dynamic(() => import('./ABRSimulator'), { loading: () => <WidgetLoader /> }),
+  'e2e-encryption-demo': dynamic(() => import('./E2EEncryptionDemo'), { loading: () => <WidgetLoader /> }),
+  'feed-architect': dynamic(() => import('./FeedArchitect'), { loading: () => <WidgetLoader /> }),
+  'inverted-index-visualizer': dynamic(() => import('./InvertedIndexVisualizer'), { loading: () => <WidgetLoader /> }),
+  'chunking-dedupe-demo': dynamic(() => import('./ChunkingDedupeDemo'), { loading: () => <WidgetLoader /> }),
+  'rate-limiter-demo': dynamic(() => import('./RateLimiterDemo'), { loading: () => <WidgetLoader /> }),
+  'cache-visualizer': dynamic(() => import('./CacheVisualizer'), { loading: () => <WidgetLoader /> }),
+  'trie-visualizer': dynamic(() => import('./TrieVisualizer'), { loading: () => <WidgetLoader /> }),
+  'snowflake-demo': dynamic(() => import('./SnowflakeDemo'), { loading: () => <WidgetLoader /> }),
+  'leaderboard-simulation': dynamic(() => import('./LeaderboardSimulation'), { loading: () => <WidgetLoader /> }),
+  'notification-system-demo': dynamic(() => import('./NotificationSystemDemo'), { loading: () => <WidgetLoader /> }),
+  'metrics-dashboard': dynamic(() => import('./MetricsDashboard'), { loading: () => <WidgetLoader /> }),
+  'consistent-hashing-demo': dynamic(() => import('./ConsistentHashingDemo'), { loading: () => <WidgetLoader /> }),
+  'load-balancer-visualizer': dynamic(() => import('./LoadBalancerVisualizer'), { loading: () => <WidgetLoader /> }),
+  'message-queue-visualizer': dynamic(() => import('./MessageQueueVisualizer'), { loading: () => <WidgetLoader /> }),
+  'cdn-map': dynamic(() => import('./CDNMap'), { loading: () => <WidgetLoader /> }),
+  'crawler-frontier': dynamic(() => import('./CrawlerFrontier'), { loading: () => <WidgetLoader /> }),
+  'dfs-visualizer': dynamic(() => import('./DFSVisualizer'), { loading: () => <WidgetLoader /> }),
+  'leader-election-demo': dynamic(() => import('./LeaderElectionDemo'), { loading: () => <WidgetLoader /> }),
+  'config-propagator': dynamic(() => import('./ConfigPropagator'), { loading: () => <WidgetLoader /> }),
+  'secret-vault': dynamic(() => import('./SecretVault'), { loading: () => <WidgetLoader /> }),
+  'pipeline-visualizer': dynamic(() => import('./PipelineVisualizer'), { loading: () => <WidgetLoader /> }),
+  'service-mesh-viz': dynamic(() => import('./ServiceMeshViz'), { loading: () => <WidgetLoader /> }),
+  'graphql-playground': dynamic(() => import('./GraphQLPlayground'), { loading: () => <WidgetLoader /> }),
+  'rest-explorer': dynamic(() => import('./RESTExplorer'), { loading: () => <WidgetLoader /> }),
+  'socket-pulse': dynamic(() => import('./SocketPulse'), { loading: () => <WidgetLoader /> }),
+  'ot-visualizer': dynamic(() => import('./OTVisualizer'), { loading: () => <WidgetLoader /> }),
+  'rtb-simulator': dynamic(() => import('./RTBSimulator'), { loading: () => <WidgetLoader /> }),
+  'feed-ranker': dynamic(() => import('./FeedRanker'), { loading: () => <WidgetLoader /> }),
+  'feature-toggle-demo': dynamic(() => import('./FeatureToggleDemo'), { loading: () => <WidgetLoader /> }),
+  'sidecar-visualizer': dynamic(() => import('./SidecarVisualizer'), { loading: () => <WidgetLoader /> }),
+  'trace-waterfall': dynamic(() => import('./TraceWaterfall'), { loading: () => <WidgetLoader /> }),
+  'audit-log-visualizer': dynamic(() => import('./AuditLogVisualizer'), { loading: () => <WidgetLoader /> }),
+  'privacy-request-manager': dynamic(() => import('./PrivacyRequestManager'), { loading: () => <WidgetLoader /> }),
+  'blockchain-demo': dynamic(() => import('./BlockchainDemo'), { loading: () => <WidgetLoader /> }),
+  'vector-db-visualizer': dynamic(() => import('./VectorDBVisualizer'), { loading: () => <WidgetLoader /> }),
+  'rag-architect': dynamic(() => import('./RAGArchitect'), { loading: () => <WidgetLoader /> }),
+  'agent-orchestrator': dynamic(() => import('./AgentOrchestrator'), { loading: () => <WidgetLoader /> }),
+  'job-scheduler-viz': dynamic(() => import('./JobSchedulerViz'), { loading: () => <WidgetLoader /> }),
+  'flash-sale-demo': dynamic(() => import('./FlashSaleDemo'), { loading: () => <WidgetLoader /> }),
+  'payment-ledger': dynamic(() => import('./PaymentLedger'), { loading: () => <WidgetLoader /> }),
+  'bloom-filter-viz': dynamic(() => import('./BloomFilterViz'), { loading: () => <WidgetLoader /> }),
+};
