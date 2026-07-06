@@ -1,4 +1,4 @@
-import { BookOpen, GraduationCap, Home, Layers, Map, Palette, PencilRuler, Sparkles, Timer, type LucideIcon } from 'lucide-react';
+import { BookOpen, Home, Layers, Map, Palette, PencilRuler, Sparkles, Timer, type LucideIcon } from 'lucide-react';
 
 export interface NavLink {
   href: string;
@@ -26,17 +26,11 @@ export function isNavGroup(item: NavItem): item is NavGroup {
 export const NAV_ITEMS: NavItem[] = [
   { href: '/', label: 'Home', icon: Home },
   {
-    label: 'Learn',
-    icon: GraduationCap,
-    links: [
-      { href: '/roadmap', label: 'Roadmap', icon: Map },
-      { href: '/guides', label: 'Guides', icon: BookOpen },
-    ],
-  },
-  {
     label: 'Practice',
     icon: Layers,
     links: [
+      { href: '/roadmap', label: 'Roadmap', icon: Map },
+      { href: '/guides', label: 'Guides', icon: BookOpen },
       { href: '/problems', label: 'Problems', icon: Layers },
       { href: '/custom', label: 'Custom Problem', icon: PencilRuler },
       { href: '/draw', label: 'Draw', icon: Palette },
