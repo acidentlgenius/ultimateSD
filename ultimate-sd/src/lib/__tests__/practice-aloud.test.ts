@@ -15,7 +15,11 @@ describe('practice-aloud localStorage', () => {
   });
 
   it('returns false when localStorage throws', () => {
-    const spy = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+    // Spy on the prototype: jsdom's Storage is a Proxy that turns own-property
+    // writes into storage items, and the in-memory test fallback keeps its
+    // methods on its own prototype — this works for both.
+    const proto = Object.getPrototypeOf(localStorage) as Storage;
+    const spy = vi.spyOn(proto, 'getItem').mockImplementation(() => {
       throw new Error('blocked');
     });
     expect(shouldShowPracticeAloudExplainer()).toBe(false);

@@ -25,8 +25,7 @@ import { toast } from 'sonner';
 
 import { useSession } from 'next-auth/react';
 
-import { DEFAULT_PHASE_STEPS } from '@/lib/steps';
-import { getDiagramStepKeysForProblem, isDiagramSubStep, resolvePhaseSteps } from '@/lib/step-journey';
+import { getDiagramStepKeysForProblem, getGenericFallbackSteps, isDiagramSubStep, resolvePhaseSteps } from '@/lib/step-journey';
 import { exportSceneToPng, resolveBestDiagramSnapshot } from '@/lib/diagram-persistence';
 import { cn } from '@/lib/utils';
 import { FEATURES } from '@/lib/features';
@@ -102,7 +101,7 @@ function PracticeUIContent({
   const { data: session, status } = useSession();
   const isAuthenticated = status === 'authenticated' && !!session?.user?.id;
 
-  const activeSteps = problem.steps || DEFAULT_PHASE_STEPS;
+  const activeSteps = resolvePhaseSteps(problem.steps, getGenericFallbackSteps(problem));
 
   const PHASES = Object.keys(activeSteps).map(key => {
     const steps = activeSteps[key];
@@ -135,7 +134,7 @@ function PracticeUIContent({
       setInterviewStatus('running');
       setSummaryDismissed(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [interviewConfig?.variant, problem.id]);
 
   // Clear the interview timer's local-storage state once a session ends, so a
@@ -162,7 +161,7 @@ function PracticeUIContent({
   }, []);
 
   const isDiagramRelevant = isDiagramSubStep(currentSubStep);
-  const phaseSteps = resolvePhaseSteps(problem.steps, DEFAULT_PHASE_STEPS);
+  const phaseSteps = resolvePhaseSteps(problem.steps, getGenericFallbackSteps(problem));
   const diagramStepKeys = getDiagramStepKeysForProblem(phaseSteps);
 
 

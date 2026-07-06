@@ -51,16 +51,15 @@ import {
   Info
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
-import WidgetLoader from './widgets/WidgetLoader';
 import CompletionUI from './CompletionUI';
 
 import SubmissionHistory from './SubmissionHistory';
 import { History } from 'lucide-react';
-import { DEFAULT_PHASE_STEPS } from '@/lib/steps';
 import {
   buildStepKey,
   clampStepIndex,
   getDiagramStepKeysForProblem,
+  getGenericFallbackSteps,
   isDiagramSubStep,
   isFirstJourneyStep,
   resolveEffectivePhase,
@@ -78,56 +77,8 @@ import { buildDiagramDescription } from '@/lib/diagram-description';
 import { shouldUseLocalSessionDraft } from '@/lib/session-persistence-policy';
 import type { StepDiagramData } from '@/types/diagram';
 
-// Dynamic imports for widgets to improve initial load performance
-const WIDGETS: Record<string, React.ComponentType> = {
-  'encoding-visualizer': dynamic(() => import('./widgets/EncodingVisualizer'), { loading: () => <WidgetLoader /> }),
-  'capacity-calculator': dynamic(() => import('./widgets/CapacityCalculator'), { loading: () => <WidgetLoader /> }),
-  'fanout-visualizer': dynamic(() => import('./widgets/FanoutVisualizer'), { loading: () => <WidgetLoader /> }),
-  'feed-ranking-simulator': dynamic(() => import('./widgets/FeedRankingSimulator'), { loading: () => <WidgetLoader /> }),
-  'quadtree-visualizer': dynamic(() => import('./widgets/QuadTreeVisualizer'), { loading: () => <WidgetLoader /> }),
-  'abr-simulator': dynamic(() => import('./widgets/ABRSimulator'), { loading: () => <WidgetLoader /> }),
-  'e2e-encryption-demo': dynamic(() => import('./widgets/E2EEncryptionDemo'), { loading: () => <WidgetLoader /> }),
-  'feed-architect': dynamic(() => import('./widgets/FeedArchitect'), { loading: () => <WidgetLoader /> }),
-  'inverted-index-visualizer': dynamic(() => import('./widgets/InvertedIndexVisualizer'), { loading: () => <WidgetLoader /> }),
-  'chunking-dedupe-demo': dynamic(() => import('./widgets/ChunkingDedupeDemo'), { loading: () => <WidgetLoader /> }),
-  'rate-limiter-demo': dynamic(() => import('./widgets/RateLimiterDemo'), { loading: () => <WidgetLoader /> }),
-  'cache-visualizer': dynamic(() => import('./widgets/CacheVisualizer'), { loading: () => <WidgetLoader /> }),
-  'trie-visualizer': dynamic(() => import('./widgets/TrieVisualizer'), { loading: () => <WidgetLoader /> }),
-  'snowflake-demo': dynamic(() => import('./widgets/SnowflakeDemo'), { loading: () => <WidgetLoader /> }),
-  'leaderboard-simulation': dynamic(() => import('./widgets/LeaderboardSimulation'), { loading: () => <WidgetLoader /> }),
-  'notification-system-demo': dynamic(() => import('./widgets/NotificationSystemDemo'), { loading: () => <WidgetLoader /> }),
-  'metrics-dashboard': dynamic(() => import('./widgets/MetricsDashboard'), { loading: () => <WidgetLoader /> }),
-  'consistent-hashing-demo': dynamic(() => import('./widgets/ConsistentHashingDemo'), { loading: () => <WidgetLoader /> }),
-  'load-balancer-visualizer': dynamic(() => import('./widgets/LoadBalancerVisualizer'), { loading: () => <WidgetLoader /> }),
-  'message-queue-visualizer': dynamic(() => import('./widgets/MessageQueueVisualizer'), { loading: () => <WidgetLoader /> }),
-  'cdn-map': dynamic(() => import('./widgets/CDNMap'), { loading: () => <WidgetLoader /> }),
-  'crawler-frontier': dynamic(() => import('./widgets/CrawlerFrontier'), { loading: () => <WidgetLoader /> }),
-  'dfs-visualizer': dynamic(() => import('./widgets/DFSVisualizer'), { loading: () => <WidgetLoader /> }),
-  'leader-election-demo': dynamic(() => import('./widgets/LeaderElectionDemo'), { loading: () => <WidgetLoader /> }),
-  'config-propagator': dynamic(() => import('./widgets/ConfigPropagator'), { loading: () => <WidgetLoader /> }),
-  'secret-vault': dynamic(() => import('./widgets/SecretVault'), { loading: () => <WidgetLoader /> }),
-  'pipeline-visualizer': dynamic(() => import('./widgets/PipelineVisualizer'), { loading: () => <WidgetLoader /> }),
-  'service-mesh-viz': dynamic(() => import('./widgets/ServiceMeshViz'), { loading: () => <WidgetLoader /> }),
-  'graphql-playground': dynamic(() => import('./widgets/GraphQLPlayground'), { loading: () => <WidgetLoader /> }),
-  'rest-explorer': dynamic(() => import('./widgets/RESTExplorer'), { loading: () => <WidgetLoader /> }),
-  'socket-pulse': dynamic(() => import('./widgets/SocketPulse'), { loading: () => <WidgetLoader /> }),
-  'ot-visualizer': dynamic(() => import('./widgets/OTVisualizer'), { loading: () => <WidgetLoader /> }),
-  'rtb-simulator': dynamic(() => import('./widgets/RTBSimulator'), { loading: () => <WidgetLoader /> }),
-  'feed-ranker': dynamic(() => import('./widgets/FeedRanker'), { loading: () => <WidgetLoader /> }),
-  'feature-toggle-demo': dynamic(() => import('./widgets/FeatureToggleDemo'), { loading: () => <WidgetLoader /> }),
-  'sidecar-visualizer': dynamic(() => import('./widgets/SidecarVisualizer'), { loading: () => <WidgetLoader /> }),
-  'trace-waterfall': dynamic(() => import('./widgets/TraceWaterfall'), { loading: () => <WidgetLoader /> }),
-  'audit-log-visualizer': dynamic(() => import('./widgets/AuditLogVisualizer'), { loading: () => <WidgetLoader /> }),
-  'privacy-request-manager': dynamic(() => import('./widgets/PrivacyRequestManager'), { loading: () => <WidgetLoader /> }),
-  'blockchain-demo': dynamic(() => import('./widgets/BlockchainDemo'), { loading: () => <WidgetLoader /> }),
-  'vector-db-visualizer': dynamic(() => import('./widgets/VectorDBVisualizer'), { loading: () => <WidgetLoader /> }),
-  'rag-architect': dynamic(() => import('./widgets/RAGArchitect'), { loading: () => <WidgetLoader /> }),
-  'agent-orchestrator': dynamic(() => import('./widgets/AgentOrchestrator'), { loading: () => <WidgetLoader /> }),
-  'job-scheduler-viz': dynamic(() => import('./widgets/JobSchedulerViz'), { loading: () => <WidgetLoader /> }),
-  'flash-sale-demo': dynamic(() => import('./widgets/FlashSaleDemo'), { loading: () => <WidgetLoader /> }),
-  'payment-ledger': dynamic(() => import('./widgets/PaymentLedger'), { loading: () => <WidgetLoader /> }),
-  'bloom-filter-viz': dynamic(() => import('./widgets/BloomFilterViz'), { loading: () => <WidgetLoader /> }),
-};
+// Widget registry is shared with public guide pages (see widgets/registry.tsx)
+import { WIDGETS } from './widgets/registry';
 
 const ProbePanel = dynamic(() => import('./ProbePanel'), { ssr: false });
 
@@ -248,7 +199,7 @@ function findResumePosition(
 
 export default function StepByStepChat({ problem, probeEnabled = false }: Props) {
   const [currentPhase, setCurrentPhase] = useState(() => {
-    const keys = Object.keys(resolvePhaseSteps(problem.steps, DEFAULT_PHASE_STEPS));
+    const keys = Object.keys(resolvePhaseSteps(problem.steps, getGenericFallbackSteps(problem)));
     return keys[0] ?? 'requirements';
   });
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -278,7 +229,7 @@ export default function StepByStepChat({ problem, probeEnabled = false }: Props)
 
   const diagramRef = useDiagramCanvasRef();
 
-  const PHASE_STEPS = resolvePhaseSteps(problem.steps, DEFAULT_PHASE_STEPS);
+  const PHASE_STEPS = resolvePhaseSteps(problem.steps, getGenericFallbackSteps(problem));
   const diagramStepKeys = useMemo(
     () => getDiagramStepKeysForProblem(PHASE_STEPS),
     [PHASE_STEPS]
@@ -320,9 +271,9 @@ export default function StepByStepChat({ problem, probeEnabled = false }: Props)
   );
 
   useEffect(() => {
-    const phaseKeys = Object.keys(resolvePhaseSteps(problem.steps, DEFAULT_PHASE_STEPS));
+    const phaseKeys = Object.keys(resolvePhaseSteps(problem.steps, getGenericFallbackSteps(problem)));
     const nextPhase = resolveEffectivePhase(currentPhase, phaseKeys);
-    const stepsInPhase = resolvePhaseSteps(problem.steps, DEFAULT_PHASE_STEPS)[nextPhase] ?? [];
+    const stepsInPhase = resolvePhaseSteps(problem.steps, getGenericFallbackSteps(problem))[nextPhase] ?? [];
     const nextIndex = clampStepIndex(currentStepIndex, stepsInPhase.length);
 
     if (nextPhase !== currentPhase) {

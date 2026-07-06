@@ -119,7 +119,7 @@ export async function getInterviewSummary(
     .join('\n\n');
 
   const prompt = `You are a FAANG system design interviewer (ex-Meta) writing the post-interview debrief for a TIMED mock interview.
-Problem: "${problem.title}" — ${problem.description}
+Problem: "${problem.title}" — ${problem.context}
 
 Candidate transcript, step by step:
 ${transcript}

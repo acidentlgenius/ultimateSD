@@ -1,5 +1,6 @@
 import { getStepsForProblem } from '@/lib/problem-steps';
-import { DEFAULT_PHASE_STEPS } from '@/lib/steps';
+import { DEFAULT_PHASE_STEPS, GENERIC_OOD_PHASE_STEPS } from '@/lib/steps';
+import { PROBLEM_TAG_IDS } from '@/lib/problem-tags';
 import type { StepData, SystemDesignProblem } from '@/types';
 
 /** Shorter interview flow for campus / 45-min rounds (clarify → estimate → HLD → trade-off). */
@@ -71,6 +72,9 @@ export function getPracticeSteps(
   const custom = getStepsForProblem(slug);
   if (custom) {
     return { steps: custom, mode: 'custom' };
+  }
+  if (PROBLEM_TAG_IDS[slug]?.includes('oop-design')) {
+    return { steps: GENERIC_OOD_PHASE_STEPS, mode: 'full' };
   }
   if (difficulty === 'Easy') {
     return { steps: INTERVIEW_LITE_PHASE_STEPS, mode: 'lite' };

@@ -129,7 +129,7 @@ export default function ChatInterface({ problem }: Props) {
             </div>
             <div className="flex-1 min-w-0">
               <h2 className="text-lg font-semibold text-card-foreground truncate">{problem.title}</h2>
-              <p className="text-xs text-muted-foreground truncate">{problem.description}</p>
+              <p className="text-xs text-muted-foreground truncate">{problem.context}</p>
             </div>
           </div>
           <Badge

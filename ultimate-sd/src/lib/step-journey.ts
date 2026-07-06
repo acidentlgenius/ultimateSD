@@ -1,4 +1,6 @@
-import { StepData } from '@/types';
+import { StepData, SystemDesignProblem } from '@/types';
+import { DEFAULT_PHASE_STEPS, GENERIC_OOD_PHASE_STEPS } from './steps';
+import { PROBLEM_TAG_IDS } from './problem-tags';
 
 /** Architecture / data-flow steps that should show the diagram canvas. */
 const DIAGRAM_SUB_STEPS = new Set([
@@ -48,7 +50,13 @@ export function resolvePhaseSteps(
   steps: Record<string, StepData[]> | undefined,
   fallback: Record<string, StepData[]>
 ): Record<string, StepData[]> {
-  return steps ?? fallback;
+  return steps ? { ...fallback, ...steps } : fallback;
+}
+
+/** Picks the OOD-flavored generic template for oop-design tagged problems, else the default. */
+export function getGenericFallbackSteps(problem: SystemDesignProblem): Record<string, StepData[]> {
+  const tagIds = PROBLEM_TAG_IDS[problem.slug];
+  return tagIds?.includes('oop-design') ? GENERIC_OOD_PHASE_STEPS : DEFAULT_PHASE_STEPS;
 }
 
 export function getPhaseKeys(phaseSteps: Record<string, StepData[]>): string[] {

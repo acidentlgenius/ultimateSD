@@ -60,6 +60,6 @@ test.describe('timed interview mode (flag granted)', () => {
     await expect(page.getByRole('heading', { name: 'Interview Debrief' })).toBeVisible();
     await expect(page.getByText('8/10')).toBeVisible({ timeout: 15_000 });
     await expect(page.getByText('Hire', { exact: true })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Export PDF/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Export debrief PDF/i })).toBeVisible();
   });
 });

@@ -12,12 +12,13 @@ export interface SystemDesignProblem {
   id: string;
   title: string;
   slug: string;
-  description: string;
+  context: string;
+  functionalRequirements: string[];
+  nonFunctionalRequirements: string[];
   difficulty: 'Easy' | 'Medium' | 'Hard';
   category: string;
   companies: string[];
   tags?: string[];
-  requirements: string[];
   steps?: Record<string, StepData[]>;
 }
 

@@ -70,11 +70,12 @@ describe('getProbeResponse', () => {
     id: 'p1',
     title: 'Design TinyURL',
     slug: 'design-tinyurl',
-    description: 'URL shortening service',
+    context: 'URL shortening service',
     difficulty: 'Easy',
     category: 'Web',
     companies: [],
-    requirements: [],
+    functionalRequirements: [],
+    nonFunctionalRequirements: [],
   };
 
   it('sends the persona as a system message and returns an ai ChatMessage', async () => {

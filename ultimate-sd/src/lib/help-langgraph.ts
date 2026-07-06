@@ -78,10 +78,10 @@ function buildProgressContext(context: HelpContext): string {
 function buildProblemContext(problem: SystemDesignProblem): string {
   return `
 PROBLEM: ${problem.title}
-Description: ${problem.description}
+Description: ${problem.context}
 Difficulty: ${problem.difficulty}
 Category: ${problem.category}
-Key Requirements: ${problem.requirements?.join(', ') || 'Not specified'}
+Key Requirements: ${problem.functionalRequirements?.join(', ') || 'Not specified'}
 Companies: ${problem.companies?.join(', ') || 'Not specified'}`;
 }
 

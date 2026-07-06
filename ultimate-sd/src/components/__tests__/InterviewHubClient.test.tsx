@@ -11,10 +11,11 @@ const mockProblem = {
   title: 'Design TinyURL',
   id: '1',
   difficulty: 'Easy' as const,
-  description: '',
+  context: '',
   category: 'Storage',
   companies: [],
-  requirements: [],
+  functionalRequirements: [],
+  nonFunctionalRequirements: [],
 };
 
 describe('InterviewHubClient', () => {

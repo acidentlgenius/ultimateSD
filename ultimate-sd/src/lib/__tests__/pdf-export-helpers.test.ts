@@ -25,9 +25,12 @@ describe('buildPhaseExportGroups', () => {
 
     const groups = buildPhaseExportGroups(
       {
+        id: 'design-twitter',
         slug: 'design-twitter',
         title: 'Twitter',
-        description: '',
+        context: '',
+        functionalRequirements: [],
+        nonFunctionalRequirements: [],
         difficulty: 'Hard',
         category: 'Social',
         companies: [],

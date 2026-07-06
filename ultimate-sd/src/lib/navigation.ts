@@ -30,14 +30,14 @@ export const NAV_ITEMS: NavItem[] = [
     icon: GraduationCap,
     links: [
       { href: '/roadmap', label: 'Roadmap', icon: Map },
-      { href: '/blog', label: 'Blog', icon: BookOpen },
+      { href: '/guides', label: 'Guides', icon: BookOpen },
     ],
   },
   {
     label: 'Practice',
     icon: Layers,
     links: [
-      { href: '/', label: 'Problems', icon: Layers },
+      { href: '/problems', label: 'Problems', icon: Layers },
       { href: '/custom', label: 'Custom Problem', icon: PencilRuler },
       { href: '/draw', label: 'Draw', icon: Palette },
     ],
