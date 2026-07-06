@@ -95,7 +95,7 @@ const FlashSaleDemo: React.FC = () => {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="@container space-y-6">
             <Card className="bg-slate-900 border-slate-800">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -110,8 +110,8 @@ const FlashSaleDemo: React.FC = () => {
                 <CardContent className="space-y-6">
 
                     {/* Controls */}
-                    <div className="flex items-center justify-between p-4 bg-slate-950 rounded-lg border border-slate-800">
-                        <div className="flex items-center gap-4">
+                    <div className="flex flex-col @lg:flex-row @lg:items-center @lg:justify-between gap-4 p-4 bg-slate-950 rounded-lg border border-slate-800">
+                        <div className="flex flex-col @lg:flex-row @lg:items-center gap-4">
                             <Button
                                 onClick={startSale}
                                 disabled={isSaleActive}
@@ -127,19 +127,19 @@ const FlashSaleDemo: React.FC = () => {
                                     id="locking"
                                 />
                                 <label htmlFor="locking" className="text-sm font-medium text-slate-400 flex items-center gap-1">
-                                    <Lock className="w-3 h-3" />
+                                    <Lock className="w-3 h-3 shrink-0" />
                                     {useLocking ? "Pessimistic Locking (Safe)" : "No Locking (Unsafe)"}
                                 </label>
                             </div>
                         </div>
-                        <div className="text-right">
+                        <div className="text-left @lg:text-right">
                             <div className="text-2xl font-bold text-slate-200">{inventory}</div>
                             <div className="text-xs text-slate-500 uppercase">Stock Left</div>
                         </div>
                     </div>
 
                     {/* Visuals */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 @lg:grid-cols-2 gap-4">
                         {/* Queue */}
                         <div className="p-4 bg-slate-950 rounded-lg border border-slate-800">
                             <div className="flex items-center justify-between mb-4">
