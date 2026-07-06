@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { Menu, X, BookOpen, LogIn, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -16,7 +17,12 @@ interface MobileMenuProps {
 
 export function MobileMenu({ user }: MobileMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const toggleMenu = () => setIsOpen(!isOpen);
 
@@ -52,17 +58,22 @@ export function MobileMenu({ user }: MobileMenuProps) {
         {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
       </Button>
 
-      <AnimatePresence>
-        {isOpen && (
-          <>
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={toggleMenu}
-              className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm"
-            />
+      {/* Portal to body: the header's backdrop-filter makes it the containing
+          block for fixed descendants, which would confine the drawer to the
+          header box. */}
+      {mounted && createPortal(
+        <AnimatePresence>
+          {isOpen && (
+            <>
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={toggleMenu}
+                data-testid="mobile-menu-backdrop"
+                className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm"
+              />
 
             {/* Menu Content */}
             <motion.div
@@ -123,8 +134,10 @@ export function MobileMenu({ user }: MobileMenuProps) {
               </div>
             </motion.div>
           </>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 }
