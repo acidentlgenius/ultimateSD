@@ -6,7 +6,7 @@ import ProblemCard from '../ProblemCard';
 const mockProblem = {
   slug: 'tinyurl',
   title: 'Design TinyURL',
-  description: 'Shorten URLs',
+  context: 'Shorten URLs',
   difficulty: 'Easy',
   companies: ['Google', 'Facebook']
 };

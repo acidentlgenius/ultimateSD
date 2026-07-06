@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { PROBLEMS } from '../problems';
 import { getStepsForProblem } from '../problem-steps';
-import { DEFAULT_PHASE_STEPS } from '../steps';
+import { DEFAULT_PHASE_STEPS, GENERIC_OOD_PHASE_STEPS } from '../steps';
 import {
   buildStepKey,
   clampStepIndex,
   getDiagramStepKeysForProblem,
+  getGenericFallbackSteps,
   isDiagramSubStep,
   isFirstJourneyStep,
   phaseIncludesDiagram,
@@ -14,6 +15,7 @@ import {
   resolveEvaluationSubStepKey,
   resolvePhaseSteps,
 } from '../step-journey';
+import type { SystemDesignProblem } from '@/types';
 
 describe('problem journey audit', () => {
   it('every catalog problem has at least one valid step', () => {
@@ -144,5 +146,46 @@ describe('getDiagramStepKeysForProblem', () => {
     const keys = getDiagramStepKeysForProblem(phaseSteps as any);
     expect(keys).toEqual([buildStepKey('hld', 0)]);
     expect(isDiagramSubStep('architecture')).toBe(true);
+  });
+});
+
+describe('resolvePhaseSteps backfill merge', () => {
+  it('keeps custom phases and backfills missing ones from the generic fallback', () => {
+    const custom = {
+      requirements: DEFAULT_PHASE_STEPS.requirements,
+      algorithm: [
+        {
+          phase: 'Algorithm',
+          subStep: 'encoding',
+          title: 'Encoding',
+          prompt: 'Explain your encoding scheme.',
+          inputType: 'textarea' as const,
+        },
+      ],
+    };
+    const merged = resolvePhaseSteps(custom, DEFAULT_PHASE_STEPS);
+
+    expect(Object.keys(merged)).toEqual(
+      expect.arrayContaining(['requirements', 'algorithm', 'hld', 'lld', 'tradeoffs', 'scalability'])
+    );
+    expect(merged.hld).toBe(DEFAULT_PHASE_STEPS.hld);
+    expect(merged.lld).toBe(DEFAULT_PHASE_STEPS.lld);
+    expect(merged.algorithm).toBe(custom.algorithm);
+  });
+
+  it('falls back entirely to the generic template when no custom steps exist', () => {
+    expect(resolvePhaseSteps(undefined, DEFAULT_PHASE_STEPS)).toEqual(DEFAULT_PHASE_STEPS);
+  });
+});
+
+describe('getGenericFallbackSteps', () => {
+  it('selects the OOD generic template for oop-design tagged problems', () => {
+    const problem = { slug: 'design-parking-lot' } as SystemDesignProblem;
+    expect(getGenericFallbackSteps(problem)).toBe(GENERIC_OOD_PHASE_STEPS);
+  });
+
+  it('selects the default generic template for everything else', () => {
+    const problem = { slug: 'design-tinyurl' } as SystemDesignProblem;
+    expect(getGenericFallbackSteps(problem)).toBe(DEFAULT_PHASE_STEPS);
   });
 });

@@ -55,11 +55,11 @@ import CompletionUI from './CompletionUI';
 
 import SubmissionHistory from './SubmissionHistory';
 import { History } from 'lucide-react';
-import { DEFAULT_PHASE_STEPS } from '@/lib/steps';
 import {
   buildStepKey,
   clampStepIndex,
   getDiagramStepKeysForProblem,
+  getGenericFallbackSteps,
   isDiagramSubStep,
   isFirstJourneyStep,
   resolveEffectivePhase,
@@ -199,7 +199,7 @@ function findResumePosition(
 
 export default function StepByStepChat({ problem, probeEnabled = false }: Props) {
   const [currentPhase, setCurrentPhase] = useState(() => {
-    const keys = Object.keys(resolvePhaseSteps(problem.steps, DEFAULT_PHASE_STEPS));
+    const keys = Object.keys(resolvePhaseSteps(problem.steps, getGenericFallbackSteps(problem)));
     return keys[0] ?? 'requirements';
   });
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -229,7 +229,7 @@ export default function StepByStepChat({ problem, probeEnabled = false }: Props)
 
   const diagramRef = useDiagramCanvasRef();
 
-  const PHASE_STEPS = resolvePhaseSteps(problem.steps, DEFAULT_PHASE_STEPS);
+  const PHASE_STEPS = resolvePhaseSteps(problem.steps, getGenericFallbackSteps(problem));
   const diagramStepKeys = useMemo(
     () => getDiagramStepKeysForProblem(PHASE_STEPS),
     [PHASE_STEPS]
@@ -271,9 +271,9 @@ export default function StepByStepChat({ problem, probeEnabled = false }: Props)
   );
 
   useEffect(() => {
-    const phaseKeys = Object.keys(resolvePhaseSteps(problem.steps, DEFAULT_PHASE_STEPS));
+    const phaseKeys = Object.keys(resolvePhaseSteps(problem.steps, getGenericFallbackSteps(problem)));
     const nextPhase = resolveEffectivePhase(currentPhase, phaseKeys);
-    const stepsInPhase = resolvePhaseSteps(problem.steps, DEFAULT_PHASE_STEPS)[nextPhase] ?? [];
+    const stepsInPhase = resolvePhaseSteps(problem.steps, getGenericFallbackSteps(problem))[nextPhase] ?? [];
     const nextIndex = clampStepIndex(currentStepIndex, stepsInPhase.length);
 
     if (nextPhase !== currentPhase) {

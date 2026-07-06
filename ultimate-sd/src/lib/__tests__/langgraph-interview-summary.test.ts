@@ -7,11 +7,12 @@ const problem: SystemDesignProblem = {
   id: 'p1',
   title: 'Design TinyURL',
   slug: 'design-tinyurl',
-  description: 'URL shortening service',
+  context: 'URL shortening service',
   difficulty: 'Easy',
   category: 'Web',
   companies: [],
-  requirements: [],
+  functionalRequirements: [],
+  nonFunctionalRequirements: [],
 };
 
 const answers = [

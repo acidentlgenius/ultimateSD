@@ -108,3 +108,105 @@ export const DEFAULT_PHASE_STEPS: { [key: string]: StepData[] } = {
         }
     ]
 };
+
+/** Generic HLD/LLD backfill for OOD/class-design problems (e.g. parking lot, elevator system). */
+export const GENERIC_OOD_PHASE_STEPS: { [key: string]: StepData[] } = {
+    requirements: [
+        {
+            phase: 'Requirements',
+            subStep: 'functional',
+            title: 'Functional Requirements',
+            prompt: 'What operations must your objects/classes support? List the key use-cases a client of your system will invoke.',
+            inputType: 'list',
+            placeholder: 'e.g., Vehicle can enter and exit a parking spot'
+        },
+        {
+            phase: 'Requirements',
+            subStep: 'non-functional',
+            title: 'Non-Functional Requirements',
+            prompt: 'What quality attributes matter? Consider thread-safety, extensibility, and multi-instance scaling.',
+            inputType: 'list',
+            placeholder: 'e.g., Support concurrent access from 50 entry gates'
+        },
+        {
+            phase: 'Requirements',
+            subStep: 'constraints',
+            title: 'Constraints & Assumptions',
+            prompt: 'What are the constraints and assumptions? Consider the physical/business rules your objects must respect.',
+            inputType: 'list',
+            placeholder: 'e.g., Each spot fits exactly one vehicle of its size class'
+        }
+    ],
+    hld: [
+        {
+            phase: 'HLD',
+            subStep: 'class-design',
+            title: 'Class & Interface Design',
+            prompt: 'Identify the core classes and interfaces in your design. What is each one responsible for?',
+            inputType: 'list',
+            placeholder: 'e.g., ParkingSpot, Ticket, PaymentProcessor'
+        },
+        {
+            phase: 'HLD',
+            subStep: 'architecture',
+            title: 'Component Interaction',
+            prompt: 'How do your classes collaborate to fulfill a use-case end to end? Describe the object graph and key relationships (composition vs inheritance).',
+            inputType: 'textarea',
+            placeholder: 'Walk through a use-case across your classes...'
+        }
+    ],
+    lld: [
+        {
+            phase: 'LLD',
+            subStep: 'state-machine',
+            title: 'State & Behavior',
+            prompt: 'Model the internal state transitions for your core entity. What states can it be in, and what triggers a transition?',
+            inputType: 'textarea',
+            placeholder: 'e.g., SPOT: FREE -> RESERVED -> OCCUPIED -> FREE'
+        },
+        {
+            phase: 'LLD',
+            subStep: 'concurrency',
+            title: 'Concurrency & Edge Cases',
+            prompt: 'How do you handle concurrent access and edge cases (e.g., two threads claiming the same resource)? What locking or synchronization is needed?',
+            inputType: 'textarea',
+            placeholder: 'Explain your locking/synchronization strategy...'
+        }
+    ],
+    tradeoffs: [
+        {
+            phase: 'Trade-offs',
+            subStep: 'decisions',
+            title: 'Key Decisions & Trade-offs',
+            prompt: 'What major design decisions did you make (e.g., composition over inheritance, interface segregation)? What alternatives did you consider?',
+            inputType: 'list',
+            placeholder: 'e.g., Chose composition over inheritance for VehicleType'
+        },
+        {
+            phase: 'Trade-offs',
+            subStep: 'bottlenecks',
+            title: 'Extensibility & Bottlenecks',
+            prompt: 'How would you extend this design for a new requirement without modifying existing classes (Open/Closed Principle)? What would become a bottleneck at scale?',
+            inputType: 'list',
+            placeholder: 'e.g., Adding a new vehicle type requires no changes to ParkingLot'
+        }
+    ],
+    scalability: [
+        {
+            phase: 'Scalability',
+            subStep: 'scaling',
+            title: 'Scaling Strategy',
+            prompt: 'How would this design scale across multiple instances/locations (e.g., multiple parking garages)? What state needs to be shared vs local?',
+            inputType: 'textarea',
+            placeholder: 'Explain how state is partitioned across instances...'
+        },
+        {
+            phase: 'Scalability',
+            subStep: 'monitoring',
+            title: 'Monitoring & Reliability',
+            prompt: 'How would you monitor and ensure reliability of the system? What metrics and failure modes matter?',
+            inputType: 'list',
+            placeholder: 'e.g., Monitor spot-occupancy drift, gate failure rate'
+        }
+    ]
+};

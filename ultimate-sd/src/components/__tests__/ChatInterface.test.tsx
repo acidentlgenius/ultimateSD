@@ -7,7 +7,7 @@ import { vi } from 'vitest';
 const mockProblem = {
   slug: 'tinyurl',
   title: 'Design TinyURL',
-  description: 'Shorten URLs',
+  context: 'Shorten URLs',
 };
 
 describe('ChatInterface', () => {

@@ -53,11 +53,12 @@ export default async function CustomPracticePage({ searchParams }: { searchParam
     id: deterministicSlug,
     title: title,
     slug: deterministicSlug,
-    description: description || 'Custom user-defined system design challenge.',
+    context: description || 'Custom user-defined system design challenge.',
     difficulty: 'Medium' as const,
     category: 'Custom',
     companies: [],
-    requirements: [],
+    functionalRequirements: [],
+    nonFunctionalRequirements: [],
     steps
   };
 

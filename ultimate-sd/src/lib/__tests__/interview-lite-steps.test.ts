@@ -4,7 +4,7 @@ import {
   INTERVIEW_LITE_PHASE_STEPS,
   countPracticeSteps,
 } from '../interview-lite-steps';
-import { DEFAULT_PHASE_STEPS } from '../steps';
+import { DEFAULT_PHASE_STEPS, GENERIC_OOD_PHASE_STEPS } from '../steps';
 
 describe('getPracticeSteps', () => {
   it('uses custom steps when problem has a dedicated curriculum', () => {
@@ -14,7 +14,7 @@ describe('getPracticeSteps', () => {
   });
 
   it('uses interview lite for Easy problems without custom steps', () => {
-    const result = getPracticeSteps('design-parking-lot', 'Easy');
+    const result = getPracticeSteps('design-nonexistent-slug-easy', 'Easy');
     expect(result.mode).toBe('lite');
     expect(result.steps).toBe(INTERVIEW_LITE_PHASE_STEPS);
     expect(countPracticeSteps(result.steps)).toBe(5);
@@ -35,5 +35,15 @@ describe('getPracticeSteps', () => {
       'hld',
       'tradeoffs',
     ]);
+  });
+
+  it('returns the OOD generic template for oop-design tagged problems with no custom steps, regardless of difficulty', () => {
+    const parkingLot = getPracticeSteps('design-parking-lot', 'Easy');
+    expect(parkingLot.steps).toBe(GENERIC_OOD_PHASE_STEPS);
+    expect(parkingLot.mode).toBe('full');
+
+    const elevator = getPracticeSteps('design-elevator-system', 'Medium');
+    expect(elevator.steps).toBe(GENERIC_OOD_PHASE_STEPS);
+    expect(elevator.mode).toBe('full');
   });
 });
