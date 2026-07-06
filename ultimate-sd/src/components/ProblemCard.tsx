@@ -85,7 +85,7 @@ export default function ProblemCard({ problem, featured, locked, badge, onLocked
 
         <CardContent className="p-0 flex-1 flex flex-col gap-4">
           <p className="text-sm text-muted-foreground/80 line-clamp-2 leading-relaxed font-medium">
-            {problem.description}
+            {problem.context}
           </p>
 
           <ProblemTagList

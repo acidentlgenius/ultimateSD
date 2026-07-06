@@ -275,7 +275,7 @@ export async function POST(req: NextRequest) {
     const guide: any = phaseGuide ? (phaseGuide as any)[evaluationSubStep] : null;
 
     const problemTitle = problemDetails?.title || problem;
-    const problemDesc = problemDetails?.description || '';
+    const problemDesc = problemDetails?.context || '';
     const problemSlug = problemDetails?.slug || '';
     const expertSolution = getSolution(problemSlug);
 
