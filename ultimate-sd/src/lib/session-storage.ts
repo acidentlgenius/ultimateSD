@@ -219,7 +219,7 @@ export function getAllSessions(): Array<{
   }> = [];
 
   try {
-    for (let i = 0; i < localStorage.length; i++) {
+    for (let i = localStorage.length - 1; i >= 0; i--) {
       const key = localStorage.key(i);
       if (key && key.startsWith(STORAGE_PREFIX)) {
         const stored = localStorage.getItem(key);
@@ -238,8 +238,7 @@ export function getAllSessions(): Array<{
             // SQUASH: Fix: Wrap parsing in its own try/catch per item. If one item is corrupted, log, remove it, and continue parsing the rest.
             console.error(`Failed to parse session data for key ${key}. Removing corrupted data.`, parseError);
             localStorage.removeItem(key);
-            // Also adjust iterator since we just removed an item, preventing skipping the next item.
-            i--;
+            // Iterator adjustment not needed when iterating backwards
           }
         }
       }
