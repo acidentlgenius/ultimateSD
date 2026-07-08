@@ -199,8 +199,11 @@ export async function sendPlanWelcomeEmail(options: {
   });
 }
 
-export async function sendVerificationEmail(email: string, token: string) {
-    const verifyUrl = `${SITE_URL}/api/auth/verify-email?token=${token}`;
+export async function sendVerificationEmail(email: string, token: string, callbackUrl?: string | null) {
+    // Carry the user's original destination through the verification round-trip
+    // so they land back on the problem they were trying to open.
+    const callbackParam = callbackUrl ? `&callbackUrl=${encodeURIComponent(callbackUrl)}` : '';
+    const verifyUrl = `${SITE_URL}/api/auth/verify-email?token=${token}${callbackParam}`;
 
     await sendMail({
         to: email,

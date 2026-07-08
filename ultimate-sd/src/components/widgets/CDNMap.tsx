@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -32,6 +32,15 @@ export default function CDNMap() {
 
     const [requests, setRequests] = useState<Request[]>([]);
     const [lastLatency, setLastLatency] = useState<number | null>(null);
+    const timeoutIds = useRef(new Set<NodeJS.Timeout>());
+
+    // Clean up timeouts on unmount
+    useEffect(() => {
+        return () => {
+            timeoutIds.current.forEach(clearTimeout);
+            timeoutIds.current.clear();
+        };
+    }, []);
 
     const sendRequest = (region: Region) => {
         const node = nodes[region];
@@ -55,12 +64,13 @@ export default function CDNMap() {
 
         // Cache content at edge after a miss
         if (!isCached) {
-            setTimeout(() => {
+            const tId = setTimeout(() => {
                 setNodes(prev => ({
                     ...prev,
                     [region]: { ...prev[region], hasCache: true }
                 }));
             }, 1000); // Simulate network fetch time
+            timeoutIds.current.add(tId);
         }
     };
 

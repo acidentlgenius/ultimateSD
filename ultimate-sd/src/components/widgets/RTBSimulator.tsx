@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +22,15 @@ const RTBSimulator: React.FC = () => {
 
     const [winner, setWinner] = useState<any | null>(null);
     const [isAuctioning, setIsAuctioning] = useState(false);
+    const timeoutIds = useRef(new Set<NodeJS.Timeout>());
+
+    // Clean up timeouts on unmount
+    useEffect(() => {
+        return () => {
+            timeoutIds.current.forEach(clearTimeout);
+            timeoutIds.current.clear();
+        };
+    }, []);
 
     // Randomize bids slightly for variety
     const randomize = () => {
@@ -43,7 +52,7 @@ const RTBSimulator: React.FC = () => {
             ecpm: b.bid * b.ctr_pred * 10
         })).sort((a, b) => b.ecpm - a.ecpm);
 
-        setTimeout(() => {
+        const tId = setTimeout(() => {
             const win = results[0];
             const runnerUp = results[1];
 
@@ -57,6 +66,7 @@ const RTBSimulator: React.FC = () => {
             });
             setIsAuctioning(false);
         }, 1500);
+        timeoutIds.current.add(tId);
     };
 
     return (

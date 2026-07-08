@@ -197,7 +197,7 @@ export const PROBLEMS: SystemDesignProblem[] = [
     context: 'Generate unique IDs at scale.',
     difficulty: 'Medium',
     category: 'Basics',
-    companies: [],
+    companies: ['Twitter', 'Meta', 'Amazon'],
     functionalRequirements: ['Uniqueness', 'Scalability', 'Distribution'],
     nonFunctionalRequirements: [],
     tags: ['Scalability']

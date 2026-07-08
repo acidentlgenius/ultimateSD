@@ -68,6 +68,19 @@ export default function DiagramCanvas({ stepKey, isVisible = true }: DiagramCanv
   const filesRef = useRef<BinaryFiles>({});
   const pendingSceneRef = useRef<ExcalidrawScene | null>(null);
   const stepKeyRef = useRef(stepKey);
+  /**
+   * False until the canvas has PROVABLY shown content (an onChange/API read
+   * with elements > 0) or there was nothing to restore in the first place.
+   * Excalidraw fires empty onChange events during mount, and a restore can
+   * fail to materialize — before hydration an empty scene means "not loaded
+   * yet" and must never be persisted. After hydration an empty scene is a
+   * deliberate delete-all and MUST be persisted — skipping it resurrected
+   * deleted diagrams on refresh. Merely *attempting* a restore does not
+   * count as hydration; only observed content does.
+   */
+  const hasHydratedRef = useRef(false);
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const savedBadgeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   /** undefined = loading, null = empty canvas, object = restore payload */
   const [initialData, setInitialData] = useState<ExcalidrawInitialDataState | null | undefined>(
     undefined
@@ -87,9 +100,20 @@ export default function DiagramCanvas({ stepKey, isVisible = true }: DiagramCanv
   const resolveSceneForPersist = useCallback((): ExcalidrawScene | null => {
     if (apiRef.current) {
       const live = buildSceneFromApi(apiRef.current);
+      // NEVER trust a live-empty read: during step navigation the flush runs
+      // after the keyed Excalidraw child unmounted, and its dead API reports
+      // an empty scene even though the user drew content. Deliberate
+      // delete-alls reach persistence via pendingSceneRef, which onChange
+      // updates with empty scenes once hydrated.
       if (countActiveElements(live.elements) > 0) return live;
     }
     return pendingSceneRef.current;
+  }, []);
+
+  const markSaved = useCallback(() => {
+    setSaveState('saved');
+    if (savedBadgeTimerRef.current) clearTimeout(savedBadgeTimerRef.current);
+    savedBadgeTimerRef.current = setTimeout(() => setSaveState('idle'), 2000);
   }, []);
 
   const persistScene = useCallback((key: string, scene: ExcalidrawScene | null, reason: string) => {
@@ -98,6 +122,15 @@ export default function DiagramCanvas({ stepKey, isVisible = true }: DiagramCanv
       return;
     }
     if (!scene || countActiveElements(scene.elements) === 0) {
+      if (scene && hasHydratedRef.current) {
+        // Deliberate delete-all: persist the emptiness, otherwise the old
+        // scene resurrects on refresh (chronic bug).
+        pendingSceneRef.current = scene;
+        clearDiagram(key);
+        diagramDebug('persist:cleared-empty', { stepKey: key, reason });
+        markSaved();
+        return;
+      }
       diagramDebug('persist:skipped-empty', { stepKey: key, reason });
       return;
     }
@@ -108,7 +141,8 @@ export default function DiagramCanvas({ stepKey, isVisible = true }: DiagramCanv
       elementCount: countActiveElements(scene.elements),
     });
     saveDiagram(key, scene);
-  }, []);
+    markSaved();
+  }, [markSaved]);
 
   const persistLiveScene = useCallback(
     (key: string, reason: string) => {
@@ -133,6 +167,7 @@ export default function DiagramCanvas({ stepKey, isVisible = true }: DiagramCanv
       diagramDebug('schedule:skipped-restoring', { stepKey: stepKeyRef.current });
       return;
     }
+    if (hasHydratedRef.current) setSaveState('saving');
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     const previewCount = apiRef.current
       ? countActiveElements(apiRef.current.getSceneElements())
@@ -186,6 +221,11 @@ export default function DiagramCanvas({ stepKey, isVisible = true }: DiagramCanv
         files,
       };
       if (countActiveElements(elements) > 0) {
+        // Observed real content — from here on, emptiness means the user
+        // deleted everything, not that loading is incomplete.
+        hasHydratedRef.current = true;
+        pendingSceneRef.current = scene;
+      } else if (hasHydratedRef.current) {
         pendingSceneRef.current = scene;
       }
       diagramDebug('onChange', {
@@ -208,6 +248,8 @@ export default function DiagramCanvas({ stepKey, isVisible = true }: DiagramCanv
   useEffect(() => {
     setIsReady(false);
     apiRef.current = null;
+    hasHydratedRef.current = false;
+    setSaveState('idle');
     setInitialData(undefined);
 
     diagramDebug('step:load-initial-data', { stepKey });
@@ -244,6 +286,10 @@ export default function DiagramCanvas({ stepKey, isVisible = true }: DiagramCanv
         clearTimeout(saveTimerRef.current);
         saveTimerRef.current = null;
       }
+      if (savedBadgeTimerRef.current) {
+        clearTimeout(savedBadgeTimerRef.current);
+        savedBadgeTimerRef.current = null;
+      }
     };
   }, [flushSaveForKey]);
 
@@ -271,13 +317,20 @@ export default function DiagramCanvas({ stepKey, isVisible = true }: DiagramCanv
               stepKey: stepKeyRef.current,
               liveElementCount: afterInitial,
             });
+            hasHydratedRef.current = true;
             return;
           }
           if (pendingSceneRef.current && countActiveElements(pendingSceneRef.current.elements) > 0) {
+            // Restore attempted — hydration is confirmed only when the
+            // restored content is observed (handleSceneChange / API reads),
+            // so a silently-failed restore can never wipe the saved scene.
             restoreScene(pendingSceneRef.current);
           }
         };
         requestAnimationFrame(() => requestAnimationFrame(applyPendingScene));
+      } else if (liveCount > 0 || !pending || pendingCount === 0) {
+        // Content already visible, or nothing to restore — canvas is truth.
+        hasHydratedRef.current = true;
       }
 
       setIsReady(true);
@@ -363,7 +416,18 @@ export default function DiagramCanvas({ stepKey, isVisible = true }: DiagramCanv
   return (
     <Card className="flex h-full w-full min-h-0 flex-col overflow-hidden border-0 shadow-none">
       <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border/60 px-3 py-2">
-        <p className="truncate text-xs text-muted-foreground">Draw your system diagram</p>
+        <div className="flex items-center gap-2 min-w-0">
+          <p className="truncate text-xs text-muted-foreground">Draw your system diagram</p>
+          {saveState !== 'idle' && (
+            <span
+              className={`shrink-0 text-[10px] font-medium ${saveState === 'saved' ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`}
+              data-testid="diagram-save-state"
+              role="status"
+            >
+              {saveState === 'saved' ? 'Saved ✓' : 'Saving…'}
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-1">
           <input
             ref={fileInputRef}

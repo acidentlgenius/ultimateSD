@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -30,6 +30,18 @@ export default function ServiceMeshViz() {
         { id: 'payment', name: 'Payment Service', x: 250, y: 50, status: 'healthy' },
     ]);
     const [activeTrace, setActiveTrace] = useState<Trace[]>([]);
+    const timeoutIds = useRef(new Set<NodeJS.Timeout>());
+    const isMountedRef = useRef(true);
+
+    // Clean up timeouts on unmount
+    useEffect(() => {
+        isMountedRef.current = true;
+        return () => {
+            isMountedRef.current = false;
+            timeoutIds.current.forEach(clearTimeout);
+            timeoutIds.current.clear();
+        };
+    }, []);
 
     const sendRequest = async () => {
         // Simulate trace: Gateway -> Auth -> Order -> Payment
@@ -43,10 +55,12 @@ export default function ServiceMeshViz() {
 
         for (const step of traceSteps) {
             await new Promise(r => setTimeout(r, 600));
+            if (!isMountedRef.current) return;
             setActiveTrace(prev => [...prev, step]);
         }
 
-        setTimeout(() => setActiveTrace([]), 2000);
+        const tId = setTimeout(() => setActiveTrace([]), 2000);
+        timeoutIds.current.add(tId);
     };
 
     return (

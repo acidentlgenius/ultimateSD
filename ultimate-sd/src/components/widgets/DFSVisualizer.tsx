@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -30,6 +30,15 @@ export default function DFSVisualizer() {
         { id: 'DN-3', rack: 'Rack-B', blocks: [], status: 'alive' },
         { id: 'DN-4', rack: 'Rack-B', blocks: [], status: 'alive' },
     ]);
+    const timeoutIds = useRef(new Set<NodeJS.Timeout>());
+
+    // Clean up timeouts on unmount
+    useEffect(() => {
+        return () => {
+            timeoutIds.current.forEach(clearTimeout);
+            timeoutIds.current.clear();
+        };
+    }, []);
 
     const uploadFile = () => {
         // Simulating a large file upload
@@ -39,7 +48,7 @@ export default function DFSVisualizer() {
         setBlocks([]);
 
         // Simulate splitting into 128MB blocks
-        setTimeout(() => {
+        const tId = setTimeout(() => {
             const newBlocks: Block[] = [
                 { id: 'BLK-1', name: 'blk_1001', size: '128 MB', replicas: [] },
                 { id: 'BLK-2', name: 'blk_1002', size: '128 MB', replicas: [] },
@@ -49,6 +58,7 @@ export default function DFSVisualizer() {
             // Replicate blocks
             replicateBlocks(newBlocks);
         }, 1000);
+        timeoutIds.current.add(tId);
     };
 
     const replicateBlocks = (currentBlocks: Block[]) => {

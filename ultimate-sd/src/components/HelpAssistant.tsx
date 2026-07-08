@@ -8,7 +8,7 @@ import { Input } from './ui/input';
 import { HelpCircle, Send, X, Minimize2, Maximize2 } from 'lucide-react';
 import { SystemDesignProblem } from '@/types';
 import { cn } from '@/lib/utils';
-import { fetchWithRetry } from '@/lib/fetchUtils';
+import { fetchWithRetry, getFetchErrorMessage } from '@/lib/fetchUtils';
 
 interface Message {
   id: string;
@@ -103,7 +103,7 @@ export function HelpAssistant({ problem, currentPhase, completedSteps = [], save
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: 'Sorry, I encountered an error. Please try asking your question again.',
+        content: getFetchErrorMessage(error),
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);

@@ -7,6 +7,8 @@ import { DiagramCanvasProvider, useDiagramCanvasRef } from '../diagram/DiagramCa
 const RESTORE_GUARD_MS = 300;
 const SAVE_DEBOUNCE_MS = 1000;
 let mockEmitEmptyOnChange = false;
+/** When true, the mock shows content first, then simulates the user deleting everything. */
+let mockDeleteAllAfterFirstChange = false;
 let mockUpdateScene = vi.fn();
 
 function MockExcalidraw({
@@ -18,9 +20,11 @@ function MockExcalidraw({
 }) {
   useEffect(() => {
     const element = { id: '1', type: 'rectangle', isDeleted: false };
+    let deleted = false;
     mockUpdateScene = vi.fn();
+    const currentElements = () => (mockEmitEmptyOnChange || deleted ? [] : [element]);
     const api = {
-      getSceneElements: () => (mockEmitEmptyOnChange ? [] : [element]),
+      getSceneElements: currentElements,
       getAppState: () => ({ theme: 'light' }),
       getFiles: () => ({}),
       updateScene: mockUpdateScene,
@@ -30,14 +34,21 @@ function MockExcalidraw({
     excalidrawAPI?.(api);
 
     const afterGuard = window.setTimeout(() => {
-      onChange?.(
-        mockEmitEmptyOnChange ? [] : [element],
-        { theme: 'light' },
-        {}
-      );
+      onChange?.(currentElements(), { theme: 'light' }, {});
     }, RESTORE_GUARD_MS + 50);
 
-    return () => window.clearTimeout(afterGuard);
+    let deleteTimer: number | undefined;
+    if (mockDeleteAllAfterFirstChange) {
+      deleteTimer = window.setTimeout(() => {
+        deleted = true;
+        onChange?.([], { theme: 'light' }, {});
+      }, RESTORE_GUARD_MS + 50 + SAVE_DEBOUNCE_MS + 100);
+    }
+
+    return () => {
+      window.clearTimeout(afterGuard);
+      if (deleteTimer) window.clearTimeout(deleteTimer);
+    };
   }, [excalidrawAPI, onChange]);
   return <div data-testid="excalidraw-mock" />;
 }
@@ -71,6 +82,7 @@ function RefProbe() {
 describe('DiagramCanvas', () => {
   beforeEach(() => {
     mockEmitEmptyOnChange = false;
+    mockDeleteAllAfterFirstChange = false;
     mockUpdateScene = vi.fn();
     localStorage.clear();
     localStorage.setItem('saved-design-old', JSON.stringify({ name: 'legacy' }));
@@ -165,6 +177,27 @@ describe('DiagramCanvas', () => {
     expect(parsed.format).toBe('excalidraw');
     expect(parsed.scene.elements).toHaveLength(1);
     expect(parsed.scene.elements[0].id).toBe('saved-1');
+
+    vi.useRealTimers();
+  });
+
+  it('persists a deliberate delete-all so the cleared canvas stays cleared (regression)', async () => {
+    vi.useFakeTimers();
+    mockDeleteAllAfterFirstChange = true;
+
+    render(
+      <DiagramCanvasProvider>
+        <DiagramCanvas stepKey="hld-0" isVisible />
+      </DiagramCanvasProvider>
+    );
+
+    // First onChange (content) + debounce → saved
+    await vi.advanceTimersByTimeAsync(RESTORE_GUARD_MS + 50 + SAVE_DEBOUNCE_MS);
+    expect(localStorage.getItem('diagram-hld-0')).toBeTruthy();
+
+    // Delete-all onChange + debounce → storage cleared, old scene must not resurrect
+    await vi.advanceTimersByTimeAsync(SAVE_DEBOUNCE_MS + 200 + SAVE_DEBOUNCE_MS);
+    expect(localStorage.getItem('diagram-hld-0')).toBeNull();
 
     vi.useRealTimers();
   });

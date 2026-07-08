@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { HumanMessage } from '@langchain/core/messages';
+import { z } from 'zod';
 import { auth } from '@/auth';
 import { getSolution } from '@/lib/solutions';
 import { getUserLLM, AIAccessError } from '@/lib/user-llm';
@@ -253,16 +254,12 @@ export async function POST(req: NextRequest) {
     const message = error instanceof AIAccessError
       ? error.message
       : 'AI evaluation not available.';
-    return NextResponse.json({
-      feedback: {
-        score: 0,
-        accuracy: 0,
-        strengths: [],
-        weaknesses: [message],
-        missed: [],
-        isAcceptable: false
-      }
-    }, { status: error instanceof AIAccessError ? 403 : 500 });
+    // A provider/access failure is NOT a failing answer — return a real error
+    // status with a message; never a fake zero-score feedback object.
+    return NextResponse.json(
+      { error: 'ai_unavailable', message },
+      { status: error instanceof AIAccessError ? 403 : 500 }
+    );
   }
 
   try {
@@ -365,13 +362,7 @@ Evaluate the answer critically but fairly. Consider:
 
 Be constructive, encouraging, but honest. This is practice for a real interview.`;
 
-    const response = await llm.invoke([new HumanMessage(evaluationPrompt)]);
-    let content = response.content as string;
-
-    // Remove markdown code blocks if present
-    content = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-
-    const feedback = JSON.parse(content);
+    const feedback = await invokeWithValidation(llm, evaluationPrompt);
 
     posthog.capture({
       distinctId: session.user.id,
@@ -388,15 +379,68 @@ Be constructive, encouraging, but honest. This is practice for a real interview.
     return NextResponse.json({ feedback });
   } catch (error) {
     console.error('Evaluation error:', error);
-    return NextResponse.json({
-      feedback: {
-        score: 0,
-        accuracy: 0,
-        strengths: [],
-        weaknesses: ['Error processing your answer. Please try again.'],
-        missed: [],
-        isAcceptable: false
-      }
-    });
+    // Distinguish provider throttling from other failures so the client can
+    // show accurate copy. Either way this is an ERROR, not a failed answer —
+    // no fake feedback, no zero score.
+    if (isRateLimitError(error)) {
+      return NextResponse.json(
+        { error: 'ai_rate_limited', message: 'The AI provider is rate-limiting requests. Wait a moment and try again.' },
+        { status: 429 }
+      );
+    }
+    return NextResponse.json(
+      { error: 'ai_failed', message: 'The AI evaluator hit a temporary problem. Your answer was not graded — try again.' },
+      { status: 502 }
+    );
   }
+}
+
+// The model must return a complete feedback object; a partial one would
+// propagate NaN scores into the DB and silently block step progression.
+const FeedbackSchema = z.object({
+  score: z.number().min(0).max(10),
+  accuracy: z.number().min(0).max(100),
+  strengths: z.array(z.string()),
+  weaknesses: z.array(z.string()),
+  missed: z.array(z.string()),
+  isAcceptable: z.boolean(),
+});
+
+function parseFeedback(raw: string): z.infer<typeof FeedbackSchema> | null {
+  const content = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+  try {
+    const result = FeedbackSchema.safeParse(JSON.parse(content));
+    return result.success ? result.data : null;
+  } catch {
+    return null;
+  }
+}
+
+async function invokeWithValidation(
+  llm: { invoke: (messages: HumanMessage[]) => Promise<{ content: unknown }> },
+  evaluationPrompt: string
+): Promise<z.infer<typeof FeedbackSchema>> {
+  const response = await llm.invoke([new HumanMessage(evaluationPrompt)]);
+  const first = parseFeedback(response.content as string);
+  if (first) return first;
+
+  // One corrective retry: models occasionally wrap or truncate the JSON.
+  console.warn('Evaluation feedback failed validation; retrying once with corrective prompt.');
+  const retry = await llm.invoke([
+    new HumanMessage(
+      `${evaluationPrompt}\n\nIMPORTANT: Your previous response was not valid JSON matching the required schema. Respond with ONLY the JSON object — all fields (score, accuracy, strengths, weaknesses, missed, isAcceptable) are required.`
+    ),
+  ]);
+  const second = parseFeedback(retry.content as string);
+  if (second) return second;
+
+  throw new Error('AI returned malformed feedback after retry');
+}
+
+function isRateLimitError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  const status = (error as Error & { status?: number; code?: number }).status
+    ?? (error as Error & { status?: number; code?: number }).code;
+  if (status === 429) return true;
+  return /rate.?limit|429|quota|resource.?exhausted/i.test(error.message);
 }

@@ -44,7 +44,7 @@ test.describe('fresherTrack dark: zero visual change', () => {
       await page.goto('/');
       await expect(page.getByText(/Fresher Path/i)).toHaveCount(0);
       // Senior hero is byte-identical: original CTAs still present.
-      await expect(page.getByRole('link', { name: /Start Exploring/i })).toBeVisible();
+      await expect(page.getByRole('link', { name: /Start Solving/i })).toBeVisible();
       await expect(page.getByRole('link', { name: /Free Canvas/i })).toBeVisible();
     });
   });

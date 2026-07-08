@@ -20,7 +20,8 @@ import { Card } from '@/components/ui/card';
 import { SystemDesignProblem } from '@/types';
 import { tokens } from '@/styles/tokens';
 import SchemaBuilder from '@/components/SchemaBuilder';
-import { fetchWithRetry } from '@/lib/fetchUtils';
+import { fetchWithRetry, getFetchErrorMessage } from '@/lib/fetchUtils';
+import { findResumePosition } from '@/lib/step-resume';
 import {
   saveSessionState,
   loadSessionState,
@@ -103,6 +104,12 @@ interface SavedStepData {
 interface Props {
   problem: SystemDesignProblem;
   probeEnabled?: boolean;
+  /**
+   * Session handle from PracticeUI — the single owner of startPracticeSession.
+   * null = still starting (wait before loading authed state);
+   * { sessionId: null } = start failed (proceed without recording).
+   */
+  sessionInit?: { sessionId: string | null } | null;
 }
 
 type DbSubmission = {
@@ -179,25 +186,10 @@ function reconstructFromSubmissions(
   return { savedStepData, completedSteps };
 }
 
-function findResumePosition(
-  phaseSteps: Record<string, unknown[]>,
-  completedSteps: Set<string>
-): { phase: string; stepIndex: number } {
-  const phaseKeys = Object.keys(phaseSteps);
-  for (const phaseKey of phaseKeys) {
-    const steps = phaseSteps[phaseKey];
-    for (let i = 0; i < steps.length; i++) {
-      if (!completedSteps.has(`${phaseKey}-${i}`)) {
-        return { phase: phaseKey, stepIndex: i };
-      }
-    }
-  }
-  const lastPhase = phaseKeys[phaseKeys.length - 1];
-  const lastSteps = phaseSteps[lastPhase] ?? [];
-  return { phase: lastPhase ?? 'requirements', stepIndex: Math.max(0, lastSteps.length - 1) };
-}
+// findResumePosition lives in @/lib/step-resume so it can be unit-tested
+// without dragging this component's server-action imports into the test.
 
-export default function StepByStepChat({ problem, probeEnabled = false }: Props) {
+export default function StepByStepChat({ problem, probeEnabled = false, sessionInit = null }: Props) {
   const [currentPhase, setCurrentPhase] = useState(() => {
     const keys = Object.keys(resolvePhaseSteps(problem.steps, getGenericFallbackSteps(problem)));
     return keys[0] ?? 'requirements';
@@ -210,6 +202,9 @@ export default function StepByStepChat({ problem, probeEnabled = false }: Props)
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackResult | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
+  // AI/network failure — distinct from a low-scoring answer: nothing is
+  // recorded and the user is told to retry, not that they failed.
+  const [evaluationError, setEvaluationError] = useState<string | null>(null);
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [probeContext, setProbeContext] = useState<{ phase: string; stepAnswer: string } | null>(null);
@@ -330,10 +325,12 @@ export default function StepByStepChat({ problem, probeEnabled = false }: Props)
 
     const loadData = async () => {
       if (session?.user) {
+        // PracticeUI owns startPracticeSession (calling it from both components
+        // raced and created duplicate sessions). Wait for its handle.
+        if (!sessionInit) return;
         try {
-          const startResult = await startPracticeSession(problem.id);
-          if (isMounted && startResult.success && startResult.sessionId) {
-            setActiveSessionId(startResult.sessionId);
+          if (isMounted && sessionInit.sessionId) {
+            setActiveSessionId(sessionInit.sessionId);
           }
 
           const activeResult = await getActiveSession(problem.id);
@@ -407,7 +404,7 @@ export default function StepByStepChat({ problem, probeEnabled = false }: Props)
     return () => {
       isMounted = false;
     };
-  }, [problem.id, problem.slug, problem.steps, session?.user?.id, sessionStatus]);
+  }, [problem.id, problem.slug, problem.steps, session?.user?.id, sessionStatus, sessionInit]);
 
   // Save session to localStorage as draft buffer (guests only; signed-in users use DB)
   useEffect(() => {
@@ -598,6 +595,7 @@ export default function StepByStepChat({ problem, probeEnabled = false }: Props)
 
     setLoading(true);
     setShowFeedback(false);
+    setEvaluationError(null);
 
     try {
       const requestBody: any = {
@@ -742,15 +740,7 @@ export default function StepByStepChat({ problem, probeEnabled = false }: Props)
       }
     } catch (error) {
       console.error('Error evaluating answer:', error);
-      setFeedback({
-        score: 0,
-        accuracy: 0,
-        strengths: [],
-        weaknesses: ['Error connecting to AI. Please try again.'],
-        missed: [],
-        isAcceptable: false
-      });
-      setShowFeedback(true);
+      setEvaluationError(getFetchErrorMessage(error));
     }
 
     setLoading(false);
@@ -865,7 +855,7 @@ return (
             <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5 text-green-600 dark:text-green-400" />
             <p>
               <span className="font-medium">Session restored</span>
-              {' '}from {format(restoredDate, 'MMM d, yyyy · h:mm a')}
+              {!isNaN(restoredDate.getTime()) && <>{' '}from {format(restoredDate, 'MMM d, yyyy · h:mm a')}</>}
               {totalStepCount > 0 && (
                 <> — continuing at step {globalStepPosition} of {totalStepCount}</>
               )}
@@ -929,6 +919,22 @@ return (
             );
           })()}
 
+
+          {/* AI failure banner — amber, retryable, nothing recorded. Distinct from red "needs improvement" feedback. */}
+          {evaluationError && !loading && (
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 mb-4 text-sm" data-testid="evaluation-error-banner">
+              <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 font-semibold mb-1">
+                <AlertCircle className="h-4 w-4" />
+                <span>We couldn&apos;t grade your answer</span>
+              </div>
+              <p className="text-muted-foreground mb-3">
+                {evaluationError} Your answer is still here — nothing was scored or recorded.
+              </p>
+              <Button size="sm" variant="outline" onClick={handleSubmit} className="border-amber-500/40 hover:bg-amber-500/10">
+                Try again
+              </Button>
+            </div>
+          )}
 
           {/* Persistent Retry Feedback Banner */}
           {!showFeedback && feedback && !feedback.isAcceptable && (

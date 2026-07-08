@@ -22,8 +22,8 @@ export interface ExpertSolution {
 }
 
 export const SOLUTIONS: Record<string, ExpertSolution> = {
-    'design-distributed-job-scheduler': {
-        slug: 'design-distributed-job-scheduler',
+    'design-task-scheduler': {
+        slug: 'design-task-scheduler',
         title: 'Distributed Job Scheduler (Expert Guide)',
         overview: 'A robust, scalable distributed job scheduler designed to handle millions of jobs with high availability and fault tolerance. This architecture uses a leader-follower pattern for scheduling and a partitioned worker pool for execution.',
         architectureMermaid: `

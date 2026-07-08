@@ -37,7 +37,7 @@ function LoginForm() {
             const res = await fetch("/api/auth/resend-verification", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email }),
+                body: JSON.stringify({ email, callbackUrl: callbackUrl !== "/" ? callbackUrl : undefined }),
             })
             const data = await res.json()
             setResendMessage(data.message || "Verification email sent.")

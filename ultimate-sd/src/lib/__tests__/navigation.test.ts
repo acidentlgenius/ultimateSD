@@ -2,16 +2,20 @@ import { describe, expect, it } from 'vitest';
 import { NAV_ITEMS, flattenNavLinks, isNavGroup } from '@/lib/navigation';
 
 describe('NAV_ITEMS', () => {
-  it('has the approved top-level order: Home, Practice, Interview, Pricing', () => {
-    expect(NAV_ITEMS.map((i) => i.label)).toEqual(['Home', 'Practice', 'Interview', 'Pricing']);
+  it('has the approved top-level order: Home, Problems, Learn, Interview, Pricing', () => {
+    expect(NAV_ITEMS.map((i) => i.label)).toEqual(['Home', 'Problems', 'Learn', 'Interview', 'Pricing']);
   });
 
-  it('groups Roadmap + Guides + Problems + Custom Problem + Draw under Practice', () => {
-    const practice = NAV_ITEMS.find((i) => i.label === 'Practice');
-    expect(practice && isNavGroup(practice) && practice.links.map((l) => l.href)).toEqual([
+  it('keeps Problems top-level (core action must never be buried in a dropdown)', () => {
+    const problems = NAV_ITEMS.find((i) => i.label === 'Problems');
+    expect(problems && !isNavGroup(problems) && problems.href).toBe('/problems');
+  });
+
+  it('groups Roadmap + Guides + Custom Problem + Draw under Learn', () => {
+    const learn = NAV_ITEMS.find((i) => i.label === 'Learn');
+    expect(learn && isNavGroup(learn) && learn.links.map((l) => l.href)).toEqual([
       '/roadmap',
       '/guides',
-      '/problems',
       '/custom',
       '/draw',
     ]);
