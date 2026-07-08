@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { suppressFirstRunUx } from './helpers/first-run';
 import { mockAiEvaluate, mockInterviewSummary } from './helpers/ai-mocks';
 import { grantFlagToE2eUser, removeFlagOverrideForE2eUser } from './helpers/flags';
 import { seedE2eUser } from '../scripts/seed-e2e';
@@ -22,6 +23,7 @@ test.describe('timed interview mode (flag granted)', () => {
   });
 
   test.beforeEach(async ({ page }) => {
+    await suppressFirstRunUx(page);
     await mockAiEvaluate(page);
     await mockInterviewSummary(page);
   });

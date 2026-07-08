@@ -1,8 +1,13 @@
 import { test, expect } from '@playwright/test';
+import { suppressFirstRunUx } from './helpers/first-run';
 import { seedE2eUser, setFeatureFlagStateForE2e } from '../scripts/seed-e2e';
 import { removeFlagOverrideForE2eUser } from './helpers/flags';
 
 test.describe.configure({ mode: 'serial' });
+
+test.beforeEach(async ({ page }) => {
+  await suppressFirstRunUx(page);
+});
 
 // Runs under the `authenticated` Playwright project (storageState: USER_AUTH_FILE),
 // so both `page` and the built-in `request` fixture carry a signed-in free-tier

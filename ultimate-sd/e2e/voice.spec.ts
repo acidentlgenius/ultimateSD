@@ -1,5 +1,6 @@
 import { config as loadEnv } from 'dotenv';
 import { test, expect } from '@playwright/test';
+import { suppressFirstRunUx } from './helpers/first-run';
 import { grantFlagToE2eUser, removeFlagOverrideForE2eUser } from './helpers/flags';
 import { fakeMediaRecorder, mockVoiceRoutes } from './helpers/voice-mocks';
 
@@ -9,6 +10,9 @@ loadEnv({ path: '.env.local' });
 test.describe.configure({ mode: 'serial' });
 
 test.describe('voice interview (flag granted, audio providers mocked)', () => {
+  test.beforeEach(async ({ page }) => {
+    await suppressFirstRunUx(page);
+  });
   test.beforeAll(async () => {
     await grantFlagToE2eUser('voiceInterview');
   });

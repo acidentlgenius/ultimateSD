@@ -1,4 +1,9 @@
 import { test, expect } from '@playwright/test';
+import { suppressFirstRunUx } from './helpers/first-run';
+
+test.beforeEach(async ({ page }) => {
+  await suppressFirstRunUx(page);
+});
 
 test.describe('Guest smoke', () => {
   test('home page loads for visitors', async ({ page }) => {
