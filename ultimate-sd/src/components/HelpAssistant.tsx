@@ -9,6 +9,7 @@ import { HelpCircle, Send, X, Minimize2, Maximize2 } from 'lucide-react';
 import { SystemDesignProblem } from '@/types';
 import { cn } from '@/lib/utils';
 import { fetchWithRetry, getFetchErrorMessage } from '@/lib/fetchUtils';
+import { markdownToHtml } from '@/lib/markdown';
 
 interface Message {
   id: string;
@@ -208,7 +209,10 @@ export function HelpAssistant({ problem, currentPhase, completedSteps = [], save
                   : 'bg-background border border-border'
               )}
             >
-              <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+              <div
+                className="text-sm [&_p]:my-1 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0 [&_strong]:font-semibold [&_ul]:list-disc [&_ul]:pl-4 [&_ul]:my-1 [&_ol]:list-decimal [&_ol]:pl-4 [&_ol]:my-1 [&_li]:my-0.5 [&_h3]:font-semibold [&_h3]:mt-2 [&_h4]:font-semibold [&_h4]:mt-2 [&_code]:bg-black/10 [&_code]:dark:bg-white/10 [&_code]:rounded [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-xs [&_a]:underline"
+                dangerouslySetInnerHTML={{ __html: markdownToHtml(message.content) }}
+              />
               <p
                 className={cn(
                   'text-xs mt-1',
