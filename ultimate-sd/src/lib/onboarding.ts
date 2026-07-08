@@ -21,3 +21,11 @@ export const PRACTICE_INTENTS: { id: PracticeIntent; label: string; description:
 export function isPracticeIntent(value: string): value is PracticeIntent {
   return PRACTICE_INTENTS.some((intent) => intent.id === value);
 }
+
+// First-problem recommendation per intent. Every slug must be in
+// FREE_PROBLEM_SLUGS so brand-new users are never recommended a locked problem.
+export const RECOMMENDED_FIRST_PROBLEM: Record<PracticeIntent, string> = {
+  interview: 'design-whatsapp',
+  upskill: 'design-distributed-cache',
+  learn: 'design-tinyurl',
+};

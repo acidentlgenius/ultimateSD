@@ -256,6 +256,7 @@ export function ProblemExplorer({
                                     <ProblemCard
                                         problem={problem}
                                         locked={isProblemLocked(problem.slug)}
+                                        signedIn={!!user?.id}
                                         onLockedClick={setLockedProblem}
                                         onTagClick={handleTagClick}
                                     />
@@ -376,7 +377,7 @@ export function ProblemExplorer({
                                                 ) : (
                                                     <Link href={`/practice/${problem.slug}`}>
                                                         <Button size="sm" variant="ghost" className="hover:bg-primary/10 hover:text-primary font-bold rounded-full h-9 px-4 group-hover:translate-x-1 transition-all">
-                                                            Practice <ArrowRight className="ml-2 h-4 w-4" />
+                                                            {user?.id ? 'Practice' : 'Sign in to practice'} <ArrowRight className="ml-2 h-4 w-4" />
                                                         </Button>
                                                     </Link>
                                                 )}

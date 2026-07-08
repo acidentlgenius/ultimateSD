@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ultimate SD — TinyURL Follow-ups Carousel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #111;
+      font-family: 'Inter', system-ui, sans-serif;
+      color: #f1f5f9;
+    }
+
+    .slide {
+      width: 1080px;
+      height: 1080px;
+      position: relative;
+      overflow: hidden;
+      padding: 64px 72px 56px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      background: #0f1419;
+      border-bottom: 1px solid #1e293b;
+    }
+
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      font-weight: 600;
+      font-size: 26px;
+      letter-spacing: -0.02em;
+      color: #94a3b8;
+    }
+
+    .brand strong {
+      color: #f8fafc;
+      font-weight: 700;
+    }
+
+    .tag {
+      font-size: 15px;
+      font-weight: 500;
+      padding: 8px 14px;
+      border-radius: 8px;
+      background: #1e293b;
+      color: #cbd5e1;
+    }
+
+    .content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 24px;
+      max-width: 900px;
+      padding: 20px 0;
+    }
+
+    h1 {
+      font-size: 58px;
+      line-height: 1.12;
+      letter-spacing: -0.03em;
+      font-weight: 700;
+      color: #f8fafc;
+    }
+
+    h2 {
+      font-size: 46px;
+      line-height: 1.15;
+      letter-spacing: -0.03em;
+      font-weight: 700;
+      color: #f8fafc;
+    }
+
+    .accent {
+      color: #60a5fa;
+    }
+
+    p.lead {
+      font-size: 28px;
+      line-height: 1.5;
+      color: #94a3b8;
+      font-weight: 400;
+    }
+
+    p.note {
+      font-size: 24px;
+      line-height: 1.55;
+      color: #64748b;
+    }
+
+    .question-box {
+      padding: 28px 32px;
+      border-radius: 12px;
+      background: #161b22;
+      border: 1px solid #334155;
+    }
+
+    .question-box .label {
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #818cf8;
+      margin-bottom: 12px;
+    }
+
+    .question-box .question {
+      font-size: 30px;
+      line-height: 1.4;
+      color: #f8fafc;
+      font-weight: 600;
+    }
+
+    .answer-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .answer-list li {
+      list-style: none;
+      font-size: 26px;
+      line-height: 1.45;
+      color: #cbd5e1;
+      padding-left: 28px;
+      position: relative;
+    }
+
+    .answer-list li::before {
+      content: '—';
+      position: absolute;
+      left: 0;
+      color: #475569;
+    }
+
+    .trap-box {
+      padding: 22px 28px;
+      border-radius: 12px;
+      background: #1a1520;
+      border: 1px solid #4c1d95;
+    }
+
+    .trap-box p {
+      font-size: 24px;
+      line-height: 1.5;
+      color: #c4b5fd;
+    }
+
+    .trap-box .trap-label {
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #a78bfa;
+      margin-bottom: 8px;
+    }
+
+    .link-box {
+      padding: 24px 28px;
+      border-radius: 12px;
+      background: #161b22;
+      border: 1px solid #334155;
+    }
+
+    .link-box + .link-box {
+      margin-top: 4px;
+    }
+
+    .link-box .label {
+      font-size: 20px;
+      color: #64748b;
+      margin-bottom: 8px;
+    }
+
+    .link-box .url {
+      font-size: 24px;
+      color: #60a5fa;
+      font-family: ui-monospace, monospace;
+      line-height: 1.4;
+    }
+
+    .footer {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      font-size: 18px;
+      color: #475569;
+      font-family: ui-monospace, monospace;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Slide 1: Cover -->
+  <section class="slide" id="slide-1">
+    <div class="top-bar">
+      <div class="brand"><strong>Ultimate SD</strong></div>
+      <div class="tag">interview prep</div>
+    </div>
+    <div class="content">
+      <h1>3 follow-ups that break people on <span class="accent">URL shortener</span> design</h1>
+      <p class="lead">You can explain the happy path — API, DB, redirect — and still lose the round when the interviewer keeps asking "what if…"</p>
+      <p class="note">TinyURL is a classic fresher question. These three follow-ups separate memorized diagrams from real understanding.</p>
+    </div>
+    <div class="footer"><span>1 / 5</span></div>
+  </section>
+
+  <!-- Slide 2: Collisions -->
+  <section class="slide" id="slide-2">
+    <div class="top-bar">
+      <div class="brand"><strong>Ultimate SD</strong></div>
+      <div class="tag">follow-up #1</div>
+    </div>
+    <div class="content">
+      <div class="question-box">
+        <div class="label">Interviewer asks</div>
+        <div class="question">"How do you generate short codes without collisions?"</div>
+      </div>
+      <ul class="answer-list">
+        <li>Hashing the long URL and taking the first 7 chars collides — two URLs can map to the same code.</li>
+        <li>Better: global auto-increment ID → encode to Base62 (a–z, A–Z, 0–9). URL-safe, predictable length.</li>
+        <li>7 chars in Base62 ≈ 3.5 trillion codes — plenty for most estimates.</li>
+      </ul>
+      <div class="trap-box">
+        <div class="trap-label">Common trap</div>
+        <p>Saying "we'll use MD5" without explaining what happens when two hashes share the same prefix.</p>
+      </div>
+    </div>
+    <div class="footer"><span>2 / 5</span></div>
+  </section>
+
+  <!-- Slide 3: Caching -->
+  <section class="slide" id="slide-3">
+    <div class="top-bar">
+      <div class="brand"><strong>Ultimate SD</strong></div>
+      <div class="tag">follow-up #2</div>
+    </div>
+    <div class="content">
+      <div class="question-box">
+        <div class="label">Interviewer asks</div>
+        <div class="question">"Reads are 10× writes — where does cache sit, and what do you evict?"</div>
+      </div>
+      <ul class="answer-list">
+        <li>Put Redis (or Memcached) between the app and DB on the redirect path.</li>
+        <li>Cache key = short code, value = long URL. On miss, read DB and backfill cache.</li>
+        <li>You can't cache everything — use LRU. Rule of thumb: cache ~20% of daily read traffic (hot URLs).</li>
+      </ul>
+      <div class="trap-box">
+        <div class="trap-label">Common trap</div>
+        <p>Adding "we'll use a cache" with no eviction policy, no miss path, and no read/write split.</p>
+      </div>
+    </div>
+    <div class="footer"><span>3 / 5</span></div>
+  </section>
+
+  <!-- Slide 4: Custom aliases & redirects -->
+  <section class="slide" id="slide-4">
+    <div class="top-bar">
+      <div class="brand"><strong>Ultimate SD</strong></div>
+      <div class="tag">follow-up #3</div>
+    </div>
+    <div class="content">
+      <div class="question-box">
+        <div class="label">Interviewer asks</div>
+        <div class="question">"User wants custom alias 'grokking' but it exists. 301 or 302 redirect?"</div>
+      </div>
+      <ul class="answer-list">
+        <li>Custom alias: uniqueness check before insert. Return 409 if taken — don't silently overwrite.</li>
+        <li>301 = permanent. Browsers cache it — less load on you, but harder to track clicks reliably.</li>
+        <li>302 = temporary. Browser hits your server each time — better for analytics, more latency.</li>
+      </ul>
+      <div class="trap-box">
+        <div class="trap-label">Bonus they might ask</div>
+        <p>Expired links: lazy delete on access + background worker to sweep stale rows.</p>
+      </div>
+    </div>
+    <div class="footer"><span>4 / 5</span></div>
+  </section>
+
+  <!-- Slide 5: CTA -->
+  <section class="slide" id="slide-5">
+    <div class="top-bar">
+      <div class="brand"><strong>Ultimate SD</strong></div>
+      <div class="tag">practice it</div>
+    </div>
+    <div class="content">
+      <h2>Reading ≠ doing the <span class="accent">interview loop</span></h2>
+      <p class="lead">The hard part is defending trade-offs while someone keeps poking holes. That's what Ultimate SD is for.</p>
+      <div class="link-box">
+        <div class="label">Full TinyURL walkthrough</div>
+        <div class="url">ultimate-sd.vercel.app/guides/design-tinyurl</div>
+      </div>
+      <div class="link-box">
+        <div class="label">Practice out loud (chat + diagram)</div>
+        <div class="url">ultimate-sd.vercel.app/practice/design-tinyurl</div>
+      </div>
+      <p class="note">Launch offer — 50 slots, ends July 15: 3 months Platform free. Claimants entered in draw for 5 AI plans.</p>
+    </div>
+    <div class="footer"><span>5 / 5</span></div>
+  </section>
+
+</body>
+</html>

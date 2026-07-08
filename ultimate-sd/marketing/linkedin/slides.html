@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ultimate SD LinkedIn Carousel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #111;
+      font-family: 'Inter', system-ui, sans-serif;
+      color: #f1f5f9;
+    }
+
+    .slide {
+      width: 1080px;
+      height: 1080px;
+      position: relative;
+      overflow: hidden;
+      padding: 64px 72px 56px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      background: #0f1419;
+      border-bottom: 1px solid #1e293b;
+    }
+
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      font-weight: 600;
+      font-size: 26px;
+      letter-spacing: -0.02em;
+      color: #94a3b8;
+    }
+
+    .brand strong {
+      color: #f8fafc;
+      font-weight: 700;
+    }
+
+    .tag {
+      font-size: 15px;
+      font-weight: 500;
+      padding: 8px 14px;
+      border-radius: 8px;
+      background: #1e293b;
+      color: #cbd5e1;
+    }
+
+    .content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 24px;
+      max-width: 900px;
+      padding: 20px 0;
+    }
+
+    h1 {
+      font-size: 64px;
+      line-height: 1.12;
+      letter-spacing: -0.03em;
+      font-weight: 700;
+      color: #f8fafc;
+    }
+
+    h2 {
+      font-size: 52px;
+      line-height: 1.15;
+      letter-spacing: -0.03em;
+      font-weight: 700;
+      color: #f8fafc;
+    }
+
+    .accent {
+      color: #60a5fa;
+    }
+
+    p.lead {
+      font-size: 30px;
+      line-height: 1.5;
+      color: #94a3b8;
+      font-weight: 400;
+    }
+
+    p.note {
+      font-size: 26px;
+      line-height: 1.55;
+      color: #64748b;
+    }
+
+    .plain-list {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .plain-list li {
+      list-style: none;
+      font-size: 28px;
+      line-height: 1.45;
+      color: #cbd5e1;
+      padding-left: 28px;
+      position: relative;
+    }
+
+    .plain-list li::before {
+      content: '—';
+      position: absolute;
+      left: 0;
+      color: #475569;
+    }
+
+    .note-box {
+      padding: 28px 32px;
+      border-radius: 12px;
+      background: #161b22;
+      border: 1px solid #334155;
+    }
+
+    .note-box p {
+      font-size: 26px;
+      line-height: 1.55;
+      color: #cbd5e1;
+    }
+
+    .note-box p + p {
+      margin-top: 12px;
+    }
+
+    .note-box .small {
+      font-size: 22px;
+      color: #64748b;
+    }
+
+    .mock-ui {
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #334155;
+      background: #161b22;
+    }
+
+    .mock-header {
+      height: 44px;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      border-bottom: 1px solid #334155;
+      font-size: 14px;
+      color: #64748b;
+      font-family: ui-monospace, monospace;
+    }
+
+    .mock-body {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      min-height: 300px;
+    }
+
+    .mock-chat, .mock-diagram {
+      padding: 20px;
+    }
+
+    .mock-chat {
+      border-right: 1px solid #334155;
+    }
+
+    .bubble {
+      padding: 14px 16px;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      font-size: 19px;
+      line-height: 1.5;
+      max-width: 95%;
+    }
+
+    .bubble.ai {
+      background: #1e293b;
+      color: #e2e8f0;
+    }
+
+    .bubble.user {
+      margin-left: auto;
+      background: #0f172a;
+      border: 1px solid #334155;
+      color: #94a3b8;
+    }
+
+    .mock-diagram {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      color: #64748b;
+      font-size: 15px;
+      font-family: ui-monospace, monospace;
+    }
+
+    .sketch {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .sketch-box {
+      width: 72px;
+      height: 72px;
+      border: 2px dashed #475569;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      font-size: 13px;
+      color: #64748b;
+      text-align: center;
+      line-height: 1.2;
+    }
+
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .step {
+      font-size: 28px;
+      line-height: 1.45;
+      color: #cbd5e1;
+    }
+
+    .step span {
+      color: #64748b;
+      margin-right: 8px;
+    }
+
+    .link-box {
+      padding: 24px 28px;
+      border-radius: 12px;
+      background: #161b22;
+      border: 1px solid #334155;
+    }
+
+    .link-box .label {
+      font-size: 22px;
+      color: #64748b;
+      margin-bottom: 8px;
+    }
+
+    .link-box .url {
+      font-size: 28px;
+      color: #60a5fa;
+      font-family: ui-monospace, monospace;
+    }
+
+    .footer {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      font-size: 18px;
+      color: #475569;
+      font-family: ui-monospace, monospace;
+    }
+
+    /* LinkedIn profile banner — 1584×396 recommended */
+    .banner {
+      width: 1584px;
+      height: 396px;
+      padding: 0;
+      border-bottom: none;
+      background: linear-gradient(135deg, #0a0e17 0%, #0f172a 40%, #1e1b4b 100%);
+      display: block;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .banner::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 520px 280px at 88% 50%, rgba(99, 102, 241, 0.22), transparent),
+        radial-gradient(ellipse 400px 200px at 12% 80%, rgba(168, 85, 247, 0.08), transparent);
+      pointer-events: none;
+    }
+
+    .banner-grid {
+      position: absolute;
+      inset: 0;
+      opacity: 0.35;
+      background-image:
+        linear-gradient(rgba(148, 163, 184, 0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: linear-gradient(90deg, transparent 0%, black 35%, black 100%);
+    }
+
+    .banner-nodes {
+      position: absolute;
+      left: 48px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 220px;
+      height: 180px;
+      opacity: 0.5;
+    }
+
+    .banner-nodes svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .banner-inner {
+      position: relative;
+      z-index: 1;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 72px 0 300px;
+      gap: 48px;
+    }
+
+    .banner-copy {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .banner-eyebrow {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #818cf8;
+    }
+
+    .banner h1 {
+      font-size: 42px;
+      line-height: 1.15;
+      letter-spacing: -0.03em;
+      font-weight: 700;
+      color: #f8fafc;
+      max-width: 720px;
+    }
+
+    .banner h1 .accent {
+      background: linear-gradient(135deg, #60a5fa, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .banner p.lead {
+      font-size: 18px;
+      line-height: 1.45;
+      color: #94a3b8;
+      max-width: 680px;
+    }
+
+    .banner-url {
+      font-size: 17px;
+      font-weight: 500;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      color: #60a5fa;
+      margin-top: 4px;
+    }
+
+    .banner-icon-wrap {
+      flex-shrink: 0;
+      width: 128px;
+      height: 128px;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.08),
+        0 20px 50px rgba(0, 0, 0, 0.45),
+        0 0 60px rgba(99, 102, 241, 0.25);
+    }
+
+    .banner-icon-wrap img {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Slide 1 -->
+  <section class="slide" id="slide-1">
+    <div class="top-bar">
+      <div class="brand"><strong>Ultimate SD</strong></div>
+      <div class="tag">just shipped</div>
+    </div>
+    <div class="content">
+      <h1>I kept freezing in system design interviews.</h1>
+      <p class="lead">Not on the basics — on the follow-ups. "Why that database?" "What breaks at 10x traffic?" I had no good way to practice that loop.</p>
+      <div class="note-box">
+        <p>So I built Ultimate SD — pick a problem, talk through your design, get pushed back, fix gaps.</p>
+        <p class="small">Launch thing: first 50 people get 3 months of Platform free. Claimants also go into a draw for 5 free AI plans.</p>
+      </div>
+    </div>
+    <div class="footer"><span>1 / 6</span></div>
+  </section>
+
+  <!-- Slide 2 -->
+  <section class="slide" id="slide-2">
+    <div class="top-bar">
+      <div class="brand"><strong>Ultimate SD</strong></div>
+    </div>
+    <div class="content">
+      <h2>Watching YouTube ≠ <span class="accent">doing</span> the interview</h2>
+      <p class="lead">Most prep is passive. The hard part is explaining trade-offs while someone keeps asking "what if…"</p>
+      <ul class="plain-list">
+        <li>You know caching exists. Harder to defend when to invalidate it.</li>
+        <li>Diagrams look fine until the interviewer pokes a single bottleneck.</li>
+        <li>Hard to simulate that alone with flashcards or blog posts.</li>
+      </ul>
+    </div>
+    <div class="footer"><span>2 / 6</span></div>
+  </section>
+
+  <!-- Slide 3 -->
+  <section class="slide" id="slide-3">
+    <div class="top-bar">
+      <div class="brand"><strong>Ultimate SD</strong></div>
+    </div>
+    <div class="content">
+      <h2>What it actually feels like</h2>
+      <p class="lead">You pick a problem (WhatsApp, TinyURL, etc.), walk through requirements → design → trade-offs. AI asks the annoying follow-ups.</p>
+      <div class="mock-ui">
+        <div class="mock-header">design-whatsapp · practice session</div>
+        <div class="mock-body">
+          <div class="mock-chat">
+            <div class="bubble ai">How do you handle ordering if two regions get the same message at once?</div>
+            <div class="bubble user">Uh — sequence IDs per chat, maybe? Shard by conversation…</div>
+            <div class="bubble ai">Network partition between regions. What happens to delivery guarantees?</div>
+          </div>
+          <div class="mock-diagram">
+            <div class="sketch">
+              <div class="sketch-box">clients</div>
+              <span>→</span>
+              <div class="sketch-box">LB</div>
+              <span>→</span>
+              <div class="sketch-box">DB</div>
+            </div>
+            <div>your diagram + chat in one place</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="footer"><span>3 / 6</span></div>
+  </section>
+
+  <!-- Slide 4 -->
+  <section class="slide" id="slide-4">
+    <div class="top-bar">
+      <div class="brand"><strong>Ultimate SD</strong></div>
+    </div>
+    <div class="content">
+      <h2>What's in there</h2>
+      <ul class="plain-list">
+        <li>75+ practice problems (TinyURL, Dropbox, rate limiters, etc.)</li>
+        <li>Step-by-step flow — not one giant "design Netflix" prompt</li>
+        <li>Draw architecture on a canvas while you talk</li>
+        <li>Some interactive widgets (cache, load balancer demos)</li>
+        <li>Feedback on what you missed, not just a model answer</li>
+      </ul>
+      <p class="note">Free tier: 8 starter problems, 20 AI credits/month. No card needed to try.</p>
+    </div>
+    <div class="footer"><span>4 / 6</span></div>
+  </section>
+
+  <!-- Slide 5 -->
+  <section class="slide" id="slide-5">
+    <div class="top-bar">
+      <div class="brand"><strong>Ultimate SD</strong></div>
+    </div>
+    <div class="content">
+      <h2>Launch offer <span class="accent">(50 slots)</span></h2>
+      <div class="steps">
+        <div class="step"><span>1.</span> Sign up — free to start</div>
+        <div class="step"><span>2.</span> Go to Pricing → claim free 3-month Platform plan</div>
+        <div class="step"><span>3.</span> Unlocks all problems. Bring your own API key for AI.</div>
+        <div class="step"><span>4.</span> Everyone who claims gets entered in a draw — 5 people win 3 months of AI plan</div>
+      </div>
+      <p class="note">First come, first served. Once 50 are gone, that’s it.</p>
+    </div>
+    <div class="footer"><span>5 / 6</span></div>
+  </section>
+
+  <!-- Slide 6 -->
+  <section class="slide" id="slide-6">
+    <div class="top-bar">
+      <div class="brand"><strong>Ultimate SD</strong></div>
+    </div>
+    <div class="content">
+      <h2>Try it if you're prepping</h2>
+      <p class="lead">I'm early — feedback welcome. If something breaks or feels confusing, tell me. That's how this gets useful.</p>
+      <div class="link-box">
+        <div class="label">Link</div>
+        <div class="url">ultimate-sd.vercel.app/pricing</div>
+      </div>
+      <p class="note">Hit "Claim free Platform access" on the pricing page. Took me longer to build than I'd like to admit.</p>
+    </div>
+    <div class="footer"><span>6 / 6</span></div>
+  </section>
+
+  <!-- LinkedIn profile banner (1584×396) — keep copy right of profile-photo safe zone -->
+  <section class="slide banner" id="banner">
+    <div class="banner-grid" aria-hidden="true"></div>
+    <div class="banner-nodes" aria-hidden="true">
+      <svg viewBox="0 0 220 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="110" cy="24" r="10" stroke="url(#bannerGrad)" stroke-width="2"/>
+        <circle cx="24" cy="156" r="10" stroke="url(#bannerGrad)" stroke-width="2"/>
+        <circle cx="196" cy="156" r="10" stroke="url(#bannerGrad)" stroke-width="2"/>
+        <path d="M110 34 L24 146 M24 146 L196 146 M196 146 L110 34" stroke="url(#bannerGrad)" stroke-width="2" stroke-linecap="round"/>
+        <defs>
+          <linearGradient id="bannerGrad" x1="24" y1="24" x2="196" y2="156" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#6366f1"/>
+            <stop offset="1" stop-color="#a855f7"/>
+          </linearGradient>
+        </defs>
+      </svg>
+    </div>
+    <div class="banner-inner">
+      <div class="banner-copy">
+        <div class="banner-eyebrow">Ultimate SD</div>
+        <h1>Practice system design interviews <span class="accent">out loud</span></h1>
+        <p class="lead">Pick a problem · talk through your design · get follow-up questions · draw on a canvas</p>
+        <div class="banner-url">ultimate-sd.vercel.app/pricing</div>
+      </div>
+      <div class="banner-icon-wrap">
+        <img src="../../public/icon.png" alt="" width="128" height="128" />
+      </div>
+    </div>
+  </section>
+
+</body>
+</html>

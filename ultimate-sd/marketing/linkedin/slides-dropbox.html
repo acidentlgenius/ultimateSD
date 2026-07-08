@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ultimate SD — Dropbox Follow-ups Carousel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #111;
+      font-family: 'Inter', system-ui, sans-serif;
+      color: #f1f5f9;
+    }
+
+    .slide {
+      width: 1080px;
+      height: 1080px;
+      position: relative;
+      overflow: hidden;
+      padding: 64px 72px 56px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      background: #0f1419;
+      border-bottom: 1px solid #1e293b;
+    }
+
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      font-weight: 600;
+      font-size: 26px;
+      letter-spacing: -0.02em;
+      color: #94a3b8;
+    }
+
+    .brand strong {
+      color: #f8fafc;
+      font-weight: 700;
+    }
+
+    .tag {
+      font-size: 15px;
+      font-weight: 500;
+      padding: 8px 14px;
+      border-radius: 8px;
+      background: #1e293b;
+      color: #cbd5e1;
+    }
+
+    .content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 24px;
+      max-width: 900px;
+      padding: 20px 0;
+    }
+
+    h1 {
+      font-size: 58px;
+      line-height: 1.12;
+      letter-spacing: -0.03em;
+      font-weight: 700;
+      color: #f8fafc;
+    }
+
+    h2 {
+      font-size: 46px;
+      line-height: 1.15;
+      letter-spacing: -0.03em;
+      font-weight: 700;
+      color: #f8fafc;
+    }
+
+    .accent {
+      color: #60a5fa;
+    }
+
+    p.lead {
+      font-size: 28px;
+      line-height: 1.5;
+      color: #94a3b8;
+      font-weight: 400;
+    }
+
+    p.note {
+      font-size: 24px;
+      line-height: 1.55;
+      color: #64748b;
+    }
+
+    .question-box {
+      padding: 28px 32px;
+      border-radius: 12px;
+      background: #161b22;
+      border: 1px solid #334155;
+    }
+
+    .question-box .label {
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #818cf8;
+      margin-bottom: 12px;
+    }
+
+    .question-box .question {
+      font-size: 30px;
+      line-height: 1.4;
+      color: #f8fafc;
+      font-weight: 600;
+    }
+
+    .answer-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .answer-list li {
+      list-style: none;
+      font-size: 26px;
+      line-height: 1.45;
+      color: #cbd5e1;
+      padding-left: 28px;
+      position: relative;
+    }
+
+    .answer-list li::before {
+      content: '—';
+      position: absolute;
+      left: 0;
+      color: #475569;
+    }
+
+    .trap-box {
+      padding: 22px 28px;
+      border-radius: 12px;
+      background: #1a1520;
+      border: 1px solid #4c1d95;
+    }
+
+    .trap-box p {
+      font-size: 24px;
+      line-height: 1.5;
+      color: #c4b5fd;
+    }
+
+    .trap-box .trap-label {
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #a78bfa;
+      margin-bottom: 8px;
+    }
+
+    .link-box {
+      padding: 24px 28px;
+      border-radius: 12px;
+      background: #161b22;
+      border: 1px solid #334155;
+    }
+
+    .link-box + .link-box {
+      margin-top: 4px;
+    }
+
+    .link-box .label {
+      font-size: 20px;
+      color: #64748b;
+      margin-bottom: 8px;
+    }
+
+    .link-box .url {
+      font-size: 24px;
+      color: #60a5fa;
+      font-family: ui-monospace, monospace;
+      line-height: 1.4;
+    }
+
+    .footer {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      font-size: 18px;
+      color: #475569;
+      font-family: ui-monospace, monospace;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Slide 1: Cover -->
+  <section class="slide" id="slide-1" data-name="cover">
+    <div class="top-bar">
+      <div class="brand"><strong>Ultimate SD</strong></div>
+      <div class="tag">interview prep</div>
+    </div>
+    <div class="content">
+      <h1>3 follow-ups that break people on <span class="accent">Dropbox</span> design</h1>
+      <p class="lead">Everyone can say "store the files in S3." The round isn't lost on storage — it's lost on sync: what happens when files change, devices go offline, and edits collide.</p>
+      <p class="note">Dropbox looks like a glorified FTP server. These three follow-ups separate memorized diagrams from real understanding.</p>
+    </div>
+    <div class="footer"><span>1 / 5</span></div>
+  </section>
+
+  <!-- Slide 2: Chunking / delta sync -->
+  <section class="slide" id="slide-2" data-name="chunking">
+    <div class="top-bar">
+      <div class="brand"><strong>Ultimate SD</strong></div>
+      <div class="tag">follow-up #1</div>
+    </div>
+    <div class="content">
+      <div class="question-box">
+        <div class="label">Interviewer asks</div>
+        <div class="question">"A user edits 1 line of a 2 GB file — what uploads?"</div>
+      </div>
+      <ul class="answer-list">
+        <li>Split every file into ~4 MB chunks and hash each one with SHA-256 — the hash is the chunk's identity.</li>
+        <li>After an edit, unchanged chunks hash the same. Only the changed chunks upload — that's delta sync.</li>
+        <li>Bonus: if any user anywhere already uploaded a chunk with that hash, it's never stored again. Dedupe saves petabytes.</li>
+      </ul>
+      <div class="trap-box">
+        <div class="trap-label">Common trap</div>
+        <p>Re-uploading the whole 2 GB because one paragraph changed. Chunking and delta sync <em>are</em> the question.</p>
+      </div>
+    </div>
+    <div class="footer"><span>2 / 5</span></div>
+  </section>
+
+  <!-- Slide 3: Offline conflicts -->
+  <section class="slide" id="slide-3" data-name="sync-conflicts">
+    <div class="top-bar">
+      <div class="brand"><strong>Ultimate SD</strong></div>
+      <div class="tag">follow-up #2</div>
+    </div>
+    <div class="content">
+      <div class="question-box">
+        <div class="label">Interviewer asks</div>
+        <div class="question">"Two devices edit the same file offline — who wins?"</div>
+      </div>
+      <ul class="answer-list">
+        <li>Last-writer-wins silently deletes one person's work — catastrophic for a product that promises never to lose data.</li>
+        <li>Dropbox's answer: each commit carries the version it was edited against. First commit wins; the second becomes "budget (conflicted copy — Bob's MacBook).xlsx".</li>
+        <li>The metadata DB is the single source of truth — a version doesn't exist until its commit lands there. Blob storage is just a bag of chunks.</li>
+      </ul>
+      <div class="trap-box">
+        <div class="trap-label">Common trap</div>
+        <p>Saying "last write wins" for user files. Punting the merge to a human is the senior answer, not a cop-out — the system can't safely merge arbitrary bytes.</p>
+      </div>
+    </div>
+    <div class="footer"><span>3 / 5</span></div>
+  </section>
+
+  <!-- Slide 4: Change propagation -->
+  <section class="slide" id="slide-4" data-name="metadata">
+    <div class="top-bar">
+      <div class="brand"><strong>Ultimate SD</strong></div>
+      <div class="tag">follow-up #3</div>
+    </div>
+    <div class="content">
+      <div class="question-box">
+        <div class="label">Interviewer asks</div>
+        <div class="question">"How do other devices find out about changes?"</div>
+      </div>
+      <ul class="answer-list">
+        <li>A notification service pushes a tiny invalidation — "file X is now version 7" — to the user's other devices when a commit lands.</li>
+        <li>Long polling vs WebSocket: millions of mostly-idle devices polling every 5 seconds would melt the metadata tier. Long polling gets near-instant sync at a fraction of the requests.</li>
+        <li>The device then fetches the new chunk list from metadata and pulls only the chunks it lacks — never the whole file.</li>
+      </ul>
+      <div class="trap-box">
+        <div class="trap-label">Common trap</div>
+        <p>Clients polling for changes. 10M devices asking "anything new?" every 5 seconds is 2M QPS of nothing.</p>
+      </div>
+    </div>
+    <div class="footer"><span>4 / 5</span></div>
+  </section>
+
+  <!-- Slide 5: CTA -->
+  <section class="slide" id="slide-5" data-name="cta">
+    <div class="top-bar">
+      <div class="brand"><strong>Ultimate SD</strong></div>
+      <div class="tag">practice it</div>
+    </div>
+    <div class="content">
+      <h2>Reading ≠ doing the <span class="accent">interview loop</span></h2>
+      <p class="lead">The hard part is defending trade-offs while someone keeps poking holes. That's what Ultimate SD is for.</p>
+      <div class="link-box">
+        <div class="label">Full Dropbox guide (interactive chunking demo inside)</div>
+        <div class="url">ultimate-sd.vercel.app/guides/design-dropbox</div>
+      </div>
+      <div class="link-box">
+        <div class="label">Practice out loud (chat + diagram)</div>
+        <div class="url">ultimate-sd.vercel.app/practice/design-dropbox</div>
+      </div>
+      <p class="note">Launch offer — 50 slots, ends July 15: 3 months Platform free.</p>
+    </div>
+    <div class="footer"><span>5 / 5</span></div>
+  </section>
+
+</body>
+</html>

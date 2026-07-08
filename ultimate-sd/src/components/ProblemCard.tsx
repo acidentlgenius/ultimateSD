@@ -15,11 +15,13 @@ interface ProblemCardProps {
   locked?: boolean;
   index?: number;
   badge?: string;
+  /** Whether the viewer has an account session. Anonymous viewers get an honest "Sign in to practice" CTA instead of "Practice". */
+  signedIn?: boolean;
   onLockedClick?: (problem: ProblemWithStatus) => void;
   onTagClick?: (tagId: string) => void;
 }
 
-export default function ProblemCard({ problem, featured, locked, badge, onLockedClick, onTagClick }: ProblemCardProps) {
+export default function ProblemCard({ problem, featured, locked, badge, signedIn = true, onLockedClick, onTagClick }: ProblemCardProps) {
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
       case 'Easy': return 'bg-green-500/10 text-green-600 border-green-200 dark:bg-green-500/20 dark:text-green-400 dark:border-green-500/30';
@@ -149,7 +151,7 @@ export default function ProblemCard({ problem, featured, locked, badge, onLocked
                     ? "text-primary hover:translate-x-1"
                     : "text-muted-foreground group-hover:text-primary group-hover:translate-x-1"
               )}>
-                <span>{locked ? 'Unlock' : 'Practice'}</span>
+                <span>{locked ? 'Unlock' : signedIn ? 'Practice' : 'Sign in to practice'}</span>
                 <ArrowRight className="h-4 w-4" />
               </div>
             </div>
@@ -185,7 +187,7 @@ export default function ProblemCard({ problem, featured, locked, badge, onLocked
   return (
     <Link
       href={`/practice/${problem.slug}`}
-      aria-label={`Practice ${problem.title}`}
+      aria-label={signedIn ? `Practice ${problem.title}` : `Sign in to practice ${problem.title}`}
       className="block group h-full relative"
     >
       <div className={cn(
