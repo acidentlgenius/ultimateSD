@@ -1,10 +1,16 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { emailFromVerificationIdentifier } from '@/lib/email';
+import { safeCallbackPath } from '@/lib/safe-redirect';
 
 export async function GET(req: Request) {
-    const token = new URL(req.url).searchParams.get('token');
+    const url = new URL(req.url);
+    const token = url.searchParams.get('token');
+    const callbackUrl = safeCallbackPath(url.searchParams.get('callbackUrl'));
     const loginUrl = new URL('/login', req.url);
+    if (callbackUrl) {
+        loginUrl.searchParams.set('callbackUrl', callbackUrl);
+    }
 
     if (!token) {
         loginUrl.searchParams.set('error', 'invalid_token');

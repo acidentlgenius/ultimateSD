@@ -65,8 +65,8 @@ export function Hero({ launchStats, showFresherPath = false }: HeroProps) {
                     className="flex flex-col sm:flex-row items-center justify-center gap-4"
                 >
                     <Button size="lg" className="h-14 px-8 text-lg rounded-full shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all hover:scale-105" asChild>
-                        <Link href="#features">
-                            Start Exploring <ArrowRight className="ml-2 h-5 w-5" />
+                        <Link href="/practice/design-tinyurl">
+                            Start Solving <ArrowRight className="ml-2 h-5 w-5" />
                         </Link>
                     </Button>
                     <Button size="lg" variant="outline" className="h-14 px-8 text-lg rounded-full hover:bg-secondary/50 backdrop-blur-sm" asChild>

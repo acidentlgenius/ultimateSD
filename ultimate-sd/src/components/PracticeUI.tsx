@@ -49,6 +49,7 @@ import {
 import { PracticeAloudToggle } from './PracticeAloudToggle';
 import { PracticeTour } from './PracticeTour';
 import { Compass } from 'lucide-react';
+import { ErrorBoundary } from './ErrorBoundary';
 
 export default function PracticeUI({
   problem,
@@ -583,10 +584,15 @@ function PracticeUIContent({
                     : 'h-[600px] opacity-100'
                 )}
               >
-                <DiagramCanvas
-                  stepKey={currentStepKey}
-                  isVisible={isDiagramRelevant && !diagramCollapsed}
-                />
+                <ErrorBoundary
+                  label="diagram canvas"
+                  detail="Your chat progress is unaffected, and previously saved diagrams are safe."
+                >
+                  <DiagramCanvas
+                    stepKey={currentStepKey}
+                    isVisible={isDiagramRelevant && !diagramCollapsed}
+                  />
+                </ErrorBoundary>
               </div>
             </div>
           )}

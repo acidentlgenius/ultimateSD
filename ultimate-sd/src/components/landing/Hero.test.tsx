@@ -21,7 +21,7 @@ describe('Hero fresher split CTA', () => {
 
   it('keeps the senior CTAs regardless of the flag', () => {
     render(<Hero showFresherPath />);
-    expect(screen.getByRole('link', { name: /Start Exploring/i })).toBeTruthy();
+    expect(screen.getByRole('link', { name: /Start Solving/i })).toBeTruthy();
     expect(screen.getByRole('link', { name: /Free Canvas/i })).toBeTruthy();
   });
 });

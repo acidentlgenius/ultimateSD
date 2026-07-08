@@ -83,10 +83,11 @@ export function UserMenu({ user }: UserMenuProps) {
     }
 
     return (
-        <div className="hidden sm:flex items-center gap-2">
-            <Button variant="ghost" size="sm" asChild className="hover:bg-primary/10 hover:text-primary transition-colors">
+        <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex hover:bg-primary/10 hover:text-primary transition-colors">
                 <Link href="/login">Sign in</Link>
             </Button>
+            {/* Primary auth CTA stays visible on mobile — it must not live only inside the hamburger. */}
             <Button size="sm" asChild className="bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 text-white shadow-md hover:shadow-lg transition-all border-0">
                 <Link href="/signup">Get Started</Link>
             </Button>

@@ -10,11 +10,13 @@ import {
     verificationIdentifier,
 } from "@/lib/email"
 import posthog from "@/lib/posthog"
+import { safeCallbackPath } from "@/lib/safe-redirect"
 
 export async function POST(req: Request) {
     try {
-        let { name, email, password } = await req.json()
+        let { name, email, password, callbackUrl } = await req.json()
         if (email) email = email.toLowerCase()
+        const verifyCallback = safeCallbackPath(callbackUrl)
 
         if (!email || !password) {
             return NextResponse.json(
@@ -65,7 +67,7 @@ export async function POST(req: Request) {
         })
 
         try {
-            await sendVerificationEmail(email, token)
+            await sendVerificationEmail(email, token, verifyCallback)
         } catch (error) {
             await prisma.verificationToken.delete({
                 where: { identifier_token: { identifier, token } },

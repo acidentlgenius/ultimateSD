@@ -20,7 +20,7 @@ import { Card } from '@/components/ui/card';
 import { SystemDesignProblem } from '@/types';
 import { tokens } from '@/styles/tokens';
 import SchemaBuilder from '@/components/SchemaBuilder';
-import { fetchWithRetry } from '@/lib/fetchUtils';
+import { fetchWithRetry, getFetchErrorMessage } from '@/lib/fetchUtils';
 import {
   saveSessionState,
   loadSessionState,
@@ -210,6 +210,9 @@ export default function StepByStepChat({ problem, probeEnabled = false }: Props)
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackResult | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
+  // AI/network failure — distinct from a low-scoring answer: nothing is
+  // recorded and the user is told to retry, not that they failed.
+  const [evaluationError, setEvaluationError] = useState<string | null>(null);
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [probeContext, setProbeContext] = useState<{ phase: string; stepAnswer: string } | null>(null);
@@ -598,6 +601,7 @@ export default function StepByStepChat({ problem, probeEnabled = false }: Props)
 
     setLoading(true);
     setShowFeedback(false);
+    setEvaluationError(null);
 
     try {
       const requestBody: any = {
@@ -742,15 +746,7 @@ export default function StepByStepChat({ problem, probeEnabled = false }: Props)
       }
     } catch (error) {
       console.error('Error evaluating answer:', error);
-      setFeedback({
-        score: 0,
-        accuracy: 0,
-        strengths: [],
-        weaknesses: ['Error connecting to AI. Please try again.'],
-        missed: [],
-        isAcceptable: false
-      });
-      setShowFeedback(true);
+      setEvaluationError(getFetchErrorMessage(error));
     }
 
     setLoading(false);
@@ -865,7 +861,7 @@ return (
             <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5 text-green-600 dark:text-green-400" />
             <p>
               <span className="font-medium">Session restored</span>
-              {' '}from {format(restoredDate, 'MMM d, yyyy · h:mm a')}
+              {!isNaN(restoredDate.getTime()) && <>{' '}from {format(restoredDate, 'MMM d, yyyy · h:mm a')}</>}
               {totalStepCount > 0 && (
                 <> — continuing at step {globalStepPosition} of {totalStepCount}</>
               )}
@@ -929,6 +925,22 @@ return (
             );
           })()}
 
+
+          {/* AI failure banner — amber, retryable, nothing recorded. Distinct from red "needs improvement" feedback. */}
+          {evaluationError && !loading && (
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 mb-4 text-sm" data-testid="evaluation-error-banner">
+              <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 font-semibold mb-1">
+                <AlertCircle className="h-4 w-4" />
+                <span>We couldn&apos;t grade your answer</span>
+              </div>
+              <p className="text-muted-foreground mb-3">
+                {evaluationError} Your answer is still here — nothing was scored or recorded.
+              </p>
+              <Button size="sm" variant="outline" onClick={handleSubmit} className="border-amber-500/40 hover:bg-amber-500/10">
+                Try again
+              </Button>
+            </div>
+          )}
 
           {/* Persistent Retry Feedback Banner */}
           {!showFeedback && feedback && !feedback.isAcceptable && (

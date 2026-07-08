@@ -21,39 +21,40 @@ This plan fixes, in order: (1) the broken new-user funnel, (2) reliability bugs 
 
 Small, high-leverage fixes. A user who hits any of these today concludes the product is broken.
 
-### 0.1 Make the login gate graceful ⬛ CRITICAL
+### 0.1 Make the login gate graceful ⬛ CRITICAL — ✅ DONE 2026-07-08
 **Product decision (2026-07-08): no guest sessions — login is required to solve problems.** The fix is therefore not bypassing auth but making the gate honest and place-preserving.
 
-- [ ] Free-problem cards shown to anonymous users must say what happens ("Sign in to practice — free") instead of implying instant access
-- [ ] Preserve `callbackUrl` end-to-end: problem → login → signup → email verification → back to the same problem
-- [ ] E2E test: anonymous visitor → click free problem → login/signup → verify → lands back in that problem's practice UI
+- [x] Free-problem cards shown to anonymous users say "Sign in to practice" (done in Phase 1.4)
+- [x] `callbackUrl` preserved end-to-end: signup POST carries it → verification email link embeds it (open-redirect-safe via `safeCallbackPath`) → verify route forwards it to login → login redirects to the problem; resend-verification threads it too
+- [ ] E2E test: anonymous visitor → free problem → login/signup → verify → back in that problem (Phase 4 backlog)
 
-### 0.2 Global error boundaries ⬛ CRITICAL
+### 0.2 Global error boundaries ⬛ CRITICAL — ✅ DONE 2026-07-08
 There is no `error.tsx` or ErrorBoundary anywhere; any render throw blanks the page.
 
-- [ ] Add root `ultimate-sd/src/app/error.tsx` + `global-error.tsx` with "Reload — your progress is saved" recovery UI
-- [ ] Add route-level `error.tsx` for `/practice/[slug]` that preserves session state on recovery
-- [ ] Wrap `DiagramCanvas` (Excalidraw) in a component-level ErrorBoundary — a canvas crash must not kill the chat pane
-- [ ] Wrap `StepByStepChat` feedback rendering likewise
-- [ ] Guard `StepByStepChat.tsx:854` date formatting against `Invalid Date` (guard in `session-storage.ts:233` too)
-- [ ] Test: force a render throw in each boundary; verify recovery without losing session
+- [x] Root `app/error.tsx` + minimal-dependency `global-error.tsx` with "your progress is saved" recovery UI
+- [x] Route-level `practice/[slug]/error.tsx` with "Resume session" recovery (session state lives server-side/localStorage, survives reset)
+- [x] `DiagramCanvas` wrapped in reusable `ErrorBoundary` component (remount-on-reset via key) — canvas crash leaves chat intact
+- [x] Guarded `Invalid Date` in `session-storage.ts` getAllSessions and the restore banner's date formatting
+- [x] Verified live: throwaway crashing page rendered the boundary (header intact, Try again / Go home) instead of a blank screen
+- [ ] Boundary around feedback rendering specifically (covered by route boundary for now)
 
-### 0.3 Truthful AI-error UX ⬛ CRITICAL
+### 0.3 Truthful AI-error UX ⬛ CRITICAL — ✅ DONE 2026-07-08
 Model failures currently read as user failures.
 
-- [ ] `/api/ai/evaluate/route.ts` (~389–401): on LLM error, return a real error status (502/429 pass-through) — **never** HTTP 200 with `score: 0, isAcceptable: false`
-- [ ] Validate model output against a Zod schema before returning (~line 374); on invalid/missing fields, retry once then return an error — never `NaN` into `recordStepSubmission`
-- [ ] Wire the existing `getFetchErrorMessage` (`fetchUtils.ts:7`) into the **live** path `StepByStepChat.tsx:729-740` and `HelpAssistant.tsx:106` (it currently serves only the dead `ChatInterface`) — 403 must say "add API key / credits", 429 must say "rate-limited, retrying"
-- [ ] `fetchUtils.ts:50-70`: don't retry deterministic 4xx (401/402/403/404); retry only 429/5xx/network, honoring `Retry-After`
-- [ ] Distinct UI treatment: "we had a problem" (amber, retry button, no score recorded) vs. "your answer needs work" (feedback)
-- [ ] E2E tests with mocked 403 / 429 / 500 / malformed-JSON responses asserting exact user-visible copy
+- [x] `/api/ai/evaluate` returns real statuses: 403 `{error, message}` for access issues, 429 for provider rate limits, 502 for other model failures — never HTTP 200 with `score: 0`
+- [x] Zod `FeedbackSchema` validates model output; one corrective re-prompt on malformed JSON, then a real error — `NaN` can no longer reach `recordStepSubmission`
+- [x] `getFetchErrorMessage` wired into the live `StepByStepChat` and `HelpAssistant` paths; new `HttpError` carries the server's own message (e.g. "add an API key in Settings") which takes precedence over generic copy
+- [x] `fetchWithRetry` no longer retries deterministic 4xx — only 429/408/5xx/network (`Retry-After` honoring left for Phase 2.3)
+- [x] Distinct amber "We couldn't grade your answer … nothing was scored or recorded" banner + Try again, separate from red needs-improvement feedback
+- [x] Verified live: mocked 403 → instant banner with server message, answer preserved, no score; real submit → genuine graded feedback
+- [ ] E2E failure-matrix specs (Phase 4 backlog)
 
-### 0.4 Navigation quick wins 🟨 HIGH
-- [ ] Hero primary CTA (`Hero.tsx:68`): point "Start Exploring" at a real destination — a free problem or `#problems` — not `#features`
-- [ ] Promote "Problems" to a top-level nav item (`navigation.ts:26-41`); demote/regroup Roadmap/Guides/Custom/Draw under "More" or "Practice"
-- [ ] Show Sign in / Get Started on mobile header (`UserMenu.tsx:86` — currently `hidden sm:flex`)
-- [ ] Carry `callbackUrl` through the email-verification link so verified users land back on their problem
-- [ ] Move `ProblemExplorer` higher on the landing page (currently ~5 sections deep in `DashboardClient.tsx:94-118`)
+### 0.4 Navigation quick wins 🟨 HIGH — ✅ DONE 2026-07-08
+- [x] Hero primary CTA is now "Start Solving" → `/practice/design-tinyurl` (was a `#features` scroll)
+- [x] "Problems" promoted to top-level nav; Roadmap/Guides/Custom/Draw grouped under "Learn" (nav unit test updated to the new approved order)
+- [x] "Get Started" visible on mobile header ("Sign in" stays `sm+`)
+- [x] `callbackUrl` carried through the verification email (see 0.1)
+- [x] `ProblemExplorer` + MostAsked moved above FeatureShowcase/AI/Roadmap sections — picking a problem now comes before marketing
 
 **Phase 0 exit criteria:** anonymous visitor reaches a working practice session in ≤ 2 clicks; no AI failure ever shows a score; no crash ever blanks the page.
 
