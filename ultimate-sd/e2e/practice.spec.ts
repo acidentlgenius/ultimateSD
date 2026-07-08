@@ -1,8 +1,10 @@
 import { test, expect } from '@playwright/test';
+import { suppressFirstRunUx } from './helpers/first-run';
 import { mockAiEvaluate } from './helpers/ai-mocks';
 
 test.describe('Practice flow', () => {
   test.beforeEach(async ({ page }) => {
+    await suppressFirstRunUx(page);
     await mockAiEvaluate(page);
   });
 
