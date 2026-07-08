@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +22,15 @@ export default function PipelineVisualizer() {
     ]);
     const [isRunning, setIsRunning] = useState(false);
     const [shouldFail, setShouldFail] = useState(false);
+    const isMountedRef = useRef(true);
+
+    // Track mount status so the async pipeline can bail out after unmount
+    useEffect(() => {
+        isMountedRef.current = true;
+        return () => {
+            isMountedRef.current = false;
+        };
+    }, []);
 
     const runPipeline = async () => {
         setIsRunning(true);
@@ -35,6 +44,7 @@ export default function PipelineVisualizer() {
             setStages(prev => prev.map((s, idx) => idx === i ? { ...s, status: 'running' } : s));
 
             await new Promise(r => setTimeout(r, stage.duration));
+            if (!isMountedRef.current) return;
 
             // Fail logic
             if (shouldFail && stage.id === 'test') {

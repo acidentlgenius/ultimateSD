@@ -6,11 +6,13 @@ import {
     sendVerificationEmail,
     verificationIdentifier,
 } from '@/lib/email';
+import { safeCallbackPath } from '@/lib/safe-redirect';
 
 export async function POST(req: Request) {
     try {
-        let { email } = await req.json();
+        let { email, callbackUrl } = await req.json();
         if (email) email = email.toLowerCase();
+        const verifyCallback = safeCallbackPath(callbackUrl);
 
         if (!email) {
             return NextResponse.json({ message: 'Email is required' }, { status: 400 });
@@ -42,7 +44,7 @@ export async function POST(req: Request) {
             data: { identifier, token, expires },
         });
 
-        await sendVerificationEmail(exactEmail, token);
+        await sendVerificationEmail(exactEmail, token, verifyCallback);
 
         return NextResponse.json(
             { message: 'If an unverified account exists for that email, we sent a verification link.' },

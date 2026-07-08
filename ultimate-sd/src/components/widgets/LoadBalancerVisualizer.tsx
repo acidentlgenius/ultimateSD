@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Server, ShieldCheck, ShieldAlert, Activity } from 'lucide-react';
@@ -26,6 +26,15 @@ export default function LoadBalancerVisualizer() {
     const [requests, setRequests] = useState<Request[]>([]);
     const [algorithm, setAlgorithm] = useState<'round-robin' | 'random' | 'least-connections'>('round-robin');
     const [rrIndex, setRrIndex] = useState(0);
+    const timeoutIds = useRef(new Set<NodeJS.Timeout>());
+
+    // Clean up timeouts on unmount
+    useEffect(() => {
+        return () => {
+            timeoutIds.current.forEach(clearTimeout);
+            timeoutIds.current.clear();
+        };
+    }, []);
 
     const toggleHealth = (id: string) => {
         setServers(prev => prev.map(s =>
@@ -78,11 +87,12 @@ export default function LoadBalancerVisualizer() {
         setRequests(prev => [...prev, ...newReqs]);
 
         // Cleanup requests after animation
-        setTimeout(() => {
+        const tId = setTimeout(() => {
             setRequests(prev => prev.slice(5));
             // Decay load
             setServers(prev => prev.map(s => ({ ...s, load: Math.max(0, s.load - 10) })));
         }, 2000);
+        timeoutIds.current.add(tId);
     };
 
     return (

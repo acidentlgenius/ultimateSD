@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -27,16 +27,26 @@ const NODES: ServiceNode[] = [
 export default function FeedArchitect() {
     const [activeFlow, setActiveFlow] = useState<'idle' | 'fanout'>('idle');
     const [logs, setLogs] = useState<string[]>([]);
+    const timeoutIds = useRef(new Set<NodeJS.Timeout>());
+
+    // Clean up timeouts on unmount
+    useEffect(() => {
+        return () => {
+            timeoutIds.current.forEach(clearTimeout);
+            timeoutIds.current.clear();
+        };
+    }, []);
 
     const triggerFanout = () => {
         if (activeFlow !== 'idle') return;
         setActiveFlow('fanout');
         setLogs(['New post created...', 'Looking up friends...', 'Pushing to caches...']);
 
-        setTimeout(() => {
+        const tId = setTimeout(() => {
             setLogs(prev => [...prev, 'Fan-out complete!']);
             setActiveFlow('idle');
         }, 4000);
+        timeoutIds.current.add(tId);
     };
 
     return (

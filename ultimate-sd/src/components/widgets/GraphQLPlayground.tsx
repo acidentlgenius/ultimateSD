@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,6 +15,15 @@ export default function GraphQLPlayground() {
     const [selectedPostFields, setSelectedPostFields] = useState<PostField[]>([]);
     const [result, setResult] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const isMountedRef = useRef(true);
+
+    // Track mount status so the async query can bail out after unmount
+    useEffect(() => {
+        isMountedRef.current = true;
+        return () => {
+            isMountedRef.current = false;
+        };
+    }, []);
 
     const toggleUserField = (field: QueryField) => {
         setSelectedUserFields(prev =>
@@ -39,6 +48,7 @@ export default function GraphQLPlayground() {
 
         // Simulate resolver latency
         await new Promise(r => setTimeout(r, 800));
+        if (!isMountedRef.current) return;
 
         const mockData = {
             data: {

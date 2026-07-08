@@ -95,13 +95,7 @@ export function DashboardClient({
             {/* 1.5 Beginner ramp — the curated first five problems */}
             <StartHereTrack problems={problemsProp} />
 
-            {/* 2. Interactive Feature Showcase (Hide if logged in) */}
-            {!user && <FeatureShowcase />}
-            {!user && <AiInterviewerSection interviewModeEnabled={interviewModeEnabled} />}
-
-            {/* 2.5 Roadmap Preview */}
-            <RoadmapPreview />
-
+            {/* 2. Problems come before marketing sections — picking one IS the product */}
             <MostAskedSection
                 selectedCollectionId={companyCollection}
                 onSelectCollection={(id) => {
@@ -112,7 +106,6 @@ export function DashboardClient({
                 }}
             />
 
-            {/* 3. Problem Explorer */}
             <ProblemExplorer
                 user={user}
                 problems={problems}
@@ -120,6 +113,13 @@ export function DashboardClient({
                 companyCollection={companyCollection}
                 setCompanyCollection={setCompanyCollection}
             />
+
+            {/* 3. Interactive Feature Showcase (Hide if logged in) */}
+            {!user && <FeatureShowcase />}
+            {!user && <AiInterviewerSection interviewModeEnabled={interviewModeEnabled} />}
+
+            {/* 3.5 Roadmap Preview */}
+            <RoadmapPreview />
 
             {/* CTA Section - Hide if logged in */}
             {!user && (

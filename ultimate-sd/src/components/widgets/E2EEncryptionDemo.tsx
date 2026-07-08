@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,14 +15,24 @@ export default function E2EEncryptionDemo() {
 
     const [encrypted, setEncrypted] = useState('');
     const [decrypted, setDecrypted] = useState('');
+    const timeoutIds = useRef(new Set<NodeJS.Timeout>());
+
+    // Clean up timeouts on unmount
+    useEffect(() => {
+        return () => {
+            timeoutIds.current.forEach(clearTimeout);
+            timeoutIds.current.clear();
+        };
+    }, []);
 
     const handleEncrypt = () => {
         setStep(1);
-        setTimeout(() => {
+        const tId = setTimeout(() => {
             // Simulate simple Caesar cipher or base64 for demo
             setEncrypted(btoa(message));
             setStep(2);
         }, 1000);
+        timeoutIds.current.add(tId);
     };
 
     const handleSend = () => {
@@ -32,9 +42,10 @@ export default function E2EEncryptionDemo() {
 
     const handleDecrypt = () => {
         setStep(3);
-        setTimeout(() => {
+        const tId = setTimeout(() => {
             setDecrypted(atob(encrypted));
         }, 1000);
+        timeoutIds.current.add(tId);
     };
 
     const reset = () => {

@@ -78,7 +78,7 @@ test.describe('fresher track when the flag is enabled', () => {
       await expect(cta).toBeVisible();
       await expect(cta).toHaveAttribute('href', '/roadmap?track=fresher');
       // Senior message is untouched.
-      await expect(page.getByRole('link', { name: /Start Exploring/i })).toBeVisible();
+      await expect(page.getByRole('link', { name: /Start Solving/i })).toBeVisible();
     });
   });
 });

@@ -41,9 +41,21 @@ export async function startPracticeSession(problemId: string) {
     }
 
     const result = await prisma.$transaction(async (tx) => {
+      // Re-check inside the transaction: two concurrent callers (double mount,
+      // second tab) both passing the outside check must not create two
+      // sessions and inflate attemptNumber.
       const progress = await tx.problemProgress.findUnique({
         where: { userId_problemId: { userId, problemId } },
+        include: { activeSession: true },
       });
+
+      if (
+        progress?.activeSession &&
+        (progress.activeSession.status === SessionStatus.ACTIVE ||
+          progress.activeSession.status === SessionStatus.COMPLETED)
+      ) {
+        return progress.activeSession;
+      }
 
       const attemptNumber = (progress?.totalAttempts ?? 0) + 1;
       const now = new Date();

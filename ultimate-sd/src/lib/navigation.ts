@@ -25,13 +25,14 @@ export function isNavGroup(item: NavItem): item is NavGroup {
  */
 export const NAV_ITEMS: NavItem[] = [
   { href: '/', label: 'Home', icon: Home },
+  // Problems is the core action — keep it top-level, never buried in a dropdown.
+  { href: '/problems', label: 'Problems', icon: Layers },
   {
-    label: 'Practice',
-    icon: Layers,
+    label: 'Learn',
+    icon: BookOpen,
     links: [
       { href: '/roadmap', label: 'Roadmap', icon: Map },
       { href: '/guides', label: 'Guides', icon: BookOpen },
-      { href: '/problems', label: 'Problems', icon: Layers },
       { href: '/custom', label: 'Custom Problem', icon: PencilRuler },
       { href: '/draw', label: 'Draw', icon: Palette },
     ],

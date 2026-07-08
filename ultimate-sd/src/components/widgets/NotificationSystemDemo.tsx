@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +17,15 @@ type Notification = {
 export default function NotificationSystemDemo() {
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [isProcessing, setIsProcessing] = useState(false);
+    const isMountedRef = useRef(true);
+
+    // Track mount status so the async worker can bail out after unmount
+    useEffect(() => {
+        isMountedRef.current = true;
+        return () => {
+            isMountedRef.current = false;
+        };
+    }, []);
 
     const sendNotification = (type: 'email' | 'push' | 'sms') => {
         const newNotif: Notification = {
@@ -46,6 +55,7 @@ export default function NotificationSystemDemo() {
 
                     // Simulate network latency (0.5s - 1.5s)
                     await new Promise(r => setTimeout(r, 800));
+                    if (!isMountedRef.current) return;
 
                     // Mark as delivered
                     setNotifications(prev => {

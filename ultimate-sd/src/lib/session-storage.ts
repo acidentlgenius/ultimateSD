@@ -228,10 +228,13 @@ export function getAllSessions(): Array<{
             const parsed: SessionState = JSON.parse(stored);
             const problemSlug = key.replace(`${STORAGE_PREFIX}${STORAGE_VERSION}-`, '');
 
+            // Legacy/partial records may lack lastUpdated; an Invalid Date here
+            // would blow up date-fns formatting downstream.
+            const lastUpdated = new Date(parsed.lastUpdated);
             sessions.push({
               problemSlug,
-              lastUpdated: new Date(parsed.lastUpdated),
-              stepCount: Object.keys(parsed.savedStepData).length,
+              lastUpdated: isNaN(lastUpdated.getTime()) ? new Date(0) : lastUpdated,
+              stepCount: Object.keys(parsed.savedStepData ?? {}).length,
             });
           } catch (parseError) {
             // SQUASH: Root Cause: Wrapping the whole loop in a try/catch meant a single corrupted item (e.g. invalid JSON) caused getAllSessions to fail completely, missing valid items.

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +22,15 @@ export default function RESTExplorer() {
     const [response, setResponse] = useState<ResponseData | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [reqId, setReqId] = useState(0);
+    const isMountedRef = useRef(true);
+
+    // Track mount status so the async request can bail out after unmount
+    useEffect(() => {
+        isMountedRef.current = true;
+        return () => {
+            isMountedRef.current = false;
+        };
+    }, []);
 
     const sendRequest = async () => {
         setIsLoading(true);
@@ -30,6 +39,7 @@ export default function RESTExplorer() {
         setReqId(currentReqId);
 
         await new Promise(r => setTimeout(r, 600));
+        if (!isMountedRef.current) return;
 
         let resData: ResponseData = { status: 200, data: {}, time: Date.now() };
 

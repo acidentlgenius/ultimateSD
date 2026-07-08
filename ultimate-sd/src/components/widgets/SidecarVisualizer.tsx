@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Box, Lock, Send, ShieldCheck, ArrowRight } from 'lucide-react';
@@ -7,13 +7,23 @@ import { motion, AnimatePresence } from 'framer-motion';
 const SidecarVisualizer: React.FC = () => {
     const [sidecarEnabled, setSidecarEnabled] = useState(false);
     const [requests, setRequests] = useState<number[]>([]);
+    const timeoutIds = useRef(new Set<NodeJS.Timeout>());
+
+    // Clean up timeouts on unmount
+    useEffect(() => {
+        return () => {
+            timeoutIds.current.forEach(clearTimeout);
+            timeoutIds.current.clear();
+        };
+    }, []);
 
     const sendRequest = () => {
         const id = Date.now();
         setRequests(prev => [...prev, id]);
-        setTimeout(() => {
+        const tId = setTimeout(() => {
             setRequests(prev => prev.filter(reqId => reqId !== id));
         }, 2000);
+        timeoutIds.current.add(tId);
     };
 
     return (
