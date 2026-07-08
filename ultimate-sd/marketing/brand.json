@@ -1,0 +1,57 @@
+{
+  "productName": "Ultimate SD",
+  "voice": "Founder-style, plain language. Avoid buzzwords, emoji bullets, and corporate SaaS phrasing.",
+  "url": "ultimate-sd.vercel.app",
+  "pricing": {
+    "freeProblems": 8,
+    "freeAiCreditsPerMonth": 20,
+    "platformInrPerMonth": 299,
+    "aiInrPerMonth": 699,
+    "aiCreditsPerMonth": 500
+  },
+  "launchOffer": {
+    "source": "src/lib/launch-offer.ts",
+    "platformSlots": 50,
+    "platformMonthsFree": 3,
+    "aiWinnerSlots": 5,
+    "aiMonthsFree": 3,
+    "claimPath": "/pricing#launch-offer"
+  },
+  "linkedinPost": "I kept freezing on follow-ups in system design interviews — not the intro, the 'what if traffic 10x's or a region goes down' part.\n\nSo I built Ultimate SD. Pick a problem, talk through your design, get follow-up questions, draw on a canvas. Closer to a real loop than watching someone else design Netflix.\n\nLaunch offer (first 50 only):\n→ 3 months Platform free — all problems unlocked\n→ Everyone who claims gets entered in a draw for 5 free AI plans (3 months each)\n\nFree tier either way: 8 starter problems, 20 AI credits/month.\n\nultimate-sd.vercel.app/pricing — hit 'Claim free Platform access'\n\nEarly days. If you try it, I'd genuinely love to know what's confusing or broken.",
+  "linkedinPosts": {
+    "launch-carousel-2026-06": {
+      "type": "carousel",
+      "slidesHtml": "marketing/linkedin/slides.html",
+      "outputDir": "marketing/linkedin/output",
+      "caption": "I kept freezing on follow-ups in system design interviews — not the intro, the 'what if traffic 10x's or a region goes down' part.\n\nSo I built Ultimate SD. Pick a problem, talk through your design, get follow-up questions, draw on a canvas. Closer to a real loop than watching someone else design Netflix.\n\nLaunch offer (first 50 only):\n→ 3 months Platform free — all problems unlocked\n→ Everyone who claims gets entered in a draw for 5 free AI plans (3 months each)\n\nFree tier either way: 8 starter problems, 20 AI credits/month.\n\nultimate-sd.vercel.app/pricing — hit 'Claim free Platform access'\n\nEarly days. If you try it, I'd genuinely love to know what's confusing or broken."
+    },
+    "tinyurl-followups-2026-07-02": {
+      "type": "carousel",
+      "slidesHtml": "marketing/linkedin/slides-tinyurl-followups.html",
+      "outputDir": "marketing/linkedin/output/tinyurl-followups",
+      "generateCommand": "node scripts/generate-linkedin-media.mjs tinyurl-followups",
+      "caption": "You can nail the happy path on TinyURL and still lose the round on follow-ups.\n\nSwipe for 3 that trip people up:\n\n1. How do you generate short codes without collisions?\n2. Reads are 10× writes — where does cache sit, and what do you evict?\n3. Custom alias already exists — plus 301 vs 302 redirect?\n\nFull walkthrough: ultimate-sd.vercel.app/guides/design-tinyurl\n\nPractice the loop out loud (chat + diagram): ultimate-sd.vercel.app/practice/design-tinyurl\n\nLaunch offer — 50 slots, ends July 15: 3 months Platform free. Everyone who claims gets entered in a draw for 5 AI plans.\n\n#systemdesign #interviewprep #softwareengineering"
+    },
+    "rate-limiter-followups-2026-07-04": {
+      "type": "carousel",
+      "slidesHtml": "marketing/linkedin/slides-rate-limiter.html",
+      "outputDir": "marketing/linkedin/output/rate-limiter",
+      "generateCommand": "node scripts/generate-linkedin-media.mjs rate-limiter",
+      "captionFile": "marketing/social/rate-limiter.md"
+    },
+    "dropbox-followups-2026-07-04": {
+      "type": "carousel",
+      "slidesHtml": "marketing/linkedin/slides-dropbox.html",
+      "outputDir": "marketing/linkedin/output/dropbox",
+      "generateCommand": "node scripts/generate-linkedin-media.mjs dropbox",
+      "captionFile": "marketing/social/dropbox.md"
+    },
+    "youtube-followups-2026-07-04": {
+      "type": "carousel",
+      "slidesHtml": "marketing/linkedin/slides-youtube.html",
+      "outputDir": "marketing/linkedin/output/youtube",
+      "generateCommand": "node scripts/generate-linkedin-media.mjs youtube",
+      "captionFile": "marketing/social/youtube.md"
+    }
+  }
+}
