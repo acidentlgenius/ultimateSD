@@ -1,6 +1,6 @@
 /**
  * Minimal, dependency-free markdown-to-HTML converter for guide content.
- * Supports: paragraphs, ###/#### headings, -/1. lists, `code`, **bold**,
+ * Supports: paragraphs, ###/#### headings, "-"/"*"/"1." lists, `code`, **bold**,
  * *italic*, and [text](url) links. Input is escaped, so authored content
  * cannot inject raw HTML.
  */
@@ -27,8 +27,8 @@ export function markdownToHtml(markdown: string): string {
         .map((line) => line.trim())
         .filter(Boolean);
       if (lines.length === 0) return '';
-      if (lines.every((line) => line.startsWith('- '))) {
-        return `<ul>${lines.map((line) => `<li>${renderInline(line.slice(2))}</li>`).join('')}</ul>`;
+      if (lines.every((line) => /^[-*]\s/.test(line))) {
+        return `<ul>${lines.map((line) => `<li>${renderInline(line.replace(/^[-*]\s+/, ''))}</li>`).join('')}</ul>`;
       }
       if (lines.every((line) => /^\d+\.\s/.test(line))) {
         return `<ol>${lines.map((line) => `<li>${renderInline(line.replace(/^\d+\.\s/, ''))}</li>`).join('')}</ol>`;

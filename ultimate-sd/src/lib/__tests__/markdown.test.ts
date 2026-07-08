@@ -25,6 +25,13 @@ describe('markdownToHtml', () => {
     expect(html).toBe('<ul><li>first</li><li>second</li></ul>');
   });
 
+  it('renders unordered lists using * bullets with bold labels', () => {
+    const html = markdownToHtml('*   **Registration:** how users sign up\n*   **Storage:** where data lives');
+    expect(html).toBe(
+      '<ul><li><strong>Registration:</strong> how users sign up</li><li><strong>Storage:</strong> where data lives</li></ul>'
+    );
+  });
+
   it('renders ordered lists', () => {
     const html = markdownToHtml('1. first\n2. second');
     expect(html).toBe('<ol><li>first</li><li>second</li></ol>');
