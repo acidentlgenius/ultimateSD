@@ -1702,7 +1702,7 @@ export const GENERIC_STEPS: Record<string, StepData[]> = {
       placeholder: 'Do some back-of-the-envelope calculations...'
     }
   ],
-  architecture: [
+  hld: [
     {
       phase: 'HLD',
       subStep: 'high-level',
@@ -1712,7 +1712,7 @@ export const GENERIC_STEPS: Record<string, StepData[]> = {
       placeholder: 'e.g., Client -> Load Balancer -> App Server -> DB...'
     }
   ],
-  deep_dive: [
+  lld: [
     {
       phase: 'LLD',
       subStep: 'core_components',
