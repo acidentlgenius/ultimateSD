@@ -68,3 +68,9 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+
+## 2026-07-07 - [Accessibility Warnings with Radix UI DialogContent]
+
+**Learning:** When using Radix UI's `DialogContent` component (via `shadcn/ui`), React will throw an accessibility console warning (`Warning: Missing Description or aria-describedby={undefined} for {DialogContent}.`) if a `DialogDescription` component is not nested within it. This warning can clutter test outputs and indicates a potential accessibility gap if the dialog isn't properly self-describing.
+
+**Action:** If a `Dialog` intentionally does not require a descriptive text, you must explicitly pass `aria-describedby={undefined}` to the `DialogContent` element to suppress the warning and clarify the accessibility intent.

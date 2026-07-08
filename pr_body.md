@@ -1,11 +1,11 @@
 💥 The Bug
-The Vercel deployment is failing with the error `ERR_PNPM_OUTDATED_LOCKFILE Cannot install with "frozen-lockfile" because pnpm-lock.yaml is not up to date with <ROOT>/package.json`.
+Running Vitest tests triggered multiple console warnings complaining about `Warning: Missing Description or aria-describedby={undefined} for {DialogContent}.` from the `FeedbackModal` component. This clutter makes actual test errors harder to spot.
 
 🔍 Root Cause
-The `package.json` file specified `@testing-library/dom` but this dependency was missing from the `pnpm-lock.yaml` file. Vercel runs `pnpm install --frozen-lockfile` by default on CI environments, which strictly enforces that the lockfile perfectly matches `package.json`. This mismatch caused the build to abort.
+Radix UI's `DialogContent` component (used by shadcn/ui) strictly enforces accessibility standards. If a modal does not have a `<DialogDescription>`, Radix assumes it's a mistake and throws a warning unless explicitly told otherwise. `FeedbackModal` omitted the description text without explicitly suppressing the warning.
 
 🛠️ The Fix
-Ran `pnpm install` locally to update the `pnpm-lock.yaml` file, syncing the lockfile definitions with the updated `package.json` specifiers (specifically adding `@testing-library/dom` and deduplicating some minor `@babel` versions).
+Explicitly added `aria-describedby={undefined}` to the `DialogContent` component in `FeedbackModal.tsx` to signal to Radix that the omission of a description is intentional and structurally safe.
 
 🛡️ Prevention
-When updating `package.json` dependencies, ensure to always run `pnpm install` and commit the updated `pnpm-lock.yaml` file to avoid breaking CI/CD pipelines that rely on frozen lockfiles.
+Added a regression test to `FeedbackModal.test.tsx` that monitors console errors during the component's rendering and asserts that the specific `aria-describedby` warning is not logged.

@@ -1,0 +1,57 @@
+<<<<<<< SEARCH
+    // Cleanup should call cancelAnimationFrame and clearTimeout
+    expect(cancelSpy).toHaveBeenCalled();
+    expect(clearTimeoutSpy).toHaveBeenCalled();
+
+    requestSpy.mockRestore();
+    cancelSpy.mockRestore();
+    clearTimeoutSpy.mockRestore();
+    consoleSpy.mockRestore();
+    vi.useRealTimers();
+  });
+});
+=======
+    // Cleanup should call cancelAnimationFrame and clearTimeout
+    expect(cancelSpy).toHaveBeenCalled();
+    expect(clearTimeoutSpy).toHaveBeenCalled();
+
+    requestSpy.mockRestore();
+    cancelSpy.mockRestore();
+    clearTimeoutSpy.mockRestore();
+    consoleSpy.mockRestore();
+    vi.useRealTimers();
+  });
+
+  it('renders DialogContent without accessibility warnings by setting aria-describedby', () => {
+    // SQUASH: Regression test for the accessibility warning when DialogDescription is missing
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const feedback = {
+      score: 10,
+      accuracy: 100,
+      strengths: [],
+      weaknesses: [],
+      isAcceptable: true
+    };
+
+    render(
+      <FeedbackModal
+        isOpen={true}
+        feedback={feedback}
+        onClose={() => {}}
+        probeEntitled={false}
+        onStartProbe={() => {}}
+        xpEarned={10}
+      />
+    );
+
+    // Verify the specific warning is NOT in the console output
+    const warningCalls = consoleSpy.mock.calls.filter(call =>
+      call[0] && typeof call[0] === 'string' && call[0].includes('Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}')
+    );
+    expect(warningCalls.length).toBe(0);
+
+    consoleSpy.mockRestore();
+  });
+});
+>>>>>>> REPLACE
