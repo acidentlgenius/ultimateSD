@@ -49,7 +49,9 @@ import {
   ArrowLeft,
   Eye,
   RotateCcw,
-  Info
+  Info,
+  Pencil,
+  Check
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import CompletionUI from './CompletionUI';
@@ -196,6 +198,8 @@ export default function StepByStepChat({ problem, probeEnabled = false, sessionI
   });
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [listItems, setListItems] = useState<string[]>([]);
+  const [editingItemIndex, setEditingItemIndex] = useState<number | null>(null);
+  const [editingItemValue, setEditingItemValue] = useState('');
   const [textInput, setTextInput] = useState('');
   const [schemaData, setSchemaData] = useState<any[]>([]);
   const [newItemInput, setNewItemInput] = useState('');
@@ -579,6 +583,26 @@ export default function StepByStepChat({ problem, probeEnabled = false, sessionI
 
   const removeListItem = (index: number) => {
     setListItems(listItems.filter((_, i) => i !== index));
+  };
+
+  const startEditingListItem = (index: number) => {
+    setEditingItemIndex(index);
+    setEditingItemValue(listItems[index]);
+  };
+
+  const commitEditingListItem = () => {
+    if (editingItemIndex === null) return;
+    const trimmed = editingItemValue.trim();
+    if (trimmed) {
+      setListItems(listItems.map((item, i) => (i === editingItemIndex ? trimmed : item)));
+    }
+    setEditingItemIndex(null);
+    setEditingItemValue('');
+  };
+
+  const cancelEditingListItem = () => {
+    setEditingItemIndex(null);
+    setEditingItemValue('');
   };
 
   const handleSubmit = async () => {
@@ -981,17 +1005,65 @@ return (
                       }`}
                   >
                     <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5 shrink-0" />
-                    <p className="flex-1 text-sm">{item}</p>
-                    {!showFeedback && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeListItem(index)}
-                        className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity h-6 w-6 p-0"
-                        aria-label="Remove item"
+                    {editingItemIndex === index ? (
+                      <Input
+                        autoFocus
+                        value={editingItemValue}
+                        onChange={(e) => setEditingItemValue(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            commitEditingListItem();
+                          } else if (e.key === 'Escape') {
+                            e.preventDefault();
+                            cancelEditingListItem();
+                          }
+                        }}
+                        onBlur={commitEditingListItem}
+                        className="flex-1 h-7 text-sm"
+                      />
+                    ) : (
+                      <p
+                        className={`flex-1 text-sm ${!showFeedback ? 'cursor-text' : ''}`}
+                        onClick={() => !showFeedback && startEditingListItem(index)}
                       >
-                        <X className="h-4 w-4" />
-                      </Button>
+                        {item}
+                      </p>
+                    )}
+                    {!showFeedback && (
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                        {editingItemIndex === index ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={commitEditingListItem}
+                            className="h-6 w-6 p-0"
+                            aria-label="Save item"
+                          >
+                            <Check className="h-4 w-4" />
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => startEditingListItem(index)}
+                            className="h-6 w-6 p-0"
+                            aria-label="Edit item"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeListItem(index)}
+                          className="h-6 w-6 p-0"
+                          aria-label="Remove item"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
                     )}
                   </div>
                 ))}
