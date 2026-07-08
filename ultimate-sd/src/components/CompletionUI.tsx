@@ -5,6 +5,8 @@ import { Trophy, Star, ArrowRight, Home, RotateCcw, Layout } from 'lucide-react'
 import Link from 'next/link';
 import { SystemDesignProblem } from '@/types';
 import { FEATURES } from '@/lib/features';
+import { getNextProblem } from '@/lib/start-here';
+import { Badge } from '@/components/ui/badge';
 
 interface CompletionUIProps {
   problem: SystemDesignProblem;
@@ -13,6 +15,8 @@ interface CompletionUIProps {
 }
 
 export default function CompletionUI({ problem, onReview, onReset }: CompletionUIProps) {
+  const nextProblem = getNextProblem(problem.slug);
+
   return (
     <div className="flex flex-col items-center justify-center py-12 animate-in fade-in zoom-in duration-500">
       <div className="relative mb-8">
@@ -54,6 +58,26 @@ export default function CompletionUI({ problem, onReview, onReset }: CompletionU
           </CardContent>
         </Card>
       </div>
+
+      {nextProblem && (
+        <Card className="glass w-full max-w-2xl mb-8 border-primary/30" data-testid="next-problem-card">
+          <CardContent className="p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Up next</p>
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-lg">{nextProblem.title}</span>
+                <Badge variant="secondary">{nextProblem.difficulty}</Badge>
+              </div>
+              <p className="text-sm text-muted-foreground line-clamp-2">{nextProblem.context}</p>
+            </div>
+            <Button asChild size="lg" className="gap-2 shrink-0">
+              <Link href={`/practice/${nextProblem.slug}`}>
+                Start next <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md">
         <Button

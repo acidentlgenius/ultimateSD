@@ -213,6 +213,20 @@ export default function StepByStepChat({ problem, probeEnabled = false }: Props)
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [probeContext, setProbeContext] = useState<{ phase: string; stepAnswer: string } | null>(null);
+  const [showFirstStepHint, setShowFirstStepHint] = useState(false);
+
+  useEffect(() => {
+    try {
+      setShowFirstStepHint(localStorage.getItem('sd_first_step_hint_dismissed') !== '1');
+    } catch { /* private mode — keep hidden */ }
+  }, []);
+
+  const dismissFirstStepHint = () => {
+    setShowFirstStepHint(false);
+    try {
+      localStorage.setItem('sd_first_step_hint_dismissed', '1');
+    } catch { /* ignore */ }
+  };
 
   // Store all step data
   const [savedStepData, setSavedStepData] = useState<Map<string, SavedStepData>>(new Map());
@@ -927,6 +941,23 @@ return (
                 {feedback.weaknesses?.map((w: string, i: number) => <li key={`w-${i}`}>{w}</li>)}
                 {feedback.missed?.map((m: string, i: number) => <li key={`m-${i}`}>{m}</li>)}
               </ul>
+            </div>
+          )}
+
+          {/* First-session guidance — shown until dismissed, only before any progress */}
+          {showFirstStepHint && completedSteps.size === 0 && !showFeedback && !feedback && (
+            <div className="flex items-start justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm" data-testid="first-step-hint">
+              <p className="text-muted-foreground leading-relaxed">
+                <span className="font-semibold text-foreground">How this works:</span> answer the question above in your own words — bullet points are fine — then hit{' '}
+                <span className="font-semibold text-foreground">Submit for Review</span>. The AI interviewer gives you feedback before you move to the next step. There&apos;s no penalty for a rough first draft.
+              </p>
+              <button
+                onClick={dismissFirstStepHint}
+                className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                aria-label="Dismiss hint"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
           )}
 

@@ -38,3 +38,19 @@ await page.goto('http://localhost:3777/blog');
 
 Mobile menu toggle button: `getByRole('button', { name: /toggle menu/i })`.
 Give framer-motion spring animations ~800ms before screenshotting.
+
+## macOS session learnings (2026-07)
+
+- Postgres runs locally on 5432 — landing/practice routes work with DB.
+- Env: scripts need `set -a; source .env; source .env.local; set +a`
+  before `npx tsx` (prisma.ts throws without DATABASE_URL).
+- Seeded login: `npx tsx scripts/seed-e2e.ts` →
+  `test@e2e.sysdesignai.local` / `E2eTestPassword123!` (verified email,
+  onboardingCompleted=true, free plan).
+- Root `.claude/launch.json` has `ultimate-sd-dev` (port 3777) for the
+  preview_* tools; drive with preview_eval/preview_click, screenshot for
+  evidence. Panel default viewport is narrow (~800px, mobile layout);
+  use preview_resize width 1440 to get the desktop sidebar.
+- To test onboarding modal auto-open, flip `onboardingCompleted` via a
+  temp tsx script copied into ultimate-sd/ (tsx can't resolve @/ outside).
+- Ad-hoc tsx scripts must live inside ultimate-sd/ to resolve node_modules.

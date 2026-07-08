@@ -18,6 +18,7 @@ import { ProblemWithStatus } from '@/types';
 import { type PlanType } from '@/lib/plans';
 import { ProblemExplorer } from '@/components/ProblemExplorer';
 import { MostAskedSection } from '@/components/landing/MostAskedSection';
+import { StartHereTrack } from '@/components/landing/StartHereTrack';
 
 interface DashboardClientProps {
     user?: {
@@ -90,6 +91,9 @@ export function DashboardClient({
                     showFresherPath={fresherTrackEnabled}
                 />
             )}
+
+            {/* 1.5 Beginner ramp — the curated first five problems */}
+            <StartHereTrack problems={problemsProp} />
 
             {/* 2. Interactive Feature Showcase (Hide if logged in) */}
             {!user && <FeatureShowcase />}

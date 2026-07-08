@@ -1,4 +1,4 @@
-export { saveUserPreferences } from './preferences';
+export { saveUserPreferences, skipOnboarding } from './preferences';
 
 export {
   startPracticeSession,

@@ -124,6 +124,7 @@ export function HelpAssistant({ problem, currentPhase, completedSteps = [], save
     return (
       <Button
         onClick={() => setIsOpen(true)}
+        data-tour="help"
         className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-2xl z-50 bg-gradient-to-br from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 transition-all duration-300 hover:scale-110"
         aria-label="Open Help Assistant"
         title="Open Help Assistant"

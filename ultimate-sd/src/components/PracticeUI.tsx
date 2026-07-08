@@ -47,6 +47,8 @@ import {
   type InterviewStatus,
 } from '@/lib/interview-mode';
 import { PracticeAloudToggle } from './PracticeAloudToggle';
+import { PracticeTour } from './PracticeTour';
+import { Compass } from 'lucide-react';
 
 export default function PracticeUI({
   problem,
@@ -357,7 +359,7 @@ function PracticeUIContent({
       </div>
 
       {/* Sidebar Navigation */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
+      <div data-tour="steps" className="flex-1 overflow-y-auto p-4 space-y-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
         <div className="space-y-1">
           {Object.entries(activeSteps).map(([phaseKey, steps], idx) => {
             const phaseTitle = steps.length > 0 ? steps[0].phase : phaseKey;
@@ -481,6 +483,18 @@ function PracticeUIContent({
           {isExporting ? <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" /> : <Download className="h-3.5 w-3.5 mr-2" />}
           Export PDF
         </Button>
+
+        {!interviewConfig && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => window.dispatchEvent(new CustomEvent('sd-start-tour'))}
+            className="w-full justify-start hover:bg-muted text-muted-foreground"
+          >
+            <Compass className="h-3.5 w-3.5 mr-2" />
+            Take the tour
+          </Button>
+        )}
       </div>
     </div>
   );
@@ -535,13 +549,13 @@ function PracticeUIContent({
           ) : null}
 
           {/* Main Chat Interface */}
-          <div className="animate-fade-in" style={{ animationDelay: '100ms' }}>
+          <div data-tour="chat" className="animate-fade-in" style={{ animationDelay: '100ms' }}>
             <StepByStepChat problem={problem} probeEnabled={probeEnabled} />
           </div>
 
           {/* Diagram Section — always mounted when stepKey is set */}
           {currentStepKey && (
-            <div className="mt-8 animate-fade-in space-y-4">
+            <div data-tour="canvas" className="mt-8 animate-fade-in space-y-4">
               {isDiagramRelevant && (
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -579,6 +593,9 @@ function PracticeUIContent({
 
         </div>
       </main>
+
+      {/* First-run tour — not during timed interviews */}
+      {!interviewConfig && <PracticeTour />}
 
       {/* Help Assistant */}
       {!interviewConfig && (
