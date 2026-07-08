@@ -36,14 +36,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: response });
   } catch (error) {
     console.error('Help assistant API error:', error);
-    const errMsg = error instanceof AIAccessError
-      ? error.message
-      : error instanceof Error
-        ? error.message
-        : 'Failed to get help response';
+    // AIAccessError messages are user-facing ("add an API key…"); anything
+    // else is an internal detail that must not leak to the client.
+    if (error instanceof AIAccessError) {
+      return NextResponse.json({ error: 'ai_unavailable', message: error.message }, { status: 403 });
+    }
+    if (error instanceof Error && /rate.?limit|429|quota|resource.?exhausted/i.test(error.message)) {
+      return NextResponse.json(
+        { error: 'ai_rate_limited', message: 'The AI provider is rate-limiting requests. Wait a moment and try again.' },
+        { status: 429 }
+      );
+    }
     return NextResponse.json(
-      { message: errMsg },
-      { status: error instanceof AIAccessError ? 403 : 500 }
+      { error: 'ai_failed', message: 'The assistant hit a temporary problem. Please ask again.' },
+      { status: 502 }
     );
   }
 }

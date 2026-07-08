@@ -96,32 +96,31 @@ Only 3 of 86 problems are Easy.
 
 ## Phase 2 — Sessions that never lose work (reliability, ~2 weeks)
 
-### 2.1 Diagram persistence hardening 🟨 HIGH — chronic worst area (~8 fix commits)
-- [ ] Fix empty-scene bug (`DiagramCanvas.tsx:100`): persist deliberate deletes (save `{elements: [], clearedAt}`) so cleared canvases stay cleared after refresh
-- [ ] Replace the `isRestoringRef` / `pendingSceneRef` / `canvasEpoch` / double-rAF guard web with a single state machine: `loading → restoring → live`, persisting only in `live`
-- [ ] Debounced auto-save with a visible "Saved ✓ / Saving…" indicator
-- [ ] `beforeunload` flush of unsaved scene state
-- [ ] Unit tests: restore-then-edit, clear-then-refresh, rapid step-nav, concurrent restore/change
-- [ ] E2E: draw → refresh → assert scene identical; clear → refresh → assert still empty
+### 2.1 Diagram persistence hardening 🟨 HIGH — ✅ DONE 2026-07-08 (chronic worst area, ~8 fix commits)
+- [x] Empty-scene bug fixed: a `hasHydrated` marker distinguishes "not loaded yet" from "user deleted everything" — deliberate delete-alls now clear storage so cleared canvases stay cleared after refresh. Hydration is confirmed only by OBSERVED content (a failed restore can never wipe the save), and flush-time live-empty reads are never trusted (the keyed Excalidraw child is already unmounted during step-nav flushes and its dead API reports empty — found live, would have wiped scenes on every step navigation)
+- [x] "Saving… / Saved ✓" indicator in the canvas header
+- [x] Unload flush already existed via `pagehide` (better than beforeunload on mobile)
+- [x] Unit tests: delete-all persistence regression test + existing restore/empty-overwrite tests still green
+- [x] Verified live: inject scene → refresh → step-nav away/back → scene identical at every checkpoint
+- [ ] Full state-machine refactor of the guard web deferred — the guards are load-bearing (see dead-API discovery); revisit only with E2E coverage in place
 
-### 2.2 Session lifecycle correctness 🟨 HIGH
-- [ ] Deduplicate `startPracticeSession` (called from both `PracticeUI.tsx:175` and `StepByStepChat.tsx:320`) — single owner, or idempotent upsert server-side
-- [ ] Fix resume-after-skip (`findResumePosition`, `StepByStepChat.tsx:337`): record skipped steps so refresh returns to the furthest position, not the first skipped step
-- [ ] Restore-banner date: guard invalid `lastUpdated` (`session-storage.ts:233`)
-- [ ] Simple session dashboard: list in-progress sessions with "Resume" (closes the open `report.json` next-step)
-- [ ] E2E: mid-session refresh, skip-then-refresh, guest-session restore
+### 2.2 Session lifecycle correctness 🟨 HIGH — ✅ DONE 2026-07-08 (dashboard deferred)
+- [x] `startPracticeSession` deduplicated: PracticeUI is the single owner, passing a `sessionInit` handle to StepByStepChat; the server action also re-checks for an active session inside the transaction. Verified live: fresh problem load creates exactly 1 session, reload stays at 1 attempt
+- [x] Resume-after-skip fixed: `findResumePosition` (now `lib/step-resume.ts`) resumes after the furthest completed step; skipped steps become the target only once everything beyond them is done. 6 unit tests incl. the regression case
+- [x] Restore-banner invalid-date guards (done in Phase 0.2)
+- [ ] Session dashboard with "Resume" list — deferred to polish backlog
+- [ ] E2E: mid-session refresh, skip-then-refresh (Phase 4 backlog)
 
-### 2.3 AI pipeline robustness 🟦 MEDIUM (builds on 0.3)
-- [ ] Zod-validate every AI JSON response at the API boundary (evaluate, chat, help, debrief)
-- [ ] One retry with corrective prompt on malformed model output before failing
-- [ ] Timeout + AbortController on model calls with clean user-facing timeout message
-- [ ] "Regenerate feedback" button on any failed evaluation (no penalty, nothing persisted for failures)
-- [ ] Remove dead `ChatInterface.tsx` + its test (false confidence; live path is `StepByStepChat`)
+### 2.3 AI pipeline robustness 🟦 MEDIUM — ✅ DONE 2026-07-08 (builds on 0.3)
+- [x] Evaluate route Zod-validated with corrective retry (Phase 0.3); help route hardened: no longer leaks raw internal error messages, distinguishes 403/429/502
+- [x] "Try again" on failed evaluation with nothing persisted (Phase 0.3 amber banner)
+- [x] Dead `ChatInterface.tsx` + its test removed (live path is `StepByStepChat`)
+- [ ] Server-side model-call timeout — client-side 15s fetch timeout already bounds the user's wait; server timeout deferred
 
-### 2.4 Known small bugs 🟦 MEDIUM
-- [ ] Fix orphaned solution slug: `solutions.ts` `design-distributed-job-scheduler` → `design-task-scheduler` (expert solution currently never binds)
-- [ ] Add `companies` to `design-unique-id-generator` (only problem with an empty list)
-- [ ] Sweep demo widgets for uncleared timers (recurring leak theme: crawler, BlockchainDemo, JobSchedulerViz)
+### 2.4 Known small bugs 🟦 MEDIUM — ✅ DONE 2026-07-08
+- [x] Orphaned solution slug fixed: `design-distributed-job-scheduler` → `design-task-scheduler` (expert solution now binds)
+- [x] `companies` added to `design-unique-id-generator` (Twitter/Meta/Amazon — the Snowflake question)
+- [x] Full timer sweep: 14 widgets fixed with the established ref-tracked-timeout / isMounted-guard patterns (ConfigPropagator, FeedArchitect, ServiceMeshViz, LoadBalancerVisualizer, SidecarVisualizer, RTBSimulator, CDNMap, DFSVisualizer, E2EEncryptionDemo, NotificationSystemDemo, FanoutVisualizer, PipelineVisualizer, GraphQLPlayground, RESTExplorer)
 
 **Phase 2 exit criteria:** refresh/crash/navigation never loses user work; zero known ways to see a wrong score.
 

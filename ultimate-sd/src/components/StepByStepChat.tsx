@@ -21,6 +21,7 @@ import { SystemDesignProblem } from '@/types';
 import { tokens } from '@/styles/tokens';
 import SchemaBuilder from '@/components/SchemaBuilder';
 import { fetchWithRetry, getFetchErrorMessage } from '@/lib/fetchUtils';
+import { findResumePosition } from '@/lib/step-resume';
 import {
   saveSessionState,
   loadSessionState,
@@ -103,6 +104,12 @@ interface SavedStepData {
 interface Props {
   problem: SystemDesignProblem;
   probeEnabled?: boolean;
+  /**
+   * Session handle from PracticeUI — the single owner of startPracticeSession.
+   * null = still starting (wait before loading authed state);
+   * { sessionId: null } = start failed (proceed without recording).
+   */
+  sessionInit?: { sessionId: string | null } | null;
 }
 
 type DbSubmission = {
@@ -179,25 +186,10 @@ function reconstructFromSubmissions(
   return { savedStepData, completedSteps };
 }
 
-function findResumePosition(
-  phaseSteps: Record<string, unknown[]>,
-  completedSteps: Set<string>
-): { phase: string; stepIndex: number } {
-  const phaseKeys = Object.keys(phaseSteps);
-  for (const phaseKey of phaseKeys) {
-    const steps = phaseSteps[phaseKey];
-    for (let i = 0; i < steps.length; i++) {
-      if (!completedSteps.has(`${phaseKey}-${i}`)) {
-        return { phase: phaseKey, stepIndex: i };
-      }
-    }
-  }
-  const lastPhase = phaseKeys[phaseKeys.length - 1];
-  const lastSteps = phaseSteps[lastPhase] ?? [];
-  return { phase: lastPhase ?? 'requirements', stepIndex: Math.max(0, lastSteps.length - 1) };
-}
+// findResumePosition lives in @/lib/step-resume so it can be unit-tested
+// without dragging this component's server-action imports into the test.
 
-export default function StepByStepChat({ problem, probeEnabled = false }: Props) {
+export default function StepByStepChat({ problem, probeEnabled = false, sessionInit = null }: Props) {
   const [currentPhase, setCurrentPhase] = useState(() => {
     const keys = Object.keys(resolvePhaseSteps(problem.steps, getGenericFallbackSteps(problem)));
     return keys[0] ?? 'requirements';
@@ -333,10 +325,12 @@ export default function StepByStepChat({ problem, probeEnabled = false }: Props)
 
     const loadData = async () => {
       if (session?.user) {
+        // PracticeUI owns startPracticeSession (calling it from both components
+        // raced and created duplicate sessions). Wait for its handle.
+        if (!sessionInit) return;
         try {
-          const startResult = await startPracticeSession(problem.id);
-          if (isMounted && startResult.success && startResult.sessionId) {
-            setActiveSessionId(startResult.sessionId);
+          if (isMounted && sessionInit.sessionId) {
+            setActiveSessionId(sessionInit.sessionId);
           }
 
           const activeResult = await getActiveSession(problem.id);
@@ -410,7 +404,7 @@ export default function StepByStepChat({ problem, probeEnabled = false }: Props)
     return () => {
       isMounted = false;
     };
-  }, [problem.id, problem.slug, problem.steps, session?.user?.id, sessionStatus]);
+  }, [problem.id, problem.slug, problem.steps, session?.user?.id, sessionStatus, sessionInit]);
 
   // Save session to localStorage as draft buffer (guests only; signed-in users use DB)
   useEffect(() => {

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -30,10 +30,19 @@ export default function FanoutVisualizer() {
     const [metrics, setMetrics] = useState({ writeLatency: 0, readLatency: 0 });
     const [logs, setLogs] = useState<string[]>([]);
     const [mounted, setMounted] = useState(false);
+    const isMountedRef = useRef(true);
 
     useEffect(() => {
         setMounted(true);
         setFollowers(prev => prev.map(f => ({ ...f, isOnline: Math.random() > 0.3 })));
+    }, []);
+
+    // Track mount status so the async simulation can bail out after unmount
+    useEffect(() => {
+        isMountedRef.current = true;
+        return () => {
+            isMountedRef.current = false;
+        };
     }, []);
 
     if (!mounted) return null; // or a loading skeleton
@@ -56,6 +65,7 @@ export default function FanoutVisualizer() {
             // Fan-out on Write
             addLog('🚀 User posts tweet...');
             await new Promise(r => setTimeout(r, 500));
+            if (!isMountedRef.current) return;
 
             const start = Date.now();
             addLog(`📡 Fan-out to ${followers.length} followers...`);
@@ -63,6 +73,7 @@ export default function FanoutVisualizer() {
             // Simulate sequential/parallel writes
             for (let i = 0; i < followers.length; i++) {
                 await new Promise(r => setTimeout(r, 300)); // Simulate write latency per follower
+                if (!isMountedRef.current) return;
                 setFollowers(prev => {
                     const newFollowers = [...prev];
                     newFollowers[i] = { ...newFollowers[i], hasReceived: true };
@@ -80,6 +91,7 @@ export default function FanoutVisualizer() {
             addLog('🚀 User posts tweet...');
             const start = Date.now();
             await new Promise(r => setTimeout(r, 500)); // Single write to DB
+            if (!isMountedRef.current) return;
 
             const writeLatency = Date.now() - start;
             addLog(`💾 Tweet saved to DB in ${writeLatency}ms`);
@@ -87,6 +99,7 @@ export default function FanoutVisualizer() {
             // Simulate followers coming online and pulling
             addLog('⏳ Waiting for followers to refresh feed...');
             await new Promise(r => setTimeout(r, 800));
+            if (!isMountedRef.current) return;
 
             const readStart = Date.now();
             setFollowers(prev => prev.map(f => ({ ...f, hasReceived: true })));

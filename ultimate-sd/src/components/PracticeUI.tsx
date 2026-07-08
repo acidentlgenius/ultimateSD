@@ -124,6 +124,9 @@ function PracticeUIContent({
   const [serverPausedSeconds, setServerPausedSeconds] = useState<number>((existingProgress as any)?.totalPausedSeconds ?? 0);
   const [lastPausedAt, setLastPausedAt] = useState<Date | string | null>((existingProgress as any)?.lastPausedAt ?? null);
   const [interviewStatus, setInterviewStatus] = useState<InterviewStatus>('running');
+  // Single owner of startPracticeSession — passed to StepByStepChat so the two
+  // components stop racing duplicate session creations on mount.
+  const [sessionInit, setSessionInit] = useState<{ sessionId: string | null } | null>(null);
   const [practiceAloudOn, setPracticeAloudOn] = useState(false);
   const [summaryDismissed, setSummaryDismissed] = useState(false);
   const dispatchInterview = (event: InterviewEvent) =>
@@ -183,8 +186,11 @@ function PracticeUIContent({
           setServerPausedSeconds(result.totalPausedSeconds ?? 0);
           setLastPausedAt(result.lastPausedAt ?? null);
         }
+        setSessionInit({ sessionId: (result.success && result.sessionId) || null });
       } catch (error) {
         console.error("Failed to auto-start session:", error);
+        // Unblock StepByStepChat's load — it degrades to not recording.
+        setSessionInit({ sessionId: null });
       }
     };
     initSession();
@@ -551,7 +557,7 @@ function PracticeUIContent({
 
           {/* Main Chat Interface */}
           <div data-tour="chat" className="animate-fade-in" style={{ animationDelay: '100ms' }}>
-            <StepByStepChat problem={problem} probeEnabled={probeEnabled} />
+            <StepByStepChat problem={problem} probeEnabled={probeEnabled} sessionInit={sessionInit} />
           </div>
 
           {/* Diagram Section — always mounted when stepKey is set */}

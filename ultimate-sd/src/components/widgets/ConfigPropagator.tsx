@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +23,15 @@ export default function ConfigPropagator() {
         { id: 'Service-C', version: 'v1', config: { feature_x: false }, status: 'healthy' },
         { id: 'Service-D', version: 'v1', config: { feature_x: false }, status: 'healthy' },
     ]);
+    const timeoutIds = useRef(new Set<NodeJS.Timeout>());
+
+    // Clean up timeouts on unmount
+    useEffect(() => {
+        return () => {
+            timeoutIds.current.forEach(clearTimeout);
+            timeoutIds.current.clear();
+        };
+    }, []);
 
     const updateConfig = () => {
         const nextVersion = configVersion + 1;
@@ -36,7 +45,7 @@ export default function ConfigPropagator() {
 
         // Simulate staggered rollout
         instances.forEach((_, index) => {
-            setTimeout(() => {
+            const tId = setTimeout(() => {
                 setInstances(prev => prev.map((inst, i) => {
                     if (i === index) {
                         return {
@@ -49,6 +58,7 @@ export default function ConfigPropagator() {
                     return inst;
                 }));
             }, 1000 + (index * 800)); // Stagger updates
+            timeoutIds.current.add(tId);
         });
     };
 
