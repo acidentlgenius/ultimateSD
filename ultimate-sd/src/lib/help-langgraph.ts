@@ -81,7 +81,8 @@ PROBLEM: ${problem.title}
 Description: ${problem.context}
 Difficulty: ${problem.difficulty}
 Category: ${problem.category}
-Key Requirements: ${problem.functionalRequirements?.join(', ') || 'Not specified'}
+Functional Requirements: ${problem.functionalRequirements?.join('; ') || 'Not specified'}
+Non-Functional Targets: ${problem.nonFunctionalRequirements?.join('; ') || 'Not specified'}
 Companies: ${problem.companies?.join(', ') || 'Not specified'}`;
 }
 

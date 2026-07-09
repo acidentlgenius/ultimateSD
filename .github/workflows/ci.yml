@@ -51,6 +51,9 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      - name: Validate problem content
+        run: pnpm validate:problems
+
       - name: Test
         run: pnpm test run
 

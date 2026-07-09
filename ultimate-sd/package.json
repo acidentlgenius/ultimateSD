@@ -12,7 +12,7 @@
     "build": "npx tsx scripts/check-env.ts && next build",
     "start": "next start",
     "lint": "eslint",
-    "validate:problems": "tsx scripts/validate-problems.ts",
+    "validate:problems": "npx tsx scripts/validate-problems.ts",
     "test": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",

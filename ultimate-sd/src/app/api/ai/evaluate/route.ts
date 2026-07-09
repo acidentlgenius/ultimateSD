@@ -276,6 +276,18 @@ export async function POST(req: NextRequest) {
     const problemSlug = problemDetails?.slug || '';
     const expertSolution = getSolution(problemSlug);
 
+    // Ground the evaluator in the problem's authored requirements — these
+    // carry the scale numbers and quantified targets the candidate is
+    // expected to reason about.
+    const authoredReqs = [
+      problemDetails?.functionalRequirements?.length
+        ? `**Problem's Core Functional Requirements:**\n- ${problemDetails.functionalRequirements.join('\n- ')}`
+        : '',
+      problemDetails?.nonFunctionalRequirements?.length
+        ? `**Problem's Non-Functional Targets (quantified — candidates should engage with these):**\n- ${problemDetails.nonFunctionalRequirements.join('\n- ')}`
+        : '',
+    ].filter(Boolean).join('\n\n');
+
     // Dynamic Context Builder
     let expertContext = '';
     if (expertSolution) {
@@ -292,9 +304,9 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const evaluationPrompt = `You are an expert FAANG system design interviewer (ex-Meta, Google, Amazon). 
+    const evaluationPrompt = `You are an expert FAANG system design interviewer (ex-Meta, Google, Amazon).
 You are evaluating a candidate's answer for the problem: "${problemTitle}" - ${problemDesc}
-
+${authoredReqs ? `\n${authoredReqs}\n` : ''}
 **Current Phase:** ${phase}
 **Current Step:** ${subStep}
 
