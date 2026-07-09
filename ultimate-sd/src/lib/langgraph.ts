@@ -120,7 +120,7 @@ export async function getInterviewSummary(
 
   const prompt = `You are a FAANG system design interviewer (ex-Meta) writing the post-interview debrief for a TIMED mock interview.
 Problem: "${problem.title}" — ${problem.context}
-
+${problem.nonFunctionalRequirements?.length ? `Non-functional targets the candidate was expected to engage with: ${problem.nonFunctionalRequirements.join('; ')}\n` : ''}
 Candidate transcript, step by step:
 ${transcript}
 
