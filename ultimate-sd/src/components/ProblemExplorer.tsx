@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useDeferredValue } from 'react';
 import Link from 'next/link';
 import Fuse from 'fuse.js';
 import { Search, ArrowRight, Building2, TrendingUp, Lock, CheckCircle, Clock, RotateCcw } from 'lucide-react';
@@ -135,6 +135,7 @@ export function ProblemExplorer({
     };
 
     // Memoize the search index so it's not rebuilt on every keystroke
+    const deferredSearch = useDeferredValue(search);
     const fuseIndex = useMemo(() => {
         const problemsWithTags = problems.map(p => ({
             ...p,
@@ -156,8 +157,8 @@ export function ProblemExplorer({
     const filtered = useMemo(() => {
         let filteredProblems = problems;
 
-        if (search) {
-            filteredProblems = fuseIndex.search(search).map(result => result.item);
+        if (deferredSearch) {
+            filteredProblems = fuseIndex.search(deferredSearch).map(result => result.item);
         }
 
         if (category !== 'All') {
@@ -187,7 +188,7 @@ export function ProblemExplorer({
         }
 
         return filteredProblems;
-    }, [problems, search, category, difficulty, statusFilter, topicFilter, companyCollection, user, fuseIndex]);
+    }, [problems, deferredSearch, category, difficulty, statusFilter, topicFilter, companyCollection, user, fuseIndex]);
 
     const categories = ['All', ...new Set(problems.map(p => p.category))];
     const difficulties = ['All', 'Easy', 'Medium', 'Hard'];
