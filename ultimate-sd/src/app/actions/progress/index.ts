@@ -5,6 +5,7 @@ export {
   togglePracticeTimer,
   completeSession,
   abandonSession,
+  saveForgeDiagramSnapshot,
 } from './sessions';
 
 export {

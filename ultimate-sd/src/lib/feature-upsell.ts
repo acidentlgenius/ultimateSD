@@ -24,6 +24,11 @@ export const FEATURE_UPSELL_COPY: Record<FeatureKey, { title: string; pitch: str
     title: 'Lifetime Access',
     pitch: 'Pay once, own the full problem library, expert solutions, and interview mode forever.',
   },
+  designForge: {
+    title: 'DesignForge Canvas',
+    pitch:
+      'Practice system design on one infinite canvas — requirements, APIs, and architecture in spatial frames with a journey map and contextual AI coach.',
+  },
 };
 
 /** Which pricing card to highlight when upselling this feature. */

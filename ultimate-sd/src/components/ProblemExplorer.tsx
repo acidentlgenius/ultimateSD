@@ -50,6 +50,8 @@ interface ProblemExplorerProps {
     /** Controlled company-collection filter (used by the landing page's MostAskedSection). Omit for internal state. */
     companyCollection?: string | null;
     setCompanyCollection?: (id: string | null) => void;
+    /** When true, show Canvas mode entry points (requires designForge flag). */
+    designForgeEnabled?: boolean;
 }
 
 function getStatusBadgeConfig(status?: ProgressStatus) {
@@ -107,6 +109,7 @@ export function ProblemExplorer({
     showHeading = true,
     companyCollection: companyCollectionProp,
     setCompanyCollection: setCompanyCollectionProp,
+    designForgeEnabled = false,
 }: ProblemExplorerProps) {
     const [search, setSearch] = useState('');
     const [category, setCategory] = useState('All');
@@ -257,6 +260,7 @@ export function ProblemExplorer({
                                         problem={problem}
                                         locked={isProblemLocked(problem.slug)}
                                         signedIn={!!user?.id}
+                                        designForgeEnabled={designForgeEnabled}
                                         onLockedClick={setLockedProblem}
                                         onTagClick={handleTagClick}
                                     />
@@ -375,11 +379,20 @@ export function ProblemExplorer({
                                                         Unlock <Lock className="ml-2 h-4 w-4" />
                                                     </Button>
                                                 ) : (
-                                                    <Link href={`/practice/${problem.slug}`}>
-                                                        <Button size="sm" variant="ghost" className="hover:bg-primary/10 hover:text-primary font-bold rounded-full h-9 px-4 group-hover:translate-x-1 transition-all">
-                                                            {user?.id ? 'Practice' : 'Sign in to practice'} <ArrowRight className="ml-2 h-4 w-4" />
-                                                        </Button>
-                                                    </Link>
+                                                    <div className="flex items-center justify-end gap-2">
+                                                        <Link href={`/practice/${problem.slug}`}>
+                                                            <Button size="sm" variant="ghost" className="hover:bg-primary/10 hover:text-primary font-bold rounded-full h-9 px-4 group-hover:translate-x-1 transition-all">
+                                                                {user?.id ? 'Practice' : 'Sign in to practice'} <ArrowRight className="ml-2 h-4 w-4" />
+                                                            </Button>
+                                                        </Link>
+                                                        {designForgeEnabled && user?.id && (
+                                                            <Link href={`/practice/${problem.slug}?canvas=forge`}>
+                                                                <Button size="sm" variant="outline" className="rounded-full h-9 px-4 border-primary/30 text-primary">
+                                                                    Canvas
+                                                                </Button>
+                                                            </Link>
+                                                        )}
+                                                    </div>
                                                 )}
                                             </TableCell>
                                         </TableRow>

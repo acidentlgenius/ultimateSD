@@ -264,6 +264,35 @@ export async function completeSession(
   }
 }
 
+/** Persist the full forge canvas scene to the active practice session. */
+export async function saveForgeDiagramSnapshot(problemId: string, scene: unknown) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: 'Unauthorized' };
+  }
+
+  try {
+    const progress = await prisma.problemProgress.findUnique({
+      where: { userId_problemId: { userId: session.user.id, problemId } },
+      include: { activeSession: true },
+    });
+
+    if (!progress?.activeSession || progress.activeSession.status !== SessionStatus.ACTIVE) {
+      return { success: false, error: 'No active session' };
+    }
+
+    await prisma.practiceSession.update({
+      where: { id: progress.activeSession.id },
+      data: { diagramSnapshot: scene as Prisma.InputJsonValue },
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to save forge diagram snapshot:', error);
+    return { success: false, error: 'Failed to save diagram' };
+  }
+}
+
 export async function abandonSession(problemId: string) {
   const session = await auth();
   if (!session?.user?.id) {

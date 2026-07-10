@@ -21,5 +21,6 @@ describe('getFeatureHighlightPlan', () => {
   it('returns null for features intended to include the free plan (nothing to upsell)', () => {
     expect(getFeatureHighlightPlan('fresherTrack')).toBeNull();
     expect(getFeatureHighlightPlan('lifetimePlan')).toBeNull();
+    expect(getFeatureHighlightPlan('designForge')).toBeNull();
   });
 });

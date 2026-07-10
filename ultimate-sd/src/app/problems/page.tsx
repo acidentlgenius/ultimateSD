@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { auth } from '@/auth';
 import { getUserProgressMap } from '@/app/actions/progress';
+import { canAccessFeature } from '@/lib/feature-flags-server';
 import { PROBLEMS } from '@/lib/problems';
 import { SITE_NAME, SITE_URL } from '@/lib/site';
 import { ProblemWithStatus } from '@/types';
@@ -24,6 +25,10 @@ export const metadata: Metadata = {
 
 export default async function ProblemsPage() {
     const session = await auth();
+
+    const designForgeEnabled = session?.user?.id
+        ? await canAccessFeature(session.user.id, 'designForge')
+        : false;
 
     let problemsWithStatus: ProblemWithStatus[] = PROBLEMS;
     if (session?.user?.id) {
@@ -49,6 +54,7 @@ export default async function ProblemsPage() {
                 user={session?.user}
                 problems={problemsWithStatus}
                 showHeading={false}
+                designForgeEnabled={designForgeEnabled}
             />
         </div>
     );

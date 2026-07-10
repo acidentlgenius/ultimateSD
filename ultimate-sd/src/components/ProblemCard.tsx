@@ -18,11 +18,12 @@ interface ProblemCardProps {
   badge?: string;
   /** Whether the viewer has an account session. Anonymous viewers get an honest "Sign in to practice" CTA instead of "Practice". */
   signedIn?: boolean;
+  designForgeEnabled?: boolean;
   onLockedClick?: (problem: ProblemWithStatus) => void;
   onTagClick?: (tagId: string) => void;
 }
 
-export default function ProblemCard({ problem, featured, locked, badge, signedIn = true, onLockedClick, onTagClick }: ProblemCardProps) {
+export default function ProblemCard({ problem, featured, locked, badge, signedIn = true, designForgeEnabled = false, onLockedClick, onTagClick }: ProblemCardProps) {
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
       case 'Easy': return 'bg-green-500/10 text-green-600 border-green-200 dark:bg-green-500/20 dark:text-green-400 dark:border-green-500/30';
@@ -144,16 +145,27 @@ export default function ProblemCard({ problem, featured, locked, badge, signedIn
                 <span>{problem.category}</span>
               </div>
 
-              <div className={cn(
-                "flex items-center gap-1.5 text-sm font-semibold transition-all duration-300",
-                locked
-                  ? "text-amber-600"
-                  : featured
-                    ? "text-primary hover:translate-x-1"
-                    : "text-muted-foreground group-hover:text-primary group-hover:translate-x-1"
-              )}>
-                <span>{locked ? 'Unlock' : signedIn ? 'Practice' : 'Sign in to practice'}</span>
-                <ArrowRight className="h-4 w-4" />
+              <div className="flex items-center gap-3">
+                {designForgeEnabled && signedIn && !locked && (
+                  <Link
+                    href={`/practice/${problem.slug}?canvas=forge`}
+                    className="text-xs font-semibold text-primary hover:underline"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    Canvas
+                  </Link>
+                )}
+                <div className={cn(
+                  "flex items-center gap-1.5 text-sm font-semibold transition-all duration-300",
+                  locked
+                    ? "text-amber-600"
+                    : featured
+                      ? "text-primary hover:translate-x-1"
+                      : "text-muted-foreground group-hover:text-primary group-hover:translate-x-1"
+                )}>
+                  <span>{locked ? 'Unlock' : signedIn ? 'Practice' : 'Sign in to practice'}</span>
+                  <ArrowRight className="h-4 w-4" />
+                </div>
               </div>
             </div>
           </div>

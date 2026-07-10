@@ -48,6 +48,7 @@ export const FEATURE_KEYS = [
   'aiProbe',
   'lifetimePlan',
   'voiceInterview',
+  'designForge',
 ] as const;
 
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
@@ -62,6 +63,7 @@ export type FeatureKey = (typeof FEATURE_KEYS)[number];
  *   aiProbe        → ai (funded); BYOK path handled in feature code
  *   lifetimePlan   → free, platform, lifetime, ai (pricing page visibility)
  *   voiceInterview → ai (funded); BYOK on platform/lifetime in feature code
+ *   designForge    → free, platform, lifetime, ai (canvas-first practice UI)
  */
 export const FEATURE_SEED_DEFAULTS: Record<FeatureKey, PlanType[]> = {
   fresherTrack: [],
@@ -69,6 +71,7 @@ export const FEATURE_SEED_DEFAULTS: Record<FeatureKey, PlanType[]> = {
   aiProbe: [],
   lifetimePlan: [],
   voiceInterview: [],
+  designForge: [],
 };
 
 export const FEATURE_INTENDED_PLANS: Record<FeatureKey, PlanType[]> = {
@@ -77,4 +80,5 @@ export const FEATURE_INTENDED_PLANS: Record<FeatureKey, PlanType[]> = {
   aiProbe: ['ai'],
   lifetimePlan: ['free', 'platform', 'lifetime', 'ai'],
   voiceInterview: ['ai'],
+  designForge: ['free', 'platform', 'lifetime', 'ai'],
 };

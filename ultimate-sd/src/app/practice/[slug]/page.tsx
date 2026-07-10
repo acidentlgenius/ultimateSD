@@ -3,6 +3,7 @@ import { Metadata } from 'next';
 import { PROBLEMS } from '@/lib/problems';
 import { getPracticeSteps } from '@/lib/interview-lite-steps';
 import PracticeUI from '@/components/PracticeUI';
+import ForgePracticeUI from '@/components/forge/ForgePracticeUI';
 import { FeatureUpsell } from '@/components/FeatureUpsell';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
@@ -34,10 +35,10 @@ export default async function PracticePage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ interview?: string }>;
+  searchParams: Promise<{ interview?: string; canvas?: string }>;
 }) {
   const { slug } = await params;
-  const { interview } = await searchParams;
+  const { interview, canvas } = await searchParams;
   const problemMetadata = PROBLEMS.find(p => p.slug === slug);
 
   if (!problemMetadata) {
@@ -64,6 +65,21 @@ export default async function PracticePage({
   const interviewAllowed = await canAccessFeature(session.user.id, 'interviewMode');
   const probeAllowed = await canAccessFeature(session.user.id, 'aiProbe');
   const voiceAllowed = await canAccessFeature(session.user.id, 'voiceInterview');
+  const designForgeAllowed = await canAccessFeature(session.user.id, 'designForge');
+
+  const wantsForgeCanvas = canvas === 'forge';
+
+  if (wantsForgeCanvas && !designForgeAllowed) {
+    return (
+      <FeatureUpsell
+        feature="designForge"
+        continueHref={`/practice/${slug}`}
+        continueLabel="Continue with classic practice UI"
+      />
+    );
+  }
+
+  const useForgeUI = designForgeAllowed && wantsForgeCanvas;
   const requestedVariant = parseInterviewParam(interview);
   if (requestedVariant && !interviewAllowed) {
     // Feature not launched for this user: pitch it instead of silently stripping the param.
@@ -114,6 +130,18 @@ export default async function PracticePage({
     : null;
 
   const voiceEnabled = voiceAllowed;
+
+  if (useForgeUI && !interviewConfig) {
+    return (
+      <ForgePracticeUI
+        problem={problem}
+        stepMode={stepMode}
+        existingProgress={progressForUI}
+        serverDiagramSnapshot={existingProgress?.activeSession?.diagramSnapshot}
+        designForgeAllowed={designForgeAllowed}
+      />
+    );
+  }
 
   return (
     <PracticeUI

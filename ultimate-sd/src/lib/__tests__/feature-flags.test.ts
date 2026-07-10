@@ -3,13 +3,14 @@ import { FEATURE_KEYS, FEATURE_SEED_DEFAULTS, PLAN_PRICES_INR, PLAN_PRICES_PAISE
 import { resolveFeatureAccess } from '@/lib/feature-flags';
 
 describe('feature seed defaults', () => {
-  it('defines all five feature keys', () => {
+  it('defines all feature keys', () => {
     expect(FEATURE_KEYS).toEqual([
       'fresherTrack',
       'interviewMode',
       'aiProbe',
       'lifetimePlan',
       'voiceInterview',
+      'designForge',
     ]);
   });
 
