@@ -8,6 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import { ArrowRight, Building2, TrendingUp, CheckCircle, Clock, RotateCcw, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProblemTagList } from '@/components/ProblemTagBadge';
+import { captureClientEvent } from '@/lib/analytics-client';
 
 interface ProblemCardProps {
   problem: ProblemWithStatus;
@@ -189,6 +190,7 @@ export default function ProblemCard({ problem, featured, locked, badge, signedIn
       href={`/practice/${problem.slug}`}
       aria-label={signedIn ? `Practice ${problem.title}` : `Sign in to practice ${problem.title}`}
       className="block group h-full relative"
+      onClick={() => captureClientEvent('problem card clicked', { slug: problem.slug, signedIn, featured: !!featured })}
     >
       <div className={cn(
         "absolute -inset-0.5 rounded-2xl bg-gradient-to-r from-primary/30 to-purple-600/30 opacity-0 group-hover:opacity-100 blur transition-all duration-500",

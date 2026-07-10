@@ -5,6 +5,7 @@ import { ArrowRight, Sparkles, Zap } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import type { LaunchOfferPublicStats } from "@/lib/launch-offer";
+import { captureClientEvent } from "@/lib/analytics-client";
 import { LaunchOfferBanner } from "@/components/landing/LaunchOfferBanner";
 
 interface HeroProps {
@@ -65,12 +66,12 @@ export function Hero({ launchStats, showFresherPath = false }: HeroProps) {
                     className="flex flex-col sm:flex-row items-center justify-center gap-4"
                 >
                     <Button size="lg" className="h-14 px-8 text-lg rounded-full shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all hover:scale-105" asChild>
-                        <Link href="/practice/design-tinyurl">
+                        <Link href="/practice/design-tinyurl" onClick={() => captureClientEvent('landing cta clicked', { cta: 'start-solving' })}>
                             Start Solving <ArrowRight className="ml-2 h-5 w-5" />
                         </Link>
                     </Button>
                     <Button size="lg" variant="outline" className="h-14 px-8 text-lg rounded-full hover:bg-secondary/50 backdrop-blur-sm" asChild>
-                        <Link href="/draw">
+                        <Link href="/draw" onClick={() => captureClientEvent('landing cta clicked', { cta: 'free-canvas' })}>
                             <span className="mr-2">🎨</span> Free Canvas
                         </Link>
                     </Button>

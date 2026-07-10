@@ -25,6 +25,33 @@ export async function mockAiEvaluate(
   });
 }
 
+/**
+ * Simulate AI-provider failures with the same response shape the real route
+ * returns ({ error, message } + real status). fetchWithRetry surfaces
+ * `message` to the user via HttpError.serverMessage.
+ */
+export async function mockAiEvaluateFailure(
+  page: Page,
+  status: 403 | 429 | 500 | 502,
+  message: string,
+) {
+  await page.route('**/api/ai/evaluate', async (route) => {
+    await route.fulfill({
+      status,
+      contentType: 'application/json',
+      body: JSON.stringify({ error: 'ai_unavailable', message }),
+    });
+  });
+}
+
+/** Hang the evaluate route past the client's 15s fetch timeout. */
+export async function mockAiEvaluateTimeout(page: Page) {
+  await page.route('**/api/ai/evaluate', async (route) => {
+    await new Promise((r) => setTimeout(r, 20_000));
+    await route.abort('timedout').catch(() => undefined);
+  });
+}
+
 export async function mockAiRoutes(page: Page) {
   await mockAiEvaluate(page);
 

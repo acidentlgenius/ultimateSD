@@ -701,10 +701,26 @@ export default function StepByStepChat({ problem, probeEnabled = false, sessionI
           });
         }
 
-        if (activeSessionId && userAnswer.trim()) {
+        // A fast submit can beat PracticeUI's session handle (sessionInit) —
+        // never silently drop the user's work: the server action is
+        // idempotent, so resolving the session here as a fallback is safe.
+        let sessionIdForRecord = activeSessionId;
+        if (!sessionIdForRecord && session?.user) {
+          try {
+            const started = await startPracticeSession(problem.id);
+            if (started.success && started.sessionId) {
+              sessionIdForRecord = started.sessionId;
+              setActiveSessionId(started.sessionId);
+            }
+          } catch (error) {
+            console.error('Failed to resolve session for submission:', error);
+          }
+        }
+
+        if (sessionIdForRecord && userAnswer.trim()) {
           try {
             await recordStepSubmission({
-              sessionId: activeSessionId,
+              sessionId: sessionIdForRecord,
               problemId: problem.id,
               stepId: currentStepKey,
               phase: effectivePhase,
@@ -727,7 +743,7 @@ export default function StepByStepChat({ problem, probeEnabled = false, sessionI
             ? completedSteps.size
             : completedSteps.size + 1;
 
-          if (newCompletedSize >= totalStepsCount && activeSessionId) {
+          if (newCompletedSize >= totalStepsCount && sessionIdForRecord) {
             try {
               let snapshot = resolveBestDiagramSnapshot(diagramStepKeys, newSavedData);
               if (snapshot?.scene && !snapshot.imageData) {
@@ -747,7 +763,7 @@ export default function StepByStepChat({ problem, probeEnabled = false, sessionI
                 };
               }
               await completeSession(
-                activeSessionId,
+                sessionIdForRecord,
                 Math.round(data.feedback.score),
                 snapshot ?? undefined
               );

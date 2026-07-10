@@ -166,21 +166,23 @@ Only 4/86 problems get expert-grounded evaluation today.
 
 ## Phase 4 — Keep it world-class (safety net + polish, ongoing)
 
-### 4.1 Test the paths users actually hit 🟨 HIGH
-- [ ] E2E: full anonymous funnel (land → free problem → guest session → signup → session migrated)
-- [ ] E2E: AI failure matrix (403/429/500/timeout/malformed JSON) — today `ai-mocks.ts` only mocks success
-- [ ] E2E: persistence suite (refresh mid-session, skip-then-refresh, diagram clear/restore, completion flow)
-- [ ] Replace brittle text selectors with `data-testid` (button renames broke e2e 3× in recent history)
-- [ ] CI: content validator + coverage script from 3.1
+### 4.1 Test the paths users actually hit 🟨 HIGH — ✅ DONE 2026-07-09
+- [x] E2E `guest-funnel.spec.ts`: landing (Start Here track, honest CTAs, hero link) → free problem → login gate with preserved callbackUrl → lands back on the problem (adjusted for no-guest-sessions decision)
+- [x] E2E `ai-failures.spec.ts`: 403 / 429 / 5xx / network-failure matrix — asserts the amber error banner with server copy, no fake score, and that in-banner retry succeeds once the provider recovers
+- [x] E2E `persistence.spec.ts`: refresh mid-session resumes after the last completed step; skip-then-refresh resumes at the furthest position; diagram scene survives refresh + step-nav round trip
+- [x] **The suite immediately paid for itself**: it caught a real regression from the Phase 2 session-dedup change — a fast submit could beat PracticeUI's `sessionInit` handle and the submission was silently never persisted. Fixed with an idempotent in-submit session fallback in `StepByStepChat`.
+- [x] New specs use `data-testid` anchors (`evaluation-error-banner`, `start-here-cta`, `diagram-save-state`)
+- [x] CI: content validator wired into the quality gate (done in 3.1)
+- All 10 new tests + practice/probe regression suites green locally (`PORT=3901`, workers=1)
 
-### 4.2 Instrument the funnel 🟦 MEDIUM
-- [ ] PostHog events: landing CTA click, problem opened, session started, first answer submitted, first feedback received, signup, D1 return
-- [ ] Funnel dashboard + drop-off alerts; error-rate tracking on AI endpoints
-- [ ] Use most-practiced-problem data to order Phase 3 content batches
+### 4.2 Instrument the funnel 🟦 MEDIUM — ✅ client events DONE 2026-07-09
+- [x] Client-side funnel events via `src/lib/analytics-client.ts` (dependency-free PostHog capture, sendBeacon, fire-and-forget): `landing cta clicked`, `start here clicked` (CTA + per-item), `problem card clicked` (with signedIn), `practice tour completed/skipped`. Server side already captures signup, session started, evaluation.
+- [ ] Funnel dashboard + drop-off alerts in PostHog (configure in the PostHog UI)
+- [ ] Use most-practiced-problem data to prioritize expert solutions/steps authoring
 
 ### 4.3 Polish backlog 🟦 LOW (schedule after the above)
 - [ ] Doc-tracked wishlist: hints system, per-step timing, drag-drop diagram load, keyboard shortcuts, replace-diagram warning
-- [ ] Repo hygiene: archive the ~20 stale status/*.md docs at `ultimate-sd/` root into `docs/archive/`; delete stale root `plan.md` (an old email-fix note)
+- [x] Repo hygiene DONE 2026-07-09: 22 stale status docs archived to `ultimate-sd/docs/archive/`, stale root `plan.md` deleted (root keeps README, AGENTS, DESIGN_SYSTEM, HELP_ASSISTANT_DOCS, REVENUE_LAUNCH_PLAN, VERCEL_DEPLOY)
 
 ---
 

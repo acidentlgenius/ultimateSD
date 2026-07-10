@@ -38,7 +38,7 @@ export default defineConfig({
   projects: [
     {
       name: 'guest',
-      testMatch: /(smoke|lifetime-pricing)\.spec\.ts/,
+      testMatch: /(smoke|lifetime-pricing|guest-funnel)\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
     {
@@ -48,7 +48,7 @@ export default defineConfig({
     },
     {
       name: 'authenticated',
-      testMatch: /(auth|practice|roadmap|fresher-track|flag-gating|interview-mode|probe|voice)\.spec\.ts/,
+      testMatch: /(auth|practice|roadmap|fresher-track|flag-gating|interview-mode|probe|voice|ai-failures|persistence)\.spec\.ts/,
       dependencies: ['setup'],
       use: {
         ...devices['Desktop Chrome'],

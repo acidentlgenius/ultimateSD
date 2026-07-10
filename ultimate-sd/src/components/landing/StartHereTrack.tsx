@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Check, ArrowRight, Sparkles } from 'lucide-react';
 import { getStartHereProblems } from '@/lib/start-here';
 import { ProblemWithStatus } from '@/types';
+import { captureClientEvent } from '@/lib/analytics-client';
 
 interface StartHereTrackProps {
     problems?: ProblemWithStatus[];
@@ -35,6 +36,7 @@ export function StartHereTrack({ problems }: StartHereTrackProps) {
                             href={`/practice/${firstIncomplete.slug}`}
                             className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow hover:bg-primary/90 transition-colors shrink-0"
                             data-testid="start-here-cta"
+                            onClick={() => captureClientEvent('start here clicked', { slug: firstIncomplete.slug, source: 'track-cta' })}
                         >
                             {statusBySlug.size > 0 && firstIncomplete !== track[0] ? 'Continue the track' : 'Start the track'}
                             <ArrowRight className="w-4 h-4" />
@@ -49,6 +51,7 @@ export function StartHereTrack({ problems }: StartHereTrackProps) {
                             <li key={problem.slug}>
                                 <Link
                                     href={`/practice/${problem.slug}`}
+                                    onClick={() => captureClientEvent('start here clicked', { slug: problem.slug, source: 'track-item', position: i + 1 })}
                                     className={`
                                         group flex flex-col gap-2 rounded-xl border p-4 h-full transition-all
                                         ${completed

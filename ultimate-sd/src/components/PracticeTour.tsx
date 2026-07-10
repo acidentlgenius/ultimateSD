@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Button } from './ui/button';
 import { X, ArrowRight, ArrowLeft } from 'lucide-react';
+import { captureClientEvent } from '@/lib/analytics-client';
 
 const TOUR_DONE_KEY = 'sd_practice_tour_done_v1';
 
@@ -99,6 +100,10 @@ export function PracticeTour() {
         try {
             localStorage.setItem(TOUR_DONE_KEY, '1');
         } catch { /* ignore */ }
+        captureClientEvent(
+            stepIndex === TOUR_STEPS.length - 1 ? 'practice tour completed' : 'practice tour skipped',
+            { lastStep: stepIndex + 1, totalSteps: TOUR_STEPS.length }
+        );
         setActive(false);
         setStepIndex(0);
     };
