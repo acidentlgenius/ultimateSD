@@ -13,6 +13,7 @@
     "start": "next start",
     "lint": "eslint",
     "validate:problems": "npx tsx scripts/validate-problems.ts",
+    "content:tracker": "npx tsx scripts/content-coverage.ts --md --summary",
     "test": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",

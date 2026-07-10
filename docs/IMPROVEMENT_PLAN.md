@@ -134,6 +134,7 @@ Content upgrades ship in slug-batches so every batch is releasable. Priority ord
 - [x] `docs/CONTENT_STANDARD.md` authored: context ≥300 chars (scenario/scale/twist), ≥3 full FRs, ≥3 quantified NFRs, style rules, batch order
 - [x] `validate:problems` added to the CI quality gate (hard-fail — justified because all batches landed same day: 86/86 pass)
 - [x] `scripts/content-coverage.ts` prints the per-problem completeness table + summary
+- [x] 2026-07-10: generated tracker `docs/PROBLEM_TRACKER.md` (`pnpm content:tracker`) — per-problem tier-aware definition of done + work order; `problem-improvement` skill added (the six-dimension roadmap orchestrating problem-content / problem-steps / expert-solution)
 
 ### 3.2 Contexts + NFRs for all 86 problems ⬛ CRITICAL for AI quality
 `context` is the main grounding for interviewer, evaluator, and debrief; all 86 are one-liners.
@@ -144,6 +145,7 @@ Content upgrades ship in slug-batches so every batch is releasable. Priority ord
 - [ ] Ongoing: spot-check more problems as sessions accumulate; refine any weak generated entries
 
 ### 3.3 Bespoke steps for the 39 generic-template problems 🟨 HIGH
+- [x] 2026-07-10: `design-parking-lot` + `design-elevator-system` — full 10-step bespoke journeys (incl. bespoke tradeoffs/scalability so no generic tail leaks via `resolvePhaseSteps`), each with a signature interactive widget (`parking-gate-race`, `elevator-dispatch-sim`) where the learner causes the failure mode by hand; all 5 Easy problems now ✅ in `docs/PROBLEM_TRACKER.md`
 - [ ] Triage the 39: write bespoke steps for real interview staples (recommendation-engine, file-storage, video-call, logging, data-lake/warehouse/ETL, HA/API-gateway/event-driven, …)
 - [ ] Consider retiring or demoting speculative titles that dilute the library (quantum-computing, brain-computer-interface, metaverse, space-debris) — mark "experimental" or cut
 - [ ] Improve `getGenericFallbackSteps` for whatever legitimately remains generic (inject the problem's FRs/NFRs into the template)
@@ -151,11 +153,13 @@ Content upgrades ship in slug-batches so every batch is releasable. Priority ord
 ### 3.4 Expert solutions — the evaluation-quality lever 🟨 HIGH
 Only 4/86 problems get expert-grounded evaluation today.
 
+- [x] 2026-07-10: `design-parking-lot` + `design-elevator-system` expert solutions authored (binding verified) — 7/86 total
 - [ ] Target: expert solutions for the top 30 problems (free + Start-here + Core Services first)
 - [ ] Solution template: architecture, data model, scale math, trade-offs, common mistakes (mirror the existing 4)
 - [ ] Verify each new solution binds by slug and measurably changes evaluator output (A/B one problem before/after)
 
 ### 3.5 Guides + duplicates 🟦 MEDIUM
+- [x] 2026-07-10: `design-parking-lot` + `design-elevator-system` guides authored (13-min reads, tinyurl structure, verified rendering live) — 8/86 total; Start Here now only missing the typeahead guide
 - [ ] Guides for the "Start here" track and top-10 problems (6/86 today; only TinyURL has both guide *and* solution — align the two sets)
 - [ ] Resolve near-duplicate clusters (feed/reco, search, cache, resilience): differentiate scope explicitly or merge
 - [ ] Rebalance categories ("Advanced" = 33 while "Edge Cases" = 5) and audit all difficulty ratings against the new standard

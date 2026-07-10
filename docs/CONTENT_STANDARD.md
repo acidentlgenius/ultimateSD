@@ -37,6 +37,12 @@ Medium = one hard sub-problem; Hard = multiple interacting hard sub-problems at 
   (free + Start Here + Core Services). Template: architecture components, data model, scale math,
   trade-offs, common mistakes (mirror `design-tinyurl`).
 - **Guide** (`src/content/guides`): required for the Start Here track and top-10 most practiced.
+- **Signature interactive moment** (`src/components/widgets/` + `widgetId` on a step): required for
+  the Start Here track. The bar is not "a visualization" — it is *let the learner cause the failure
+  mode the problem exists to solve, with their own hands, before designing against it* (interleave
+  the race, melt down the queue, watch their manual strategy lose to the right algorithm). One
+  widget per problem, attached to the step that teaches that concept. Measured by the tracker's
+  Widget column (`pnpm content:tracker`).
 
 ## Voice and style
 

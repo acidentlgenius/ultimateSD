@@ -37,6 +37,12 @@ Rules that keep evaluation working:
 - Diagram canvas appears only for steps where `isDiagramSubStep(subStep)` is true
   (`high-level`, `data-flow`) — every problem's journey should include at least one.
 - Every journey must resolve both an HLD and an LLD phase or `validate:problems` fails.
+- Custom journeys merge OVER the generic fallback per-phase (`resolvePhaseSteps` in
+  `src/lib/step-journey.ts` is `{...fallback, ...custom}`): any fallback phase you do NOT define
+  (`tradeoffs`, `scalability`) leaks into the rendered journey as generic template steps at the
+  end. Author bespoke `tradeoffs`/`scalability` steps too (1 each is enough), or your handcrafted
+  journey ships with a bland generic tail. Verify the rendered step count in the sidebar, not
+  just your PROBLEM_STEPS entry.
 - `inputType: 'list'` for enumerations (FRs), `'schema'` only for data-model steps,
   `'textarea'` for everything else.
 

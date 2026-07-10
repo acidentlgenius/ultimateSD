@@ -1683,6 +1683,195 @@ const LRU_CACHE_STEPS: Record<string, StepData[]> = {
 };
 
 
+const PARKING_LOT_STEPS: Record<string, StepData[]> = {
+  requirements: [
+    {
+      phase: 'Requirements',
+      subStep: 'functional',
+      title: 'Functional Requirements',
+      prompt: 'Follow one car through the facility: 4 levels, ~2,000 spots (car, motorcycle, truck), plate cameras at 6 gates. List the core features from entry to exit — what must happen at the gate, while parked, and on the way out? Include what operators need.',
+      inputType: 'list',
+      placeholder: 'e.g., Camera reads plate at entry -> system assigns nearest free spot matching vehicle size...'
+    },
+    {
+      phase: 'Requirements',
+      subStep: 'non-functional',
+      title: 'Scale & Constraints',
+      prompt: 'Peak flow is ~10 vehicles/minute at each of 6 gates — about 1 spot assignment per second facility-wide, each decided in under 2 seconds. Work out the numbers, then pick the ONE non-functional requirement that will shape your design the most (no double-allocation? the 10-minute payment outage? occupancy accurate within 1 spot?) and say why.',
+      inputType: 'textarea',
+      placeholder: 'e.g., 6 gates x 10/min = 1 assignment/sec; only ~2,000 spots so data is tiny — the hard part is...'
+    }
+  ],
+  hld: [
+    {
+      phase: 'HLD',
+      subStep: 'api',
+      title: 'Gate API & Events',
+      prompt: 'Define the interface between a gate and your backend. When the camera reads a plate at entry, what request is sent and what must come back within 2 seconds? What does the exit gate send, and what does it get back (fee, gate-open decision)?',
+      inputType: 'textarea',
+      placeholder: 'e.g., POST /entry { gateId, plate, vehicleType } -> { spotId, level } ...'
+    },
+    {
+      phase: 'HLD',
+      subStep: 'high-level',
+      title: 'High-Level Architecture',
+      prompt: 'Draw the system: 6 gate controllers, the spot-allocation service, pricing/billing, the occupancy view that feeds gate displays and the operator dashboard, and the external payment provider. Show which component owns the single source of truth for spot state.',
+      inputType: 'textarea',
+      placeholder: 'e.g., Gate controller -> Allocation service -> Spot DB; Occupancy service pushes counts to displays...'
+    },
+    {
+      phase: 'HLD',
+      subStep: 'database',
+      title: 'Data Model',
+      prompt: 'Design the schema for the core entities: levels, spots (size type + status), vehicles, and the parking session that records entry/exit times for fee computation. Where does per-level pricing live so operators can change it?',
+      inputType: 'schema',
+      placeholder: 'e.g., Spot(id, level_id, size, status), ParkingSession(id, plate, spot_id, entered_at, exited_at, fee)...'
+    }
+  ],
+  lld: [
+    {
+      phase: 'LLD',
+      subStep: 'algorithms',
+      title: 'Nearest-Spot Allocation',
+      prompt: 'How do you find the nearest free spot matching a vehicle\'s size in well under 2 seconds? Describe the data structure (e.g., a free list or min-heap per level per size type) and your matching rules — can a motorcycle take a car spot when motorcycle spots run out?',
+      inputType: 'textarea',
+      placeholder: 'e.g., Keep a min-heap of free spots per (level, size) ordered by distance from each gate...'
+    },
+    {
+      phase: 'LLD',
+      subStep: 'deep-dive',
+      title: 'Deep Dive: No Double-Allocation',
+      prompt: 'Two gates read plates in the same second and your algorithm picks the same "nearest" spot for both. The NFR says no double-allocation, ever, with 6 gates running concurrently. In the widget, play the database yourself: interleave gate A and gate B\'s read/pick/write operations until you cause a double-booking, then watch naive vs atomic mode under all 6 gates. Now explain your mechanism (DB transaction with SELECT FOR UPDATE, optimistic version check, or a single-writer allocator) — and what the atomic mode costs you.',
+      inputType: 'textarea',
+      placeholder: 'e.g., UPDATE spots SET status=\'occupied\' WHERE id=? AND status=\'free\' — if 0 rows updated, retry with next spot...',
+      widgetId: 'parking-gate-race'
+    },
+    {
+      phase: 'LLD',
+      subStep: 'data-flow',
+      title: 'Exit Flow & Payment Outage',
+      prompt: 'Trace the exit flow step by step: camera reads the plate, session lookup, fee computed from duration and vehicle type, payment, gate opens, spot freed. Now the payment provider goes down for up to 10 minutes — gates must keep moving. What changes in your flow, and how do occupancy counts stay accurate within 1 spot?',
+      inputType: 'textarea',
+      placeholder: 'e.g., 1. Exit camera reads plate 2. Lookup open session 3. Fee = duration x rate... If payments down: open gate, queue the charge...'
+    }
+  ],
+  tradeoffs: [
+    {
+      phase: 'Trade-offs',
+      subStep: 'decisions',
+      title: 'Key Decisions & Trade-offs',
+      prompt: 'Defend your three biggest calls: (1) atomic conditional claim vs per-level locks vs a single-writer allocator for spot assignment, (2) how you pick "nearest" without turning every claim into a search, (3) fail-open gates with queued charges vs fail-closed during the payment outage. For each, state the strongest argument FOR the alternative you rejected.',
+      inputType: 'list',
+      placeholder: 'e.g., Chose conditional UPDATE over per-level locks — locks serialize unrelated gates; but locks would give simpler retry logic...'
+    }
+  ],
+  scalability: [
+    {
+      phase: 'Scalability',
+      subStep: 'scaling',
+      title: 'From One Lot to Fifty',
+      prompt: 'The operator wins a city contract: 50 lots, one system, a live city-wide occupancy dashboard. What changes — per-lot autonomy vs central control, how occupancy aggregates, what happens to a lot when the central system is unreachable? And name what should NOT change: at ~1 claim/sec per lot, which parts of your design were never a scale problem?',
+      inputType: 'textarea',
+      placeholder: 'e.g., Each lot stays autonomous (claims stay local); occupancy events stream to a central aggregator; a lot offline keeps operating and back-fills...'
+    }
+  ]
+};
+
+const ELEVATOR_STEPS: Record<string, StepData[]> = {
+  requirements: [
+    {
+      phase: 'Requirements',
+      subStep: 'functional',
+      title: 'Functional Requirements',
+      prompt: 'A bank of 8 elevators serves a 40-floor tower, ~10,000 trips/day. List the core features. Be precise about the two kinds of requests — hall calls (up/down button on a floor) vs car calls (target floor pressed inside a car) — plus fault handling and service modes (fire-service, maintenance).',
+      inputType: 'list',
+      placeholder: 'e.g., Accept hall call (floor 12, down) -> dispatcher assigns a car...'
+    },
+    {
+      phase: 'Requirements',
+      subStep: 'non-functional',
+      title: 'Scale & Constraints',
+      prompt: 'Morning rush concentrates traffic lobby-to-upper-floors; lunch reverses it. Targets: average wait under 30 seconds at peak, dispatch decision in under 100ms, and safety invariants that a scheduler bug can never violate (fail closed). Which of these is a hard invariant vs an optimization goal, and how does that split shape your design?',
+      inputType: 'textarea',
+      placeholder: 'e.g., Safety is absolute (never move with doors open); 30s wait is an optimization target the scheduler tunes for...'
+    }
+  ],
+  hld: [
+    {
+      phase: 'HLD',
+      subStep: 'api',
+      title: 'Calls & Car Telemetry',
+      prompt: 'Define the messages flowing through the system: what does a hall panel send when someone presses "down" on floor 12? What does a car controller report (position, direction, door state, load) and how often? What command does the dispatcher send to a car?',
+      inputType: 'textarea',
+      placeholder: 'e.g., hallCall { floor: 12, direction: down } -> dispatcher; car telemetry { carId, floor, direction, doorState, loadKg }...'
+    },
+    {
+      phase: 'HLD',
+      subStep: 'high-level',
+      title: 'High-Level Architecture',
+      prompt: 'Draw the control system: hall call panels, the central dispatcher, 8 per-car controllers, and the safety interlocks. The NFR says scheduler bugs can never violate safety and the system must survive the dispatcher itself failing — so decide carefully WHERE safety enforcement lives and what cars do when the dispatcher is dead.',
+      inputType: 'textarea',
+      placeholder: 'e.g., Hall panels -> Dispatcher -> Car controllers; each car controller enforces its own interlocks independently...'
+    },
+    {
+      phase: 'HLD',
+      subStep: 'database',
+      title: 'State Model',
+      prompt: 'Design the data model the dispatcher works with: a Car (current floor, direction, door state, load, service mode), pending HallCalls (floor + direction + wait time), and each car\'s CarCall queue. What fields does the dispatcher need to compute a good assignment in under 100ms?',
+      inputType: 'schema',
+      placeholder: 'e.g., Car(id, floor, direction, doorState, loadKg, mode, stops[]), HallCall(floor, direction, createdAt, assignedCar)...'
+    }
+  ],
+  lld: [
+    {
+      phase: 'LLD',
+      subStep: 'data-flow',
+      title: 'Single-Car State Machine',
+      prompt: 'Diagram the state machine of one car: Idle, MovingUp, MovingDown, DoorsOpening, DoorsOpen, DoorsClosing, Overloaded, Fault. Draw the transitions — and mark the forbidden ones the interlocks must block no matter what the dispatcher says (moving with doors open, closing doors while overloaded).',
+      inputType: 'textarea',
+      placeholder: 'e.g., Idle -> MovingUp (on assignment); DoorsOpen -> MovingUp is FORBIDDEN — doors must reach DoorsClosed first...'
+    },
+    {
+      phase: 'LLD',
+      subStep: 'algorithms',
+      title: 'Stop Order: SCAN/LOOK vs FCFS',
+      prompt: 'A car has stops queued at floors 5, 30, and 8 while at floor 12 heading up. Compare FCFS (serve in arrival order) vs SCAN/LOOK (keep going one direction, serve stops along the way, then reverse). Which meets the 30-second average wait, and how does LOOK prevent a rider to floor 38 from being starved?',
+      inputType: 'textarea',
+      placeholder: 'e.g., FCFS zig-zags: 12->5->30->8 wastes travel; LOOK serves 30 on the way up, then 8 and 5 coming down...'
+    },
+    {
+      phase: 'LLD',
+      subStep: 'deep-dive',
+      title: 'Deep Dive: Dispatching at Morning Rush',
+      prompt: 'It\'s 8:55am and the lobby fires hall calls every few seconds while all 8 cars head upstairs. In the widget, try dispatching manually during morning rush and watch your p95 wait time — then let FCFS and SCAN/LOOK take over and compare. Now design the real thing: how does the dispatcher pick a car in under 100ms — nearest car, lowest estimated-time-to-serve, or lobby zoning (park idle cars at the lobby)? And when a car faults mid-trip, how do its pending calls get reassigned without blowing the 30-second wait target?',
+      inputType: 'textarea',
+      placeholder: 'e.g., Score each car by ETA to the call floor + committed stops; during up-peak, send idle cars back to the lobby; on fault, requeue its hall calls...',
+      widgetId: 'elevator-dispatch-sim'
+    }
+  ],
+  tradeoffs: [
+    {
+      phase: 'Trade-offs',
+      subStep: 'decisions',
+      title: 'Key Decisions & Trade-offs',
+      prompt: 'Defend your three biggest calls: (1) a central dispatcher vs cars self-scheduling, (2) safety interlocks enforced in per-car controllers vs in the dispatcher, (3) LOOK vs FCFS for stop ordering. For each, state the strongest argument FOR the alternative you rejected — including why a central dispatcher is worth its single-point-of-failure risk.',
+      inputType: 'list',
+      placeholder: 'e.g., Central dispatcher sees all 8 cars so assignments are globally good — but it needs a hot standby and cars must degrade to self-scheduling...'
+    }
+  ],
+  scalability: [
+    {
+      phase: 'Scalability',
+      subStep: 'scaling',
+      title: 'Taller Tower, Earlier Warnings',
+      prompt: 'The tower doubles to 80 floors with a sky-lobby at 40. How does dispatching change — zoning, express cars, sky-lobby transfers — and what in your 8-car design breaks first? Then operations: which three metrics warn you the bank is degrading BEFORE riders complain (think p95 wait by floor, calls reassigned per hour, door-cycle anomalies)?',
+      inputType: 'textarea',
+      placeholder: 'e.g., Split into low-rise/high-rise zones with express cars to the sky-lobby; watch p95 hall-call wait per zone, reassignment rate, door faults per car...'
+    }
+  ]
+};
+
+
 export const GENERIC_STEPS: Record<string, StepData[]> = {
   requirements: [
     {
@@ -1780,6 +1969,8 @@ export const PROBLEM_STEPS: Record<string, Record<string, StepData[]>> = {
   'design-flash-sale-system': FLASH_SALE_STEPS,
   'design-payment-system': PAYMENT_STEPS,
   'design-lru-cache': LRU_CACHE_STEPS,
+  'design-parking-lot': PARKING_LOT_STEPS,
+  'design-elevator-system': ELEVATOR_STEPS,
 };
 
 export function getStepsForProblem(slug: string): Record<string, StepData[]> | undefined {

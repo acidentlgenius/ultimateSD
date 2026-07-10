@@ -37,13 +37,13 @@ describe('getPracticeSteps', () => {
     ]);
   });
 
-  it('returns the OOD generic template for oop-design tagged problems with no custom steps, regardless of difficulty', () => {
+  it('bespoke curricula outrank the OOD generic template (parking lot, elevator)', () => {
     const parkingLot = getPracticeSteps('design-parking-lot', 'Easy');
-    expect(parkingLot.steps).toBe(GENERIC_OOD_PHASE_STEPS);
-    expect(parkingLot.mode).toBe('full');
+    expect(parkingLot.mode).toBe('custom');
+    expect(parkingLot.steps).not.toBe(GENERIC_OOD_PHASE_STEPS);
 
-    const elevator = getPracticeSteps('design-elevator-system', 'Medium');
-    expect(elevator.steps).toBe(GENERIC_OOD_PHASE_STEPS);
-    expect(elevator.mode).toBe('full');
+    const elevator = getPracticeSteps('design-elevator-system', 'Easy');
+    expect(elevator.mode).toBe('custom');
+    expect(elevator.steps).not.toBe(GENERIC_OOD_PHASE_STEPS);
   });
 });

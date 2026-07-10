@@ -54,4 +54,6 @@ export const WIDGETS: Record<string, React.ComponentType> = {
   'flash-sale-demo': dynamic(() => import('./FlashSaleDemo'), { loading: () => <WidgetLoader /> }),
   'payment-ledger': dynamic(() => import('./PaymentLedger'), { loading: () => <WidgetLoader /> }),
   'bloom-filter-viz': dynamic(() => import('./BloomFilterViz'), { loading: () => <WidgetLoader /> }),
+  'parking-gate-race': dynamic(() => import('./ParkingGateRace'), { loading: () => <WidgetLoader /> }),
+  'elevator-dispatch-sim': dynamic(() => import('./ElevatorDispatchSim'), { loading: () => <WidgetLoader /> }),
 };
