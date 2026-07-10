@@ -1056,6 +1056,7 @@ return (
                             onClick={commitEditingListItem}
                             className="h-6 w-6 p-0"
                             aria-label="Save item"
+                            title="Save item"
                           >
                             <Check className="h-4 w-4" />
                           </Button>
@@ -1066,6 +1067,7 @@ return (
                             onClick={() => startEditingListItem(index)}
                             className="h-6 w-6 p-0"
                             aria-label="Edit item"
+                            title="Edit item"
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
@@ -1076,6 +1078,7 @@ return (
                           onClick={() => removeListItem(index)}
                           className="h-6 w-6 p-0"
                           aria-label="Remove item"
+                          title="Remove item"
                         >
                           <X className="h-4 w-4" />
                         </Button>

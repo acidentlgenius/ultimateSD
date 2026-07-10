@@ -102,7 +102,9 @@ describe('updateUserPlan', () => {
     const { EmailConfigurationError } = await import('@/lib/email');
     mockSendPlanWelcomeEmail.mockRejectedValue(new EmailConfigurationError());
 
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const result = await updateUserPlan('user-1', 'ai');
+    consoleSpy.mockRestore();
 
     expect(result).toEqual({ success: true, emailSent: false, launchOfferSlotUsed: false });
   });
