@@ -48,6 +48,7 @@ export const FEATURE_KEYS = [
   'aiProbe',
   'lifetimePlan',
   'voiceInterview',
+  'problemFlowV2', // V2 canvas UI — dark by default, enable per-user via DB override
 ] as const;
 
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
@@ -69,6 +70,7 @@ export const FEATURE_SEED_DEFAULTS: Record<FeatureKey, PlanType[]> = {
   aiProbe: [],
   lifetimePlan: [],
   voiceInterview: [],
+  problemFlowV2: [], // dark launch — enable per-user via FeatureFlagOverride
 };
 
 export const FEATURE_INTENDED_PLANS: Record<FeatureKey, PlanType[]> = {
@@ -77,4 +79,5 @@ export const FEATURE_INTENDED_PLANS: Record<FeatureKey, PlanType[]> = {
   aiProbe: ['ai'],
   lifetimePlan: ['free', 'platform', 'lifetime', 'ai'],
   voiceInterview: ['ai'],
+  problemFlowV2: ['platform', 'lifetime', 'ai'],
 };

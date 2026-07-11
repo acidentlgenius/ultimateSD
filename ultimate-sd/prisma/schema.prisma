@@ -185,6 +185,10 @@ model ProblemProgress {
   // Progress Tracking
   completedStepIds  String[] @default([])
 
+  // V2 Canvas fields — added 2026-07-11
+  canvasSnapshot    Json?
+  canvasStage       Int?
+
   user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   activeSession     PracticeSession? @relation(fields: [activeSessionId], references: [id], onDelete: SetNull)
   

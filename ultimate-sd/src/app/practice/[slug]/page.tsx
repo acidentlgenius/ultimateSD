@@ -1,5 +1,6 @@
 import { notFound, redirect } from 'next/navigation';
 import { Metadata } from 'next';
+import { headers } from 'next/headers';
 import { PROBLEMS } from '@/lib/problems';
 import { getPracticeSteps } from '@/lib/interview-lite-steps';
 import PracticeUI from '@/components/PracticeUI';
@@ -14,6 +15,7 @@ import {
   getInterviewSteps,
   parseInterviewParam,
 } from '@/lib/interview-mode';
+import type { CanvasSnapshot } from '@/features/problem-flow-v2';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
@@ -59,6 +61,38 @@ export default async function PracticePage({
     planExpiresAt: dbUser.planExpiresAt,
   } : null, slug)) {
     redirect(`/pricing?locked=${slug}`);
+  }
+
+  // V2 Canvas: check feature flag first, before any V1-specific data fetching
+  const canvasV2Allowed = await canAccessFeature(session.user.id, 'problemFlowV2');
+
+  // Mobile detection: V2 is desktop-only (< 768px always gets V1)
+  // User-agent check is a heuristic; CSS media query handles the rest on client.
+  const headersList = await headers();
+  const ua = headersList.get('user-agent') ?? '';
+  const isMobile = /Mobi|Android|iPhone|iPad/i.test(ua);
+
+  if (canvasV2Allowed && !isMobile) {
+    // V2 path — load canvas snapshot if it exists
+    const { default: CanvasSessionUI } = await import('@/features/problem-flow-v2/CanvasSessionUI');
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const canvasProgress = await (prisma.problemProgress as any).findUnique({
+      where: { userId_problemId: { userId: session.user.id, problemId: problemMetadata.id } },
+      select: { canvasSnapshot: true },
+    }) as { canvasSnapshot: unknown } | null;
+
+    const snapshot = (canvasProgress?.canvasSnapshot ?? null) as CanvasSnapshot | null;
+
+    return (
+      <CanvasSessionUI
+        slug={slug}
+        title={problemMetadata.title}
+        problemId={problemMetadata.id}
+        userId={session.user.id}
+        snapshot={snapshot}
+      />
+    );
   }
 
   const interviewAllowed = await canAccessFeature(session.user.id, 'interviewMode');

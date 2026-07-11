@@ -62,6 +62,29 @@
   }
 }
 
+/* ─── V2 Canvas Animations ────────────────────────────────────────────────── */
+
+@keyframes canvasFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shimmer {
+  0%   { opacity: 0.4; }
+  50%  { opacity: 0.9; }
+  100% { opacity: 0.4; }
+}
+
+/* contentEditable placeholder via data-placeholder attribute */
+[contenteditable]:empty::before {
+  content: attr(data-placeholder);
+  color: rgba(255, 255, 255, 0.25);
+  pointer-events: none;
+  font-style: normal;
+}
+
+/* ─── Premium Design Tokens ───────────────────────────────────────────────── */
+
 /* Premium Design Tokens */
 
 /* 1. Shadows & Glows */

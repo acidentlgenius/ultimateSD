@@ -24,6 +24,10 @@ export const FEATURE_UPSELL_COPY: Record<FeatureKey, { title: string; pitch: str
     title: 'Lifetime Access',
     pitch: 'Pay once, own the full problem library, expert solutions, and interview mode forever.',
   },
+  problemFlowV2: {
+    title: 'Canvas Mode',
+    pitch: 'Practice on an infinite design canvas — sketch your architecture with handwritten cards, get AI feedback per stage, and see your design evolve.',
+  },
 };
 
 /** Which pricing card to highlight when upselling this feature. */
