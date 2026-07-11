@@ -6,6 +6,7 @@ export interface StepData {
   inputType: 'list' | 'textarea' | 'schema';
   placeholder?: string;
   widgetId?: string; // e.g. 'encoding-visualizer'
+  interactionHint?: string; // overrides the default inputType-based hint shown under the prompt
 }
 
 export interface SystemDesignProblem {
@@ -28,6 +29,17 @@ export interface ChatMessage {
   content: string;
   timestamp: Date;
   feedback?: { score: number; tips: string[] };
+}
+
+export interface ProblemIntroConcept {
+  term: string;
+  blurb: string;
+}
+
+export interface ProblemIntroContent {
+  hook: string; // story-style scenario, 2–4 sentences
+  concepts: ProblemIntroConcept[]; // 2–4 key concepts; empty = section hidden
+  source: 'bespoke' | 'generated' | 'derived';
 }
 
 export type ProgressStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'REVIEW_NEEDED';
