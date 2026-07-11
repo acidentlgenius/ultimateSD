@@ -14,6 +14,7 @@ import {
   getInterviewSteps,
   parseInterviewParam,
 } from '@/lib/interview-mode';
+import { getProblemIntro } from '@/lib/problem-intro-resolver';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
@@ -92,6 +93,7 @@ export default async function PracticePage({
     ? getInterviewSteps(slug, problemMetadata.difficulty, interviewConfig.variant)
     : steps;
   const problem = { ...problemMetadata, steps: activeSteps };
+  const intro = await getProblemIntro(problem);
 
   const existingProgress = await prisma.problemProgress.findUnique({
     where: {
@@ -124,6 +126,7 @@ export default async function PracticePage({
       interviewAllowed={interviewAllowed}
       probeEnabled={probeAllowed}
       voiceEnabled={voiceEnabled}
+      intro={intro}
     />
   );
 }

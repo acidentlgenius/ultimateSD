@@ -50,6 +50,10 @@ import { PracticeAloudToggle } from './PracticeAloudToggle';
 import { PracticeTour } from './PracticeTour';
 import { Compass } from 'lucide-react';
 import { ErrorBoundary } from './ErrorBoundary';
+import { ProblemIntroOverlay } from './ProblemIntroOverlay';
+import { introSeenKey, INTRO_SUPPRESS_ALL_KEY } from '@/lib/problem-intro';
+import type { ProblemIntroContent } from '@/types';
+import { BookOpen } from 'lucide-react';
 
 export default function PracticeUI({
   problem,
@@ -59,6 +63,7 @@ export default function PracticeUI({
   interviewAllowed = false,
   probeEnabled = false,
   voiceEnabled = false,
+  intro = null,
 }: {
   problem: SystemDesignProblem;
   stepMode?: PracticeStepMode;
@@ -67,6 +72,7 @@ export default function PracticeUI({
   interviewAllowed?: boolean;
   probeEnabled?: boolean;
   voiceEnabled?: boolean;
+  intro?: ProblemIntroContent | null;
 }) {
   return (
     <DiagramCanvasProvider>
@@ -78,6 +84,7 @@ export default function PracticeUI({
         interviewAllowed={interviewAllowed}
         probeEnabled={probeEnabled}
         voiceEnabled={voiceEnabled}
+        intro={intro}
       />
     </DiagramCanvasProvider>
   );
@@ -91,6 +98,7 @@ function PracticeUIContent({
   interviewAllowed = false,
   probeEnabled = false,
   voiceEnabled = false,
+  intro = null,
 }: {
   problem: SystemDesignProblem;
   stepMode: PracticeStepMode;
@@ -99,6 +107,7 @@ function PracticeUIContent({
   interviewAllowed?: boolean;
   probeEnabled?: boolean;
   voiceEnabled?: boolean;
+  intro?: ProblemIntroContent | null;
 }) {
   const diagramRef = useDiagramCanvasRef();
   const { data: session, status } = useSession();
@@ -129,6 +138,29 @@ function PracticeUIContent({
   const [sessionInit, setSessionInit] = useState<{ sessionId: string | null } | null>(null);
   const [practiceAloudOn, setPracticeAloudOn] = useState(false);
   const [summaryDismissed, setSummaryDismissed] = useState(false);
+  const [introOpen, setIntroOpen] = useState(false);
+
+  // First-entry auto-show: skipped for interviews, suppressed globally by e2e,
+  // and remembered per problem. localStorage failures mean "seen".
+  useEffect(() => {
+    if (!intro || interviewConfig) return;
+    try {
+      if (localStorage.getItem(INTRO_SUPPRESS_ALL_KEY) === '1') return;
+      if (localStorage.getItem(introSeenKey(problem.slug)) === '1') return;
+    } catch {
+      return;
+    }
+    setIntroOpen(true);
+  }, [intro, interviewConfig, problem.slug]);
+
+  const handleIntroOpenChange = (open: boolean) => {
+    if (!open) {
+      try {
+        localStorage.setItem(introSeenKey(problem.slug), '1');
+      } catch { /* ignore */ }
+    }
+    setIntroOpen(open);
+  };
   const dispatchInterview = (event: InterviewEvent) =>
     setInterviewStatus((s) => interviewStatusReducer(s, event));
 
@@ -502,6 +534,18 @@ function PracticeUIContent({
             Take the tour
           </Button>
         )}
+
+        {intro && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIntroOpen(true)}
+            className="w-full justify-start hover:bg-muted text-muted-foreground"
+          >
+            <BookOpen className="h-3.5 w-3.5 mr-2" />
+            Problem brief
+          </Button>
+        )}
       </div>
     </div>
   );
@@ -606,8 +650,18 @@ function PracticeUIContent({
         </div>
       </main>
 
-      {/* First-run tour — not during timed interviews */}
-      {!interviewConfig && <PracticeTour />}
+      {/* First-run tour — not during timed interviews, and only once the intro is closed */}
+      {!interviewConfig && !introOpen && <PracticeTour />}
+
+      {intro && (
+        <ProblemIntroOverlay
+          problem={problem}
+          steps={activeSteps}
+          intro={intro}
+          open={introOpen}
+          onOpenChange={handleIntroOpenChange}
+        />
+      )}
 
       {/* Help Assistant */}
       {!interviewConfig && (
