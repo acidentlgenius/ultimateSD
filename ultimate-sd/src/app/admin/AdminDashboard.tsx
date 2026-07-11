@@ -5,6 +5,7 @@ import { AdminClient } from './AdminClient';
 import { AdminSessionExplorer } from './AdminSessionExplorer';
 import { LaunchOfferPanel } from './LaunchOfferPanel';
 import { FeatureFlagsPanel } from './FeatureFlagsPanel';
+import { ProblemIntrosPanel } from './ProblemIntrosPanel';
 import type { AdminSessionSummary } from '@/lib/admin-sessions-types';
 import type { LaunchOfferPublicStats } from '@/lib/launch-offer';
 import type { LaunchOfferClaimantRow, LaunchOfferRedemptionRow } from '@/lib/launch-offer-grant';
@@ -24,7 +25,7 @@ interface AdminUser {
   createdAt: Date;
 }
 
-type AdminTab = 'users' | 'activities' | 'launch' | 'flags';
+type AdminTab = 'users' | 'activities' | 'launch' | 'flags' | 'intros';
 
 interface AdminDashboardProps {
   users: AdminUser[];
@@ -108,6 +109,18 @@ export function AdminDashboard({
         >
           Feature Flags
         </button>
+        <button
+          type="button"
+          onClick={() => setTab('intros')}
+          className={cn(
+            'flex-1 sm:flex-none px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-md transition-colors text-center',
+            tab === 'intros'
+              ? 'bg-white dark:bg-zinc-900 text-foreground shadow-sm'
+              : 'text-zinc-500 hover:text-foreground'
+          )}
+        >
+          Problem Intros
+        </button>
       </div>
 
       {tab === 'users' ? (
@@ -131,8 +144,10 @@ export function AdminDashboard({
           redemptions={launchRedemptions}
           claimants={launchClaimants}
         />
-      ) : (
+      ) : tab === 'flags' ? (
         <FeatureFlagsPanel />
+      ) : (
+        <ProblemIntrosPanel />
       )}
     </div>
   );
