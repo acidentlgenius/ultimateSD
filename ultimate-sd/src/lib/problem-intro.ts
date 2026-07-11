@@ -1,4 +1,5 @@
 import type { ProblemIntroConcept, ProblemIntroContent, SystemDesignProblem } from '@/types';
+import { PROBLEM_INTROS } from './problem-intros';
 
 // The full tag vocabulary used across src/lib/problems.ts. 'System Design' is
 // deliberately absent — it is too generic to yield a useful concept.
@@ -51,3 +52,9 @@ export function introSeenKey(slug: string): string {
 // Set by e2e's suppressFirstRunUx so the overlay never auto-opens in specs
 // that aren't about it. Also a manual escape hatch.
 export const INTRO_SUPPRESS_ALL_KEY = 'sd_problem_intro_suppress_all';
+
+export function getStaticProblemIntro(problem: SystemDesignProblem): ProblemIntroContent {
+  const bespoke = PROBLEM_INTROS[problem.slug];
+  if (bespoke) return { ...bespoke, source: 'bespoke' };
+  return buildFallbackIntro(problem);
+}

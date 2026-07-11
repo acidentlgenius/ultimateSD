@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildFallbackIntro,
+  getStaticProblemIntro,
   introSeenKey,
   INTRO_SUPPRESS_ALL_KEY,
   TAG_CONCEPTS,
 } from '@/lib/problem-intro';
+import { PROBLEM_INTROS } from '@/lib/problem-intros';
 import type { SystemDesignProblem } from '@/types';
 
 const baseProblem: SystemDesignProblem = {
@@ -52,5 +54,31 @@ describe('intro seen keys', () => {
 
   it('exposes a stable suppress-all key for e2e', () => {
     expect(INTRO_SUPPRESS_ALL_KEY).toBe('sd_problem_intro_suppress_all');
+  });
+});
+
+describe('getStaticProblemIntro', () => {
+  it('returns the bespoke intro with source=bespoke for pilot problems', () => {
+    const tinyurl: SystemDesignProblem = { ...baseProblem, slug: 'design-tinyurl' };
+    const intro = getStaticProblemIntro(tinyurl);
+    expect(intro.source).toBe('bespoke');
+    expect(intro.hook).toBe(PROBLEM_INTROS['design-tinyurl'].hook);
+  });
+
+  it('falls back to derived for non-pilot problems', () => {
+    const intro = getStaticProblemIntro({ ...baseProblem, slug: 'design-nothing-here' });
+    expect(intro.source).toBe('derived');
+  });
+
+  it('every bespoke intro meets the content standard', () => {
+    for (const [slug, intro] of Object.entries(PROBLEM_INTROS)) {
+      expect(intro.hook.length, `${slug} hook`).toBeGreaterThanOrEqual(100);
+      expect(intro.concepts.length, `${slug} concepts`).toBeGreaterThanOrEqual(2);
+      expect(intro.concepts.length, `${slug} concepts`).toBeLessThanOrEqual(4);
+      for (const c of intro.concepts) {
+        expect(c.term.length).toBeGreaterThan(1);
+        expect(c.blurb.length).toBeGreaterThan(9);
+      }
+    }
   });
 });
