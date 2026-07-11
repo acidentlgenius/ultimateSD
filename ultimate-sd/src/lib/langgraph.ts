@@ -74,7 +74,11 @@ Score 1-10 on: Structure, Scalability, Trade-offs, Communication. Provide 3 tips
 
   try {
     const response = await llm.invoke([new HumanMessage(prompt)]);
-    const parsed = JSON.parse(response.content as string);
+    const content = (response.content as string)
+      .replace(/```json\n?/gi, '')
+      .replace(/```\n?/g, '')
+      .trim();
+    const parsed = JSON.parse(content);
     return { score: parsed.score, tips: parsed.tips };
   } catch (error) {
     console.error('getFeedback error:', error);

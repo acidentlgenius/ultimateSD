@@ -68,3 +68,9 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+
+## 2026-06-31 - [LLM Response Markdown Parsing Edge Case]
+
+**Learning:** When requesting JSON output from an LLM (like in `getFeedback`), the model will frequently wrap its response in markdown code blocks (e.g., \`\`\`json \n ... \n\`\`\`). Passing this directly to `JSON.parse` throws a synchronous exception. In `getFeedback`, this meant users silently received a 0 score and default fallback tips instead of their actual feedback when the model formatted its output this way.
+
+**Action:** Always strip markdown code block fences from LLM text responses using `.replace(/```json\n?/gi, '').replace(/```\n?/g, '').trim()` before attempting to parse them as JSON, ensuring resilience against varied model output formatting.
