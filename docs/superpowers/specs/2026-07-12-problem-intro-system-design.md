@@ -133,7 +133,7 @@ New panel on the admin dashboard (sibling of `FeatureFlagsPanel`):
 
 - DB lookup failure or malformed row → fall through to next tier; never block session load.
 - Overlay render errors are contained by the existing `ErrorBoundary` wrapping; worst case the session behaves as today (no intro).
-- localStorage unavailable → overlay shows each entry (graceful; same degradation as the tour).
+- localStorage unavailable → treat the intro as seen and never auto-show (same convention as the tour, which treats read failure as "seen"); the Brief button still works.
 - Admin generation failure → typed error + retry in panel; no partial writes.
 
 ## 6. Testing
