@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useTransition } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,6 +32,11 @@ export function ProblemIntrosPanel() {
   const [draft, setDraft] = useState<GeneratedIntro | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const selectedSlugRef = useRef(selectedSlug);
+
+  useEffect(() => {
+    selectedSlugRef.current = selectedSlug;
+  }, [selectedSlug]);
 
   const refresh = () =>
     startTransition(async () => {
@@ -50,6 +55,7 @@ export function ProblemIntrosPanel() {
       setError(null);
       setDraft(null);
       const result = await generateProblemIntroDraft(slug);
+      if (selectedSlugRef.current !== slug) return;
       if (result.ok) {
         setDraft(result.draft);
       } else {
@@ -63,9 +69,11 @@ export function ProblemIntrosPanel() {
       setError(null);
       try {
         await saveProblemIntro(slug, draft);
-        setDraft(null);
         setStatuses(await listProblemIntroStatuses());
+        if (selectedSlugRef.current !== slug) return;
+        setDraft(null);
       } catch (e) {
+        if (selectedSlugRef.current !== slug) return;
         setError(e instanceof Error ? e.message : 'Save failed');
       }
     });
@@ -73,8 +81,13 @@ export function ProblemIntrosPanel() {
   const handleDelete = (slug: string) =>
     startTransition(async () => {
       setError(null);
-      await deleteProblemIntro(slug);
-      setStatuses(await listProblemIntroStatuses());
+      try {
+        await deleteProblemIntro(slug);
+        setStatuses(await listProblemIntroStatuses());
+      } catch (e) {
+        if (selectedSlugRef.current !== slug) return;
+        setError(e instanceof Error ? e.message : 'Delete failed');
+      }
     });
 
   const updateConcept = (index: number, field: 'term' | 'blurb', value: string) => {
@@ -163,10 +176,14 @@ export function ProblemIntrosPanel() {
               {draft && (
                 <div className="space-y-3">
                   <div>
-                    <label className="mb-1 block text-xs font-semibold uppercase text-muted-foreground">
+                    <label
+                      htmlFor="intro-hook"
+                      className="mb-1 block text-xs font-semibold uppercase text-muted-foreground"
+                    >
                       Hook
                     </label>
                     <textarea
+                      id="intro-hook"
                       value={draft.hook}
                       onChange={(e) => setDraft({ ...draft, hook: e.target.value })}
                       rows={4}
