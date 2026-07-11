@@ -51,7 +51,8 @@ import {
   RotateCcw,
   Info,
   Pencil,
-  Check
+  Check,
+  Lightbulb
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import CompletionUI from './CompletionUI';
@@ -68,6 +69,7 @@ import {
   resolveEffectivePhase,
   resolvePhaseSteps,
 } from '@/lib/step-journey';
+import { getStepInteractionHint } from '@/lib/step-hints';
 import { useDiagramCanvasRef } from '@/components/diagram/DiagramCanvasContext';
 import {
   blobToDataUrl,
@@ -934,6 +936,18 @@ return (
             <p className="text-muted-foreground leading-relaxed">
               {currentStep.prompt}
             </p>
+            {(() => {
+              const hint = getStepInteractionHint(currentStep);
+              return hint ? (
+                <p
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground/80"
+                  data-testid="step-interaction-hint"
+                >
+                  <Lightbulb className="h-3.5 w-3.5 shrink-0" />
+                  {hint}
+                </p>
+              ) : null;
+            })()}
           </div>
 
           {/* Interactive Widget Section */}
