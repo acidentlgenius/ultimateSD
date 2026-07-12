@@ -19,7 +19,7 @@ export function SolutionViewer({ solution, isOpen, onClose }: SolutionViewerProp
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className="max-w-4xl w-full h-[90vh] flex flex-col p-0 gap-0 bg-background/95 backdrop-blur-xl border-amber-500/20">
+            <DialogContent className="max-w-4xl w-full h-[90vh] flex flex-col p-0 gap-0 bg-background/95 backdrop-blur-xl border-amber-500/20" aria-describedby={undefined}>
                 <DialogHeader className="p-6 pb-2 border-b border-border/50 shrink-0">
                     <div className="flex items-center gap-2 mb-2">
                         <Badge variant="outline" className="border-amber-500/50 text-amber-500 bg-amber-500/10 px-3 py-1">

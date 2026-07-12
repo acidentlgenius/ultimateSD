@@ -27,7 +27,7 @@ const aiFeatures = [
 export function ProModal({ isOpen, onClose, problemTitle }: ProModalProps) {
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-lg">
+            <DialogContent className="sm:max-w-lg" aria-describedby={undefined}>
                 <DialogHeader>
                     <div className="flex items-center gap-2 mb-2">
                         <div className="p-2 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg text-white">
