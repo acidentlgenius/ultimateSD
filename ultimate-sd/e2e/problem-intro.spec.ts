@@ -1,9 +1,8 @@
 import { test, expect } from '@playwright/test';
 import { mockAiEvaluate } from './helpers/ai-mocks';
 
-// Deliberately does NOT call suppressFirstRunUx — the overlay is the subject.
-// Only the tour/hint keys are pre-set so they don't stack after dismissal.
-test.describe('Problem intro overlay', () => {
+// Deliberately does NOT call suppressFirstRunUx — the intro step is the subject.
+test.describe('Problem intro step', () => {
   test.beforeEach(async ({ page }) => {
     await mockAiEvaluate(page);
     await page.addInitScript(() => {
@@ -12,32 +11,37 @@ test.describe('Problem intro overlay', () => {
     });
   });
 
-  test('auto-shows once, dismisses, and reopens via Problem brief', async ({ page }) => {
+  test('shows as first step, dismisses, and reopens via Problem brief', async ({ page }) => {
     await page.goto('/practice/design-tinyurl');
 
-    const overlay = page.getByTestId('problem-intro-overlay');
-    await expect(overlay).toBeVisible();
-    await expect(overlay.getByText(/The scenario/i)).toBeVisible();
-    await expect(overlay.getByText(/Your journey/i)).toBeVisible();
-    await expect(overlay.getByRole('heading', { name: /Key concepts/i })).toBeVisible();
+    const intro = page.getByTestId('problem-intro-step');
+    await expect(intro).toBeVisible();
+    await expect(intro.getByText(/The scenario/i)).toBeVisible();
+    await intro.getByRole('button', { name: /How to practice/i }).hover();
+    await expect(intro.getByTestId('how-to-practice-tip')).toContainText(/How to practice/i);
+    await expect(intro.getByText(/Your journey/i)).toHaveCount(0);
 
-    await overlay.getByRole('button', { name: /Start solving/i }).click();
-    await expect(overlay).toBeHidden();
+    await intro.getByRole('button', { name: /I'm ready/i }).click();
+    await expect(intro).toBeHidden();
+    await expect(page.getByText('Problem Brief')).toHaveCount(0);
 
+    // Open menu tab on desktop to reach Problem brief
+    await page.getByRole('button', { name: /Open menu/i }).click();
     await page.getByRole('button', { name: /Problem brief/i }).click();
-    await expect(overlay).toBeVisible();
-    await overlay.getByRole('button', { name: /Start solving/i }).click();
+    await expect(intro).toBeVisible();
+    await intro.getByRole('button', { name: /I'm ready/i }).click();
 
     await page.reload();
-    await expect(page.getByRole('heading', { level: 1, name: /Design TinyURL/i })).toBeVisible();
-    await expect(page.getByTestId('problem-intro-overlay')).toBeHidden();
+    await expect(page.getByTestId('problem-intro-step')).toBeHidden();
   });
 
-  test('step interaction hint renders under the prompt', async ({ page }) => {
+  test('step interaction hint shows on bulb hover', async ({ page }) => {
     await page.addInitScript(() => {
       localStorage.setItem('sd_problem_intro_suppress_all', '1');
     });
     await page.goto('/practice/design-tinyurl');
+    await page.getByRole('button', { name: 'Step tip' }).hover();
     await expect(page.getByTestId('step-interaction-hint')).toBeVisible();
+    await expect(page.getByTestId('step-interaction-hint')).toContainText('Add one idea per line');
   });
 });
