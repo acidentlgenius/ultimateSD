@@ -372,7 +372,7 @@ export default function SchemaBuilder({ value, onChange, readOnly = false }: Pro
                         variant="ghost"
                         size="sm"
                         onClick={() => removeField(entity.id, field.id)}
-                        className={`h-9 w-9 p-0 text-red-500 hover:text-red-700 ${readOnly ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}
+                        className={`h-9 w-9 p-0 text-red-500 hover:text-red-700 ${readOnly ? 'opacity-0' : 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100'} transition-opacity`}
                         disabled={readOnly}
                         aria-label="Remove field"
                         title="Remove field"
@@ -468,7 +468,7 @@ export default function SchemaBuilder({ value, onChange, readOnly = false }: Pro
                         variant="ghost"
                         size="sm"
                         onClick={() => removeIndex(entity.id, index.id)}
-                        className={`h-9 w-9 p-0 text-red-500 hover:text-red-700 ${readOnly ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}
+                        className={`h-9 w-9 p-0 text-red-500 hover:text-red-700 ${readOnly ? 'opacity-0' : 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100'} transition-opacity`}
                         disabled={readOnly}
                         aria-label="Remove index"
                         title="Remove index"
