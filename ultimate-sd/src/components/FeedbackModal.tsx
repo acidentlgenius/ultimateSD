@@ -198,7 +198,7 @@ export default function FeedbackModal({
     <>
       <Confetti show={showConfetti} />
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className="max-w-5xl w-full max-h-[90vh] overflow-y-auto p-0">
+        <DialogContent className="max-w-5xl w-full max-h-[90vh] overflow-y-auto p-0" aria-describedby={undefined}>
           <DialogHeader className="px-6 pt-6 pb-4 border-b border-border/50">
             <DialogTitle className="text-3xl font-bold flex items-center gap-3">
               <div className={`p-2 rounded-xl ${feedback.isAcceptable ? 'bg-green-500/20' : 'bg-orange-500/20'}`}>
