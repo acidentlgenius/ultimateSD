@@ -60,6 +60,11 @@
     line-height: 1.1; /* Tight headings */
     letter-spacing: -0.02em; /* Modern, tight tracking */
   }
+
+  /* Practice pages hide the global marketing header */
+  body[data-practice-page] [data-site-header] {
+    display: none;
+  }
 }
 
 /* Premium Design Tokens */

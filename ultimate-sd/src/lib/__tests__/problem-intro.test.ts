@@ -4,6 +4,7 @@ import {
   getStaticProblemIntro,
   introSeenKey,
   INTRO_SUPPRESS_ALL_KEY,
+  shouldAutoShowIntro,
   TAG_CONCEPTS,
 } from '@/lib/problem-intro';
 import { PROBLEM_INTROS } from '@/lib/problem-intros';
@@ -49,11 +50,23 @@ describe('buildFallbackIntro', () => {
 
 describe('intro seen keys', () => {
   it('namespaces the seen key by slug', () => {
-    expect(introSeenKey('design-tinyurl')).toBe('sd_problem_intro_seen_v1:design-tinyurl');
+    expect(introSeenKey('design-tinyurl')).toBe('sd_problem_intro_seen_v2:design-tinyurl');
   });
 
   it('exposes a stable suppress-all key for e2e', () => {
     expect(INTRO_SUPPRESS_ALL_KEY).toBe('sd_problem_intro_suppress_all');
+  });
+
+  it('shouldAutoShowIntro respects suppress and seen keys', () => {
+    localStorage.setItem(INTRO_SUPPRESS_ALL_KEY, '1');
+    expect(shouldAutoShowIntro('design-tinyurl')).toBe(false);
+    localStorage.removeItem(INTRO_SUPPRESS_ALL_KEY);
+
+    localStorage.setItem(introSeenKey('design-tinyurl'), '1');
+    expect(shouldAutoShowIntro('design-tinyurl')).toBe(false);
+    localStorage.removeItem(introSeenKey('design-tinyurl'));
+
+    expect(shouldAutoShowIntro('design-tinyurl')).toBe(true);
   });
 });
 

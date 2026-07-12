@@ -35,7 +35,7 @@ export function buildFallbackIntro(problem: SystemDesignProblem): ProblemIntroCo
     .map((tag) => TAG_CONCEPTS[tag])
     .filter((c): c is ProblemIntroConcept => Boolean(c));
   return {
-    hook: `Here's the situation you've walked into: ${problem.context}`,
+    hook: `${problem.context} You're stepping into this as the engineer who has to make it work at scale — even if system design is new to you. We'll walk through it one decision at a time: what the system must do, how pieces connect, and where trade-offs matter.`,
     // A single concept reads as an afterthought — show the section only when
     // we have at least two, otherwise hide it rather than pad it.
     concepts: mapped.length >= 2 ? mapped : [],
@@ -43,10 +43,21 @@ export function buildFallbackIntro(problem: SystemDesignProblem): ProblemIntroCo
   };
 }
 
-const INTRO_SEEN_KEY_PREFIX = 'sd_problem_intro_seen_v1:';
+// v2: inline first-step intro (replaces the old modal overlay's v1 key)
+const INTRO_SEEN_KEY_PREFIX = 'sd_problem_intro_seen_v2:';
 
 export function introSeenKey(slug: string): string {
   return `${INTRO_SEEN_KEY_PREFIX}${slug}`;
+}
+
+export function shouldAutoShowIntro(slug: string): boolean {
+  try {
+    if (localStorage.getItem(INTRO_SUPPRESS_ALL_KEY) === '1') return false;
+    if (localStorage.getItem(introSeenKey(slug)) === '1') return false;
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 // Set by e2e's suppressFirstRunUx so the overlay never auto-opens in specs

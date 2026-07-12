@@ -9,7 +9,7 @@ export const PROBLEM_INTROS: Record<string, Omit<ProblemIntroContent, 'source'>>
     hook: "Marketing links are wrecking your company's SMS campaigns — full URLs blow past character limits and nobody trusts them. You've been asked to build the link layer for the whole business: turn any URL into a 7-character link, then redirect billions of clicks a month with the reliability of DNS. Shortening can be slow-ish; redirects can never be.",
     concepts: [
       { term: 'Base62 encoding', blurb: "Map a numeric ID onto [a-zA-Z0-9] to get short, URL-safe keys without collisions." },
-      { term: 'Read-heavy caching', blurb: "Redirects outnumber shortens ~100:1 — a cache in front of the store absorbs almost all reads." },
+      { term: 'Read-heavy caching', blurb: 'Redirects happen far more often than new short links — cache the mapping so most lookups never hit the database.' },
       { term: 'Collision handling', blurb: "Decide up front how two URLs can never map to the same key: counters, ranges, or retry-on-conflict." },
     ],
   },

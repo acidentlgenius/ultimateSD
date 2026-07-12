@@ -16,7 +16,7 @@ export const DEFAULT_PHASE_STEPS: { [key: string]: StepData[] } = {
             title: 'Non-Functional Requirements',
             prompt: 'What are the quality attributes? Consider scalability, availability, latency, consistency, etc.',
             inputType: 'list',
-            placeholder: 'e.g., System should handle 100M DAU'
+            placeholder: 'e.g., Should handle heavy daily traffic and stay fast'
         },
         {
             phase: 'Requirements',

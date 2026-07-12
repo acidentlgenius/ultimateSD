@@ -21,6 +21,7 @@ import { SystemDesignProblem } from '@/types';
 import { tokens } from '@/styles/tokens';
 import SchemaBuilder from '@/components/SchemaBuilder';
 import { fetchWithRetry, getFetchErrorMessage } from '@/lib/fetchUtils';
+import { cn } from '@/lib/utils';
 import { findResumePosition } from '@/lib/step-resume';
 import {
   saveSessionState,
@@ -48,8 +49,6 @@ import {
   Loader2,
   ArrowLeft,
   Eye,
-  RotateCcw,
-  Info,
   Pencil,
   Check,
   Lightbulb
@@ -114,6 +113,10 @@ interface Props {
    * { sessionId: null } = start failed (proceed without recording).
    */
   sessionInit?: { sessionId: string | null } | null;
+  /** When true, arrow-key navigation is disabled (e.g. intro brief is showing). */
+  keyboardNavPaused?: boolean;
+  /** Canvas is shown beside this panel (split layout) — use compact chrome. */
+  diagramBeside?: boolean;
 }
 
 type DbSubmission = {
@@ -193,7 +196,62 @@ function reconstructFromSubmissions(
 // findResumePosition lives in @/lib/step-resume so it can be unit-tested
 // without dragging this component's server-action imports into the test.
 
-export default function StepByStepChat({ problem, probeEnabled = false, sessionInit = null }: Props) {
+/** Survives StepByStepChat remounts so we don't reload DB/local position mid-navigation. */
+const sessionLoadedKeys = new Set<string>();
+
+/** Survives remounts — once the user navigates, never overwrite with resume position. */
+const userHasNavigatedKeys = new Set<string>();
+
+function navigationKey(problemId: string, userId?: string | null) {
+  return `${problemId}:${userId ?? 'guest'}`;
+}
+
+function markUserNavigated(problemId: string, userId?: string | null) {
+  userHasNavigatedKeys.add(navigationKey(problemId, userId));
+}
+
+function StepHintBulb({ hint }: { hint: string }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="relative group/bulb shrink-0">
+      <button
+        type="button"
+        aria-label="Step tip"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        onBlur={() => setTimeout(() => setOpen(false), 200)}
+        className={cn(
+          'inline-flex h-8 w-8 items-center justify-center rounded-md transition-colors',
+          'text-sky-600 dark:text-sky-400 hover:bg-sky-500/10',
+          open && 'bg-sky-500/10'
+        )}
+      >
+        <Lightbulb className="h-4 w-4" />
+      </button>
+      <div
+        role="tooltip"
+        data-testid="step-interaction-hint"
+        className={cn(
+          'absolute right-0 top-full z-50 mt-1.5 w-64 rounded-lg border border-border bg-popover px-3 py-2 text-xs leading-relaxed text-popover-foreground shadow-md',
+          'transition-opacity duration-200',
+          open ? 'opacity-100' : 'opacity-0 group-hover/bulb:opacity-100',
+          !open && 'pointer-events-none group-hover/bulb:pointer-events-auto'
+        )}
+      >
+        {hint}
+      </div>
+    </div>
+  );
+}
+
+export default function StepByStepChat({
+  problem,
+  probeEnabled = false,
+  sessionInit = null,
+  keyboardNavPaused = false,
+  diagramBeside = false,
+}: Props) {
   const [currentPhase, setCurrentPhase] = useState(() => {
     const keys = Object.keys(resolvePhaseSteps(problem.steps, getGenericFallbackSteps(problem)));
     return keys[0] ?? 'requirements';
@@ -214,20 +272,6 @@ export default function StepByStepChat({ problem, probeEnabled = false, sessionI
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [probeContext, setProbeContext] = useState<{ phase: string; stepAnswer: string } | null>(null);
-  const [showFirstStepHint, setShowFirstStepHint] = useState(false);
-
-  useEffect(() => {
-    try {
-      setShowFirstStepHint(localStorage.getItem('sd_first_step_hint_dismissed') !== '1');
-    } catch { /* private mode — keep hidden */ }
-  }, []);
-
-  const dismissFirstStepHint = () => {
-    setShowFirstStepHint(false);
-    try {
-      localStorage.setItem('sd_first_step_hint_dismissed', '1');
-    } catch { /* ignore */ }
-  };
 
   // Store all step data
   const [savedStepData, setSavedStepData] = useState<Map<string, SavedStepData>>(new Map());
@@ -297,10 +341,11 @@ export default function StepByStepChat({ problem, probeEnabled = false, sessionI
     if (nextIndex !== currentStepIndex) {
       setCurrentStepIndex(nextIndex);
     }
-  }, [problem.slug, problem.steps, currentPhase, currentStepIndex]);
+    // Only re-validate when the problem or phase changes — not on every step index change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [problem.slug, problem.steps, currentPhase]);
 
   const { data: session, status: sessionStatus } = useSession();
-  const sessionLoadedForRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (restoredDate) {
@@ -325,7 +370,7 @@ export default function StepByStepChat({ problem, probeEnabled = false, sessionI
     if (sessionStatus === 'loading') return;
 
     const loadKey = `${problem.id}:${session?.user?.id ?? 'guest'}`;
-    if (sessionLoadedForRef.current === loadKey) return;
+    if (sessionLoadedKeys.has(loadKey)) return;
 
     let isMounted = true;
 
@@ -353,8 +398,10 @@ export default function StepByStepChat({ problem, probeEnabled = false, sessionI
             );
             const resume = findResumePosition(PHASE_STEPS, dbCompleted);
 
-            setCurrentPhase(resume.phase);
-            setCurrentStepIndex(resume.stepIndex);
+            if (!userHasNavigatedKeys.has(loadKey)) {
+              setCurrentPhase(resume.phase);
+              setCurrentStepIndex(resume.stepIndex);
+            }
             setSavedStepData(dbSaved);
             setCompletedSteps(dbCompleted);
             setSessionRestored(true);
@@ -364,7 +411,7 @@ export default function StepByStepChat({ problem, probeEnabled = false, sessionI
                 : new Date()
             );
             if (isMounted) {
-              sessionLoadedForRef.current = loadKey;
+              sessionLoadedKeys.add(loadKey);
             }
 
             // Check if all steps are completed
@@ -377,13 +424,13 @@ export default function StepByStepChat({ problem, probeEnabled = false, sessionI
 
           if (isMounted) {
             setSessionRestored(true);
-            sessionLoadedForRef.current = loadKey;
+            sessionLoadedKeys.add(loadKey);
           }
         } catch (error) {
           console.error('Failed to load session from account:', error);
           if (isMounted) {
             setSessionRestored(true);
-            sessionLoadedForRef.current = loadKey;
+            sessionLoadedKeys.add(loadKey);
           }
         }
         return;
@@ -392,8 +439,10 @@ export default function StepByStepChat({ problem, probeEnabled = false, sessionI
       const restored = loadSessionState(problem.slug);
       if (isMounted) {
         if (restored) {
-          setCurrentPhase(restored.currentPhase);
-          setCurrentStepIndex(restored.currentStepIndex);
+          if (!userHasNavigatedKeys.has(loadKey)) {
+            setCurrentPhase(restored.currentPhase);
+            setCurrentStepIndex(restored.currentStepIndex);
+          }
           setSavedStepData(restored.savedStepData as Map<string, SavedStepData>);
           setCompletedSteps(restored.completedSteps as Set<string>);
           setSessionRestored(true);
@@ -401,7 +450,7 @@ export default function StepByStepChat({ problem, probeEnabled = false, sessionI
         } else {
           setSessionRestored(true);
         }
-        sessionLoadedForRef.current = loadKey;
+        sessionLoadedKeys.add(loadKey);
       }
     };
 
@@ -444,6 +493,7 @@ export default function StepByStepChat({ problem, probeEnabled = false, sessionI
     const handleNavigation = (e: any) => {
       const { phase, stepIndex } = e.detail;
       if (phase && phases.includes(phase)) {
+        markUserNavigated(problem.id, session?.user?.id);
         setCurrentPhase(phase);
         if (typeof stepIndex === 'number') {
           setCurrentStepIndex(stepIndex);
@@ -455,7 +505,7 @@ export default function StepByStepChat({ problem, probeEnabled = false, sessionI
     return () => {
       window.removeEventListener('sd-navigate-step', handleNavigation as EventListener);
     };
-  }, [phases]);
+  }, [phases, problem.id, session?.user?.id]);
 
 
   // Auto-save drafts
@@ -531,7 +581,8 @@ export default function StepByStepChat({ problem, probeEnabled = false, sessionI
     setSessionRestored(true);
     setRestoredDate(null);
 
-    sessionLoadedForRef.current = null;
+    sessionLoadedKeys.delete(`${problem.id}:${session?.user?.id ?? 'guest'}`);
+    userHasNavigatedKeys.delete(`${problem.id}:${session?.user?.id ?? 'guest'}`);
 
     toast.success('Session cleared! Starting fresh.');
   }, [problem.id, problem.slug, session?.user]);
@@ -788,15 +839,31 @@ export default function StepByStepChat({ problem, probeEnabled = false, sessionI
     setLoading(false);
   };
 
+  const persistStepPosition = (phase: string, stepIndex: number) => {
+    markUserNavigated(problem.id, session?.user?.id);
+    if (!sessionRestored || !shouldUseLocalSessionDraft(Boolean(session?.user))) return;
+    saveSessionState(problem.slug, {
+      currentPhase: phase,
+      currentStepIndex: stepIndex,
+      savedStepData,
+      completedSteps,
+    });
+  };
+
   const handleNext = () => {
     setShowFeedback(false);
+    markUserNavigated(problem.id, session?.user?.id);
     if (safeStepIndex < currentSteps.length - 1) {
-      setCurrentStepIndex(safeStepIndex + 1);
+      const next = safeStepIndex + 1;
+      setCurrentStepIndex(next);
+      persistStepPosition(effectivePhase, next);
     } else {
       const currentPhaseIndex = phases.indexOf(effectivePhase);
       if (currentPhaseIndex < phases.length - 1) {
-        setCurrentPhase(phases[currentPhaseIndex + 1]);
+        const nextPhase = phases[currentPhaseIndex + 1];
+        setCurrentPhase(nextPhase);
         setCurrentStepIndex(0);
+        persistStepPosition(nextPhase, 0);
       } else {
         setIsSessionCompleted(true);
         toast.success('🎉 Congratulations! You have completed all sections!');
@@ -805,14 +872,36 @@ export default function StepByStepChat({ problem, probeEnabled = false, sessionI
   };
 
   const handlePrevious = () => {
+    markUserNavigated(problem.id, session?.user?.id);
     if (safeStepIndex > 0) {
-      setCurrentStepIndex(safeStepIndex - 1);
+      const next = safeStepIndex - 1;
+      setCurrentStepIndex(next);
+      persistStepPosition(effectivePhase, next);
     } else {
       const currentPhaseIndex = phases.indexOf(effectivePhase);
       if (currentPhaseIndex > 0) {
         const prevPhase = phases[currentPhaseIndex - 1];
+        const next = PHASE_STEPS[prevPhase].length - 1;
         setCurrentPhase(prevPhase);
-        setCurrentStepIndex(PHASE_STEPS[prevPhase].length - 1);
+        setCurrentStepIndex(next);
+        persistStepPosition(prevPhase, next);
+      }
+    }
+  };
+
+  const navigateForward = () => {
+    markUserNavigated(problem.id, session?.user?.id);
+    if (safeStepIndex < currentSteps.length - 1) {
+      const next = safeStepIndex + 1;
+      setCurrentStepIndex(next);
+      persistStepPosition(effectivePhase, next);
+    } else {
+      const currentPhaseIndex = phases.indexOf(effectivePhase);
+      if (currentPhaseIndex < phases.length - 1) {
+        const nextPhase = phases[currentPhaseIndex + 1];
+        setCurrentPhase(nextPhase);
+        setCurrentStepIndex(0);
+        persistStepPosition(nextPhase, 0);
       }
     }
   };
@@ -846,6 +935,41 @@ export default function StepByStepChat({ problem, probeEnabled = false, sessionI
   const progress = currentSteps.length > 0 ? ((safeStepIndex + 1) / currentSteps.length) * 100 : 0;
   const isFirstStep = isFirstJourneyStep(effectivePhase, safeStepIndex, phases);
   const canGoBack = !isFirstStep;
+  const canGoForward = useMemo(() => {
+    if (safeStepIndex < currentSteps.length - 1) return true;
+    const currentPhaseIndex = phases.indexOf(effectivePhase);
+    return currentPhaseIndex < phases.length - 1;
+  }, [safeStepIndex, currentSteps.length, phases, effectivePhase]);
+
+  // Arrow-key + header navigation when not typing in an input
+  useEffect(() => {
+    if (keyboardNavPaused) return;
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement)?.isContentEditable) return;
+      if (loading || showFeedback) return;
+
+      if (e.key === 'ArrowRight' && canGoForward) {
+        e.preventDefault();
+        navigateForward();
+      } else if (e.key === 'ArrowLeft' && canGoBack) {
+        e.preventDefault();
+        handlePrevious();
+      }
+    };
+    const onPracticeNav = (e: Event) => {
+      const direction = (e as CustomEvent).detail?.direction;
+      if (loading || showFeedback) return;
+      if (direction === 'prev' && canGoBack) handlePrevious();
+      if (direction === 'next' && canGoForward) navigateForward();
+    };
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('sd-practice-nav', onPracticeNav);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('sd-practice-nav', onPracticeNav);
+    };
+  }, [loading, showFeedback, canGoBack, canGoForward, safeStepIndex, effectivePhase, phases, PHASE_STEPS, currentSteps.length, keyboardNavPaused]);
 
   const totalStepCount = useMemo(
     () => phases.reduce((sum, p) => sum + (PHASE_STEPS[p]?.length ?? 0), 0),
@@ -887,8 +1011,8 @@ export default function StepByStepChat({ problem, probeEnabled = false, sessionI
   }
 
 return (
-    <div className="w-full flex flex-col gap-6">
-      {showRestoreBanner && (
+    <div className={cn('w-full flex flex-col', diagramBeside ? 'gap-2' : 'gap-4')}>
+      {showRestoreBanner && !diagramBeside && (
         <div
           role="status"
           className="flex items-start justify-between gap-3 rounded-xl border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-900 dark:text-green-100"
@@ -916,38 +1040,124 @@ return (
         </div>
       )}
 
-      {/* Step Content */}
-      <Card className="glass border-2 border-border">
-        <div className="p-6 space-y-6">
-          {/* Question/Prompt */}
-          <div className="space-y-2">
-            <div className="flex justify-between items-start gap-4">
-              <h3 className="text-lg font-semibold flex-1">{currentStep.title}</h3>
+      {diagramBeside ? (
+        <div className="space-y-2" data-testid="diagram-step-compact">
+          {evaluationError && !loading && (
+            <p className="text-xs text-amber-700 dark:text-amber-400" data-testid="evaluation-error-banner">
+              {evaluationError}{' '}
+              <button type="button" className="underline" onClick={handleSubmit}>Retry</button>
+            </p>
+          )}
+          {!showFeedback && feedback && !feedback.isAcceptable && (
+            <p className="text-xs text-red-600 dark:text-red-400">
+              Needs improvement — update your answer or diagram, then resubmit.
+            </p>
+          )}
+          {currentStep.inputType === 'list' ? (
+            <Input
+              value={newItemInput}
+              onChange={(e) => setNewItemInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  addListItem();
+                }
+              }}
+              placeholder={currentStep.placeholder}
+              className="h-9 text-sm"
+            />
+          ) : currentStep.inputType === 'schema' ? (
+            <SchemaBuilder value={schemaData} onChange={setSchemaData} readOnly={showFeedback} />
+          ) : (
+            <Textarea
+              value={textInput}
+              onChange={(e) => setTextInput(e.target.value)}
+              placeholder={currentStep.placeholder}
+              rows={2}
+              className={cn(
+                'min-h-[52px] max-h-24 resize-none text-sm',
+                showFeedback && 'bg-muted/50 cursor-not-allowed'
+              )}
+              readOnly={showFeedback}
+            />
+          )}
+          {!showFeedback && (
+            <div className="flex items-center justify-end gap-2">
+              <Button variant="ghost" size="sm" onClick={handleSkip} className="h-8 text-muted-foreground">
+                Skip
+              </Button>
               <Button
-                variant="outline"
                 size="sm"
-                className="h-8 gap-2 text-primary border-primary/20 hover:bg-primary/10 hover:border-primary/50 transition-all shadow-sm"
-                onClick={() => setIsHistoryOpen(true)}
+                onClick={handleSubmit}
+                disabled={loading || (
+                  currentStep.inputType === 'list'
+                    ? listItems.length === 0 && !newItemInput.trim()
+                    : currentStep.inputType === 'schema'
+                      ? schemaData.length === 0
+                      : !textInput.trim()
+                )}
+                className="h-8 gradient-bg"
               >
-                <History className="h-4 w-4" />
-                <span className="text-xs font-medium">History</span>
+                {loading ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                    Checking…
+                  </>
+                ) : (
+                  <>
+                    Submit design
+                    <ArrowRight className="h-3.5 w-3.5 ml-1" />
+                  </>
+                )}
               </Button>
             </div>
-            <p className="text-muted-foreground leading-relaxed">
-              {currentStep.prompt}
-            </p>
-            {(() => {
-              const hint = getStepInteractionHint(currentStep);
-              return hint ? (
-                <p
-                  className="flex items-center gap-1.5 text-xs text-muted-foreground/80"
-                  data-testid="step-interaction-hint"
+          )}
+          {feedback && (
+            <FeedbackModal
+              isOpen={showFeedback}
+              onClose={() => setShowFeedback(false)}
+              onContinue={handleNext}
+              onStartProbe={() => {
+                const stepAnswer =
+                  currentStep.inputType === 'list'
+                    ? listItems.join('\n')
+                    : currentStep.inputType === 'schema'
+                      ? JSON.stringify(schemaData, null, 2)
+                      : textInput;
+                setProbeContext({ phase: currentStep.phase, stepAnswer });
+                setShowFeedback(false);
+              }}
+              probeEntitled={probeEnabled}
+              feedback={feedback}
+              xpEarned={feedback.isAcceptable ? 20 : 0}
+            />
+          )}
+        </div>
+      ) : (
+      <Card className="border border-border/80 shadow-sm overflow-hidden">
+        <div className="p-5 md:p-6 space-y-5">
+          {/* Prompt */}
+          <div className="space-y-3">
+            <div className="flex justify-between items-start gap-3">
+              <p className="text-lg md:text-xl font-medium leading-snug text-foreground flex-1">
+                {currentStep.prompt}
+              </p>
+              <div className="flex items-center gap-0.5 shrink-0">
+                {(() => {
+                  const hint = getStepInteractionHint(currentStep);
+                  return hint ? <StepHintBulb hint={hint} /> : null;
+                })()}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 gap-1.5 text-muted-foreground shrink-0"
+                  onClick={() => setIsHistoryOpen(true)}
                 >
-                  <Lightbulb className="h-3.5 w-3.5 shrink-0" />
-                  {hint}
-                </p>
-              ) : null;
-            })()}
+                  <History className="h-3.5 w-3.5" />
+                  <span className="text-xs hidden sm:inline">History</span>
+                </Button>
+              </div>
+            </div>
           </div>
 
           {/* Interactive Widget Section */}
@@ -972,7 +1182,6 @@ return (
               </p>
             );
           })()}
-
 
           {/* AI failure banner — amber, retryable, nothing recorded. Distinct from red "needs improvement" feedback. */}
           {evaluationError && !loading && (
@@ -1001,23 +1210,6 @@ return (
                 {feedback.weaknesses?.map((w: string, i: number) => <li key={`w-${i}`}>{w}</li>)}
                 {feedback.missed?.map((m: string, i: number) => <li key={`m-${i}`}>{m}</li>)}
               </ul>
-            </div>
-          )}
-
-          {/* First-session guidance — shown until dismissed, only before any progress */}
-          {showFirstStepHint && completedSteps.size === 0 && !showFeedback && !feedback && (
-            <div className="flex items-start justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm" data-testid="first-step-hint">
-              <p className="text-muted-foreground leading-relaxed">
-                <span className="font-semibold text-foreground">How this works:</span> answer the question above in your own words — bullet points are fine — then hit{' '}
-                <span className="font-semibold text-foreground">Submit for Review</span>. The AI interviewer gives you feedback before you move to the next step. There&apos;s no penalty for a rough first draft.
-              </p>
-              <button
-                onClick={dismissFirstStepHint}
-                className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
-                aria-label="Dismiss hint"
-              >
-                <X className="h-4 w-4" />
-              </button>
             </div>
           )}
 
@@ -1126,8 +1318,8 @@ return (
                 )}
 
                 {listItems.length === 0 && !showFeedback && (
-                  <p className="text-xs text-muted-foreground text-center py-4">
-                    Add at least one item to continue
+                  <p className="text-sm text-muted-foreground text-center py-6 bg-muted/30 rounded-lg border border-dashed border-border">
+                    Type an idea above and press <strong>Add</strong> — even one entry is enough to submit.
                   </p>
                 )}
               </div>
@@ -1149,24 +1341,26 @@ return (
                 value={textInput}
                 onChange={(e) => setTextInput(e.target.value)}
                 placeholder={currentStep.placeholder}
-                className={`min-h-[200px] resize-none ${showFeedback ? 'bg-muted/50 cursor-not-allowed' : ''
-                  }`}
+                className={cn(
+                  'resize-none min-h-[200px]',
+                  showFeedback && 'bg-muted/50 cursor-not-allowed'
+                )}
                 readOnly={showFeedback}
               />
             )}
 
-            {/* Action buttons - only show if not showing feedback */}
+            {/* Action buttons */}
             {!showFeedback && (
-              <div className="flex flex-col-reverse sm:flex-row justify-between items-center gap-4 pt-4 border-t border-border">
-                <div className="flex flex-col sm:flex-row gap-2">
+              <div className="sticky bottom-0 -mx-5 md:-mx-6 px-5 md:px-6 py-4 bg-gradient-to-t from-card via-card to-card/80 border-t border-border/60 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
+                <div className="flex gap-2">
                   {canGoBack && (
                     <Button
                       variant="outline"
                       onClick={handlePrevious}
                       className="flex-1 sm:flex-none"
                     >
-                      <ArrowLeft className="h-4 w-4 mr-2" />
-                      Previous
+                      <ArrowLeft className="h-4 w-4 mr-1.5" />
+                      Back
                     </Button>
                   )}
                   <Button
@@ -1174,7 +1368,7 @@ return (
                     onClick={handleSkip}
                     className="text-muted-foreground flex-1 sm:flex-none"
                   >
-                    <SkipForward className="h-4 w-4 mr-2" />
+                    <SkipForward className="h-4 w-4 mr-1.5" />
                     Skip
                   </Button>
                 </div>
@@ -1188,18 +1382,16 @@ return (
                         ? schemaData.length === 0
                         : !textInput.trim()
                   )}
-                  className="gradient-bg w-full sm:w-auto"
+                  className="gradient-bg w-full sm:w-auto sm:min-w-[160px] h-11"
                 >
                   {loading ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Evaluating...
+                      Checking…
                     </>
                   ) : (
                     <>
-                      {isDiagramSubStep(currentStep.subStep)
-                        ? 'Analyze Design'
-                        : 'Submit for Review'}
+                      {isDiagramSubStep(currentStep.subStep) ? 'Submit design' : 'Submit answer'}
                       <ArrowRight className="h-4 w-4 ml-2" />
                     </>
                   )}
@@ -1239,6 +1431,7 @@ return (
           />
         </div>
       </Card>
+      )}
 
       {probeContext && (
         <ProbePanel
@@ -1250,33 +1443,6 @@ return (
       )}
 
       {/* Progress History and Mini Indicator removed for clean Sidebar layout */}
-
-      <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
-        <div className="flex items-center gap-2">
-          {session?.user ? (
-            <>
-              <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
-              <span>Saved to account</span>
-            </>
-          ) : (
-            <>
-              <Info className="h-3.5 w-3.5" />
-              <span>Draft saved locally</span>
-            </>
-          )}
-        </div>
-        {session?.user && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 text-xs text-muted-foreground hover:text-foreground"
-            onClick={() => setShowStartOverConfirm(true)}
-          >
-            <RotateCcw className="h-3.5 w-3.5 mr-1" />
-            Start Over
-          </Button>
-        )}
-      </div>
 
       <Dialog open={showStartOverConfirm} onOpenChange={setShowStartOverConfirm}>
         <DialogContent showCloseButton={false}>
