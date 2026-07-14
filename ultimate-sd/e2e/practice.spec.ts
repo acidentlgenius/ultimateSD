@@ -19,7 +19,7 @@ test.describe('Practice flow', () => {
     await page.goto('/practice/design-tinyurl');
 
     await page.getByPlaceholder(/short URL/i).fill('Users can shorten a long URL');
-    await page.getByRole('button', { name: 'Add' }).click();
+    await page.getByPlaceholder(/short URL/i).press('Enter');
     await expect(page.getByText('Users can shorten a long URL')).toBeVisible();
 
     await page.getByRole('button', { name: /Submit for Review/i }).click();
