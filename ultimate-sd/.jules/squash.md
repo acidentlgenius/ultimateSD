@@ -27,3 +27,9 @@
 **Learning:** `loadSessionState` relied on `clearSessionState(problemSlug)` to handle invalid data. However, if the `localStorage` key contained structurally valid JSON but the *content itself* was not valid JSON (causing `JSON.parse` to throw), the catch block would execute. But if `clearSessionState` failed or wasn't robust enough, the corrupted data stayed. On every subsequent mount, the UI would try to parse the corrupt data, throw, and crash again.
 
 **Action:** When purging corrupted or unparseable `localStorage` state, use direct `localStorage.removeItem(key)` rather than higher-level helpers to guarantee the bad data is purged, since helper methods might inadvertently fail when interacting with corrupted state.
+
+## 2026-07-14 - Playwright End-to-End flaky elements during re-renders
+
+**Learning:** Playwright \`locator.click()\` on elements that re-render based on form state updates (like submitting text) can cause \`element was detached from the DOM\` timeout errors because React replaces the DOM node before Playwright can finish clicking it.
+
+**Action:** Replace \`button.click()\` actions that trigger submissions associated with input fields with \`input.press('Enter')\` simulating keyboard behavior. This is far more resilient to rapid DOM changes.
