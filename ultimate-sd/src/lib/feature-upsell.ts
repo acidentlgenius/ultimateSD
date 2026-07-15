@@ -24,6 +24,11 @@ export const FEATURE_UPSELL_COPY: Record<FeatureKey, { title: string; pitch: str
     title: 'Lifetime Access',
     pitch: 'Pay once, own the full problem library, expert solutions, and interview mode forever.',
   },
+  adaptiveCoach: {
+    title: 'Adaptive Coach',
+    pitch:
+      'Personalized coaching that adapts to your skill level — targeted hints, gap analysis, and a practice plan that evolves as you improve.',
+  },
 };
 
 /** Which pricing card to highlight when upselling this feature. */
