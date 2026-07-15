@@ -4,6 +4,10 @@ import { NextRequest } from 'next/server';
 
 vi.mock('@/auth', () => ({ auth: vi.fn() }));
 vi.mock('@/lib/feature-flags-server', () => ({ canAccessFeature: vi.fn() }));
+vi.mock('@/lib/session-user', () => ({
+  resolveSessionUserId: vi.fn(async (user: { id?: string | null }) => user.id ?? null),
+  SESSION_STALE_MESSAGE: 'Your session is out of date. Sign out and sign back in.',
+}));
 vi.mock('@/lib/user-llm', () => {
   class AIAccessError extends Error {
     constructor(message: string) {
@@ -30,6 +34,7 @@ import { canAccessFeature } from '@/lib/feature-flags-server';
 import { getUserLLM } from '@/lib/user-llm';
 import { evaluateClassicAnswer } from '@/lib/adaptive-coach/adapters/classic';
 import { prisma } from '@/lib/prisma';
+import { resolveSessionUserId } from '@/lib/session-user';
 import { POST } from '@/app/api/ai/evaluate/route';
 
 const mockedAuth = vi.mocked(auth);
@@ -37,6 +42,7 @@ const mockedFlag = vi.mocked(canAccessFeature);
 const mockedLLM = vi.mocked(getUserLLM);
 const mockedClassic = vi.mocked(evaluateClassicAnswer);
 const mockedCount = vi.mocked(prisma.stepSubmission.count);
+const mockedResolveUser = vi.mocked(resolveSessionUserId);
 
 const EVALUATE_BODY = {
   problem: 'design-tinyurl',
@@ -85,6 +91,7 @@ function mockLegacyLlm(feedback: {
 beforeEach(() => {
   vi.clearAllMocks();
   mockedAuth.mockResolvedValue({ user: { id: 'u1' } } as never);
+  mockedResolveUser.mockResolvedValue('u1');
   mockedFlag.mockResolvedValue(false);
   mockedCount.mockResolvedValue(0);
 });
@@ -244,5 +251,14 @@ describe('POST /api/ai/evaluate', () => {
     expect(mockedClassic).toHaveBeenCalledWith(
       expect.objectContaining({ attemptCount: 2 }),
     );
+  });
+
+  it('returns session_stale when user id cannot be resolved', async () => {
+    mockedResolveUser.mockResolvedValue(null);
+    const res = await POST(makeRequest(EVALUATE_BODY));
+    expect(res.status).toBe(403);
+    const data = await res.json();
+    expect(data.error).toBe('session_stale');
+    expect(mockedLLM).not.toHaveBeenCalled();
   });
 });

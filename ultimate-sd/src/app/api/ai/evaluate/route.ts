@@ -12,6 +12,10 @@ import posthog from '@/lib/posthog';
 import { canAccessFeature } from '@/lib/feature-flags-server';
 import { evaluateClassicAnswer } from '@/lib/adaptive-coach/adapters/classic';
 import { prisma } from '@/lib/prisma';
+import {
+  resolveSessionUserId,
+  SESSION_STALE_MESSAGE,
+} from '@/lib/session-user';
 
 // Detailed evaluation prompts for each phase
 const EVALUATION_GUIDES = {
@@ -240,8 +244,16 @@ const EVALUATION_GUIDES = {
 
 export async function POST(req: NextRequest) {
   const session = await auth();
-  if (!session?.user?.id) {
+  if (!session?.user?.id && !session?.user?.email) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const userId = await resolveSessionUserId(session.user);
+  if (!userId) {
+    return NextResponse.json(
+      { error: 'session_stale', message: SESSION_STALE_MESSAGE },
+      { status: 403 }
+    );
   }
 
   const body = await req.json();
@@ -260,7 +272,7 @@ export async function POST(req: NextRequest) {
 
   let llm;
   try {
-    ({ llm } = await getUserLLM(session.user.id, {
+    ({ llm } = await getUserLLM(userId, {
       temperature: 0.3,
       problemSlug: problemDetails?.slug,
     }));
@@ -278,7 +290,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const problemSlug = problemDetails?.slug || problem;
-    const adaptiveCoachEnabled = await canAccessFeature(session.user.id, 'adaptiveCoach');
+    const adaptiveCoachEnabled = await canAccessFeature(userId, 'adaptiveCoach');
 
     if (adaptiveCoachEnabled) {
       const clientAttemptCount =
@@ -299,7 +311,7 @@ export async function POST(req: NextRequest) {
       if (typeof sessionId === 'string' && sessionId.trim() && resolvedStepId) {
         const priorFailures = await prisma.stepSubmission.count({
           where: {
-            userId: session.user.id,
+            userId,
             sessionId: sessionId.trim(),
             stepId: resolvedStepId,
             isPassing: false,
@@ -309,7 +321,7 @@ export async function POST(req: NextRequest) {
       }
 
       const result = await evaluateClassicAnswer({
-        userId: session.user.id,
+        userId,
         llm,
         problemSlug,
         difficulty: problemDetails?.difficulty || 'Medium',
@@ -321,7 +333,7 @@ export async function POST(req: NextRequest) {
       });
 
       posthog.capture({
-        distinctId: session.user.id,
+        distinctId: userId,
         event: 'ai evaluation requested',
         properties: {
           problem: body.problem,
@@ -455,7 +467,7 @@ Be constructive, encouraging, but honest. This is practice for a real interview.
     const feedback = await invokeWithValidation(llm, evaluationPrompt);
 
     posthog.capture({
-      distinctId: session.user.id,
+      distinctId: userId,
       event: 'ai evaluation requested',
       properties: {
         problem: body.problem,

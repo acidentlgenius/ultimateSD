@@ -55,7 +55,11 @@ export default function OnboardingModal({ isOpen, onClose, userId }: OnboardingM
             selectedExperienceLevel ?? ''
         );
         if (!result.success) {
-            toast.error('Failed to save preferences.');
+            toast.error(
+                result.error === 'session_stale'
+                    ? 'Your session is out of date. Sign out and sign back in.'
+                    : 'Failed to save preferences.'
+            );
         }
         return result.success;
     };
