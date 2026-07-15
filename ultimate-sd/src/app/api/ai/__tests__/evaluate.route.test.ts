@@ -16,6 +16,11 @@ vi.mock('@/lib/user-llm', () => {
 vi.mock('@/lib/adaptive-coach/adapters/classic', () => ({
   evaluateClassicAnswer: vi.fn(),
 }));
+vi.mock('@/lib/prisma', () => ({
+  prisma: {
+    stepSubmission: { count: vi.fn() },
+  },
+}));
 vi.mock('@/lib/posthog', () => ({
   default: { capture: vi.fn() },
 }));
@@ -24,12 +29,14 @@ import { auth } from '@/auth';
 import { canAccessFeature } from '@/lib/feature-flags-server';
 import { getUserLLM } from '@/lib/user-llm';
 import { evaluateClassicAnswer } from '@/lib/adaptive-coach/adapters/classic';
+import { prisma } from '@/lib/prisma';
 import { POST } from '@/app/api/ai/evaluate/route';
 
 const mockedAuth = vi.mocked(auth);
 const mockedFlag = vi.mocked(canAccessFeature);
 const mockedLLM = vi.mocked(getUserLLM);
 const mockedClassic = vi.mocked(evaluateClassicAnswer);
+const mockedCount = vi.mocked(prisma.stepSubmission.count);
 
 const EVALUATE_BODY = {
   problem: 'design-tinyurl',
@@ -79,6 +86,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockedAuth.mockResolvedValue({ user: { id: 'u1' } } as never);
   mockedFlag.mockResolvedValue(false);
+  mockedCount.mockResolvedValue(0);
 });
 
 describe('POST /api/ai/evaluate', () => {
@@ -166,5 +174,75 @@ describe('POST /api/ai/evaluate', () => {
     expect(data.feedback.isAcceptable).toBe(false);
     expect(data.gate.action).toBe('teach_forward');
     expect(data.tip).toContain('redirect');
+  });
+
+  it('uses server attempt count when sessionId and stepId are present', async () => {
+    mockedFlag.mockResolvedValue(true);
+    mockedLLM.mockResolvedValue({ llm: {} as never, source: 'byok' });
+    mockedCount.mockResolvedValue(2);
+    mockedClassic.mockResolvedValue({
+      feedback: {
+        score: 4,
+        accuracy: 40,
+        strengths: [],
+        weaknesses: ['thin'],
+        missed: [],
+        isAcceptable: false,
+      },
+      gate: {
+        action: 'teach_forward',
+        reason: 'Attempts exhausted (3/3)',
+        threshold: 6,
+      },
+      tip: 'Add more detail.',
+    });
+
+    await POST(
+      makeRequest({
+        ...EVALUATE_BODY,
+        sessionId: 'sess-1',
+        stepId: 'requirements-0',
+        attemptCount: 1,
+      }),
+    );
+
+    expect(mockedCount).toHaveBeenCalledWith({
+      where: {
+        userId: 'u1',
+        sessionId: 'sess-1',
+        stepId: 'requirements-0',
+        isPassing: false,
+      },
+    });
+    expect(mockedClassic).toHaveBeenCalledWith(
+      expect.objectContaining({ attemptCount: 3 }),
+    );
+  });
+
+  it('falls back to client attemptCount when sessionId is missing', async () => {
+    mockedFlag.mockResolvedValue(true);
+    mockedLLM.mockResolvedValue({ llm: {} as never, source: 'byok' });
+    mockedClassic.mockResolvedValue({
+      feedback: {
+        score: 8,
+        accuracy: 70,
+        strengths: ['good'],
+        weaknesses: [],
+        missed: [],
+        isAcceptable: true,
+      },
+      gate: {
+        action: 'pass',
+        reason: 'Score 8 meets threshold 6',
+        threshold: 6,
+      },
+    });
+
+    await POST(makeRequest({ ...EVALUATE_BODY, attemptCount: 2 }));
+
+    expect(mockedCount).not.toHaveBeenCalled();
+    expect(mockedClassic).toHaveBeenCalledWith(
+      expect.objectContaining({ attemptCount: 2 }),
+    );
   });
 });

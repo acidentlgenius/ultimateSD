@@ -276,6 +276,48 @@ describe('runCoachTurn', () => {
     ).rejects.toThrow(/submit stageId mismatch/);
   });
 
+  it('records coached outcome on advance_budget when stage time elapses', async () => {
+    const llm = mockLlm();
+
+    const start = await runCoachTurn({
+      userId: 'user-1',
+      problemSlug: 'design-parking-lot',
+      difficulty: 'Medium',
+      mode: 'practice',
+      event: { type: 'start' },
+      sessionState: null,
+      llm,
+    });
+
+    const response = await runCoachTurn({
+      userId: 'user-1',
+      problemSlug: 'design-parking-lot',
+      difficulty: 'Medium',
+      mode: 'practice',
+      event: {
+        type: 'submit',
+        userAnswer: 'Partial answer after budget elapsed.',
+        stageId: 'requirements-0',
+      },
+      sessionState: {
+        ...start.sessionState,
+        stageStartedAt: new Date(Date.now() - 700_000).toISOString(),
+      },
+      llm,
+    });
+
+    expect(response.ui.gate?.action).toBe('advance_budget');
+    expect(response.ui.feedback?.isAcceptable).toBe(false);
+    expect(recordOutcome).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'user-1',
+        outcome: 'coached',
+        skillIds: ['requirements'],
+      }),
+    );
+    expect(invokeTeachForward).not.toHaveBeenCalled();
+  });
+
   it('ends mock session on timer exhaustion without retry replan', async () => {
     vi.mocked(invokeEvaluateForLevel).mockResolvedValue(highScoreEvaluation);
     const llm = mockLlm();

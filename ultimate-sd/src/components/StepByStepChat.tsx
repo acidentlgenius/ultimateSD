@@ -702,8 +702,13 @@ export default function StepByStepChat({
         userAnswer,
         problemDetails: problem,
         stageId: currentStepKey,
+        stepId: currentStepKey,
         attemptCount,
       };
+
+      if (activeSessionId) {
+        requestBody.sessionId = activeSessionId;
+      }
 
       let usedDiagramData: StepDiagramData | null = null;
 

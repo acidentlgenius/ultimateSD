@@ -11,6 +11,7 @@ import {
 import posthog from '@/lib/posthog';
 import { canAccessFeature } from '@/lib/feature-flags-server';
 import { evaluateClassicAnswer } from '@/lib/adaptive-coach/adapters/classic';
+import { prisma } from '@/lib/prisma';
 
 // Detailed evaluation prompts for each phase
 const EVALUATION_GUIDES = {
@@ -244,7 +245,18 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { problem, phase, phaseKey, subStep, userAnswer, problemDetails, stageId, attemptCount } = body;
+  const {
+    problem,
+    phase,
+    phaseKey,
+    subStep,
+    userAnswer,
+    problemDetails,
+    stageId,
+    stepId,
+    sessionId,
+    attemptCount,
+  } = body;
 
   let llm;
   try {
@@ -269,10 +281,32 @@ export async function POST(req: NextRequest) {
     const adaptiveCoachEnabled = await canAccessFeature(session.user.id, 'adaptiveCoach');
 
     if (adaptiveCoachEnabled) {
-      const resolvedAttemptCount =
+      const clientAttemptCount =
         typeof attemptCount === 'number' && attemptCount >= 1
           ? Math.floor(attemptCount)
           : 1;
+
+      const resolvedStepId =
+        typeof stepId === 'string' && stepId.trim()
+          ? stepId.trim()
+          : typeof stageId === 'string' && stageId.trim()
+            ? stageId.trim()
+            : undefined;
+
+      // Server-authoritative attempts when session context is present; otherwise
+      // fall back to the client's local attempt counter.
+      let resolvedAttemptCount = clientAttemptCount;
+      if (typeof sessionId === 'string' && sessionId.trim() && resolvedStepId) {
+        const priorFailures = await prisma.stepSubmission.count({
+          where: {
+            userId: session.user.id,
+            sessionId: sessionId.trim(),
+            stepId: resolvedStepId,
+            isPassing: false,
+          },
+        });
+        resolvedAttemptCount = Math.max(clientAttemptCount, priorFailures + 1);
+      }
 
       const result = await evaluateClassicAnswer({
         userId: session.user.id,

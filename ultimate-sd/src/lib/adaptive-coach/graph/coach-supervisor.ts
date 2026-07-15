@@ -12,6 +12,7 @@ import {
   invokePlanAgenda,
   invokeTeachForward,
 } from '@/lib/adaptive-coach/skills/invoke';
+import { resolveOutcomeSkillIds } from '@/lib/adaptive-coach/adapters/classic';
 import { budgetTick } from '@/lib/adaptive-coach/tools/budget-tick';
 import { loadProfile } from '@/lib/adaptive-coach/tools/load-profile';
 import { progressGate } from '@/lib/adaptive-coach/tools/progress-gate';
@@ -421,6 +422,12 @@ async function persistNode(
         nextSession = { ...sessionState, status: 'complete' };
       }
     } else if (gate.action === 'advance_budget') {
+      await recordOutcome({
+        userId: request.userId,
+        skillIds: resolveOutcomeSkillIds(stage),
+        outcome: 'coached',
+      });
+
       const nextId = nextStageId(rails, stageId);
       if (nextId) {
         const nextStage = findStage(rails, nextId);
