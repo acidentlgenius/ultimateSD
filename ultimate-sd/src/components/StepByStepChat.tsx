@@ -1134,8 +1134,8 @@ return (
             </p>
           )}
           {!showFeedback && feedback && !feedback.isAcceptable && (
-            <p className="text-xs text-red-600 dark:text-red-400">
-              Needs improvement — update your answer or diagram, then resubmit.
+            <p className="text-xs text-amber-800 dark:text-amber-200">
+              Needs revision — revise your answer and submit again.
             </p>
           )}
           {currentStep.inputType === 'list' ? (

@@ -35,31 +35,6 @@ interface FeedbackModalProps {
   gate?: GateDecision | null;
 }
 
-// Confetti component for celebrations
-function Confetti({ show }: { show: boolean }) {
-  if (!show) return null;
-  
-  return (
-    <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
-      {Array.from({ length: 50 }).map((_, i) => (
-        <div
-          key={i}
-          className="absolute animate-confetti"
-          style={{
-            left: `${Math.random() * 100}%`,
-            animationDelay: `${Math.random() * 2}s`,
-            animationDuration: `${2 + Math.random() * 2}s`,
-            backgroundColor: ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#a855f7'][Math.floor(Math.random() * 5)],
-            width: '8px',
-            height: '8px',
-            borderRadius: '50%',
-          }}
-        />
-      ))}
-    </div>
-  );
-}
-
 export default function FeedbackModal({
   feedback,
   isOpen,
@@ -77,13 +52,11 @@ export default function FeedbackModal({
     gate?.action === 'teach_forward' || gate?.action === 'advance_budget';
   const [animatedScore, setAnimatedScore] = useState(0);
   const [animatedAccuracy, setAnimatedAccuracy] = useState(0);
-  const [showConfetti, setShowConfetti] = useState(false);
   const accuracyBarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isOpen) {
       if (feedback.isAcceptable && !isCoachedAdvance) {
-        // If passed, update streak!
         const handleStreakUpdate = async () => {
           try {
             const result = await updateStreak();
@@ -95,10 +68,6 @@ export default function FeedbackModal({
           }
         };
         handleStreakUpdate();
-
-        // Show confetti for successful evaluations
-        setShowConfetti(true);
-        setTimeout(() => setShowConfetti(false), 3000);
       }
 
       // Animate score counting up
@@ -155,9 +124,8 @@ export default function FeedbackModal({
     } else {
       setAnimatedScore(0);
       setAnimatedAccuracy(0);
-      setShowConfetti(false);
     }
-  }, [isOpen, feedback]);
+  }, [isOpen, feedback, isCoachedAdvance]);
 
   const handleContinue = () => {
     if (allowAdvance && onContinue) {
@@ -206,7 +174,6 @@ export default function FeedbackModal({
 
   return (
     <>
-      <Confetti show={showConfetti} />
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
         <DialogContent className="max-w-5xl w-full max-h-[90vh] overflow-y-auto p-0">
           <DialogHeader className="px-6 pt-6 pb-4 border-b border-border/50">
@@ -449,10 +416,10 @@ export default function FeedbackModal({
               ))}
             <Button
               onClick={handleContinue}
-              className={`w-full sm:w-auto gradient-bg hover:opacity-90 transition-all hover:scale-105 shadow-lg ${
+              className={`w-full sm:w-auto gradient-bg hover:opacity-90 transition-all shadow-sm ${
                 allowAdvance
-                  ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700'
-                  : 'bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700'
+                  ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                  : 'bg-primary text-primary-foreground hover:bg-primary/90'
               }`}
             >
               {allowAdvance

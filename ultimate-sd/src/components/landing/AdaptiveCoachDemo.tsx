@@ -16,38 +16,14 @@ import {
   type DemoBeat,
   type DemoLevel,
 } from '@/lib/adaptive-coach/demo/landing-demo';
+import { CoachBubble } from '@/components/chat/CoachBubble';
 
 function Bubble({ beat }: { beat: DemoBeat }) {
   if (beat.role === 'system') {
-    return (
-      <p className="text-center text-xs text-muted-foreground tracking-wide py-1">
-        {beat.body}
-      </p>
-    );
+    return <CoachBubble role="system">{beat.body}</CoachBubble>;
   }
-
-  const isYou = beat.role === 'you';
   return (
-    <div className={cn('flex', isYou ? 'justify-end' : 'justify-start')}>
-      <div
-        className={cn(
-          'max-w-[88%] px-4 py-3 text-sm leading-relaxed',
-          isYou
-            ? 'rounded-2xl rounded-br-sm bg-primary text-primary-foreground'
-            : 'rounded-2xl rounded-bl-sm border border-border bg-background'
-        )}
-      >
-        <span
-          className={cn(
-            'block text-[10px] uppercase tracking-wider mb-1.5 font-medium',
-            isYou ? 'text-primary-foreground/70' : 'text-muted-foreground'
-          )}
-        >
-          {isYou ? 'You' : 'Coach'}
-        </span>
-        {beat.body}
-      </div>
-    </div>
+    <CoachBubble role={beat.role === 'you' ? 'you' : 'coach'}>{beat.body}</CoachBubble>
   );
 }
 

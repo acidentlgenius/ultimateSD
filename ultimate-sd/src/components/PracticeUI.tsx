@@ -16,7 +16,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Download, Loader2, Menu, X, ArrowLeft, PanelLeftOpen, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Download, Loader2, Menu, X, ArrowLeft, ChevronLeft, ChevronRight, BookOpen, HelpCircle } from 'lucide-react';
 import { SystemDesignProblem } from '@/types';
 import Link from 'next/link';
 import { exportPracticeSession } from '@/lib/pdf-export-compact';
@@ -53,7 +53,6 @@ import { ErrorBoundary } from './ErrorBoundary';
 import { ProblemIntroStep } from './ProblemIntroStep';
 import { introSeenKey, shouldAutoShowIntro } from '@/lib/problem-intro';
 import type { ProblemIntroContent } from '@/types';
-import { BookOpen } from 'lucide-react';
 import { parseStepKey } from '@/lib/pdf-export-helpers';
 import { PracticeProgress } from '@/components/PracticeProgress';
 
@@ -144,6 +143,7 @@ function PracticeUIContent({
   const [onIntroStep, setOnIntroStep] = useState(false);
   const [introGateReady, setIntroGateReady] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   // First-entry: intro is step 0 — skipped for interviews and e2e suppress.
@@ -717,6 +717,19 @@ function PracticeUIContent({
             </Button>
           )}
 
+          {!interviewConfig && !onIntroStep && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="shrink-0 h-8 gap-1 text-xs"
+              onClick={() => setHelpOpen(true)}
+              data-tour="help"
+            >
+              <HelpCircle className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Hint</span>
+            </Button>
+          )}
+
           <Button
             variant="ghost"
             size="icon"
@@ -818,31 +831,10 @@ function PracticeUIContent({
       </header>
 
       <div className="flex flex-1 min-h-0 relative">
-        {/* Desktop: menu tab — opens sidebar on click */}
-        <div ref={sidebarRef} className="hidden md:block absolute left-0 top-1/2 -translate-y-1/2 z-30">
-          <button
-            type="button"
-            onClick={() => setSidebarOpen((open) => !open)}
-            aria-expanded={sidebarOpen}
-            aria-label={sidebarOpen ? 'Close menu' : 'Open menu'}
-            className="flex flex-col items-center gap-1 rounded-r-xl border border-border bg-card py-3 px-1.5 shadow-md cursor-pointer hover:bg-muted/50 transition-colors"
-          >
-            <PanelLeftOpen className="h-4 w-4 text-primary" />
-            <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground [writing-mode:vertical-lr] rotate-180">
-              Menu
-            </span>
-          </button>
-          <aside
-            className={cn(
-              'absolute left-full top-1/2 -translate-y-1/2 w-72 h-[85vh] ml-1 flex flex-col border border-border rounded-r-xl shadow-xl overflow-hidden bg-card transition-all duration-300 ease-out',
-              sidebarOpen
-                ? 'opacity-100 pointer-events-auto translate-x-0'
-                : 'opacity-0 pointer-events-none -translate-x-2'
-            )}
-          >
-            {renderSidebar()}
-          </aside>
-        </div>
+        {/* Desktop: persistent step rail */}
+        <aside className="hidden md:flex w-60 shrink-0 flex-col border-r border-border bg-card/40 overflow-hidden">
+          {renderSidebar()}
+        </aside>
 
         {/* Main Content Area — stable tree so StepByStepChat never remounts on diagram layout toggle */}
         <main
@@ -921,6 +913,8 @@ function PracticeUIContent({
           currentPhase={phase}
           completedSteps={completedSteps}
           savedStepData={savedStepData}
+          open={helpOpen}
+          onOpenChange={setHelpOpen}
         />
       )}
 

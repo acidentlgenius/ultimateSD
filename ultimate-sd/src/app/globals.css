@@ -1,6 +1,8 @@
 @import "tailwindcss";
 
 @theme {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
   --color-background: hsl(220 17% 97%);
   --color-foreground: hsl(222.2 84% 4.9%);
   --color-card: hsl(0 0% 100%);
@@ -53,6 +55,7 @@
   body {
     background-color: hsl(var(--color-background));
     color: hsl(var(--color-foreground));
+    font-family: var(--font-sans);
     line-height: 1.6; /* Premium readability rule */
   }
 
@@ -168,8 +171,19 @@
 
 .animate-fade-in { animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 .animate-slide-in { animation: slideIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.animate-slide-up { animation: fadeIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 .animate-shimmer { animation: shimmer 3s infinite linear; }
 .animate-float { animation: float 6s ease-in-out infinite; }
+.animate-confetti { animation: fadeIn 0.01s linear forwards; opacity: 0; }
+
+/* Practice CTAs — calm primary fill (no marketing purple) */
+.gradient-bg {
+  background-color: hsl(var(--color-primary));
+  color: hsl(var(--color-primary-foreground));
+}
+.gradient-bg:hover {
+  opacity: 0.92;
+}
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; }
