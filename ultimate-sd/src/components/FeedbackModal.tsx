@@ -29,6 +29,7 @@ interface FeedbackModalProps {
   probeEntitled: boolean;
   onStartProbe: () => void;
   xpEarned?: number;
+  canAdvance?: boolean;
 }
 
 // Confetti component for celebrations
@@ -64,7 +65,9 @@ export default function FeedbackModal({
   probeEntitled,
   onStartProbe,
   xpEarned = 0,
+  canAdvance,
 }: FeedbackModalProps) {
+  const allowAdvance = canAdvance ?? feedback.isAcceptable;
   const [animatedScore, setAnimatedScore] = useState(0);
   const [animatedAccuracy, setAnimatedAccuracy] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
@@ -150,7 +153,7 @@ export default function FeedbackModal({
   }, [isOpen, feedback]);
 
   const handleContinue = () => {
-    if (feedback.isAcceptable && onContinue) {
+    if (allowAdvance && onContinue) {
       onContinue();
     }
     onClose();
@@ -422,12 +425,14 @@ export default function FeedbackModal({
             <Button
               onClick={handleContinue}
               className={`w-full sm:w-auto gradient-bg hover:opacity-90 transition-all hover:scale-105 shadow-lg ${
-                feedback.isAcceptable 
-                  ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700' 
+                allowAdvance
+                  ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700'
                   : 'bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700'
               }`}
             >
-              {feedback.isAcceptable ? 'Continue to Next Step' : 'Try Again'}
+              {allowAdvance
+                ? (feedback.isAcceptable ? 'Continue to Next Step' : 'Continue with coach tip')
+                : 'Try Again'}
             </Button>
           </div>
         </DialogContent>

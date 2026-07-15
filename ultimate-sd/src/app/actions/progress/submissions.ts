@@ -25,6 +25,8 @@ export async function recordStepSubmission(input: {
   score: number | null;
   isPassing: boolean;
   problemSlug?: string;
+  gateAction?: string | null;
+  outcome?: 'earned' | 'coached' | null;
 }) {
   const session = await auth();
   if (!session?.user?.id) {
@@ -51,6 +53,8 @@ export async function recordStepSubmission(input: {
           feedback: input.feedback,
           score: input.score,
           isPassing: input.isPassing,
+          gateAction: input.gateAction ?? null,
+          outcome: input.outcome ?? null,
         },
       });
 

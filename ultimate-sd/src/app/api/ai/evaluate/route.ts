@@ -9,6 +9,8 @@ import {
   resolveEvaluationSubStepKey,
 } from '@/lib/step-journey';
 import posthog from '@/lib/posthog';
+import { canAccessFeature } from '@/lib/feature-flags-server';
+import { evaluateClassicAnswer } from '@/lib/adaptive-coach/adapters/classic';
 
 // Detailed evaluation prompts for each phase
 const EVALUATION_GUIDES = {
@@ -242,7 +244,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { problem, phase, phaseKey, subStep, userAnswer, problemDetails } = body;
+  const { problem, phase, phaseKey, subStep, userAnswer, problemDetails, stageId, attemptCount } = body;
 
   let llm;
   try {
@@ -263,6 +265,48 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    const problemSlug = problemDetails?.slug || problem;
+    const adaptiveCoachEnabled = await canAccessFeature(session.user.id, 'adaptiveCoach');
+
+    if (adaptiveCoachEnabled) {
+      const resolvedAttemptCount =
+        typeof attemptCount === 'number' && attemptCount >= 1
+          ? Math.floor(attemptCount)
+          : 1;
+
+      const result = await evaluateClassicAnswer({
+        userId: session.user.id,
+        llm,
+        problemSlug,
+        difficulty: problemDetails?.difficulty || 'Medium',
+        userAnswer,
+        attemptCount: resolvedAttemptCount,
+        stageId,
+        phaseKey,
+        subStep,
+      });
+
+      posthog.capture({
+        distinctId: session.user.id,
+        event: 'ai evaluation requested',
+        properties: {
+          problem: body.problem,
+          phase: body.phase,
+          sub_step: body.subStep,
+          score: result.feedback.score,
+          is_acceptable: result.feedback.isAcceptable,
+          gate_action: result.gate.action,
+          adaptive_coach: true,
+        },
+      });
+
+      return NextResponse.json({
+        feedback: result.feedback,
+        gate: result.gate,
+        tip: result.tip,
+      });
+    }
+
     // Get evaluation criteria
     const evaluationPhase = resolveEvaluationPhaseKey(phaseKey, phase);
     const evaluationSubStep = evaluationPhase
@@ -273,8 +317,8 @@ export async function POST(req: NextRequest) {
 
     const problemTitle = problemDetails?.title || problem;
     const problemDesc = problemDetails?.context || '';
-    const problemSlug = problemDetails?.slug || '';
-    const expertSolution = getSolution(problemSlug);
+    const legacyProblemSlug = problemDetails?.slug || '';
+    const expertSolution = getSolution(legacyProblemSlug);
 
     // Ground the evaluator in the problem's authored requirements — these
     // carry the scale numbers and quantified targets the candidate is

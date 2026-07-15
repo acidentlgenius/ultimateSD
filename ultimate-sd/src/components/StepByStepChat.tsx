@@ -80,6 +80,7 @@ import {
 import { buildDiagramDescription } from '@/lib/diagram-description';
 import { shouldUseLocalSessionDraft } from '@/lib/session-persistence-policy';
 import type { StepDiagramData } from '@/types/diagram';
+import type { GateDecision } from '@/lib/adaptive-coach/types';
 
 // Widget registry is shared with public guide pages (see widgets/registry.tsx)
 import { WIDGETS } from './widgets/registry';
@@ -93,6 +94,20 @@ interface FeedbackResult {
   weaknesses: string[];
   missed: string[];
   isAcceptable: boolean;
+}
+
+function isStepCompletable(feedback: FeedbackResult, gate?: GateDecision | null): boolean {
+  if (feedback.isAcceptable) return true;
+  return gate?.action === 'teach_forward' || gate?.action === 'advance_budget';
+}
+
+function submissionOutcome(
+  feedback: FeedbackResult,
+  gate?: GateDecision | null,
+): 'earned' | 'coached' | undefined {
+  if (feedback.isAcceptable) return 'earned';
+  if (gate?.action === 'teach_forward' || gate?.action === 'advance_budget') return 'coached';
+  return undefined;
 }
 
 interface SavedStepData {
@@ -275,6 +290,8 @@ export default function StepByStepChat({
 
   // Store all step data
   const [savedStepData, setSavedStepData] = useState<Map<string, SavedStepData>>(new Map());
+  const [attemptsByStep, setAttemptsByStep] = useState<Record<string, number>>({});
+  const [evaluationGate, setEvaluationGate] = useState<GateDecision | null>(null);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [isSessionCompleted, setIsSessionCompleted] = useState(false);
 
@@ -604,6 +621,7 @@ export default function StepByStepChat({
     }
     setShowFeedback(false);
     setProbeContext(null);
+    setEvaluationGate(null);
     setNewItemInput('');
   }, [currentStepKey]);
 
@@ -675,13 +693,16 @@ export default function StepByStepChat({
     setEvaluationError(null);
 
     try {
+      const attemptCount = (attemptsByStep[currentStepKey] ?? 0) + 1;
       const requestBody: any = {
         problem: problem.slug,
         phase: currentStep.phase,
         phaseKey: effectivePhase,
         subStep: currentStep.subStep,
         userAnswer,
-        problemDetails: problem
+        problemDetails: problem,
+        stageId: currentStepKey,
+        attemptCount,
       };
 
       let usedDiagramData: StepDiagramData | null = null;
@@ -707,8 +728,27 @@ export default function StepByStepChat({
       });
 
       const data = await res.json();
+      const gate = data.gate as GateDecision | undefined;
+      const tip = typeof data.tip === 'string' ? data.tip : undefined;
+      const stepCompletable = isStepCompletable(data.feedback, gate);
+
+      setAttemptsByStep((prev) => ({ ...prev, [currentStepKey]: attemptCount }));
+      setEvaluationGate(gate ?? null);
       setFeedback(data.feedback);
       setShowFeedback(true);
+
+      if (gate?.action === 'teach_forward' && tip) {
+        toast.info(tip, {
+          icon: <Lightbulb className="h-4 w-4" />,
+          className: 'bg-amber-500/10 border-amber-500/20 text-amber-800 dark:text-amber-200',
+          duration: 12000,
+        });
+      } else if (gate?.action === 'advance_budget') {
+        toast.info(gate.reason, {
+          icon: <Lightbulb className="h-4 w-4" />,
+          className: 'bg-blue-500/10 border-blue-500/20 text-blue-700 dark:text-blue-300',
+        });
+      }
 
       const newSavedData = new Map(savedStepData);
       newSavedData.set(currentStepKey, {
@@ -716,7 +756,7 @@ export default function StepByStepChat({
         textInput,
         schemaData: [...schemaData],
         feedback: data.feedback,
-        completed: data.feedback.isAcceptable,
+        completed: stepCompletable,
         diagramData: usedDiagramData ?? savedStepData.get(currentStepKey)?.diagramData ?? null,
       });
       setSavedStepData(newSavedData);
@@ -780,15 +820,17 @@ export default function StepByStepChat({
               content: userAnswer,
               feedback: JSON.stringify(data.feedback),
               score: Math.round(data.feedback.score),
-              isPassing: data.feedback.isAcceptable,
+              isPassing: stepCompletable,
               problemSlug: problem.slug,
+              gateAction: gate?.action ?? null,
+              outcome: submissionOutcome(data.feedback, gate) ?? null,
             });
           } catch (error) {
             console.error('Failed to record step submission:', error);
           }
         }
 
-        if (data.feedback.isAcceptable) {
+        if (stepCompletable) {
           let totalStepsCount = 0;
           Object.values(PHASE_STEPS).forEach(steps => totalStepsCount += steps.length);
 
@@ -828,7 +870,7 @@ export default function StepByStepChat({
         }
       })().catch(err => console.error('Background updates failed:', err));
 
-      if (data.feedback.isAcceptable) {
+      if (stepCompletable) {
         setCompletedSteps(new Set(completedSteps).add(currentStepKey));
       }
     } catch (error) {
@@ -1130,6 +1172,7 @@ return (
               probeEntitled={probeEnabled}
               feedback={feedback}
               xpEarned={feedback.isAcceptable ? 20 : 0}
+              canAdvance={isStepCompletable(feedback, evaluationGate)}
             />
           )}
         </div>
@@ -1419,6 +1462,7 @@ return (
               probeEntitled={probeEnabled}
               feedback={feedback}
               xpEarned={feedback.isAcceptable ? 20 : 0}
+              canAdvance={isStepCompletable(feedback, evaluationGate)}
             />
           )}
 
