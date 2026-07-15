@@ -4,9 +4,10 @@ import { HumanMessage } from '@langchain/core/messages';
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { z } from 'zod';
 
+import { isCompetencyId } from '@/lib/adaptive-coach/competencies';
 import { loadSkill } from '@/lib/adaptive-coach/skills-loader';
 import type { CoachStage } from '@/lib/adaptive-coach/tools/stage-rails';
-import type { AgendaMove, LearnerProfile } from '@/lib/adaptive-coach/types';
+import type { AgendaMove, LearnerProfile, SessionState } from '@/lib/adaptive-coach/types';
 
 export const EvaluateSkillOutputSchema = z.object({
   score: z.number().min(0).max(10),
@@ -40,6 +41,24 @@ export const TeachForwardSchema = z.object({
 
 export type TeachForwardOutput = z.infer<typeof TeachForwardSchema>;
 
+export const ProfileReflectNoteSchema = z.object({
+  text: z.string().min(1),
+  tags: z.array(z.string()),
+  problemSlug: z.string().optional(),
+});
+
+export const ProfileReflectCompetencyDeltaSchema = z.object({
+  skillId: z.string(),
+  outcome: z.enum(['earned', 'coached']),
+});
+
+export const ProfileReflectSchema = z.object({
+  notes: z.array(ProfileReflectNoteSchema).max(3),
+  competencyDeltas: z.array(ProfileReflectCompetencyDeltaSchema).max(5).default([]),
+});
+
+export type ProfileReflectOutput = z.infer<typeof ProfileReflectSchema>;
+
 function stripMarkdownFences(raw: string): string {
   return raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
 }
@@ -68,6 +87,10 @@ function parseAgendaOutput(raw: string): AgendaOutput | null {
 
 function parseTeachForwardOutput(raw: string): TeachForwardOutput | null {
   return parseJsonWithSchema(raw, TeachForwardSchema);
+}
+
+function parseProfileReflectOutput(raw: string): ProfileReflectOutput | null {
+  return parseJsonWithSchema(raw, ProfileReflectSchema);
 }
 
 async function invokeWithValidation(
@@ -137,6 +160,29 @@ async function invokeTeachForwardWithValidation(
   }
 
   throw new Error('teach-forward returned malformed JSON after retry');
+}
+
+async function invokeProfileReflectWithValidation(
+  llm: BaseChatModel,
+  prompt: string,
+): Promise<ProfileReflectOutput> {
+  const response = await llm.invoke([new HumanMessage(prompt)]);
+  const first = parseProfileReflectOutput(String(response.content));
+  if (first) {
+    return first;
+  }
+
+  const retry = await llm.invoke([
+    new HumanMessage(
+      `${prompt}\n\nIMPORTANT: Your previous response was not valid JSON matching the required schema. Respond with ONLY the JSON object — field "notes" is required (0–3 items with text and tags), "competencyDeltas" is optional. Do not include markdown.`,
+    ),
+  ]);
+  const second = parseProfileReflectOutput(String(retry.content));
+  if (second) {
+    return second;
+  }
+
+  throw new Error('profile-reflect returned malformed JSON after retry');
 }
 
 function formatGoldBlock(gold: string[]): string {
@@ -285,6 +331,86 @@ Respond with ONLY valid JSON matching this schema:
 Do not dump the full expert architecture. Do not include markdown or fields outside the schema.`;
 }
 
+function formatCompetencySummary(profile: LearnerProfile): string {
+  if (profile.competencies.length === 0) {
+    return 'No competency signals recorded yet.';
+  }
+
+  return profile.competencies
+    .slice(0, 12)
+    .map((c) => `- ${c.skillId}: earned ${c.earned.toFixed(2)}, coached ${c.coached.toFixed(2)}`)
+    .join('\n');
+}
+
+function formatMemoryNotesSummary(profile: LearnerProfile): string {
+  if (profile.memoryNotes.length === 0) {
+    return 'No prior memory notes.';
+  }
+
+  return profile.memoryNotes
+    .slice(0, 5)
+    .map((note) => `- ${note.text} [${note.tags.join(', ')}]`)
+    .join('\n');
+}
+
+function buildProfileReflectPrompt(args: {
+  profile: LearnerProfile;
+  problemTitle: string;
+  problemSlug: string;
+  mode: SessionState['mode'];
+  sessionState: SessionState;
+  finalScore?: number;
+}): string {
+  const skill = loadSkill('profile-reflect');
+  const attemptsSummary =
+    Object.keys(args.sessionState.attempts).length > 0
+      ? Object.entries(args.sessionState.attempts)
+          .map(([stageId, count]) => `- ${stageId}: ${count} attempt(s)`)
+          .join('\n')
+      : 'No stage attempts recorded.';
+
+  const scoreLine =
+    args.finalScore != null ? `- Final score: ${args.finalScore}/10` : '';
+
+  return `${skill.body}
+
+## Session context
+- Problem: ${args.problemTitle} (${args.problemSlug})
+- Mode: ${args.mode}
+- Session status: ${args.sessionState.status}
+- Last stage: ${args.sessionState.stageId || 'unknown'}
+${scoreLine}
+${formatProfileContext(args.profile)}
+
+## Stage attempts
+${attemptsSummary}
+
+## Current competencies
+${formatCompetencySummary(args.profile)}
+
+## Existing memory notes (recent)
+${formatMemoryNotesSummary(args.profile)}
+
+Respond with ONLY valid JSON matching this schema:
+{
+  "notes": [
+    {
+      "text": "<concise memory note, ≤200 tokens>",
+      "tags": ["competency-tag"],
+      "problemSlug": "<optional problem slug>"
+    }
+  ],
+  "competencyDeltas": [
+    {
+      "skillId": "<competency id>",
+      "outcome": "earned" | "coached"
+    }
+  ]
+}
+
+Provide 0–3 notes. Only include competencyDeltas for meaningful session signals. Do not include markdown or fields outside the schema.`;
+}
+
 export async function invokeEvaluateForLevel(args: {
   llm: BaseChatModel;
   profile: LearnerProfile;
@@ -325,4 +451,26 @@ export async function invokeTeachForward(args: {
   gateReason: string;
 }): Promise<TeachForwardOutput> {
   return invokeTeachForwardWithValidation(args.llm, buildTeachForwardPrompt(args));
+}
+
+export async function invokeProfileReflect(args: {
+  llm: BaseChatModel;
+  profile: LearnerProfile;
+  problemTitle: string;
+  problemSlug: string;
+  mode: SessionState['mode'];
+  sessionState: SessionState;
+  finalScore?: number;
+}): Promise<ProfileReflectOutput> {
+  const output = await invokeProfileReflectWithValidation(
+    args.llm,
+    buildProfileReflectPrompt(args),
+  );
+
+  return {
+    notes: output.notes,
+    competencyDeltas: output.competencyDeltas.filter((delta) =>
+      isCompetencyId(delta.skillId),
+    ),
+  };
 }

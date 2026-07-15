@@ -29,6 +29,10 @@ vi.mock('@/lib/adaptive-coach/tools/record-outcome', () => ({
   recordOutcome: vi.fn(),
 }));
 
+vi.mock('@/lib/adaptive-coach/tools/schedule-profile-reflect', () => ({
+  scheduleProfileReflect: vi.fn(),
+}));
+
 import { loadProfile } from '@/lib/adaptive-coach/tools/load-profile';
 import {
   invokeEvaluateForLevel,
@@ -36,6 +40,7 @@ import {
   invokeTeachForward,
 } from '@/lib/adaptive-coach/skills/invoke';
 import { recordOutcome } from '@/lib/adaptive-coach/tools/record-outcome';
+import { scheduleProfileReflect } from '@/lib/adaptive-coach/tools/schedule-profile-reflect';
 import { runCoachTurn } from '@/lib/adaptive-coach/graph/coach-supervisor';
 import type { LearnerProfile, SessionState } from '@/lib/adaptive-coach/types';
 
@@ -306,5 +311,41 @@ describe('runCoachTurn', () => {
     expect(response.sessionState.status).toBe('complete');
     expect(recordOutcome).not.toHaveBeenCalled();
     expect(invokePlanAgenda).toHaveBeenCalledOnce();
+  });
+
+  it('schedules profile-reflect on finish event', async () => {
+    const llm = mockLlm();
+
+    const start = await runCoachTurn({
+      userId: 'user-1',
+      problemSlug: 'design-parking-lot',
+      difficulty: 'Medium',
+      mode: 'practice',
+      event: { type: 'start' },
+      sessionState: null,
+      llm,
+    });
+
+    const response = await runCoachTurn({
+      userId: 'user-1',
+      problemSlug: 'design-parking-lot',
+      difficulty: 'Medium',
+      mode: 'practice',
+      event: { type: 'finish' },
+      sessionState: start.sessionState,
+      llm,
+    });
+
+    expect(response.sessionState.status).toBe('complete');
+    expect(scheduleProfileReflect).toHaveBeenCalledOnce();
+    expect(scheduleProfileReflect).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'user-1',
+        problemSlug: 'design-parking-lot',
+        mode: 'practice',
+        profile,
+        llm,
+      }),
+    );
   });
 });

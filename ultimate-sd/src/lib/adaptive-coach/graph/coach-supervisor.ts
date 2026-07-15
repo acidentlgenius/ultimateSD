@@ -16,6 +16,7 @@ import { budgetTick } from '@/lib/adaptive-coach/tools/budget-tick';
 import { loadProfile } from '@/lib/adaptive-coach/tools/load-profile';
 import { progressGate } from '@/lib/adaptive-coach/tools/progress-gate';
 import { recordOutcome } from '@/lib/adaptive-coach/tools/record-outcome';
+import { scheduleProfileReflect } from '@/lib/adaptive-coach/tools/schedule-profile-reflect';
 import {
   buildStageRails,
   type CoachStage,
@@ -320,6 +321,26 @@ async function teachNode(state: SupervisorState): Promise<Partial<SupervisorStat
   };
 }
 
+function maybeScheduleProfileReflect(
+  prevStatus: SessionState['status'],
+  nextSession: SessionState,
+  request: CoachTurnRequest,
+  profile: LearnerProfile,
+): void {
+  if (prevStatus !== 'running' || nextSession.status !== 'complete') {
+    return;
+  }
+
+  scheduleProfileReflect({
+    userId: request.userId,
+    problemSlug: request.problemSlug,
+    mode: request.mode,
+    sessionState: nextSession,
+    profile,
+    llm: request.llm,
+  });
+}
+
 async function persistNode(
   state: SupervisorState,
 ): Promise<Partial<SupervisorState>> {
@@ -330,6 +351,7 @@ async function persistNode(
 
   let nextSession = sessionState;
   let agenda = sessionState.agenda;
+  const prevStatus = sessionState.status;
 
   if (request.event.type === 'tick') {
     const tick = budgetTick({
@@ -343,11 +365,13 @@ async function persistNode(
       status: tick.endMock ? 'complete' : sessionState.status,
     };
 
+    maybeScheduleProfileReflect(prevStatus, nextSession, request, profile);
     return { sessionState: nextSession, agenda };
   }
 
   if (request.event.type === 'finish') {
     nextSession = { ...sessionState, status: 'complete' };
+    maybeScheduleProfileReflect(prevStatus, nextSession, request, profile);
     return { sessionState: nextSession, agenda };
   }
 
@@ -418,6 +442,7 @@ async function persistNode(
       nextSession = { ...sessionState, agenda };
     }
 
+    maybeScheduleProfileReflect(prevStatus, nextSession, request, profile);
     return { sessionState: nextSession, agenda };
   }
 
