@@ -56,6 +56,14 @@ const lowScoreEvaluation = {
   missed: ['Payment outage handling'],
 };
 
+const highScoreEvaluation = {
+  score: 7,
+  accuracy: 85,
+  strengths: ['Complete feature list', 'Clear operator flows'],
+  weaknesses: [],
+  missed: [],
+};
+
 const teachTip = {
   tip: 'Call out how operators detect full lots without manual checks.',
   skillFocus: ['observability'],
@@ -190,5 +198,113 @@ describe('runCoachTurn', () => {
       }),
     );
     expect(invokeEvaluateForLevel).toHaveBeenCalledTimes(3);
+  });
+
+  it('passes on high score with isAcceptable true and records earned outcome', async () => {
+    vi.mocked(invokeEvaluateForLevel).mockResolvedValue(highScoreEvaluation);
+    const llm = mockLlm();
+
+    const start = await runCoachTurn({
+      userId: 'user-1',
+      problemSlug: 'design-parking-lot',
+      difficulty: 'Medium',
+      mode: 'practice',
+      event: { type: 'start' },
+      sessionState: null,
+      llm,
+    });
+
+    const response = await runCoachTurn({
+      userId: 'user-1',
+      problemSlug: 'design-parking-lot',
+      difficulty: 'Medium',
+      mode: 'practice',
+      event: {
+        type: 'submit',
+        userAnswer: 'Complete requirements with entry, exit, payment, and operator dashboard.',
+        stageId: 'requirements-0',
+      },
+      sessionState: start.sessionState,
+      llm,
+    });
+
+    expect(response.ui.gate?.action).toBe('pass');
+    expect(response.ui.feedback?.isAcceptable).toBe(true);
+    expect(response.ui.feedback?.score).toBe(7);
+    expect(recordOutcome).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'user-1',
+        outcome: 'earned',
+        skillIds: railAgenda[0].skillFocus,
+      }),
+    );
+    expect(invokeTeachForward).not.toHaveBeenCalled();
+  });
+
+  it('throws on submit stageId mismatch', async () => {
+    const llm = mockLlm();
+
+    const start = await runCoachTurn({
+      userId: 'user-1',
+      problemSlug: 'design-parking-lot',
+      difficulty: 'Medium',
+      mode: 'practice',
+      event: { type: 'start' },
+      sessionState: null,
+      llm,
+    });
+
+    await expect(
+      runCoachTurn({
+        userId: 'user-1',
+        problemSlug: 'design-parking-lot',
+        difficulty: 'Medium',
+        mode: 'practice',
+        event: {
+          type: 'submit',
+          userAnswer: 'Answer for wrong stage.',
+          stageId: 'hld-0',
+        },
+        sessionState: start.sessionState,
+        llm,
+      }),
+    ).rejects.toThrow(/submit stageId mismatch/);
+  });
+
+  it('ends mock session on timer exhaustion without retry replan', async () => {
+    vi.mocked(invokeEvaluateForLevel).mockResolvedValue(highScoreEvaluation);
+    const llm = mockLlm();
+
+    const start = await runCoachTurn({
+      userId: 'user-1',
+      problemSlug: 'design-parking-lot',
+      difficulty: 'Medium',
+      mode: 'mock',
+      event: { type: 'start' },
+      sessionState: null,
+      llm,
+    });
+
+    const response = await runCoachTurn({
+      userId: 'user-1',
+      problemSlug: 'design-parking-lot',
+      difficulty: 'Medium',
+      mode: 'mock',
+      event: {
+        type: 'submit',
+        userAnswer: 'Strong answer but time is up.',
+        stageId: 'requirements-0',
+      },
+      sessionState: {
+        ...start.sessionState,
+        stageStartedAt: new Date(Date.now() - 700_000).toISOString(),
+      },
+      llm,
+    });
+
+    expect(response.ui.gate?.action).toBe('end_mock');
+    expect(response.sessionState.status).toBe('complete');
+    expect(recordOutcome).not.toHaveBeenCalled();
+    expect(invokePlanAgenda).toHaveBeenCalledOnce();
   });
 });

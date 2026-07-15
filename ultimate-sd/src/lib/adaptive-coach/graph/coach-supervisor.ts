@@ -137,6 +137,26 @@ function nextStageId(rails: CoachStage[], currentStageId: string): string | null
   return rails[index + 1].id;
 }
 
+function expectedSubmitStageId(
+  sessionState: SessionState,
+  rails: CoachStage[],
+): string {
+  return sessionState.stageId ?? rails[0]?.id ?? '';
+}
+
+function assertSubmitStageId(
+  eventStageId: string,
+  sessionState: SessionState,
+  rails: CoachStage[],
+): void {
+  const expected = expectedSubmitStageId(sessionState, rails);
+  if (eventStageId !== expected) {
+    throw new Error(
+      `submit stageId mismatch: expected "${expected}", got "${eventStageId}"`,
+    );
+  }
+}
+
 async function planForStage(
   request: CoachTurnRequest,
   profile: LearnerProfile,
@@ -213,6 +233,8 @@ async function evaluateNode(
   if (request.event.type !== 'submit') {
     throw new Error('evaluate node requires submit event');
   }
+
+  assertSubmitStageId(request.event.stageId, sessionState, rails);
 
   const stage = findStage(rails, request.event.stageId);
   const gold = retrieveGold({
@@ -388,6 +410,8 @@ async function persistNode(
       } else {
         nextSession = { ...sessionState, status: 'complete' };
       }
+    } else if (gate.action === 'end_mock') {
+      nextSession = { ...sessionState, status: 'complete' };
     } else {
       // retry — keep same stage; refresh agenda from planner with last evaluation
       agenda = await planForStage(request, profile, stage, evaluation);
