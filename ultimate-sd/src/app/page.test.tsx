@@ -64,13 +64,8 @@ describe('Home', () => {
     expect(html).toContain('dashboard-client');
   });
 
-  it('merges user progress into problems when logged in', async () => {
+  it('does not load the problem catalog on the home page when logged in', async () => {
     vi.mocked(auth).mockResolvedValue({ user: { id: 'user-1' } } as never);
-    vi.mocked(getUserProgressMap).mockResolvedValue(
-      new Map([
-        ['1', { status: 'IN_PROGRESS', progress: 25, totalAttempts: 1 }],
-      ])
-    );
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       onboardingCompleted: true,
     } as never);
@@ -78,17 +73,10 @@ describe('Home', () => {
     const Component = await Home();
     renderToStaticMarkup(Component);
 
-    expect(getUserProgressMap).toHaveBeenCalled();
+    expect(getUserProgressMap).not.toHaveBeenCalled();
     expect(dashboardProps).toHaveBeenCalledWith(
-      expect.objectContaining({
-        problems: expect.arrayContaining([
-          expect.objectContaining({
-            id: '1',
-            status: 'IN_PROGRESS',
-            progress: 25,
-            totalAttempts: 1,
-          }),
-        ]),
+      expect.not.objectContaining({
+        problems: expect.anything(),
       })
     );
   });
