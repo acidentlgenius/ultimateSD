@@ -12,6 +12,7 @@ import {
   invokeEvaluateForLevel,
   invokeTeachForward,
 } from '@/lib/adaptive-coach/skills/invoke';
+import { recordOutcome } from '@/lib/adaptive-coach/tools/record-outcome';
 import type { GateDecision } from '@/lib/adaptive-coach/types';
 import type { SystemDesignProblem } from '@/types';
 
@@ -88,6 +89,16 @@ function resolveStageId(input: ClassicEvaluateInput): string {
   );
 }
 
+export function resolveOutcomeSkillIds(
+  stage: CoachStage,
+  tipSkillFocus?: string[],
+): string[] {
+  if (tipSkillFocus?.length) {
+    return tipSkillFocus;
+  }
+  return stage.phaseKey ? [stage.phaseKey] : ['requirements'];
+}
+
 export async function evaluateClassicAnswer(
   input: ClassicEvaluateInput,
 ): Promise<ClassicEvaluateResult> {
@@ -128,7 +139,13 @@ export async function evaluateClassicAnswer(
   });
 
   let tip: string | undefined;
-  if (gate.action === 'teach_forward') {
+  if (gate.action === 'pass') {
+    await recordOutcome({
+      userId: input.userId,
+      skillIds: resolveOutcomeSkillIds(stage),
+      outcome: 'earned',
+    });
+  } else if (gate.action === 'teach_forward') {
     const teachOutput = await invokeTeachForward({
       llm: input.llm,
       profile,
@@ -139,6 +156,17 @@ export async function evaluateClassicAnswer(
       gateReason: gate.reason,
     });
     tip = teachOutput.tip;
+    await recordOutcome({
+      userId: input.userId,
+      skillIds: resolveOutcomeSkillIds(stage, teachOutput.skillFocus),
+      outcome: 'coached',
+    });
+  } else if (gate.action === 'advance_budget') {
+    await recordOutcome({
+      userId: input.userId,
+      skillIds: resolveOutcomeSkillIds(stage),
+      outcome: 'coached',
+    });
   }
 
   return {
