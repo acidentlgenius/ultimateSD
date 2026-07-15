@@ -111,4 +111,36 @@ describe('invokeEvaluateForLevel', () => {
     expect(result).toEqual(valid);
     expect(llm.invoke).toHaveBeenCalledTimes(2);
   });
+
+  it('includes attempt and prior feedback in the evaluate prompt', async () => {
+    const valid = {
+      score: 4,
+      accuracy: 40,
+      strengths: [],
+      weaknesses: ['Still blending FR and NFR'],
+      missed: ['Concrete FR list'],
+    };
+    const llm = {
+      invoke: vi.fn().mockResolvedValue({ content: JSON.stringify(valid) }),
+    };
+
+    await invokeEvaluateForLevel({
+      llm: llm as never,
+      profile,
+      problemTitle: 'Design TinyURL',
+      stage,
+      userAnswer: 'Shorten links',
+      gold: [],
+      attemptCount: 2,
+      previousFeedback: {
+        weaknesses: ['Too vague'],
+        missed: ['Redirect as a feature'],
+      },
+    });
+
+    const prompt = String(llm.invoke.mock.calls[0]?.[0]?.[0]?.content ?? '');
+    expect(prompt).toMatch(/Prior attempt feedback/i);
+    expect(prompt).toMatch(/Attempt number: 2/);
+    expect(prompt).toMatch(/Too vague/);
+  });
 });

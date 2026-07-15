@@ -152,10 +152,18 @@ function reconstructFromSubmissions(
   submissions: DbSubmission[],
   completedStepIds: string[],
   phaseSteps: Record<string, { inputType?: string }[]>
-): { savedStepData: Map<string, SavedStepData>; completedSteps: Set<string> } {
+): {
+  savedStepData: Map<string, SavedStepData>;
+  completedSteps: Set<string>;
+  attemptsByStep: Record<string, number>;
+} {
   const latestByStep = new Map<string, DbSubmission>();
+  const attemptsByStep: Record<string, number> = {};
   for (const sub of submissions) {
     latestByStep.set(sub.stepId, sub);
+    if (!sub.isPassing) {
+      attemptsByStep[sub.stepId] = (attemptsByStep[sub.stepId] ?? 0) + 1;
+    }
   }
 
   const savedStepData = new Map<string, SavedStepData>();
@@ -205,7 +213,7 @@ function reconstructFromSubmissions(
     }
   }
 
-  return { savedStepData, completedSteps };
+  return { savedStepData, completedSteps, attemptsByStep };
 }
 
 // findResumePosition lives in @/lib/step-resume so it can be unit-tested
@@ -409,7 +417,11 @@ export default function StepByStepChat({
             activeResult.submissions &&
             activeResult.submissions.length > 0
           ) {
-            const { savedStepData: dbSaved, completedSteps: dbCompleted } = reconstructFromSubmissions(
+            const {
+              savedStepData: dbSaved,
+              completedSteps: dbCompleted,
+              attemptsByStep: dbAttempts,
+            } = reconstructFromSubmissions(
               activeResult.submissions,
               activeResult.completedStepIds ?? [],
               PHASE_STEPS
@@ -422,6 +434,7 @@ export default function StepByStepChat({
             }
             setSavedStepData(dbSaved);
             setCompletedSteps(dbCompleted);
+            setAttemptsByStep(dbAttempts);
             setSessionRestored(true);
             setRestoredDate(
               activeResult.session?.startedAt
@@ -695,6 +708,7 @@ export default function StepByStepChat({
 
     try {
       const attemptCount = (attemptsByStep[currentStepKey] ?? 0) + 1;
+      const priorFeedback = savedStepData.get(currentStepKey)?.feedback;
       const requestBody: any = {
         problem: problem.slug,
         phase: currentStep.phase,
@@ -706,6 +720,17 @@ export default function StepByStepChat({
         stepId: currentStepKey,
         attemptCount,
       };
+
+      if (
+        priorFeedback &&
+        !priorFeedback.isAcceptable &&
+        (priorFeedback.weaknesses?.length || priorFeedback.missed?.length)
+      ) {
+        requestBody.previousFeedback = {
+          weaknesses: priorFeedback.weaknesses ?? [],
+          missed: priorFeedback.missed ?? [],
+        };
+      }
 
       if (activeSessionId) {
         requestBody.sessionId = activeSessionId;

@@ -320,6 +320,21 @@ export async function POST(req: NextRequest) {
         resolvedAttemptCount = Math.max(clientAttemptCount, priorFailures + 1);
       }
 
+      const previousFeedback =
+        body.previousFeedback &&
+        typeof body.previousFeedback === 'object' &&
+        Array.isArray(body.previousFeedback.weaknesses) &&
+        Array.isArray(body.previousFeedback.missed)
+          ? {
+              weaknesses: body.previousFeedback.weaknesses.filter(
+                (item: unknown): item is string => typeof item === 'string'
+              ),
+              missed: body.previousFeedback.missed.filter(
+                (item: unknown): item is string => typeof item === 'string'
+              ),
+            }
+          : undefined;
+
       const result = await evaluateClassicAnswer({
         userId,
         llm,
@@ -330,6 +345,7 @@ export async function POST(req: NextRequest) {
         stageId,
         phaseKey,
         subStep,
+        previousFeedback,
       });
 
       posthog.capture({

@@ -27,6 +27,10 @@ export type ClassicEvaluateInput = {
   phaseKey?: string;
   subStep?: string;
   stageElapsedSec?: number;
+  previousFeedback?: {
+    weaknesses: string[];
+    missed: string[];
+  };
 };
 
 export type ClassicEvaluateFeedback = {
@@ -126,6 +130,8 @@ export async function evaluateClassicAnswer(
     stage,
     userAnswer: input.userAnswer,
     gold,
+    attemptCount: input.attemptCount,
+    previousFeedback: input.previousFeedback,
   });
 
   const gate = progressGate({

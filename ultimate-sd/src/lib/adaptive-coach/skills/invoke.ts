@@ -306,8 +306,24 @@ function buildEvaluatePrompt(args: {
   stage: CoachStage;
   userAnswer: string;
   gold: string[];
+  attemptCount?: number;
+  previousFeedback?: {
+    weaknesses: string[];
+    missed: string[];
+  };
 }): string {
   const skill = loadSkill('evaluate-for-level');
+  const attempt = args.attemptCount && args.attemptCount >= 1 ? args.attemptCount : 1;
+  const prior =
+    args.previousFeedback &&
+    (args.previousFeedback.weaknesses.length > 0 || args.previousFeedback.missed.length > 0)
+      ? `## Prior attempt feedback (do not repeat the same wording)
+- Attempt number: ${attempt}
+- Previous weaknesses: ${args.previousFeedback.weaknesses.join('; ') || 'none'}
+- Previous missed: ${args.previousFeedback.missed.join('; ') || 'none'}
+Focus on what is still missing or newly weak relative to the prior notes.`
+      : `## Attempt
+- This is attempt ${attempt} on this stage.`;
 
   return `${skill.body}
 
@@ -316,6 +332,8 @@ function buildEvaluatePrompt(args: {
 - Stage: ${args.stage.title} (${args.stage.phase})
 - Stage prompt: ${args.stage.prompt}
 ${formatProfileContext(args.profile)}
+
+${prior}
 
 ## Reference material
 ${formatGoldBlock(args.gold)}
@@ -499,6 +517,11 @@ export async function invokeEvaluateForLevel(args: {
   stage: CoachStage;
   userAnswer: string;
   gold: string[];
+  attemptCount?: number;
+  previousFeedback?: {
+    weaknesses: string[];
+    missed: string[];
+  };
 }): Promise<EvaluateSkillOutput> {
   return invokeWithValidation(args.llm, buildEvaluatePrompt(args));
 }
