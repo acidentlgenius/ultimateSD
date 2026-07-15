@@ -1,67 +1,62 @@
 import { describe, expect, it } from 'vitest';
 import {
-  DEMO_SCORE,
-  createInitialDemoState,
-  resetDemoState,
-  submitDemoAttempt,
+  getDemoScript,
+  scriptDurationMs,
+  visibleBeats,
+  type DemoBeat,
 } from '@/lib/adaptive-coach/demo/landing-demo';
 
-describe('landing demo orchestration', () => {
-  it('uses fixed score 5', () => {
-    expect(DEMO_SCORE).toBe(5);
+function roles(beats: DemoBeat[]) {
+  return beats.map((b) => b.role);
+}
+
+describe('landing demo script', () => {
+  it('shares the same opening you-answer across levels', () => {
+    const fresher = getDemoScript('fresher');
+    const sde1 = getDemoScript('sde1');
+    const senior = getDemoScript('senior');
+    expect(fresher[1]?.body).toBe(sde1[1]?.body);
+    expect(sde1[1]?.body).toBe(senior[1]?.body);
+    expect(fresher[1]?.role).toBe('you');
   });
 
-  it('fresher passes on first submit', () => {
-    let state = createInitialDemoState('fresher');
-    state = submitDemoAttempt(state);
-    expect(state.attempts).toBe(1);
-    expect(state.lastAction).toBe('pass');
-    expect(state.done).toBe(true);
-    expect(state.messages.at(-1)?.kind).toBe('pass');
+  it('fresher ends with a pass-style coach tip, not try-again grinding', () => {
+    const script = getDemoScript('fresher');
+    const coach = script.filter((b) => b.role === 'coach');
+    expect(coach.length).toBe(2);
+    expect(coach.at(-1)?.body).toMatch(/enough to start|data model/i);
+    expect(script.at(-1)?.role).toBe('system');
+    expect(script.at(-1)?.body).toMatch(/data model/i);
   });
 
-  it('senior retries then teach_forwards on attempt 2', () => {
-    let state = createInitialDemoState('senior');
-    state = submitDemoAttempt(state);
-    expect(state.lastAction).toBe('retry');
-    expect(state.done).toBe(false);
-    state = submitDemoAttempt(state);
-    expect(state.attempts).toBe(2);
-    expect(state.lastAction).toBe('teach_forward');
-    expect(state.done).toBe(true);
-    expect(state.messages.at(-1)?.kind).toBe('teach_forward');
-    expect(state.messages.at(-1)?.body).toMatch(/functional|non-functional|requirements/i);
+  it('sde1 includes a second you-turn and a teach-forward that unlocks the stage', () => {
+    const script = getDemoScript('sde1');
+    expect(roles(script).filter((r) => r === 'you').length).toBeGreaterThanOrEqual(2);
+    const lastCoach = [...script].reverse().find((b) => b.role === 'coach');
+    expect(lastCoach?.body).toMatch(/unlock|p99|availability/i);
+    expect(lastCoach?.body).not.toMatch(/score|pass bar|sde1 bar/i);
   });
 
-  it('sde1 teach_forwards on third attempt', () => {
-    let state = createInitialDemoState('sde1');
-    state = submitDemoAttempt(state);
-    expect(state.lastAction).toBe('retry');
-    state = submitDemoAttempt(state);
-    expect(state.lastAction).toBe('retry');
-    state = submitDemoAttempt(state);
-    expect(state.attempts).toBe(3);
-    expect(state.lastAction).toBe('teach_forward');
-    expect(state.done).toBe(true);
+  it('senior probes with a higher bar before teaching forward', () => {
+    const script = getDemoScript('senior');
+    const coaches = script.filter((b) => b.role === 'coach');
+    expect(coaches.some((b) => /SLO|10×|10x/i.test(b.body))).toBe(true);
+    expect(coaches.at(-1)?.body).toMatch(/p99|cache|advance/i);
+    expect(script.every((b) => !/score 5|Pass bar|Tries:/i.test(b.body))).toBe(true);
   });
 
-  it('ignores submit when already done', () => {
-    let state = createInitialDemoState('fresher');
-    state = submitDemoAttempt(state);
-    const frozen = state;
-    state = submitDemoAttempt(state);
-    expect(state).toEqual(frozen);
+  it('visibleBeats respects timeline order', () => {
+    const script = getDemoScript('sde1');
+    expect(visibleBeats(script, 0)).toEqual([]);
+    expect(visibleBeats(script, 1200).map((b) => b.id)).toEqual(['sys-open', 'you-1']);
+    const mid = visibleBeats(script, 9000);
+    expect(mid.some((b) => b.id === 'coach-sde1-2')).toBe(true);
+    expect(mid.some((b) => b.id === 'coach-sde1-teach')).toBe(false);
   });
 
-  it('resetDemoState clears progress for a new level', () => {
-    let state = createInitialDemoState('senior');
-    state = submitDemoAttempt(state);
-    state = resetDemoState('fresher');
-    expect(state.level).toBe('fresher');
-    expect(state.attempts).toBe(0);
-    expect(state.done).toBe(false);
-    expect(state.lastAction).toBeNull();
-    expect(state.messages).toHaveLength(1);
-    expect(state.messages[0].role).toBe('system');
+  it('scriptDurationMs extends past the last beat', () => {
+    const script = getDemoScript('fresher');
+    const lastAt = Math.max(...script.map((b) => b.atMs));
+    expect(scriptDurationMs(script)).toBeGreaterThan(lastAt);
   });
 });
