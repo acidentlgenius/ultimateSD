@@ -2,6 +2,7 @@ import type { AppState } from '@excalidraw/excalidraw/types';
 import type { ExcalidrawScene, PersistedDiagram, StepDiagramData, DiagramSnapshot } from '@/types/diagram';
 import { toast } from 'sonner';
 import { countActiveElements, diagramDebug } from '@/lib/diagram-debug';
+import { safeLocalStorageGet } from './local-storage';
 
 const FORMAT = 'excalidraw' as const;
 const FORMAT_VERSION = 1;
@@ -39,30 +40,26 @@ export function isPersistedDiagram(value: unknown): value is PersistedDiagram {
 
 export function loadDiagram(stepKey: string): PersistedDiagram | null {
   const key = getDiagramStorageKey(stepKey);
-  const raw = localStorage.getItem(key);
-  if (!raw) {
+  const parsed = safeLocalStorageGet<any>(key, null);
+
+  if (!parsed) {
     diagramDebug('load:miss', { stepKey, storageKey: key });
     return null;
   }
-  try {
-    const parsed = JSON.parse(raw);
-    if (isPersistedDiagram(parsed)) {
-      diagramDebug('load:hit', {
-        stepKey,
-        storageKey: key,
-        elementCount: countActiveElements(parsed.scene.elements),
-        timestamp: parsed.timestamp,
-      });
-      return parsed;
-    }
-    diagramDebug('load:invalid-format-purged', { stepKey, storageKey: key, parsedKeys: Object.keys(parsed as object) });
-    localStorage.removeItem(key);
-    return null;
-  } catch (err) {
-    diagramDebug('load:parse-error-purged', { stepKey, storageKey: key, error: String(err) });
-    localStorage.removeItem(key);
-    return null;
+
+  if (isPersistedDiagram(parsed)) {
+    diagramDebug('load:hit', {
+      stepKey,
+      storageKey: key,
+      elementCount: countActiveElements(parsed.scene.elements),
+      timestamp: parsed.timestamp,
+    });
+    return parsed;
   }
+
+  diagramDebug('load:invalid-format-purged', { stepKey, storageKey: key, parsedKeys: Object.keys(parsed as object) });
+  localStorage.removeItem(key);
+  return null;
 }
 
 export function saveDiagram(stepKey: string, scene: ExcalidrawScene): void {
@@ -99,12 +96,12 @@ export function clearDiagram(stepKey: string): void {
 }
 
 export function purgeLegacyDesignKeys(): void {
-  const keys: string[] = [];
-  for (let i = 0; i < localStorage.length; i++) {
+  for (let i = localStorage.length - 1; i >= 0; i--) {
     const k = localStorage.key(i);
-    if (k?.startsWith('saved-design')) keys.push(k);
+    if (k?.startsWith('saved-design')) {
+      localStorage.removeItem(k);
+    }
   }
-  keys.forEach((k) => localStorage.removeItem(k));
 }
 
 /** Pick richest diagram across diagram step keys — for session complete / PDF when canvas hidden */
