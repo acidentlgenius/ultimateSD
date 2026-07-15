@@ -25,7 +25,7 @@ test.describe('fresher track when the flag is enabled', () => {
     await expect(
       page.getByRole('button', { name: /Fresher & Campus/i }),
     ).toBeVisible();
-    await expect(page.getByText(/Phase 0: Foundations/i)).toBeVisible();
+    await expect(page.getByText('Phase 0: Foundations').first()).toBeVisible();
     await expect(
       page.getByRole('heading', { name: 'What Is System Design?' }),
     ).toBeVisible();
