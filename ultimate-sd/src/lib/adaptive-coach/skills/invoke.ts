@@ -7,7 +7,11 @@ import { z } from 'zod';
 import { isCompetencyId } from '@/lib/adaptive-coach/competencies';
 import { loadSkill } from '@/lib/adaptive-coach/skills-loader';
 import type { CoachStage } from '@/lib/adaptive-coach/tools/stage-rails';
-import type { AgendaMove, LearnerProfile, SessionState } from '@/lib/adaptive-coach/types';
+import type { AgendaMove, LearnerProfile, PracticeMode, SessionState } from '@/lib/adaptive-coach/types';
+import {
+  isFinalProbeRound,
+  PROBE_MAX_ROUNDS,
+} from '@/lib/probe';
 
 export const EvaluateSkillOutputSchema = z.object({
   score: z.number().min(0).max(10),
@@ -59,6 +63,27 @@ export const ProfileReflectSchema = z.object({
 
 export type ProfileReflectOutput = z.infer<typeof ProfileReflectSchema>;
 
+export const MockProbeOutputSchema = z.object({
+  question: z.string().min(1),
+});
+
+export type MockProbeOutput = z.infer<typeof MockProbeOutputSchema>;
+
+export const SessionDebriefOutputSchema = z.object({
+  overallScore: z.number().min(1).max(10),
+  verdict: z.string().min(1),
+  strengths: z.array(z.string()),
+  improvements: z.array(z.string()),
+  phaseNotes: z.array(
+    z.object({
+      phase: z.string(),
+      comment: z.string(),
+    }),
+  ),
+});
+
+export type SessionDebriefOutput = z.infer<typeof SessionDebriefOutputSchema>;
+
 function stripMarkdownFences(raw: string): string {
   return raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
 }
@@ -91,6 +116,14 @@ function parseTeachForwardOutput(raw: string): TeachForwardOutput | null {
 
 function parseProfileReflectOutput(raw: string): ProfileReflectOutput | null {
   return parseJsonWithSchema(raw, ProfileReflectSchema);
+}
+
+function parseMockProbeOutput(raw: string): MockProbeOutput | null {
+  return parseJsonWithSchema(raw, MockProbeOutputSchema);
+}
+
+function parseSessionDebriefOutput(raw: string): SessionDebriefOutput | null {
+  return parseJsonWithSchema(raw, SessionDebriefOutputSchema);
 }
 
 async function invokeWithValidation(
@@ -160,6 +193,52 @@ async function invokeTeachForwardWithValidation(
   }
 
   throw new Error('teach-forward returned malformed JSON after retry');
+}
+
+async function invokeMockProbeWithValidation(
+  llm: BaseChatModel,
+  prompt: string,
+): Promise<MockProbeOutput> {
+  const response = await llm.invoke([new HumanMessage(prompt)]);
+  const first = parseMockProbeOutput(String(response.content));
+  if (first) {
+    return first;
+  }
+
+  const retry = await llm.invoke([
+    new HumanMessage(
+      `${prompt}\n\nIMPORTANT: Your previous response was not valid JSON matching the required schema. Respond with ONLY the JSON object — field "question" is required. Do not include markdown.`,
+    ),
+  ]);
+  const second = parseMockProbeOutput(String(retry.content));
+  if (second) {
+    return second;
+  }
+
+  throw new Error('mock-probe returned malformed JSON after retry');
+}
+
+async function invokeSessionDebriefWithValidation(
+  llm: BaseChatModel,
+  prompt: string,
+): Promise<SessionDebriefOutput> {
+  const response = await llm.invoke([new HumanMessage(prompt)]);
+  const first = parseSessionDebriefOutput(String(response.content));
+  if (first) {
+    return first;
+  }
+
+  const retry = await llm.invoke([
+    new HumanMessage(
+      `${prompt}\n\nIMPORTANT: Your previous response was not valid JSON matching the required schema. Respond with ONLY the JSON object — fields overallScore, verdict, strengths, improvements, and phaseNotes are required. Do not include markdown.`,
+    ),
+  ]);
+  const second = parseSessionDebriefOutput(String(retry.content));
+  if (second) {
+    return second;
+  }
+
+  throw new Error('session-debrief returned malformed JSON after retry');
 }
 
 async function invokeProfileReflectWithValidation(
@@ -451,6 +530,134 @@ export async function invokeTeachForward(args: {
   gateReason: string;
 }): Promise<TeachForwardOutput> {
   return invokeTeachForwardWithValidation(args.llm, buildTeachForwardPrompt(args));
+}
+
+function buildMockProbePrompt(args: {
+  profile: LearnerProfile;
+  problemTitle: string;
+  stage: CoachStage;
+  userAnswer: string;
+  gold: string[];
+  round: number;
+  probeHistory: string[];
+}): string {
+  const skill = loadSkill('mock-probe');
+  const framing = isFinalProbeRound(args.round)
+    ? 'This is your final follow-up — make it the hardest one.'
+    : `This is follow-up ${args.round} of ${PROBE_MAX_ROUNDS}.`;
+  const historyBlock =
+    args.probeHistory.length > 0
+      ? args.probeHistory.map((line, index) => `${index + 1}. ${line}`).join('\n')
+      : '(none yet — open the probe)';
+
+  return `${skill.body}
+
+## Session context
+- Problem: ${args.problemTitle}
+- Stage: ${args.stage.title} (${args.stage.phase})
+- Stage prompt: ${args.stage.prompt}
+${formatProfileContext(args.profile)}
+- ${framing}
+
+## Reference material
+${formatGoldBlock(args.gold)}
+
+## Candidate's accepted answer
+${args.userAnswer}
+
+## Prior probe exchanges
+${historyBlock}
+
+Respond with ONLY valid JSON matching this schema:
+{
+  "question": "<one adversarial follow-up, under 60 words>"
+}
+
+Do not include markdown or fields outside the schema.`;
+}
+
+function buildSessionDebriefPrompt(args: {
+  profile: LearnerProfile;
+  problemTitle: string;
+  problemSlug: string;
+  mode: PracticeMode;
+  variant?: 'lite' | 'full';
+  answers: Array<{
+    phase: string;
+    title: string;
+    answer: string;
+    passed: boolean;
+  }>;
+}): string {
+  const skill = loadSkill('session-debrief');
+  const transcript = args.answers
+    .map(
+      (a) =>
+        `### ${a.phase} — ${a.title} (${a.passed ? 'passed evaluation' : 'not passed'})\n${a.answer}`,
+    )
+    .join('\n\n');
+
+  return `${skill.body}
+
+## Session context
+- Problem: ${args.problemTitle} (${args.problemSlug})
+- Mode: ${args.mode}
+- Variant: ${args.variant ?? 'lite'}
+${formatProfileContext(args.profile)}
+
+## Candidate transcript
+${transcript}
+
+Respond with ONLY valid JSON matching this schema:
+{
+  "overallScore": <number 1-10>,
+  "verdict": "<Strong Hire | Hire | Lean Hire | No Hire>",
+  "strengths": ["specific strength"],
+  "improvements": ["specific improvement"],
+  "phaseNotes": [{ "phase": "<phase name>", "comment": "<one-sentence note>" }]
+}
+
+Do not include markdown or fields outside the schema.`;
+}
+
+export async function invokeMockProbe(args: {
+  llm: BaseChatModel;
+  profile: LearnerProfile;
+  problemTitle: string;
+  stage: CoachStage;
+  userAnswer: string;
+  gold: string[];
+  round: number;
+  probeHistory?: string[];
+}): Promise<MockProbeOutput> {
+  return invokeMockProbeWithValidation(
+    args.llm,
+    buildMockProbePrompt({ ...args, probeHistory: args.probeHistory ?? [] }),
+  );
+}
+
+export async function invokeSessionDebrief(args: {
+  llm: BaseChatModel;
+  profile: LearnerProfile;
+  problemTitle: string;
+  problemSlug: string;
+  mode: PracticeMode;
+  answers: Array<{
+    phase: string;
+    title: string;
+    answer: string;
+    passed: boolean;
+  }>;
+  variant?: 'lite' | 'full';
+}): Promise<SessionDebriefOutput | null> {
+  try {
+    return await invokeSessionDebriefWithValidation(
+      args.llm,
+      buildSessionDebriefPrompt(args),
+    );
+  } catch {
+    return null;
+  }
 }
 
 export async function invokeProfileReflect(args: {

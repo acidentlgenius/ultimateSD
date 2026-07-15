@@ -4,6 +4,10 @@ import { PROBLEMS } from '@/lib/problems';
 import { canAccessFeature } from '@/lib/feature-flags-server';
 import { getUserLLM, AIAccessError } from '@/lib/user-llm';
 import { getInterviewSummary, type InterviewSummaryInput } from '@/lib/langgraph';
+import {
+  generateInterviewDebrief,
+  scheduleInterviewCoachFinish,
+} from '@/lib/adaptive-coach/adapters/interview';
 import { prisma } from '@/lib/prisma';
 import type { Prisma } from '@prisma/client';
 import {
@@ -39,13 +43,34 @@ export async function POST(req: NextRequest) {
       temperature: 0.3,
       problemSlug: slug,
     });
-    const summary = await getInterviewSummary(
-      problemMetadata,
-      answers as InterviewSummaryInput[],
-      llm
-    );
+
+    const adaptiveCoachEnabled = await canAccessFeature(session.user.id, 'adaptiveCoach');
+    const debriefVariant = variant === 'full' ? 'full' : 'lite';
+    const summary = adaptiveCoachEnabled
+      ? await generateInterviewDebrief({
+          llm,
+          userId: session.user.id,
+          problem: problemMetadata,
+          answers: answers as InterviewSummaryInput[],
+          variant: debriefVariant,
+        })
+      : await getInterviewSummary(
+          problemMetadata,
+          answers as InterviewSummaryInput[],
+          llm
+        );
+
     if (!summary) {
       return NextResponse.json({ error: 'Failed to generate summary' }, { status: 500 });
+    }
+
+    if (adaptiveCoachEnabled) {
+      scheduleInterviewCoachFinish({
+        userId: session.user.id,
+        problemSlug: slug,
+        finalScore: summary.overallScore,
+        variant: debriefVariant,
+      });
     }
 
     const debrief = await prisma.interviewDebrief.create({
