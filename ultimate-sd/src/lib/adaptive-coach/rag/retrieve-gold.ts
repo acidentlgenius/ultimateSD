@@ -44,38 +44,60 @@ function phaseTagScore(tags: string[], phaseKey: string): number {
   return priorities.filter((tag) => tags.includes(tag)).length;
 }
 
-function buildSolutionChunks(solution: ExpertSolution, phaseKey: string): ScoredChunk[] {
+function buildSolutionChunks(
+  solution: ExpertSolution,
+  phaseKey: string,
+  stageIndex: number | null
+): ScoredChunk[] {
   const chunks: ScoredChunk[] = [];
+  const isFunctionalReqs = phaseKey === 'requirements' && stageIndex === 0;
+  const isNonFunctionalReqs = phaseKey === 'requirements' && stageIndex === 1;
 
   chunks.push({
     text: `Overview: ${solution.overview}`,
-    score: phaseTagScore(['requirements', 'tradeoffs'], phaseKey),
+    score: phaseTagScore(['requirements', 'tradeoffs'], phaseKey) + (isFunctionalReqs ? -2 : 0),
   });
 
   if (solution.requirements) {
     chunks.push({
       text: `Expert functional requirements:\n- ${solution.requirements.functional.join('\n- ')}`,
-      score: phaseTagScore(['requirements'], phaseKey) + 2,
+      score:
+        phaseTagScore(['requirements'], phaseKey) +
+        2 +
+        (isFunctionalReqs ? 4 : 0) +
+        (isNonFunctionalReqs ? -4 : 0),
     });
-    chunks.push({
+    const nfrChunk: ScoredChunk = {
       text: `Expert non-functional requirements:\n- ${solution.requirements.nonFunctional.join('\n- ')}`,
-      score: phaseTagScore(['requirements', 'capacity', 'availability'], phaseKey) + 1,
-    });
+      score:
+        phaseTagScore(['requirements', 'capacity', 'availability'], phaseKey) +
+        1 +
+        (isNonFunctionalReqs ? 4 : 0) +
+        (isFunctionalReqs ? -20 : 0),
+    };
+    // On Functional Requirements, exclude NFR / redirect-latency gold entirely.
+    if (!isFunctionalReqs) {
+      chunks.push(nfrChunk);
+    }
   }
 
   chunks.push({
     text: `Components:\n${solution.components.map((component) => `- ${component.name}: ${component.description}`).join('\n')}`,
-    score: phaseTagScore(['api-design', 'data-model', 'availability'], phaseKey),
+    score:
+      phaseTagScore(['api-design', 'data-model', 'availability'], phaseKey) +
+      (isFunctionalReqs ? -3 : 0),
   });
 
   chunks.push({
     text: `Data flow:\n- ${solution.dataFlow.join('\n- ')}`,
-    score: phaseTagScore(['data-model', 'queues', 'consistency'], phaseKey),
+    score:
+      phaseTagScore(['data-model', 'queues', 'consistency'], phaseKey) +
+      (isFunctionalReqs ? -3 : 0),
   });
 
   chunks.push({
     text: `Tradeoffs — Pros: ${solution.tradeoffs.pros.join('; ')}. Cons: ${solution.tradeoffs.cons.join('; ')}`,
-    score: phaseTagScore(['tradeoffs'], phaseKey) + 2,
+    score: phaseTagScore(['tradeoffs'], phaseKey) + 2 + (isFunctionalReqs ? -5 : 0),
   });
 
   return chunks;
@@ -101,6 +123,7 @@ export function retrieveGold(args: {
   const { problemSlug, stageId, skillFocus } = args;
   const parsed = parseStageId(stageId);
   const phaseKey = parsed?.phaseKey ?? '';
+  const stageIndex = parsed?.index ?? null;
   const chunks: string[] = [];
 
   const stagePrompt = getStagePrompt(problemSlug, stageId);
@@ -110,11 +133,12 @@ export function retrieveGold(args: {
 
   const solution = getSolution(problemSlug);
   if (solution) {
-    const ranked = buildSolutionChunks(solution, phaseKey)
+    const ranked = buildSolutionChunks(solution, phaseKey, stageIndex)
       .map((chunk) => ({
         ...chunk,
         score: chunk.score + boostForSkillFocus(chunk.text, skillFocus),
       }))
+      .filter((chunk) => chunk.score > -10)
       .sort((left, right) => right.score - left.score);
 
     for (const chunk of ranked) {

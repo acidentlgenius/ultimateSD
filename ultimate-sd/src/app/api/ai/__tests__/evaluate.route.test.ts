@@ -162,7 +162,7 @@ describe('POST /api/ai/evaluate', () => {
         score: 4,
         accuracy: 40,
         strengths: [],
-        weaknesses: ['missing redirects'],
+          weaknesses: ['missing FRs'],
         missed: ['custom aliases'],
         isAcceptable: false,
       },
@@ -172,7 +172,7 @@ describe('POST /api/ai/evaluate', () => {
         threshold: 6,
         tipSkillId: 'teach-forward',
       },
-      tip: 'Mention redirect latency and analytics on clicks.',
+      tip: 'List three functional needs before designing.',
     });
 
     const res = await POST(makeRequest({ ...EVALUATE_BODY, attemptCount: 3 }));
@@ -180,7 +180,7 @@ describe('POST /api/ai/evaluate', () => {
 
     expect(data.feedback.isAcceptable).toBe(false);
     expect(data.gate.action).toBe('teach_forward');
-    expect(data.tip).toContain('redirect');
+    expect(data.tip).toMatch(/functional/i);
   });
 
   it('uses server attempt count when sessionId and stepId are present', async () => {

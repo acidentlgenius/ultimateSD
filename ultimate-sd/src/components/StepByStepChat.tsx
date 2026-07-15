@@ -292,6 +292,7 @@ export default function StepByStepChat({
   const [savedStepData, setSavedStepData] = useState<Map<string, SavedStepData>>(new Map());
   const [attemptsByStep, setAttemptsByStep] = useState<Record<string, number>>({});
   const [evaluationGate, setEvaluationGate] = useState<GateDecision | null>(null);
+  const [evaluationTip, setEvaluationTip] = useState<string | null>(null);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [isSessionCompleted, setIsSessionCompleted] = useState(false);
 
@@ -739,16 +740,11 @@ export default function StepByStepChat({
 
       setAttemptsByStep((prev) => ({ ...prev, [currentStepKey]: attemptCount }));
       setEvaluationGate(gate ?? null);
+      setEvaluationTip(tip ?? null);
       setFeedback(data.feedback);
       setShowFeedback(true);
 
-      if (gate?.action === 'teach_forward' && tip) {
-        toast.info(tip, {
-          icon: <Lightbulb className="h-4 w-4" />,
-          className: 'bg-amber-500/10 border-amber-500/20 text-amber-800 dark:text-amber-200',
-          duration: 12000,
-        });
-      } else if (gate?.action === 'advance_budget') {
+      if (gate?.action === 'advance_budget') {
         toast.info(gate.reason, {
           icon: <Lightbulb className="h-4 w-4" />,
           className: 'bg-blue-500/10 border-blue-500/20 text-blue-700 dark:text-blue-300',
@@ -1178,6 +1174,8 @@ return (
               feedback={feedback}
               xpEarned={feedback.isAcceptable ? 20 : 0}
               canAdvance={isStepCompletable(feedback, evaluationGate)}
+              tip={evaluationTip}
+              gate={evaluationGate}
             />
           )}
         </div>
@@ -1468,6 +1466,8 @@ return (
               feedback={feedback}
               xpEarned={feedback.isAcceptable ? 20 : 0}
               canAdvance={isStepCompletable(feedback, evaluationGate)}
+              tip={evaluationTip}
+              gate={evaluationGate}
             />
           )}
 

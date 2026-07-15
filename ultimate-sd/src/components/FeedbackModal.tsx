@@ -10,6 +10,7 @@ import html2canvas from 'html2canvas';
 import { updateStreak } from '@/app/actions/gamification';
 import { LockedFeatureButton } from '@/components/LockedFeatureButton';
 import { FEATURES } from '@/lib/features';
+import type { GateDecision } from '@/lib/adaptive-coach/types';
 
 interface FeedbackData {
   score: number;
@@ -30,6 +31,8 @@ interface FeedbackModalProps {
   onStartProbe: () => void;
   xpEarned?: number;
   canAdvance?: boolean;
+  tip?: string | null;
+  gate?: GateDecision | null;
 }
 
 // Confetti component for celebrations
@@ -66,8 +69,12 @@ export default function FeedbackModal({
   onStartProbe,
   xpEarned = 0,
   canAdvance,
+  tip,
+  gate,
 }: FeedbackModalProps) {
   const allowAdvance = canAdvance ?? feedback.isAcceptable;
+  const isCoachedAdvance =
+    gate?.action === 'teach_forward' || gate?.action === 'advance_budget';
   const [animatedScore, setAnimatedScore] = useState(0);
   const [animatedAccuracy, setAnimatedAccuracy] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
@@ -75,7 +82,7 @@ export default function FeedbackModal({
 
   useEffect(() => {
     if (isOpen) {
-      if (feedback.isAcceptable) {
+      if (feedback.isAcceptable && !isCoachedAdvance) {
         // If passed, update streak!
         const handleStreakUpdate = async () => {
           try {
@@ -212,12 +219,30 @@ export default function FeedbackModal({
                 )}
               </div>
               <span className={feedback.isAcceptable ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'}>
-                {feedback.isAcceptable ? 'Great Job!' : 'Keep Practicing'}
+                {feedback.isAcceptable
+                  ? 'Great Job!'
+                  : isCoachedAdvance
+                    ? 'Coached advance'
+                    : 'Keep Practicing'}
               </span>
             </DialogTitle>
           </DialogHeader>
 
           <div id="feedback-content" className="p-6 space-y-5">
+            {tip && isCoachedAdvance && (
+              <Card className="border-2 border-amber-500/30 bg-amber-500/5 shadow-sm">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2 text-amber-700 dark:text-amber-300 text-lg">
+                    <Lightbulb className="h-5 w-5" />
+                    Coach tip
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm leading-relaxed text-foreground">{tip}</p>
+                </CardContent>
+              </Card>
+            )}
+
             {/* XP Rewards Card - Enhanced */}
             {xpEarned > 0 && (
               <Card className={`glass border-2 border-amber-500/30 shadow-2xl bg-gradient-to-br from-amber-500/10 via-yellow-500/5 to-transparent animate-slide-up overflow-hidden relative`}>
@@ -253,11 +278,13 @@ export default function FeedbackModal({
             )}
 
             {/* Performance Score Card - Enhanced */}
-            <Card className={`glass border-2 ${scoreColors.border} shadow-xl bg-gradient-to-br ${scoreColors.gradient} relative overflow-hidden`}>
+            <Card className={`glass border-2 ${scoreColors.border} shadow-xl bg-gradient-to-br ${scoreColors.gradient} relative overflow-hidden ${isCoachedAdvance ? 'opacity-80' : ''}`}>
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2 text-xl">
                   <Award className={`h-6 w-6 ${scoreColors.primary}`} />
-                  <span className={scoreColors.primary}>Performance Score</span>
+                  <span className={scoreColors.primary}>
+                    {isCoachedAdvance ? 'Score (for reference)' : 'Performance Score'}
+                  </span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -266,9 +293,7 @@ export default function FeedbackModal({
                     {/* Score Circle Background */}
                     <div className={`absolute inset-0 rounded-full ${scoreColors.bg} blur-2xl opacity-50`} style={{ transform: 'scale(1.5)' }} />
                     <div className="relative">
-                      <div className={`text-8xl font-extrabold ${scoreColors.primary} transition-all duration-300`} style={{ 
-                        textShadow: `0 0 20px ${scoreColors.primary.replace('text-', 'rgba(')}`
-                      }}>
+                      <div className={`${isCoachedAdvance ? 'text-5xl' : 'text-8xl'} font-extrabold ${scoreColors.primary} transition-all duration-300`}>
                         {animatedScore}
                       </div>
                       <div className="text-sm text-muted-foreground mt-2 font-medium">out of 10</div>

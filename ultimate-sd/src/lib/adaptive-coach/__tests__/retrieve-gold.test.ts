@@ -37,4 +37,17 @@ describe('retrieveGold', () => {
 
     expect(chunks.length).toBeLessThanOrEqual(1);
   });
+
+  it('keeps TinyURL FR gold on functional needs, not redirect-latency NFR', () => {
+    const { chunks } = retrieveGold({
+      problemSlug: 'design-tinyurl',
+      stageId: 'requirements-0',
+      skillFocus: [],
+    });
+
+    const joined = chunks.join('\n');
+    expect(joined).toMatch(/functional requirements/i);
+    expect(joined).not.toMatch(/non-functional requirements/i);
+    expect(joined).not.toMatch(/Redirect < 10ms|redirect latency/i);
+  });
 });

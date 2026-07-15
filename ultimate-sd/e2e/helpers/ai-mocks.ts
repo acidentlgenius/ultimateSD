@@ -105,7 +105,7 @@ const ADAPTIVE_COACH_LOW_FEEDBACK = {
 };
 
 export const ADAPTIVE_COACH_TIP =
-  'Mention redirect latency and analytics on clicks.';
+  'List three functional needs (shorten, redirect, optional click count) before moving on.';
 
 /**
  * Mock /api/ai/evaluate for adaptive-coach e2e: retries on attempts 1–2,
