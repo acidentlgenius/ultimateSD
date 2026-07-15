@@ -14,6 +14,7 @@ import {
   resolveEvaluationPhaseKey,
   resolveEvaluationSubStepKey,
   resolvePhaseSteps,
+  computePracticeProgress,
 } from '../step-journey';
 import type { SystemDesignProblem } from '@/types';
 

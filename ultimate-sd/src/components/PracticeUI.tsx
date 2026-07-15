@@ -25,7 +25,7 @@ import { toast } from 'sonner';
 
 import { useSession } from 'next-auth/react';
 
-import { getDiagramStepKeysForProblem, getGenericFallbackSteps, isDiagramSubStep, resolvePhaseSteps } from '@/lib/step-journey';
+import { getDiagramStepKeysForProblem, getGenericFallbackSteps, isDiagramSubStep, resolvePhaseSteps, computePracticeProgress } from '@/lib/step-journey';
 import { exportSceneToPng, resolveBestDiagramSnapshot } from '@/lib/diagram-persistence';
 import { cn } from '@/lib/utils';
 import { FEATURES } from '@/lib/features';
@@ -351,10 +351,13 @@ function PracticeUIContent({
   const isFullyComplete = completedSteps.length >= totalSteps && totalSteps > 0;
 
   const hasIntroStep = !!intro && !interviewConfig;
-  const progressTotal = hasIntroStep ? totalSteps + 1 : totalSteps;
-  const progressCurrent = hasIntroStep
-    ? (onIntroStep ? 1 : currentGlobalIndex + 2)
-    : Math.max(1, currentGlobalIndex + 1);
+  const practiceStepNumber = Math.max(1, currentGlobalIndex + 1);
+  const { current: progressCurrent, total: progressTotal } = computePracticeProgress({
+    hasIntro: hasIntroStep,
+    onIntro: onIntroStep,
+    practiceStepNumber,
+    practiceStepCount: totalSteps,
+  });
 
   const canHeaderBack = onIntroStep ? false : currentGlobalIndex > 0;
   const canHeaderForward = onIntroStep
@@ -473,6 +476,7 @@ function PracticeUIContent({
               sessionInit={sessionInit}
               keyboardNavPaused={onIntroStep}
               diagramBeside={splitDiagramLayout}
+              progressIncludesIntro={hasIntroStep}
             />
           </div>
         </>
@@ -902,7 +906,7 @@ function PracticeUIContent({
               splitDiagramLayout ? 'flex flex-1 flex-col' : 'hidden'
             )}
           >
-            {renderDiagramPanel()}
+            {splitDiagramLayout ? renderDiagramPanel() : null}
           </div>
         </main>
       </div>

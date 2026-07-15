@@ -65,6 +65,7 @@ import {
   getGenericFallbackSteps,
   isDiagramSubStep,
   isFirstJourneyStep,
+  computePracticeProgress,
   resolveEffectivePhase,
   resolvePhaseSteps,
 } from '@/lib/step-journey';
@@ -132,6 +133,8 @@ interface Props {
   keyboardNavPaused?: boolean;
   /** Canvas is shown beside this panel (split layout) — use compact chrome. */
   diagramBeside?: boolean;
+  /** When true, restore-banner step counts include the intro brief as step 1. */
+  progressIncludesIntro?: boolean;
 }
 
 type DbSubmission = {
@@ -274,6 +277,7 @@ export default function StepByStepChat({
   sessionInit = null,
   keyboardNavPaused = false,
   diagramBeside = false,
+  progressIncludesIntro = false,
 }: Props) {
   const [currentPhase, setCurrentPhase] = useState(() => {
     const keys = Object.keys(resolvePhaseSteps(problem.steps, getGenericFallbackSteps(problem)));
@@ -1056,6 +1060,19 @@ export default function StepByStepChat({
     return position;
   }, [phases, effectivePhase, safeStepIndex, PHASE_STEPS]);
 
+  const displayProgress = useMemo(
+    () =>
+      computePracticeProgress({
+        hasIntro: progressIncludesIntro,
+        onIntro: false,
+        practiceStepNumber: globalStepPosition,
+        practiceStepCount: totalStepCount,
+      }),
+    [progressIncludesIntro, globalStepPosition, totalStepCount]
+  );
+
+  const [showLastFeedbackDetails, setShowLastFeedbackDetails] = useState(false);
+
   const showRestoreBanner = restoredDate !== null && !dismissedRestoreBanner;
 
   if (!currentStep) {
@@ -1091,7 +1108,7 @@ return (
               <span className="font-medium">Session restored</span>
               {!isNaN(restoredDate.getTime()) && <>{' '}from {format(restoredDate, 'MMM d, yyyy · h:mm a')}</>}
               {totalStepCount > 0 && (
-                <> — continuing at step {globalStepPosition} of {totalStepCount}</>
+                <> — continuing at step {displayProgress.current} of {displayProgress.total}</>
               )}
             </p>
           </div>
@@ -1272,15 +1289,26 @@ return (
 
           {/* Persistent Retry Feedback Banner */}
           {!showFeedback && feedback && !feedback.isAcceptable && (
-            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-4 text-sm">
-              <div className="flex items-center gap-2 text-red-600 dark:text-red-400 font-semibold mb-2">
-                <AlertCircle className="h-4 w-4" />
-                <span>Areas for Improvement</span>
+            <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 mb-4 text-sm">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 text-amber-800 dark:text-amber-200 font-medium">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>Needs revision — revise your answer and submit again.</span>
+                </div>
+                <button
+                  type="button"
+                  className="text-xs underline text-muted-foreground shrink-0"
+                  onClick={() => setShowLastFeedbackDetails((v) => !v)}
+                >
+                  {showLastFeedbackDetails ? 'Hide details' : 'Show last feedback'}
+                </button>
               </div>
-              <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-2">
-                {feedback.weaknesses?.map((w: string, i: number) => <li key={`w-${i}`}>{w}</li>)}
-                {feedback.missed?.map((m: string, i: number) => <li key={`m-${i}`}>{m}</li>)}
-              </ul>
+              {showLastFeedbackDetails && (
+                <ul className="list-disc list-inside space-y-1 text-muted-foreground mt-2 ml-2">
+                  {feedback.weaknesses?.map((w: string, i: number) => <li key={`w-${i}`}>{w}</li>)}
+                  {feedback.missed?.map((m: string, i: number) => <li key={`m-${i}`}>{m}</li>)}
+                </ul>
+              )}
             </div>
           )}
 
