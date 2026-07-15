@@ -3,7 +3,7 @@
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
-import { isPracticeIntent } from '@/lib/onboarding';
+import { isExperienceLevel, isPracticeIntent } from '@/lib/onboarding';
 
 export async function skipOnboarding() {
   const session = await auth();
@@ -28,7 +28,9 @@ export async function saveUserPreferences(
   targetCompanies: string[],
   preferredDifficulty: string[],
   focusAreas: string[],
-  practiceIntent: string = ''
+  practiceIntent: string = '',
+  experienceLevel: string = '',
+  targetRole?: string
 ) {
   const session = await auth();
   if (!session?.user?.id) {
@@ -43,6 +45,8 @@ export async function saveUserPreferences(
         preferredDifficulty,
         focusAreas,
         practiceIntent: isPracticeIntent(practiceIntent) ? practiceIntent : '',
+        experienceLevel: isExperienceLevel(experienceLevel) ? experienceLevel : '',
+        targetRole: targetRole?.trim() || null,
         onboardingCompleted: true,
       },
     });

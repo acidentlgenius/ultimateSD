@@ -9,14 +9,14 @@ import { saveUserPreferences, skipOnboarding } from '@/app/actions/progress';
 import { toast } from 'sonner';
 import { Check, ArrowRight, SlidersHorizontal } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PRACTICE_INTENTS, RECOMMENDED_FIRST_PROBLEM, type PracticeIntent } from '@/lib/onboarding';
+import { EXPERIENCE_LEVELS, PRACTICE_INTENTS, RECOMMENDED_FIRST_PROBLEM, type ExperienceLevel, type PracticeIntent } from '@/lib/onboarding';
 import { getProblemBySlug } from '@/lib/problems';
 
 const COMPANIES = ['Google', 'Meta', 'Amazon', 'Netflix', 'Uber', 'Microsoft', 'Apple', 'Spotify', 'Twitter/X'];
 const DIFFICULTIES = ['Easy', 'Medium', 'Hard'];
 const FOCUS_AREAS = ['System Design', 'API Design', 'Database', 'Microservices', 'Scalability'];
 
-type OnboardingStep = 'goal' | 'ready' | 'prefs';
+type OnboardingStep = 'goal' | 'level' | 'ready' | 'prefs';
 
 interface OnboardingModalProps {
     isOpen: boolean;
@@ -28,6 +28,7 @@ export default function OnboardingModal({ isOpen, onClose, userId }: OnboardingM
     const router = useRouter();
     const [step, setStep] = useState<OnboardingStep>('goal');
     const [selectedIntent, setSelectedIntent] = useState<PracticeIntent | null>(null);
+    const [selectedExperienceLevel, setSelectedExperienceLevel] = useState<ExperienceLevel | null>(null);
     const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
     const [selectedDifficulty, setSelectedDifficulty] = useState<string[]>([]);
     const [selectedFocus, setSelectedFocus] = useState<string[]>([]);
@@ -46,7 +47,13 @@ export default function OnboardingModal({ isOpen, onClose, userId }: OnboardingM
     };
 
     const savePreferences = async () => {
-        const result = await saveUserPreferences(selectedCompanies, selectedDifficulty, selectedFocus, selectedIntent ?? '');
+        const result = await saveUserPreferences(
+            selectedCompanies,
+            selectedDifficulty,
+            selectedFocus,
+            selectedIntent ?? '',
+            selectedExperienceLevel ?? ''
+        );
         if (!result.success) {
             toast.error('Failed to save preferences.');
         }
@@ -116,7 +123,7 @@ export default function OnboardingModal({ isOpen, onClose, userId }: OnboardingM
                                     {PRACTICE_INTENTS.map(intent => (
                                         <div
                                             key={intent.id}
-                                            onClick={() => { setSelectedIntent(intent.id); setStep('ready'); }}
+                                            onClick={() => { setSelectedIntent(intent.id); setStep('level'); }}
                                             className={`
                                         cursor-pointer p-4 rounded-xl border-2 transition-all duration-200
                                         ${selectedIntent === intent.id
@@ -133,6 +140,49 @@ export default function OnboardingModal({ isOpen, onClose, userId }: OnboardingM
                                     ))}
                                 </div>
                                 <div className="flex justify-end">
+                                    <Button variant="ghost" onClick={handleSkip} className="text-muted-foreground">
+                                        Skip for now
+                                    </Button>
+                                </div>
+                            </motion.div>
+                        )}
+
+                        {step === 'level' && (
+                            <motion.div
+                                key="level"
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -20 }}
+                                className="space-y-6"
+                            >
+                                <DialogHeader>
+                                    <DialogTitle className="text-2xl font-bold">What&apos;s your experience level?</DialogTitle>
+                                    <DialogDescription className="text-lg">We&apos;ll calibrate difficulty and pacing to match where you are today.</DialogDescription>
+                                </DialogHeader>
+                                <div className="flex flex-col gap-3">
+                                    {EXPERIENCE_LEVELS.map(level => (
+                                        <div
+                                            key={level.id}
+                                            onClick={() => { setSelectedExperienceLevel(level.id); setStep('ready'); }}
+                                            className={`
+                                        cursor-pointer p-4 rounded-xl border-2 transition-all duration-200
+                                        ${selectedExperienceLevel === level.id
+                                                    ? 'border-primary bg-primary/10 shadow-sm'
+                                                    : 'border-muted hover:border-primary/50 hover:bg-muted/50'}
+                                    `}
+                                        >
+                                            <div className="flex items-center justify-between">
+                                                <span className={`text-lg font-semibold ${selectedExperienceLevel === level.id ? 'text-primary' : ''}`}>{level.label}</span>
+                                                {selectedExperienceLevel === level.id && <Check className="w-5 h-5 text-primary" />}
+                                            </div>
+                                            <p className="text-sm text-muted-foreground mt-1">{level.description}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="flex justify-between">
+                                    <Button variant="ghost" onClick={() => setStep('goal')} className="text-muted-foreground">
+                                        Back
+                                    </Button>
                                     <Button variant="ghost" onClick={handleSkip} className="text-muted-foreground">
                                         Skip for now
                                     </Button>
