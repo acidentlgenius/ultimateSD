@@ -95,6 +95,57 @@ export async function mockInterviewSummary(page: Page) {
   });
 }
 
+const ADAPTIVE_COACH_LOW_FEEDBACK = {
+  score: 3,
+  accuracy: 30,
+  strengths: [] as string[],
+  weaknesses: ['Too vague', 'Missing key features'],
+  missed: ['Custom aliases', 'Redirect latency'],
+  isAcceptable: false,
+};
+
+export const ADAPTIVE_COACH_TIP =
+  'Mention redirect latency and analytics on clicks.';
+
+/**
+ * Mock /api/ai/evaluate for adaptive-coach e2e: retries on attempts 1–2,
+ * teach_forward + tip on attempt 3+ (matches StepByStepChat gate handling).
+ */
+export async function mockAiEvaluateAdaptiveCoach(page: Page) {
+  await page.route('**/api/ai/evaluate', async (route) => {
+    const body = route.request().postDataJSON() as { attemptCount?: number };
+    const attempt = body?.attemptCount ?? 1;
+
+    if (attempt >= 3) {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          feedback: ADAPTIVE_COACH_LOW_FEEDBACK,
+          gate: {
+            action: 'teach_forward',
+            reason: 'Attempts exhausted (3/3)',
+          },
+          tip: ADAPTIVE_COACH_TIP,
+        }),
+      });
+      return;
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        feedback: ADAPTIVE_COACH_LOW_FEEDBACK,
+        gate: {
+          action: 'retry',
+          reason: 'Score below threshold (3/10)',
+        },
+      }),
+    });
+  });
+}
+
 export async function mockAiProbe(page: Page) {
   await page.route('**/api/ai/chat', async (route) => {
     const body = route.request().postDataJSON() as { round?: number };
