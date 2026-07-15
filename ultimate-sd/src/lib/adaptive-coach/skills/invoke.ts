@@ -115,7 +115,9 @@ function parseTeachForwardOutput(raw: string): TeachForwardOutput | null {
 }
 
 function parseProfileReflectOutput(raw: string): ProfileReflectOutput | null {
-  return parseJsonWithSchema(raw, ProfileReflectSchema);
+  const parsed = parseJsonWithSchema(raw, ProfileReflectSchema);
+  if (!parsed) return null;
+  return { ...parsed, competencyDeltas: parsed.competencyDeltas ?? [] };
 }
 
 function parseMockProbeOutput(raw: string): MockProbeOutput | null {

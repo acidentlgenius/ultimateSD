@@ -22,7 +22,7 @@ vi.mock('@/lib/posthog', () => ({
 import { auth } from '@/auth';
 import { canAccessFeature } from '@/lib/feature-flags-server';
 import { AIAccessError, getUserLLM } from '@/lib/user-llm';
-import { runCoachTurn } from '@/lib/adaptive-coach';
+import { runCoachTurn, type CoachTurnResponse } from '@/lib/adaptive-coach';
 import { loadProfile } from '@/lib/adaptive-coach/tools/load-profile';
 import posthog from '@/lib/posthog';
 import { POST } from '@/app/api/ai/coach/turn/route';
@@ -50,18 +50,18 @@ const START_BODY = {
 
 const COACH_RESPONSE = {
   sessionState: {
-    version: 'adaptive-1',
-    mode: 'practice',
+    version: 'adaptive-1' as const,
+    mode: 'practice' as const,
     problemSlug: 'design-parking-lot',
     stageId: 'requirements-0',
     agenda: [],
     attempts: {},
     stageStartedAt: '2026-07-15T00:00:00.000Z',
     sessionBudgetSec: 2700,
-    status: 'running',
+    status: 'running' as const,
   },
   ui: { agenda: [] },
-};
+} satisfies CoachTurnResponse;
 
 beforeEach(() => {
   vi.clearAllMocks();
