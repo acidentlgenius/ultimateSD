@@ -48,6 +48,17 @@ export default function CrawlerFrontier() {
         };
     }, []);
 
+    // SQUASH: Root Cause: The setInterval was previously dependent on state variables (queues, activeUrl).
+    // This caused the interval to clear and reset every time the state changed, leading to "interval starvation"
+    // where the crawler loop would rarely execute its logic fully if state changed frequently.
+    // SQUASH: Fix: Mirror the state in a useRef updated via a separate useEffect.
+    // The setInterval now has an empty dependency array [], so it runs consistently,
+    // and reads the latest state from stateRef.current.
+    const stateRef = useRef({ queues, activeUrl });
+    useEffect(() => {
+        stateRef.current = { queues, activeUrl };
+    }, [queues, activeUrl]);
+
     // Simulate Crawler Loop
     useEffect(() => {
         const interval = setInterval(() => {
@@ -55,15 +66,18 @@ export default function CrawlerFrontier() {
             let nextItem: QueueItem | undefined;
             let sourceQueue = '';
 
-            if (queues['High Priority'].length > 0) {
-                nextItem = queues['High Priority'][0];
+            const currentQueues = stateRef.current.queues;
+            const currentActiveUrl = stateRef.current.activeUrl;
+
+            if (currentQueues['High Priority'].length > 0) {
+                nextItem = currentQueues['High Priority'][0];
                 sourceQueue = 'High Priority';
-            } else if (queues['Standard'].length > 0) {
-                nextItem = queues['Standard'][0];
+            } else if (currentQueues['Standard'].length > 0) {
+                nextItem = currentQueues['Standard'][0];
                 sourceQueue = 'Standard';
             }
 
-            if (nextItem && !activeUrl) {
+            if (nextItem && !currentActiveUrl) {
                 // Remove from queue
                 setQueues(prev => ({
                     ...prev,
@@ -108,7 +122,7 @@ export default function CrawlerFrontier() {
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [queues['High Priority'].length, queues['Standard'].length, activeUrl]);
+    }, []);
 
     return (
         <div className="space-y-6 animate-fade-in text-sm">

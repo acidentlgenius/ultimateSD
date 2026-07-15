@@ -68,3 +68,9 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+
+## 2024-07-15 - [Interval Starvation via Stale State Hooks in React]
+
+**Learning:** When using `setInterval` inside a `useEffect` that has state dependencies (e.g., `queues`, `activeUrl`), the interval is cleared and recreated every time the state changes. If the state updates more frequently than the interval's delay (e.g., every 500ms for a 1000ms interval), the interval callback will *never* fire. This creates "interval starvation" and breaks background polling or simulated loops, like the CrawlerFrontier worker.
+
+**Action:** Never include frequently updated state variables in the dependency array of a `useEffect` that sets up a `setInterval`. Instead, mirror the required state in a `useRef` (e.g., `stateRef.current = { state }`) via a separate `useEffect`, and read from `stateRef.current` inside the interval callback. The interval's `useEffect` should have an empty dependency array `[]` so it mounts only once.
