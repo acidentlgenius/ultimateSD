@@ -38,7 +38,7 @@ test.describe('fresherTrack dark: zero visual change', () => {
   test('deep link ?track=fresher falls back to the SE track', async ({ page }) => {
     await page.goto('/roadmap?track=fresher');
     await page.waitForURL(/track=se/);
-    await expect(page.getByText(/Phase 1: Web Fundamentals/i)).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Phase 1: Web Fundamentals/i })).toBeVisible();
     await expect(page.getByText(/Phase 0: Foundations/i)).toHaveCount(0);
   });
 
