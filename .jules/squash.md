@@ -74,3 +74,9 @@
 **Learning:** Tests for time-sensitive functionality (like limited-time promotional offers or campaigns) often fail mysteriously in CI/CD environments after the hardcoded campaign deadline passes. This happens because the test relies on the system's real current time, which inevitably drifts past the expected deadline, turning the test into a "time bomb".
 
 **Action:** Whenever testing logic that depends on `new Date()` or campaign deadlines, always explicitly mock the time or the time-checking functions using `vi.useFakeTimers()` or `vi.spyOn(module, 'function').mockReturnValue(true)` to ensure deterministic behavior regardless of when the test is executed.
+
+## 2026-07-17 - [Playwright E2E Locator and Interaction Flakiness]
+
+**Learning:** Playwright tests can fail due to seemingly correct locator interactions that misalign with React component implementations. For example, trying to click a locked premium problem card using `page.getByRole('button', { name: /Unlock {Title}/i })` fails if the component is actually implemented as an accessible `div` rather than a standard `<button>`. Similarly, clicking a "submit" button can timeout if the button briefly detaches from the DOM during React state updates or animations.
+
+**Action:** When interacting with locked problem cards, use `page.locator('div[role="button"][aria-label="Unlock {Problem Title}"]')`. When clicking a submit button becomes flaky due to DOM detachment, use `page.keyboard.press('Enter')` on the associated input field for a more stable interaction.
