@@ -80,3 +80,9 @@
 **Learning:** Playwright tests can fail due to seemingly correct locator interactions that misalign with React component implementations. For example, trying to click a locked premium problem card using `page.getByRole('button', { name: /Unlock {Title}/i })` fails if the component is actually implemented as an accessible `div` rather than a standard `<button>`. Similarly, clicking a "submit" button can timeout if the button briefly detaches from the DOM during React state updates or animations.
 
 **Action:** When interacting with locked problem cards, use `page.locator('div[role="button"][aria-label="Unlock {Problem Title}"]')`. When clicking a submit button becomes flaky due to DOM detachment, use `page.keyboard.press('Enter')` on the associated input field for a more stable interaction.
+
+## 2026-07-17 - [Playwright Input-triggered UI State Races]
+
+**Learning:** When using `keyboard.press('Enter')` to trigger an input submission that updates React state (e.g., adding an item to a list), subsequent button clicks (like "Submit") can fail with "element is not enabled" if Playwright executes the click faster than React finishes rendering the state update that enables the button.
+
+**Action:** Whenever simulating an input event that enables a submit button, explicitly wait for the button's state to change before clicking it: `await expect(page.getByRole('button')).toBeEnabled()`.
