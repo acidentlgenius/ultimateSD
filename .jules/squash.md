@@ -86,3 +86,9 @@
 **Learning:** When using `keyboard.press('Enter')` to trigger an input submission that updates React state (e.g., adding an item to a list), subsequent button clicks (like "Submit") can fail with "element is not enabled" if Playwright executes the click faster than React finishes rendering the state update that enables the button.
 
 **Action:** Whenever simulating an input event that enables a submit button, explicitly wait for the button's state to change before clicking it: `await expect(page.getByRole('button')).toBeEnabled()`.
+
+## 2026-07-17 - [Playwright Interaction Robustness]
+
+**Learning:** When dealing with custom accessible UI components (like a div acting as a locked problem card with `onKeyDown` and `onClick`), using a native `click()` method on a label locator is sometimes flaky under heavy CI load or before full hydration, whereas directly focusing the element and triggering its semantic keydown action (e.g., `focus()` followed by `keyboard.press('Enter')`) bypasses pure pointer-event flakiness. Similarly, when a submit button relies on state changes triggered by an input (like adding an item to a list), the input action itself must be fully propagated through React state. Emitting an explicit `keyboard.press('Enter')` while targeted on the specific input element ensures the event listener captures the event, modifying the state and enabling the subsequent elements.
+
+**Action:** Whenever standard `click()` fails on interactive `div` elements, fall back to `.focus()` and `.keyboard.press('Enter')`. When state updates depend on input keystrokes, always target the keystroke action at the specific input (e.g., `locator.press('Enter')`) rather than the global `page.keyboard`.
