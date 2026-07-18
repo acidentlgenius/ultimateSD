@@ -68,3 +68,27 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+
+## 2026-07-17 - [Time Bombs in Time-Dependent Tests]
+
+**Learning:** Tests for time-sensitive functionality (like limited-time promotional offers or campaigns) often fail mysteriously in CI/CD environments after the hardcoded campaign deadline passes. This happens because the test relies on the system's real current time, which inevitably drifts past the expected deadline, turning the test into a "time bomb".
+
+**Action:** Whenever testing logic that depends on `new Date()` or campaign deadlines, always explicitly mock the time or the time-checking functions using `vi.useFakeTimers()` or `vi.spyOn(module, 'function').mockReturnValue(true)` to ensure deterministic behavior regardless of when the test is executed.
+
+## 2026-07-17 - [Playwright E2E Locator and Interaction Flakiness]
+
+**Learning:** Playwright tests can fail due to seemingly correct locator interactions that misalign with React component implementations. For example, trying to click a locked premium problem card using `page.getByRole('button', { name: /Unlock {Title}/i })` fails if the component is actually implemented as an accessible `div` rather than a standard `<button>`. Similarly, clicking a "submit" button can timeout if the button briefly detaches from the DOM during React state updates or animations.
+
+**Action:** When interacting with locked problem cards, use `page.locator('div[role="button"][aria-label="Unlock {Problem Title}"]')`. When clicking a submit button becomes flaky due to DOM detachment, use `page.keyboard.press('Enter')` on the associated input field for a more stable interaction.
+
+## 2026-07-17 - [Playwright Input-triggered UI State Races]
+
+**Learning:** When using `keyboard.press('Enter')` to trigger an input submission that updates React state (e.g., adding an item to a list), subsequent button clicks (like "Submit") can fail with "element is not enabled" if Playwright executes the click faster than React finishes rendering the state update that enables the button.
+
+**Action:** Whenever simulating an input event that enables a submit button, explicitly wait for the button's state to change before clicking it: `await expect(page.getByRole('button')).toBeEnabled()`.
+
+## 2026-07-17 - [Playwright Interaction Robustness]
+
+**Learning:** When dealing with custom accessible UI components (like a div acting as a locked problem card with `onKeyDown` and `onClick`), using a native `click()` method on a label locator is sometimes flaky under heavy CI load or before full hydration, whereas directly focusing the element and triggering its semantic keydown action (e.g., `focus()` followed by `keyboard.press('Enter')`) bypasses pure pointer-event flakiness. Similarly, when a submit button relies on state changes triggered by an input (like adding an item to a list), the input action itself must be fully propagated through React state. Emitting an explicit `keyboard.press('Enter')` while targeted on the specific input element ensures the event listener captures the event, modifying the state and enabling the subsequent elements.
+
+**Action:** Whenever standard `click()` fails on interactive `div` elements, fall back to `.focus()` and `.keyboard.press('Enter')`. When state updates depend on input keystrokes, always target the keystroke action at the specific input (e.g., `locator.press('Enter')`) rather than the global `page.keyboard`.
