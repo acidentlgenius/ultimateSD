@@ -1,0 +1,1 @@
+We cannot easily test E2E tests fully without database setup locally (Prisma throws ECONNREFUSED because we don't have a pg instance running on 5432). Let's skip testing it locally, we've reviewed the issue and made the code changes as requested based on memories.
