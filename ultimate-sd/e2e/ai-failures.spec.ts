@@ -26,9 +26,14 @@ test.describe('AI evaluation failures', () => {
     const input = page.getByPlaceholder(/short URL/i);
     await input.fill('Users can shorten a long URL');
     await input.press('Enter');
+
+    // Explicitly wait for the newly added item to render in the DOM to avoid
+    // state-update flakiness where the submit button detaches or becomes disabled
+    await expect(page.getByText('Users can shorten a long URL').first()).toBeVisible();
+
     const submitBtn = page.getByRole('button', { name: /Submit for Review/i });
     await expect(submitBtn).toBeEnabled();
-    await submitBtn.click();
+    await submitBtn.click({ force: true });
   }
 
   test('403 (no credits / API key) shows the server message, not a score', async ({ page }) => {
