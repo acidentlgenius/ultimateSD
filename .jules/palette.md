@@ -1,0 +1,3 @@
+## 2024-07-20 - Semantic Link Wrapping and Icon Button Accessibility
+**Learning:** React/Next.js components that wrap a shadcn `<Button>` inside a `<Link>` generate invalid HTML (`<a><button>...</button></a>`). Icon-only buttons using `size="icon"` also need explicit `aria-label` and `title` attributes because the internal SVGs are typically styled with `pointer-events-none` and lack descriptive text, breaking screen reader navigation.
+**Action:** Use `<Button asChild><Link href="...">...</Link></Button>` for navigation buttons. Always include both `aria-label` and `title` on any button that does not have visible text content.
