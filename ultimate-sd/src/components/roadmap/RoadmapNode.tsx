@@ -105,11 +105,11 @@ export function RoadmapNode({ step, index, isLast, align }: RoadmapNodeProps) {
                                     ))}
 
                                     {step.problemSlug && (
-                                        <Link href={`/practice/${step.problemSlug}`}>
-                                            <Button size="sm" className="w-full mt-2 bg-gradient-to-r from-primary to-purple-600 border-0 hover:opacity-90">
+                                        <Button asChild size="sm" className="w-full mt-2 bg-gradient-to-r from-primary to-purple-600 border-0 hover:opacity-90">
+                                            <Link href={`/practice/${step.problemSlug}`}>
                                                 Solve Challenge <PlayCircle className="w-4 h-4 ml-2" />
-                                            </Button>
-                                        </Link>
+                                            </Link>
+                                        </Button>
                                     )}
 
                                     {!step.problemId && (
