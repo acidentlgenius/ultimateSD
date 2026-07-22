@@ -25,6 +25,7 @@ test.describe('AI evaluation failures', () => {
     await page.goto('/practice/design-tinyurl');
     await page.getByPlaceholder(/short URL/i).fill('Users can shorten a long URL');
     await page.getByPlaceholder(/short URL/i).press('Enter');
+    await expect(page.getByRole('button', { name: /Submit for Review/i })).toBeEnabled();
     await page.getByRole('button', { name: /Submit for Review/i }).click();
   }
 
