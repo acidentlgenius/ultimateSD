@@ -128,9 +128,11 @@ export function TimerWidget({
 
         let interval: NodeJS.Timeout;
 
-        if (isActive && timeLeft > 0) {
+        if (isActive) {
             interval = setInterval(() => {
                 setTimeLeft((prev) => {
+                    if (prev <= 0) return 0;
+
                     // Check against server time if available to prevent drift
                     if (startedAt) {
                         const { remaining } = calculateServerTime();
@@ -150,19 +152,33 @@ export function TimerWidget({
                     return newValue;
                 });
             }, 1000);
-        } else {
-            if (timeLeft === 0 && problemId && !startedAt) {
-                localStorage.setItem(`timer_${problemId}_status`, 'finished');
-                localStorage.setItem(`timer_${problemId}_timeLeft`, '0');
-            } else if (problemId && !startedAt && isInitialized) {
-                localStorage.setItem(`timer_${problemId}_status`, 'paused');
-                localStorage.setItem(`timer_${problemId}_timeLeft`, timeLeft.toString());
-                localStorage.setItem(`timer_${problemId}_lastTimestamp`, Date.now().toString());
-            }
         }
 
-        return () => clearInterval(interval);
-    }, [isActive, timeLeft, problemId, isInitialized, startedAt, initialTimeSeconds]);
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [isActive, problemId, isInitialized, startedAt]);
+
+    // Local storage sync for pause/finish states
+    useEffect(() => {
+        if (!isInitialized || startedAt || !problemId) return;
+
+        if (isActive && timeLeft > 0) {
+            localStorage.setItem(`timer_${problemId}_status`, 'active');
+            localStorage.setItem(`timer_${problemId}_timeLeft`, timeLeft.toString());
+            localStorage.setItem(`timer_${problemId}_lastTimestamp`, Date.now().toString());
+            return;
+        }
+
+        if (timeLeft === 0) {
+            localStorage.setItem(`timer_${problemId}_status`, 'finished');
+            localStorage.setItem(`timer_${problemId}_timeLeft`, '0');
+        } else {
+            localStorage.setItem(`timer_${problemId}_status`, 'paused');
+            localStorage.setItem(`timer_${problemId}_timeLeft`, timeLeft.toString());
+            localStorage.setItem(`timer_${problemId}_lastTimestamp`, Date.now().toString());
+        }
+    }, [isActive, timeLeft, problemId, isInitialized, startedAt]);
 
     const handleStart = async () => {
         if (onStart && !startedAt) {

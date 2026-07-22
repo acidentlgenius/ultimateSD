@@ -30,6 +30,28 @@ describe('TimerWidget local-mode expiry', () => {
     expect(onComplete).toHaveBeenCalledTimes(1);
   });
 
+  it('does not recreate the interval on every tick (interval starvation bug)', () => {
+    const setIntervalSpy = vi.spyOn(global, 'setInterval');
+    const clearIntervalSpy = vi.spyOn(global, 'clearInterval');
+
+    render(
+      <TimerWidget
+        initialTimeSeconds={10}
+        problemId="interval-starvation-test"
+      />
+    );
+
+    // Initial render might trigger one setInterval (since problemId auto-starts)
+    const initialCalls = setIntervalSpy.mock.calls.length;
+
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+
+    // The interval should not have been cleared and recreated 5 times
+    expect(setIntervalSpy.mock.calls.length).toBe(initialCalls);
+  });
+
   it('does not fire onComplete a second time when Play is clicked again after expiry', () => {
     const onComplete = vi.fn();
     render(

@@ -1,3 +1,4 @@
+import * as launchOffer from '../launch-offer';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockTransaction = vi.fn();
@@ -32,6 +33,7 @@ vi.mock('@/lib/email', () => ({
   sendPlanWelcomeEmail: (...args: unknown[]) => mockSendPlanWelcomeEmail(...args),
 }));
 
+import * as launchOffer from '../launch-offer';
 import {
   claimPlatformLaunchOffer,
   drawAiGiveawayWinners,
@@ -39,6 +41,9 @@ import {
 } from '../launch-offer-grant';
 
 describe('claimPlatformLaunchOffer', () => {
+  beforeEach(() => {
+    vi.spyOn(launchOffer, 'isLaunchOfferActive').mockReturnValue(true);
+  });
   beforeEach(() => {
     vi.clearAllMocks();
     mockFindUnique.mockImplementation((args: { where?: { userId?: string }; select?: Record<string, boolean> }) => {
