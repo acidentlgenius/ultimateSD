@@ -32,6 +32,7 @@ vi.mock('@/lib/email', () => ({
   sendPlanWelcomeEmail: (...args: unknown[]) => mockSendPlanWelcomeEmail(...args),
 }));
 
+import * as launchOffer from '../launch-offer';
 import {
   claimPlatformLaunchOffer,
   drawAiGiveawayWinners,
@@ -41,6 +42,8 @@ import {
 describe('claimPlatformLaunchOffer', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.spyOn(launchOffer, 'isLaunchOfferActive').mockReturnValue(true);
+
     mockFindUnique.mockImplementation((args: { where?: { userId?: string }; select?: Record<string, boolean> }) => {
       if (args?.select?.planType !== undefined) {
         return Promise.resolve({ planType: 'free', planExpiresAt: null });
