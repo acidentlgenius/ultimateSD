@@ -1,11 +1,13 @@
-💥 The Bug
-The Vercel deployment is failing with the error `ERR_PNPM_OUTDATED_LOCKFILE Cannot install with "frozen-lockfile" because pnpm-lock.yaml is not up to date with <ROOT>/package.json`.
+💡 What
+Added `aria-label` and `title` attributes to the grid and list view toggle buttons in the `ProblemFilterBar` component. Also mocked out a time-dependent utility function for Vitest.
 
-🔍 Root Cause
-The `package.json` file specified `@testing-library/dom` but this dependency was missing from the `pnpm-lock.yaml` file. Vercel runs `pnpm install --frozen-lockfile` by default on CI environments, which strictly enforces that the lockfile perfectly matches `package.json`. This mismatch caused the build to abort.
+🎯 Why
+These buttons use Lucide SVG icons (`LayoutGrid` and `List`) without any descriptive text. Since they act as icon-only interactive controls, adding an accessible name via `aria-label` is required for screen reader users to understand their purpose, and `title` provides a helpful hover tooltip for sighted users. The Vitest mock allows tests to run successfully after the launch offer deadline passes.
 
-🛠️ The Fix
-Ran `pnpm install` locally to update the `pnpm-lock.yaml` file, syncing the lockfile definitions with the updated `package.json` specifiers (specifically adding `@testing-library/dom` and deduplicating some minor `@babel` versions).
+📸 Before/After
+Before: The grid/list layout buttons lacked accessible names and tooltips.
+After: Hovering over the buttons displays "Grid view" and "List view", and screen readers will announce these labels correctly.
 
-🛡️ Prevention
-When updating `package.json` dependencies, ensure to always run `pnpm install` and commit the updated `pnpm-lock.yaml` file to avoid breaking CI/CD pipelines that rely on frozen lockfiles.
+♿ Accessibility
+- Added descriptive `aria-label`s to ensure icon-only buttons are announced by screen readers.
+- Added `title`s to provide native browser tooltips on hover, aiding all users in understanding the control's function.
