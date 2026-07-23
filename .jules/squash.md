@@ -68,3 +68,10 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+## 2026-06-31 - [Memory Leaks with dynamic timeouts and stale closures in React hooks]
+
+**Learning:** When using dynamic timers (`setTimeout`) inside an effect that re-runs (or an interval inside such an effect), managing those timers correctly is tricky. If you clear `setTimeout` IDs in the cleanup of an effect that triggers on every state change, you prematurely kill ongoing async operations. Additionally, functions defined inside the component and called from an interval or timeout must be memoized with `useCallback` and included in dependency arrays to avoid stale closures, or their definition must be moved *before* the effect that uses them to appease the linter without introducing infinite loops.
+
+**Action:**
+1. Track dynamic timeout IDs in a `useRef(new Set<NodeJS.Timeout>())` and clear them *only* in a dedicated unmount-only `useEffect` (with `[]` dependencies) to prevent memory leaks while preserving async flow across re-renders.
+2. Ensure helper functions (like `completeTask`) called from intervals are memoized with `useCallback` and added to the effect's dependency array, or define them in a way that avoids stale closures without causing interval starvation.

@@ -82,6 +82,12 @@ const JobSchedulerViz: React.FC = () => {
         });
     }, [tasks, isRunning]);
 
+    const completeTask = useCallback((taskId: string, workerId: number) => {
+        setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: 'completed', workerId: undefined } : t));
+        setWorkers(prev => prev.map(w => w.id === workerId ? { ...w, busy: false, taskId: undefined } : w));
+        addLog(`Task completed: ${INITIAL_TASKS.find(t => t.id === taskId)?.name}`);
+    }, [addLog]);
+
     // Scheduler Loop
     useEffect(() => {
         if (!isRunning) return;
@@ -140,13 +146,7 @@ const JobSchedulerViz: React.FC = () => {
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [isRunning, workers, tasks, addLog]);
-
-    const completeTask = useCallback((taskId: string, workerId: number) => {
-        setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: 'completed', workerId: undefined } : t));
-        setWorkers(prev => prev.map(w => w.id === workerId ? { ...w, busy: false, taskId: undefined } : w));
-        addLog(`Task completed: ${INITIAL_TASKS.find(t => t.id === taskId)?.name}`);
-    }, [addLog]);
+    }, [isRunning, workers, tasks, addLog, completeTask]);
 
     const reset = () => {
         setTasks(INITIAL_TASKS.map(t => ({ ...t }))); // Deep copy to reset status
