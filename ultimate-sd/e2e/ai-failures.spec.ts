@@ -25,7 +25,7 @@ test.describe('AI evaluation failures', () => {
     await page.goto('/practice/design-tinyurl');
     await page.getByPlaceholder(/short URL/i).fill('Users can shorten a long URL');
     await page.getByRole('button', { name: 'Add' }).click();
-    await page.getByRole('button', { name: /Submit for Review/i }).click();
+    await page.getByRole('button', { name: /Submit for Review|Analyze Design/i }).click();
   }
 
   test('403 (no credits / API key) shows the server message, not a score', async ({ page }) => {
