@@ -37,8 +37,12 @@ import {
   drawAiGiveawayWinners,
   grantAdminPlatformPlan,
 } from '../launch-offer-grant';
+import * as launchOffer from '../launch-offer';
 
 describe('claimPlatformLaunchOffer', () => {
+  beforeEach(() => {
+    vi.spyOn(launchOffer, 'isLaunchOfferActive').mockReturnValue(true);
+  });
   beforeEach(() => {
     vi.clearAllMocks();
     mockFindUnique.mockImplementation((args: { where?: { userId?: string }; select?: Record<string, boolean> }) => {
