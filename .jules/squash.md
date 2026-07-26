@@ -68,3 +68,9 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+
+## 2026-07-26 - [Time-Bomb Test Failure]
+
+**Learning:** When writing tests for modules that rely on hardcoded deadlines (like a launch offer campaign), tests will begin failing unexpectedly ('time-bomb') once the system clock passes the deadline, as functions like `isLaunchOfferActive` will start returning false.
+
+**Action:** Always explicitly mock campaign status functions (e.g., `vi.spyOn(launchOffer, 'isLaunchOfferActive').mockReturnValue(true)`) to prevent tests from failing due to time and to isolate the business logic under test.

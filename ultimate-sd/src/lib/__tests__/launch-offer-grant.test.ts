@@ -37,10 +37,16 @@ import {
   drawAiGiveawayWinners,
   grantAdminPlatformPlan,
 } from '../launch-offer-grant';
+import * as launchOffer from '../launch-offer';
 
 describe('claimPlatformLaunchOffer', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+
+    // SQUASH: Root Cause: The launch offer has a hardcoded deadline (July 15, 2026). When the system date passes this deadline, tests fail because `isLaunchOfferActive` returns false.
+    // SQUASH: Fix: Explicitly mock `isLaunchOfferActive` to always return true during tests to prevent time-dependent failures and isolate the core logic being tested.
+    vi.spyOn(launchOffer, 'isLaunchOfferActive').mockReturnValue(true);
+
     mockFindUnique.mockImplementation((args: { where?: { userId?: string }; select?: Record<string, boolean> }) => {
       if (args?.select?.planType !== undefined) {
         return Promise.resolve({ planType: 'free', planExpiresAt: null });
