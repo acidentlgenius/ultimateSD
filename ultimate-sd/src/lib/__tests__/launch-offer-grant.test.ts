@@ -37,10 +37,12 @@ import {
   drawAiGiveawayWinners,
   grantAdminPlatformPlan,
 } from '../launch-offer-grant';
+import * as launchOffer from '@/lib/launch-offer';
 
 describe('claimPlatformLaunchOffer', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.spyOn(launchOffer, 'isLaunchOfferActive').mockReturnValue(true);
     mockFindUnique.mockImplementation((args: { where?: { userId?: string }; select?: Record<string, boolean> }) => {
       if (args?.select?.planType !== undefined) {
         return Promise.resolve({ planType: 'free', planExpiresAt: null });
@@ -54,7 +56,7 @@ describe('claimPlatformLaunchOffer', () => {
   });
 
   it('grants platform plan when slots are available', async () => {
-    mockTransaction.mockImplementation(async (fn: (tx: unknown) => Promise<unknown>) => {
+    mockTransaction.mockImplementation(async (fn: (tx: unknown) => Promise<unknown>, options?: { isolationLevel?: string }) => {
       const tx = {
         launchOfferRedemption: {
           findUnique: vi.fn().mockResolvedValue(null),
@@ -83,7 +85,7 @@ describe('claimPlatformLaunchOffer', () => {
   });
 
   it('returns sold_out when cap is reached', async () => {
-    mockTransaction.mockImplementation(async (fn: (tx: unknown) => Promise<unknown>) => {
+    mockTransaction.mockImplementation(async (fn: (tx: unknown) => Promise<unknown>, options?: { isolationLevel?: string }) => {
       const tx = {
         launchOfferRedemption: {
           findUnique: vi.fn().mockResolvedValue(null),
@@ -98,7 +100,7 @@ describe('claimPlatformLaunchOffer', () => {
   });
 
   it('returns already_redeemed when user has a redemption', async () => {
-    mockTransaction.mockImplementation(async (fn: (tx: unknown) => Promise<unknown>) => {
+    mockTransaction.mockImplementation(async (fn: (tx: unknown) => Promise<unknown>, options?: { isolationLevel?: string }) => {
       const tx = {
         launchOfferRedemption: {
           findUnique: vi.fn().mockResolvedValue({ id: 'r-1' }),
@@ -150,7 +152,7 @@ describe('grantAdminPlatformPlan', () => {
 
   it('creates redemption when consuming a launch slot', async () => {
     const mockCreate = vi.fn().mockResolvedValue({});
-    mockTransaction.mockImplementation(async (fn: (tx: unknown) => Promise<unknown>) => {
+    mockTransaction.mockImplementation(async (fn: (tx: unknown) => Promise<unknown>, options?: { isolationLevel?: string }) => {
       const tx = {
         launchOfferRedemption: {
           findUnique: vi.fn().mockResolvedValue(null),
@@ -181,7 +183,7 @@ describe('grantAdminPlatformPlan', () => {
   });
 
   it('returns sold_out when launch slots are full', async () => {
-    mockTransaction.mockImplementation(async (fn: (tx: unknown) => Promise<unknown>) => {
+    mockTransaction.mockImplementation(async (fn: (tx: unknown) => Promise<unknown>, options?: { isolationLevel?: string }) => {
       const tx = {
         launchOfferRedemption: {
           findUnique: vi.fn().mockResolvedValue(null),
