@@ -27,3 +27,9 @@
 **Learning:** `loadSessionState` relied on `clearSessionState(problemSlug)` to handle invalid data. However, if the `localStorage` key contained structurally valid JSON but the *content itself* was not valid JSON (causing `JSON.parse` to throw), the catch block would execute. But if `clearSessionState` failed or wasn't robust enough, the corrupted data stayed. On every subsequent mount, the UI would try to parse the corrupt data, throw, and crash again.
 
 **Action:** When purging corrupted or unparseable `localStorage` state, use direct `localStorage.removeItem(key)` rather than higher-level helpers to guarantee the bad data is purged, since helper methods might inadvertently fail when interacting with corrupted state.
+
+## 2026-07-27 - Race condition in launch offer limits
+
+**Learning:** Prisma transactions using default Read Committed isolation level do not prevent phantom reads when doing a count check followed by an insert, leading to race conditions where limits (e.g. slot caps) are exceeded under concurrent requests.
+
+**Action:** For operations enforcing a strict cap limit where a count is checked before inserting, explicitly set the Prisma transaction isolation level to Serializable (`{ isolationLevel: Prisma.TransactionIsolationLevel.Serializable }`).

@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import {
   getInitialAiCreditsForPlan,
   getNextAiCreditsResetDate,
@@ -98,40 +99,53 @@ export async function grantAdminPlatformPlan(
     return { success: true, expiresAt, launchOfferSlotUsed: false };
   }
 
-  const result = await prisma.$transaction(async (tx) => {
-    const existing = await tx.launchOfferRedemption.findUnique({ where: { userId } });
-    if (existing) return { error: 'already_redeemed' as const };
+  try {
+    // We use Serializable isolation here because we count slots used and then insert if under cap.
+    // Without this, concurrent claims could both read the same count and bypass the cap limit (Phantom Reads).
+    const result = await prisma.$transaction(async (tx) => {
+      const existing = await tx.launchOfferRedemption.findUnique({ where: { userId } });
+      if (existing) return { error: 'already_redeemed' as const };
 
-    const claimed = await countPlatformSlotsUsed(tx);
-    if (claimed >= LAUNCH_PLATFORM_SLOTS) {
-      return { error: 'sold_out' as const };
-    }
+      const claimed = await countPlatformSlotsUsed(tx);
+      if (claimed >= LAUNCH_PLATFORM_SLOTS) {
+        return { error: 'sold_out' as const };
+      }
 
-    await tx.user.update({
-      where: { id: userId },
-      data: planData,
+      await tx.user.update({
+        where: { id: userId },
+        data: planData,
+      });
+
+      await tx.launchOfferRedemption.create({
+        data: {
+          userId,
+          kind: 'PLATFORM_LAUNCH',
+          expiresAt,
+          grantedBy: adminId,
+        },
+      });
+
+      return { success: true as const, expiresAt };
+    }, {
+      isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
     });
 
-    await tx.launchOfferRedemption.create({
-      data: {
-        userId,
-        kind: 'PLATFORM_LAUNCH',
-        expiresAt,
-        grantedBy: adminId,
-      },
-    });
-
-    return { success: true as const, expiresAt };
-  });
-
-  if ('error' in result) {
-    if (result.error === 'already_redeemed') {
-      return { error: 'already_redeemed' };
+    if ('error' in result) {
+      if (result.error === 'already_redeemed') {
+        return { error: 'already_redeemed' };
+      }
+      return { error: 'sold_out' };
     }
-    return { error: 'sold_out' };
+
+    return { success: true, expiresAt: result.expiresAt, launchOfferSlotUsed: true };
+  } catch (error: any) {
+    // P2034 is Prisma's error code for a transaction serialization failure.
+    // We treat this as the offer being highly contested/sold out rather than crashing the request.
+    if (error?.code === 'P2034') {
+      return { error: 'sold_out' };
+    }
+    throw error;
   }
-
-  return { success: true, expiresAt: result.expiresAt, launchOfferSlotUsed: true };
 }
 
 export async function claimPlatformLaunchOffer(userId: string): Promise<ClaimPlatformResult> {
@@ -143,68 +157,81 @@ export async function claimPlatformLaunchOffer(userId: string): Promise<ClaimPla
     return { error: 'has_paid_plan' };
   }
 
-  const result = await prisma.$transaction(async (tx) => {
-    const existing = await tx.launchOfferRedemption.findUnique({ where: { userId } });
-    if (existing) return { error: 'already_redeemed' as const };
+  try {
+    // We use Serializable isolation here because we count slots used and then insert if under cap.
+    // Without this, concurrent claims could both read the same count and bypass the cap limit (Phantom Reads).
+    const result = await prisma.$transaction(async (tx) => {
+      const existing = await tx.launchOfferRedemption.findUnique({ where: { userId } });
+      if (existing) return { error: 'already_redeemed' as const };
 
-    const claimed = await countPlatformSlotsUsed(tx);
-    if (claimed >= LAUNCH_PLATFORM_SLOTS) {
-      return { error: 'sold_out' as const };
+      const claimed = await countPlatformSlotsUsed(tx);
+      if (claimed >= LAUNCH_PLATFORM_SLOTS) {
+        return { error: 'sold_out' as const };
+      }
+
+      const now = new Date();
+      const expiresAt = getLaunchOfferExpiry(now);
+
+      await tx.user.update({
+        where: { id: userId },
+        data: {
+          planType: 'platform',
+          planActivatedAt: now,
+          planExpiresAt: expiresAt,
+          aiCredits: getInitialAiCreditsForPlan('platform'),
+          aiCreditsResetAt: null,
+        },
+      });
+
+      await tx.launchOfferRedemption.create({
+        data: {
+          userId,
+          kind: 'PLATFORM_LAUNCH',
+          expiresAt,
+        },
+      });
+
+      return { success: true as const, expiresAt };
+    }, {
+      isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+    });
+
+    if (!('success' in result) || !result.success) {
+      return result;
     }
 
-    const now = new Date();
-    const expiresAt = getLaunchOfferExpiry(now);
-
-    await tx.user.update({
+    let emailSent = false;
+    const user = await prisma.user.findUnique({
       where: { id: userId },
-      data: {
-        planType: 'platform',
-        planActivatedAt: now,
-        planExpiresAt: expiresAt,
-        aiCredits: getInitialAiCreditsForPlan('platform'),
-        aiCreditsResetAt: null,
-      },
+      select: { email: true, name: true },
     });
 
-    await tx.launchOfferRedemption.create({
-      data: {
-        userId,
-        kind: 'PLATFORM_LAUNCH',
-        expiresAt,
-      },
-    });
-
-    return { success: true as const, expiresAt };
-  });
-
-  if (!('success' in result) || !result.success) {
-    return result;
-  }
-
-  let emailSent = false;
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { email: true, name: true },
-  });
-
-  if (user?.email) {
-    try {
-      await sendPlanWelcomeEmail({
-        email: user.email,
-        name: user.name,
-        planType: 'platform',
-        expiresAt: result.expiresAt,
-        context: 'launch_platform_claim',
-      });
-      emailSent = true;
-    } catch (error) {
-      if (!(error instanceof EmailConfigurationError)) {
-        console.error('Launch offer welcome email error:', error);
+    if (user?.email) {
+      try {
+        await sendPlanWelcomeEmail({
+          email: user.email,
+          name: user.name,
+          planType: 'platform',
+          expiresAt: result.expiresAt,
+          context: 'launch_platform_claim',
+        });
+        emailSent = true;
+      } catch (error) {
+        if (!(error instanceof EmailConfigurationError)) {
+          console.error('Launch offer welcome email error:', error);
+        }
       }
     }
-  }
 
-  return { success: true, expiresAt: result.expiresAt, emailSent };
+    return { success: true, expiresAt: result.expiresAt, emailSent };
+  } catch (error: any) {
+    // P2034 is Prisma's error code for a transaction serialization failure.
+    // We treat this as the offer being highly contested/sold out rather than crashing the request.
+    if (error?.code === 'P2034') {
+      return { error: 'sold_out' };
+    }
+    throw error;
+  }
 }
 
 export async function drawAiGiveawayWinners(
