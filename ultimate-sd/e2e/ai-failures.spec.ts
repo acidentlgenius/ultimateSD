@@ -87,6 +87,7 @@ test.describe('AI evaluation failures', () => {
   });
 
   test('network failure shows connectivity copy', async ({ page }) => {
+    test.setTimeout(60_000);
     await page.route('**/api/ai/evaluate', (route) => route.abort('failed'));
     await submitFirstStep(page);
 

@@ -9,7 +9,8 @@ test.describe('Authenticated dashboard', () => {
 
   test('locked premium problem opens upgrade modal', async ({ page }) => {
     await page.goto('/#problems');
-    await page.getByRole('button', { name: /Unlock Design Uber/i }).click();
+    await page.getByLabel(/Unlock Design Uber/i).focus();
+    await page.keyboard.press('Enter');
     await expect(page.getByRole('heading', { name: /Unlock Premium Problems/i })).toBeVisible();
     await expect(page.getByText(/Design Uber/i).first()).toBeVisible();
   });
