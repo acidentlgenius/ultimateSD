@@ -186,6 +186,9 @@ export function ProblemFilterBar({
                         <Button
                             variant="ghost"
                             size="sm"
+                            aria-label="Grid view"
+                            title="Grid view"
+                            aria-pressed={viewMode === 'grid'}
                             onClick={() => setViewMode('grid')}
                             className={cn(
                                 "h-full px-3 rounded-xl transition-all duration-300",
@@ -199,6 +202,9 @@ export function ProblemFilterBar({
                         <Button
                             variant="ghost"
                             size="sm"
+                            aria-label="List view"
+                            title="List view"
+                            aria-pressed={viewMode === 'list'}
                             onClick={() => setViewMode('list')}
                             className={cn(
                                 "h-full px-3 rounded-xl transition-all duration-300",

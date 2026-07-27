@@ -1,11 +1,13 @@
-💥 The Bug
-The Vercel deployment is failing with the error `ERR_PNPM_OUTDATED_LOCKFILE Cannot install with "frozen-lockfile" because pnpm-lock.yaml is not up to date with <ROOT>/package.json`.
+💡 What
+Added `aria-label`, `title`, and `aria-pressed` attributes to the Grid and List view toggle buttons in the `ProblemFilterBar` component. Also mocked out `isLaunchOfferActive` in tests to prevent failures due to hardcoded deadlines.
 
-🔍 Root Cause
-The `package.json` file specified `@testing-library/dom` but this dependency was missing from the `pnpm-lock.yaml` file. Vercel runs `pnpm install --frozen-lockfile` by default on CI environments, which strictly enforces that the lockfile perfectly matches `package.json`. This mismatch caused the build to abort.
+🎯 Why
+Icon-only buttons rely on standard SVGs without native descriptive text. Screen readers and users navigating via keyboard need explicit descriptions to understand the buttons' purpose and their active states.
 
-🛠️ The Fix
-Ran `pnpm install` locally to update the `pnpm-lock.yaml` file, syncing the lockfile definitions with the updated `package.json` specifiers (specifically adding `@testing-library/dom` and deduplicating some minor `@babel` versions).
+📸 Before/After
+N/A (Invisible accessibility improvement)
 
-🛡️ Prevention
-When updating `package.json` dependencies, ensure to always run `pnpm install` and commit the updated `pnpm-lock.yaml` file to avoid breaking CI/CD pipelines that rely on frozen lockfiles.
+♿ Accessibility
+- Added descriptive `aria-label`s to clarify button actions (e.g. "Grid view", "List view").
+- Added native tooltips using `title` for mouse hover context.
+- Implemented `aria-pressed` state to indicate which view mode is currently active.
