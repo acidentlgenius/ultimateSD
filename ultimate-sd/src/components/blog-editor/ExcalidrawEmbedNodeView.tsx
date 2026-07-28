@@ -20,7 +20,11 @@ function ReadOnlyScene({ scene }: { scene: ExcalidrawScene }) {
       <Excalidraw
         initialData={{
           elements: scene.elements,
-          appState: { ...scene.appState, viewModeEnabled: true },
+          // appState.collaborators is a Map in Excalidraw's own state, but degenerates
+          // into a plain object (or is entirely absent) once the scene round-trips
+          // through JSON persistence — reset it so Excalidraw doesn't crash calling
+          // .forEach on a non-Map value.
+          appState: { ...scene.appState, collaborators: new Map(), viewModeEnabled: true },
           files: scene.files,
         }}
         viewModeEnabled

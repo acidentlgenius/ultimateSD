@@ -90,8 +90,11 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
       </Link>
 
       {post.status !== 'PUBLISHED' && (
-        <div className="mb-8 rounded-lg border border-amber-500/50 bg-amber-500/10 px-4 py-2 text-sm text-amber-700 dark:text-amber-400">
-          This post is a draft. Only admins can see this preview.
+        <div className="mb-8 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-500/50 bg-amber-500/10 px-4 py-2 text-sm text-amber-700 dark:text-amber-400">
+          <span>This post is a draft. Only admins can see this preview.</span>
+          <Link href={`/admin/blog/${post.id}/edit`} className="font-medium underline hover:no-underline">
+            Back to editor
+          </Link>
         </div>
       )}
 
