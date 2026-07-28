@@ -37,6 +37,7 @@ import {
   drawAiGiveawayWinners,
   grantAdminPlatformPlan,
 } from '../launch-offer-grant';
+import * as launchOffer from '../launch-offer';
 
 describe('claimPlatformLaunchOffer', () => {
   beforeEach(() => {
@@ -51,6 +52,7 @@ describe('claimPlatformLaunchOffer', () => {
       return Promise.resolve(null);
     });
     mockSendPlanWelcomeEmail.mockResolvedValue(undefined);
+    vi.spyOn(launchOffer, 'isLaunchOfferActive').mockReturnValue(true);
   });
 
   it('grants platform plan when slots are available', async () => {
