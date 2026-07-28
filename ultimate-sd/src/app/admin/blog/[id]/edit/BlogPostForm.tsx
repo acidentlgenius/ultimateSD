@@ -108,7 +108,6 @@ export function BlogPostForm({ post }: { post: BlogPostDetail }) {
           {coverImage ? 'Replace cover image' : 'Upload cover image'}
         </Button>
         {coverImage && (
-          // eslint-disable-next-line @next/next/no-img-element
           <img src={coverImage} alt="Cover preview" className="h-12 w-20 rounded object-cover" />
         )}
       </div>
