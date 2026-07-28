@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 const mockTransaction = vi.fn();
 const mockCount = vi.fn();
@@ -41,6 +41,11 @@ import {
 describe('claimPlatformLaunchOffer', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Pin time inside the launch offer's active window (ends 2026-07-15,
+    // see LAUNCH_OFFER_CAMPAIGN_END_ISO) so these tests don't depend on
+    // the real wall-clock date, which will otherwise drift past it.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-06-01T00:00:00.000Z'));
     mockFindUnique.mockImplementation((args: { where?: { userId?: string }; select?: Record<string, boolean> }) => {
       if (args?.select?.planType !== undefined) {
         return Promise.resolve({ planType: 'free', planExpiresAt: null });
@@ -51,6 +56,10 @@ describe('claimPlatformLaunchOffer', () => {
       return Promise.resolve(null);
     });
     mockSendPlanWelcomeEmail.mockResolvedValue(undefined);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('grants platform plan when slots are available', async () => {
