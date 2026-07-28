@@ -9,15 +9,12 @@ import { seedE2eUser } from '../scripts/seed-e2e';
 test.describe.configure({ mode: 'serial' });
 
 test.describe('AI evaluation failures', () => {
-  test.beforeAll(async () => {
-    await seedE2eUser({ resetProgress: true });
-  });
-
   test.afterAll(async () => {
     await seedE2eUser({ resetProgress: true });
   });
 
   test.beforeEach(async ({ page }) => {
+    await seedE2eUser({ resetProgress: true });
     await suppressFirstRunUx(page);
   });
 
