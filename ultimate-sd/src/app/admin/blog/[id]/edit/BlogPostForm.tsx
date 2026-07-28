@@ -31,7 +31,11 @@ export function BlogPostForm({ post }: { post: BlogPostDetail }) {
     title,
     excerpt,
     coverImage,
-    content: editorRef.current?.getJSON() ?? post.content,
+    // Round-trip through JSON so a genuinely plain object crosses the
+    // server action boundary — Tiptap's getJSON() output otherwise trips
+    // Prisma's Json-field type detection with a "temporary client
+    // reference" error under Turbopack dev.
+    content: JSON.parse(JSON.stringify(editorRef.current?.getJSON() ?? post.content)),
     isPremium,
     seoTitle,
     seoDescription,
