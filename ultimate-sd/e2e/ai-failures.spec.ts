@@ -18,6 +18,7 @@ test.describe('AI evaluation failures', () => {
   });
 
   test.beforeEach(async ({ page }) => {
+    await seedE2eUser({ resetProgress: true });
     await suppressFirstRunUx(page);
   });
 

@@ -56,7 +56,7 @@ export const BlogEditor = forwardRef<BlogEditorHandle, BlogEditorProps>(function
   };
 
   return (
-    <div className="rounded-lg border">
+    <div className="rounded-lg border transition-[color,box-shadow] focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50">
       <input
         ref={fileInputRef}
         type="file"
@@ -105,7 +105,10 @@ export const BlogEditor = forwardRef<BlogEditorHandle, BlogEditorProps>(function
           <PencilRuler className="h-4 w-4" />
         </Button>
       </div>
-      <EditorContent editor={editor} className="prose prose-zinc max-w-none px-4 py-3 dark:prose-invert" />
+      <EditorContent
+        editor={editor}
+        className="prose prose-zinc max-w-none px-4 py-3 dark:prose-invert [&_.ProseMirror]:outline-none"
+      />
     </div>
   );
 });

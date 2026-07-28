@@ -26,6 +26,7 @@ export function BlogPostForm({ post }: { post: BlogPostDetail }) {
   const [seoDescription, setSeoDescription] = useState(post.seoDescription ?? '');
   const [isSaving, startSaving] = useTransition();
   const [isPublishing, startPublishing] = useTransition();
+  const [isPreviewing, startPreviewing] = useTransition();
 
   const buildInput = () => ({
     title,
@@ -70,6 +71,18 @@ export function BlogPostForm({ post }: { post: BlogPostDetail }) {
     });
   };
 
+  const handlePreview = () => {
+    startPreviewing(async () => {
+      const result = await updateBlogPost(post.id, buildInput());
+      if ('error' in result) {
+        toast.error(result.error);
+        return;
+      }
+      router.refresh();
+      window.open(`/blog/${post.slug}`, '_blank', 'noopener,noreferrer');
+    });
+  };
+
   const handleCoverUpload = async (file: File) => {
     try {
       const { url } = await uploadImageToCloudinary(file);
@@ -84,6 +97,9 @@ export function BlogPostForm({ post }: { post: BlogPostDetail }) {
       <div className="flex items-center justify-between">
         <Badge variant={post.status === 'PUBLISHED' ? 'default' : 'outline'}>{post.status}</Badge>
         <div className="flex gap-2">
+          <Button variant="outline" disabled={isPreviewing} onClick={handlePreview}>
+            {isPreviewing ? 'Opening…' : 'Preview'}
+          </Button>
           <Button variant="outline" disabled={isSaving} onClick={handleSaveDraft}>
             {isSaving ? 'Saving…' : 'Save draft'}
           </Button>
