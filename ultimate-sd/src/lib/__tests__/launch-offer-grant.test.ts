@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import * as launchOffer from '../launch-offer';
 
 const mockTransaction = vi.fn();
 const mockCount = vi.fn();
@@ -41,6 +42,7 @@ import {
 describe('claimPlatformLaunchOffer', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.spyOn(launchOffer, 'isLaunchOfferActive').mockReturnValue(true);
     mockFindUnique.mockImplementation((args: { where?: { userId?: string }; select?: Record<string, boolean> }) => {
       if (args?.select?.planType !== undefined) {
         return Promise.resolve({ planType: 'free', planExpiresAt: null });
