@@ -79,6 +79,8 @@ model User {
   featureFlagOverrides    FeatureFlagOverride[]
   voiceSessions           VoiceSession[]
   interviewDebriefs       InterviewDebrief[]
+  blogPosts               BlogPost[]
+  blogComments            BlogComment[]
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -299,4 +301,40 @@ model WaitlistSignup {
   email     String   @unique
   feature   String   @default("aiInterviewer")
   createdAt DateTime @default(now())
+}
+
+model BlogPost {
+  id             String    @id @default(cuid())
+  slug           String    @unique
+  title          String
+  excerpt        String?
+  coverImage     String?
+  content        Json // Tiptap JSON document
+  status         String    @default("DRAFT") // "DRAFT" | "PUBLISHED"
+  isPremium      Boolean   @default(false) // reserved; unenforced for now
+  readingTime    Int?
+  seoTitle       String?
+  seoDescription String?
+  authorId       String
+  publishedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  author   User          @relation(fields: [authorId], references: [id])
+  comments BlogComment[]
+
+  @@index([status, publishedAt])
+}
+
+model BlogComment {
+  id         String   @id @default(cuid())
+  content    String
+  authorId   String
+  blogPostId String
+  createdAt  DateTime @default(now())
+
+  author   User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  blogPost BlogPost @relation(fields: [blogPostId], references: [id], onDelete: Cascade)
+
+  @@index([blogPostId, createdAt])
 }
