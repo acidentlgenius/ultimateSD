@@ -9,22 +9,20 @@ import { seedE2eUser } from '../scripts/seed-e2e';
 test.describe.configure({ mode: 'serial' });
 
 test.describe('AI evaluation failures', () => {
-  test.beforeAll(async () => {
-    await seedE2eUser({ resetProgress: true });
-  });
-
   test.afterAll(async () => {
     await seedE2eUser({ resetProgress: true });
   });
 
   test.beforeEach(async ({ page }) => {
+    await seedE2eUser({ resetProgress: true });
     await suppressFirstRunUx(page);
   });
 
   async function submitFirstStep(page: Page) {
     await page.goto('/practice/design-tinyurl');
     await page.getByPlaceholder(/short URL/i).fill('Users can shorten a long URL');
-    await page.getByRole('button', { name: 'Add' }).click();
+    await page.getByPlaceholder(/short URL/i).press('Enter');
+    await expect(page.getByRole('button', { name: /Submit for Review/i })).toBeEnabled();
     await page.getByRole('button', { name: /Submit for Review/i }).click();
   }
 
