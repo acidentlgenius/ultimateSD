@@ -1,4 +1,4 @@
-import { BookOpen, Home, Layers, Map, Palette, PencilRuler, Sparkles, Timer, type LucideIcon } from 'lucide-react';
+import { BookOpen, Home, Layers, Map, Newspaper, Palette, PencilRuler, Sparkles, Timer, type LucideIcon } from 'lucide-react';
 
 export interface NavLink {
   href: string;
@@ -33,6 +33,7 @@ export const NAV_ITEMS: NavItem[] = [
     links: [
       { href: '/roadmap', label: 'Roadmap', icon: Map },
       { href: '/guides', label: 'Guides', icon: BookOpen },
+      { href: '/blog', label: 'Blog', icon: Newspaper },
       { href: '/custom', label: 'Custom Problem', icon: PencilRuler },
       { href: '/draw', label: 'Draw', icon: Palette },
     ],

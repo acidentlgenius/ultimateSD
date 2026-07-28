@@ -1,6 +1,5 @@
 'use server';
 
-import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import {
@@ -11,28 +10,11 @@ import {
 import { EmailConfigurationError, sendPlanWelcomeEmail } from '@/lib/email';
 import { grantAdminPlatformPlan } from '@/lib/launch-offer-grant';
 import { type PlanType } from '@/lib/plans';
+import { requireAdmin } from '@/lib/require-admin';
 
 export type UpdateUserPlanOptions = {
   consumeLaunchOfferSlot?: boolean;
 };
-
-async function requireAdmin() {
-  const session = await auth();
-  if (!session?.user?.id) {
-    throw new Error('Not authenticated');
-  }
-
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { role: true },
-  });
-
-  if (user?.role !== 'ADMIN') {
-    throw new Error('Not authorized');
-  }
-
-  return session.user.id;
-}
 
 export async function updateUserPlan(
   userId: string,

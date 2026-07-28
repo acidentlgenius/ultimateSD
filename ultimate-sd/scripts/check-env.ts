@@ -19,6 +19,12 @@ const emailEnvVars = [
     'NEXT_PUBLIC_APP_URL',
 ];
 
+const cloudinaryEnvVars = [
+    'CLOUDINARY_API_KEY',
+    'CLOUDINARY_API_SECRET',
+    'NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME',
+];
+
 const envPath = path.resolve(process.cwd(), '.env');
 const envLocalPath = path.resolve(process.cwd(), '.env.local');
 
@@ -48,6 +54,7 @@ const main = () => {
     const missing = requiredEnvVars.filter(key => !loadedEnv[key]);
     const missingPayment = paymentEnvVars.filter(key => !loadedEnv[key]);
     const missingEmail = emailEnvVars.filter(key => !loadedEnv[key]);
+    const missingCloudinary = cloudinaryEnvVars.filter(key => !loadedEnv[key]);
 
     if (missing.length > 0) {
         console.warn('⚠️  Missing environment variables (functionality may be limited):');
@@ -66,6 +73,11 @@ const main = () => {
     if (missingEmail.length > 0) {
         console.warn('⚠️  Email env vars missing (Resend auth emails disabled):');
         missingEmail.forEach(key => console.warn(`   - ${key}`));
+    }
+
+    if (missingCloudinary.length > 0) {
+        console.warn('⚠️  Cloudinary env vars missing (blog image uploads disabled until set):');
+        missingCloudinary.forEach(key => console.warn(`   - ${key}`));
     }
 
     console.log('✅ All required environment variables are set.');
