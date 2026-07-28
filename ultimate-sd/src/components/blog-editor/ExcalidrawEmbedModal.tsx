@@ -37,11 +37,14 @@ export function ExcalidrawEmbedModal({
   const handleSave = () => {
     const api = apiRef.current;
     if (!api) return;
+    // Drop collaborators — it's a Map in Excalidraw's live state, which JSON
+    // persistence can't round-trip (JSON.stringify(new Map()) === '{}').
+    const { collaborators: _collaborators, ...appState } = api.getAppState();
     onSave({
       type: 'excalidraw',
       version: 2,
       elements: api.getSceneElements(),
-      appState: api.getAppState(),
+      appState,
       files: api.getFiles(),
     });
   };
@@ -62,7 +65,9 @@ export function ExcalidrawEmbedModal({
                 initialScene
                   ? {
                       elements: initialScene.elements,
-                      appState: initialScene.appState,
+                      // Reset collaborators for the same reason as ReadOnlyScene —
+                      // persisted scenes never have a real Map here.
+                      appState: { ...initialScene.appState, collaborators: new Map() },
                       files: initialScene.files,
                     }
                   : undefined
