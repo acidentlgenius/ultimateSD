@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getAllSessions, loadSessionState } from '../../lib/session-storage';
+import { getAllSessions, loadSessionState, _resetStorageCacheForTesting } from '../../lib/session-storage';
 
 describe('session-storage', () => {
   beforeEach(() => {
     localStorage.clear();
+    _resetStorageCacheForTesting();
   });
 
   it('getAllSessions skips corrupted sessions without failing completely', () => {
@@ -26,5 +27,23 @@ describe('session-storage', () => {
     expect(result).toBeNull();
     // The key should have been removed
     expect(localStorage.getItem('sd-practice-v1-corrupt')).toBeNull();
+  });
+
+  it('isStorageAvailable caches the result and does not trigger extra setItem calls', () => {
+    const setItemSpy = vi.spyOn(Storage.prototype, 'setItem');
+
+    // First call will run the test and cache it
+    loadSessionState('test-cache');
+
+    const firstCallCount = setItemSpy.mock.calls.length;
+    expect(firstCallCount).toBeGreaterThan(0);
+
+    // Call it again
+    loadSessionState('test-cache2');
+
+    // The call count should be exactly the same, indicating setItem was not called again
+    expect(setItemSpy.mock.calls.length).toBe(firstCallCount);
+
+    setItemSpy.mockRestore();
   });
 });

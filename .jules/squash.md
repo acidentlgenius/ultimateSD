@@ -68,3 +68,9 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+
+## 2026-06-25 - Caching localStorage Availability
+
+**Learning:** When repeatedly invoking `localStorage.setItem` and `removeItem` inside a checker like `isStorageAvailable` without caching the result, the application can trigger excessive `StorageEvent` emissions across tabs and add measurable overhead on every data read/write operation.
+
+**Action:** Always cache the result of `isStorageAvailable` in a module-level variable to optimize performance and prevent redundant operations after the first successful verification. Also, ensure tests verifying this cache isolate the state using test-specific cache invalidation helpers.
