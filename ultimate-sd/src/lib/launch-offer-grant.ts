@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import {
   getInitialAiCreditsForPlan,
   getNextAiCreditsResetDate,
@@ -98,40 +99,53 @@ export async function grantAdminPlatformPlan(
     return { success: true, expiresAt, launchOfferSlotUsed: false };
   }
 
-  const result = await prisma.$transaction(async (tx) => {
-    const existing = await tx.launchOfferRedemption.findUnique({ where: { userId } });
-    if (existing) return { error: 'already_redeemed' as const };
+  try {
+    // SQUASH: Root Cause: Without explicit isolation level, ReadCommitted allows phantom reads.
+    // Concurrent requests could both read the count below the limit and both insert.
+    // SQUASH: Fix: Enforce Serializable isolation level so concurrent slot count reads are serialized,
+    // ensuring the strict LAUNCH_PLATFORM_SLOTS limit is never exceeded.
+    const result = await prisma.$transaction(async (tx) => {
+      const existing = await tx.launchOfferRedemption.findUnique({ where: { userId } });
+      if (existing) return { error: 'already_redeemed' as const };
 
-    const claimed = await countPlatformSlotsUsed(tx);
-    if (claimed >= LAUNCH_PLATFORM_SLOTS) {
-      return { error: 'sold_out' as const };
+      const claimed = await countPlatformSlotsUsed(tx);
+      if (claimed >= LAUNCH_PLATFORM_SLOTS) {
+        return { error: 'sold_out' as const };
+      }
+
+      await tx.user.update({
+        where: { id: userId },
+        data: planData,
+      });
+
+      await tx.launchOfferRedemption.create({
+        data: {
+          userId,
+          kind: 'PLATFORM_LAUNCH',
+          expiresAt,
+          grantedBy: adminId,
+        },
+      });
+
+      return { success: true as const, expiresAt };
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+
+    if ('error' in result) {
+      if (result.error === 'already_redeemed') {
+        return { error: 'already_redeemed' };
+      }
+      return { error: 'sold_out' };
     }
 
-    await tx.user.update({
-      where: { id: userId },
-      data: planData,
-    });
-
-    await tx.launchOfferRedemption.create({
-      data: {
-        userId,
-        kind: 'PLATFORM_LAUNCH',
-        expiresAt,
-        grantedBy: adminId,
-      },
-    });
-
-    return { success: true as const, expiresAt };
-  });
-
-  if ('error' in result) {
-    if (result.error === 'already_redeemed') {
-      return { error: 'already_redeemed' };
+    return { success: true, expiresAt: result.expiresAt, launchOfferSlotUsed: true };
+  } catch (err: any) {
+    // Gracefully handle Prisma's serialization failure error (e.g. concurrent conflict)
+    // SQUASH: Prevention: By failing gracefully as "sold_out", we avoid loud unhandled 500s.
+    if (err.code === 'P2034' || err.message?.includes('serialization failure')) {
+      return { error: 'sold_out' };
     }
-    return { error: 'sold_out' };
+    throw err;
   }
-
-  return { success: true, expiresAt: result.expiresAt, launchOfferSlotUsed: true };
 }
 
 export async function claimPlatformLaunchOffer(userId: string): Promise<ClaimPlatformResult> {
@@ -143,42 +157,56 @@ export async function claimPlatformLaunchOffer(userId: string): Promise<ClaimPla
     return { error: 'has_paid_plan' };
   }
 
-  const result = await prisma.$transaction(async (tx) => {
-    const existing = await tx.launchOfferRedemption.findUnique({ where: { userId } });
-    if (existing) return { error: 'already_redeemed' as const };
+  let result;
+  try {
+    // SQUASH: Root Cause: Without explicit isolation level, ReadCommitted allows phantom reads.
+    // Concurrent requests could both read the count below the limit and both insert.
+    // SQUASH: Fix: Enforce Serializable isolation level so concurrent slot count reads are serialized,
+    // ensuring the strict LAUNCH_PLATFORM_SLOTS limit is never exceeded.
+    result = await prisma.$transaction(async (tx) => {
+      const existing = await tx.launchOfferRedemption.findUnique({ where: { userId } });
+      if (existing) return { error: 'already_redeemed' as const };
 
-    const claimed = await countPlatformSlotsUsed(tx);
-    if (claimed >= LAUNCH_PLATFORM_SLOTS) {
-      return { error: 'sold_out' as const };
+      const claimed = await countPlatformSlotsUsed(tx);
+      if (claimed >= LAUNCH_PLATFORM_SLOTS) {
+        return { error: 'sold_out' as const };
+      }
+
+      const now = new Date();
+      const expiresAt = getLaunchOfferExpiry(now);
+
+      await tx.user.update({
+        where: { id: userId },
+        data: {
+          planType: 'platform',
+          planActivatedAt: now,
+          planExpiresAt: expiresAt,
+          aiCredits: getInitialAiCreditsForPlan('platform'),
+          aiCreditsResetAt: null,
+        },
+      });
+
+      await tx.launchOfferRedemption.create({
+        data: {
+          userId,
+          kind: 'PLATFORM_LAUNCH',
+          expiresAt,
+        },
+      });
+
+      return { success: true as const, expiresAt };
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+
+    if (!('success' in result) || !result.success) {
+      return result;
     }
-
-    const now = new Date();
-    const expiresAt = getLaunchOfferExpiry(now);
-
-    await tx.user.update({
-      where: { id: userId },
-      data: {
-        planType: 'platform',
-        planActivatedAt: now,
-        planExpiresAt: expiresAt,
-        aiCredits: getInitialAiCreditsForPlan('platform'),
-        aiCreditsResetAt: null,
-      },
-    });
-
-    await tx.launchOfferRedemption.create({
-      data: {
-        userId,
-        kind: 'PLATFORM_LAUNCH',
-        expiresAt,
-      },
-    });
-
-    return { success: true as const, expiresAt };
-  });
-
-  if (!('success' in result) || !result.success) {
-    return result;
+  } catch (err: any) {
+    // Gracefully handle Prisma's serialization failure error (e.g. concurrent conflict)
+    // SQUASH: Prevention: By failing gracefully as "sold_out", we avoid loud unhandled 500s.
+    if (err.code === 'P2034' || err.message?.includes('serialization failure')) {
+      return { error: 'sold_out' };
+    }
+    throw err;
   }
 
   let emailSent = false;
