@@ -92,7 +92,8 @@ describe('claimPlatformLaunchOffer', () => {
   });
 
   it('returns sold_out when cap is reached', async () => {
-    mockTransaction.mockImplementation(async (fn: (tx: unknown) => Promise<unknown>) => {
+    mockTransaction.mockImplementation(async (fn: (tx: unknown) => Promise<unknown>, options?: { isolationLevel?: string }) => {
+      expect(options?.isolationLevel).toBe('Serializable');
       const tx = {
         launchOfferRedemption: {
           findUnique: vi.fn().mockResolvedValue(null),
@@ -100,6 +101,19 @@ describe('claimPlatformLaunchOffer', () => {
         },
       };
       return fn(tx);
+    });
+
+    const result = await claimPlatformLaunchOffer('user-1');
+    expect(result).toEqual({ error: 'sold_out' });
+  });
+
+  it('handles P2034 serialization failure by returning sold_out', async () => {
+    mockTransaction.mockImplementation(async () => {
+      const { Prisma } = await import('@prisma/client');
+      throw new Prisma.PrismaClientKnownRequestError('Serialization failure', {
+        code: 'P2034',
+        clientVersion: '7.1.0'
+      });
     });
 
     const result = await claimPlatformLaunchOffer('user-1');
@@ -190,7 +204,8 @@ describe('grantAdminPlatformPlan', () => {
   });
 
   it('returns sold_out when launch slots are full', async () => {
-    mockTransaction.mockImplementation(async (fn: (tx: unknown) => Promise<unknown>) => {
+    mockTransaction.mockImplementation(async (fn: (tx: unknown) => Promise<unknown>, options?: { isolationLevel?: string }) => {
+      expect(options?.isolationLevel).toBe('Serializable');
       const tx = {
         launchOfferRedemption: {
           findUnique: vi.fn().mockResolvedValue(null),
@@ -198,6 +213,19 @@ describe('grantAdminPlatformPlan', () => {
         },
       };
       return fn(tx);
+    });
+
+    const result = await grantAdminPlatformPlan('user-1', 'admin-1', true);
+    expect(result).toEqual({ error: 'sold_out' });
+  });
+
+  it('handles P2034 serialization failure by returning sold_out', async () => {
+    mockTransaction.mockImplementation(async () => {
+      const { Prisma } = await import('@prisma/client');
+      throw new Prisma.PrismaClientKnownRequestError('Serialization failure', {
+        code: 'P2034',
+        clientVersion: '7.1.0'
+      });
     });
 
     const result = await grantAdminPlatformPlan('user-1', 'admin-1', true);
