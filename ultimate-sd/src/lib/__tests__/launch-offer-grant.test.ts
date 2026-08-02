@@ -134,6 +134,14 @@ describe('claimPlatformLaunchOffer', () => {
     const result = await claimPlatformLaunchOffer('user-1');
     expect(result).toEqual({ error: 'has_paid_plan' });
   });
+
+  it('returns sold_out gracefully when Prisma throws a P2034 serialization failure (race condition)', async () => {
+    const { Prisma } = await import('@prisma/client');
+    mockTransaction.mockRejectedValue(new Prisma.PrismaClientKnownRequestError('Serialization failure', { code: 'P2034', clientVersion: '5.x' }));
+
+    const result = await claimPlatformLaunchOffer('user-1');
+    expect(result).toEqual({ error: 'sold_out' });
+  });
 });
 
 describe('grantAdminPlatformPlan', () => {
@@ -199,6 +207,14 @@ describe('grantAdminPlatformPlan', () => {
       };
       return fn(tx);
     });
+
+    const result = await grantAdminPlatformPlan('user-1', 'admin-1', true);
+    expect(result).toEqual({ error: 'sold_out' });
+  });
+
+  it('returns sold_out gracefully when Prisma throws a P2034 serialization failure (race condition)', async () => {
+    const { Prisma } = await import('@prisma/client');
+    mockTransaction.mockRejectedValue(new Prisma.PrismaClientKnownRequestError('Serialization failure', { code: 'P2034', clientVersion: '5.x' }));
 
     const result = await grantAdminPlatformPlan('user-1', 'admin-1', true);
     expect(result).toEqual({ error: 'sold_out' });
