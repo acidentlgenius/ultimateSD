@@ -100,6 +100,7 @@ export default function BlockchainDemo() {
         const blockId = block.id;
 
         // Simulate async mining loop
+        if (mineLoopRef.current) clearInterval(mineLoopRef.current);
         const mineLoop = setInterval(() => {
             nonce += Math.floor(Math.random() * 50) + 1; // Skip ahead a bit for speed
             const raw = `${blockId}${nonce}${data}${prev}`;
