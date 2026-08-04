@@ -30,11 +30,11 @@ export default function CustomProblemPage() {
     <div className="min-h-screen bg-background flex flex-col">
       <div className="border-b border-border bg-card/30 backdrop-blur-md p-4 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-4">
-          <Link href="/">
-            <Button variant="ghost" size="icon" className="hover:bg-muted/50">
+          <Button variant="ghost" size="icon" className="hover:bg-muted/50" aria-label="Go back" title="Go back" asChild>
+            <Link href="/">
               <ArrowLeft className="h-5 w-5" />
-            </Button>
-          </Link>
+            </Link>
+          </Button>
           <div className="flex items-center gap-2">
             <div className="p-1.5 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-500 shadow-sm text-white">
               <Wand2 className="h-4 w-4" />
