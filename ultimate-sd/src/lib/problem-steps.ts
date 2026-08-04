@@ -6,7 +6,7 @@ const TINYURL_STEPS: Record<string, StepData[]> = {
       phase: 'Requirements',
       subStep: 'functional',
       title: 'Functional Requirements',
-      prompt: 'List the core features for TinyURL. (e.g., Shorten URL, Redirect, Custom alias, Expiration)',
+      prompt: 'List the core features for TinyURL.',
       inputType: 'list',
       placeholder: 'e.g., User provides long URL -> gets short URL'
     },
@@ -14,9 +14,9 @@ const TINYURL_STEPS: Record<string, StepData[]> = {
       phase: 'Requirements',
       subStep: 'non-functional',
       title: 'Scale & Constraints',
-      prompt: 'Calculate the traffic (QPS) and storage requirements for 100M URLs/day. What is the read/write ratio?',
+      prompt: 'How busy will this system be? Estimate daily traffic, storage needs, and whether reads or writes matter more.',
       inputType: 'textarea',
-      placeholder: 'Do some back-of-the-envelope calculations...'
+      placeholder: 'e.g., 100M links/day, mostly reads when people click links, storage for ...'
     }
   ],
   algorithm: [
@@ -1886,9 +1886,9 @@ export const GENERIC_STEPS: Record<string, StepData[]> = {
       phase: 'Requirements',
       subStep: 'non-functional',
       title: 'Scale & Constraints',
-      prompt: 'Calculate the traffic (QPS), storage requirements, and list non-functional requirements.',
+      prompt: 'How busy will the system be? Estimate traffic, storage, and any important limits (speed, uptime, etc.).',
       inputType: 'textarea',
-      placeholder: 'Do some back-of-the-envelope calculations...'
+      placeholder: 'Rough numbers are fine — e.g., requests per day, data size, reads vs writes...'
     }
   ],
   hld: [

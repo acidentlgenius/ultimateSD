@@ -1,5 +1,7 @@
 export type PracticeIntent = 'interview' | 'upskill' | 'learn';
 
+export type ExperienceLevel = 'fresher' | 'sde1' | 'sde2' | 'senior';
+
 export const PRACTICE_INTENTS: { id: PracticeIntent; label: string; description: string }[] = [
   {
     id: 'interview',
@@ -20,6 +22,33 @@ export const PRACTICE_INTENTS: { id: PracticeIntent; label: string; description:
 
 export function isPracticeIntent(value: string): value is PracticeIntent {
   return PRACTICE_INTENTS.some((intent) => intent.id === value);
+}
+
+export const EXPERIENCE_LEVELS: { id: ExperienceLevel; label: string; description: string }[] = [
+  {
+    id: 'fresher',
+    label: 'Fresher / student',
+    description: 'New to system design or early in your career.',
+  },
+  {
+    id: 'sde1',
+    label: 'SDE I (0–2 years)',
+    description: 'Building fundamentals and interview readiness.',
+  },
+  {
+    id: 'sde2',
+    label: 'SDE II (2–5 years)',
+    description: 'Solid engineer looking to sharpen design depth.',
+  },
+  {
+    id: 'senior',
+    label: 'Senior+ (5+ years)',
+    description: 'Experienced engineer preparing for staff-level rounds.',
+  },
+];
+
+export function isExperienceLevel(value: string): value is ExperienceLevel {
+  return EXPERIENCE_LEVELS.some((level) => level.id === value);
 }
 
 // First-problem recommendation per intent. Every slug must be in

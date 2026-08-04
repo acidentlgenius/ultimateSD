@@ -11,6 +11,7 @@ interface SavedStepData {
   schemaData: any[];
   feedback: any | null;
   completed: boolean;
+  skipped?: boolean;
 }
 
 interface SessionState {

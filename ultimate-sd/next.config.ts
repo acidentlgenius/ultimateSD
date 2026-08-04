@@ -2,6 +2,9 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   transpilePackages: ['@excalidraw/excalidraw'],
+  outputFileTracingIncludes: {
+    '/api/**/*': ['./src/lib/adaptive-coach/skills/**/SKILL.md'],
+  },
   async redirects() {
     return [
       { source: '/home', destination: '/', permanent: true },

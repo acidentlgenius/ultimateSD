@@ -13,9 +13,9 @@ interface LaunchOfferCountdownProps {
 }
 
 export function LaunchOfferCountdown({ className, prefix = 'Ends in' }: LaunchOfferCountdownProps) {
-  const [countdown, setCountdown] = useState<LaunchOfferCountdown>(() =>
-    getLaunchOfferCountdown()
-  );
+  // Defer first paint until mount so SSR HTML does not disagree with the
+  // ticking client clock by a second (React hydration mismatch).
+  const [countdown, setCountdown] = useState<LaunchOfferCountdown | null>(null);
 
   useEffect(() => {
     const tick = () => setCountdown(getLaunchOfferCountdown());
@@ -24,7 +24,7 @@ export function LaunchOfferCountdown({ className, prefix = 'Ends in' }: LaunchOf
     return () => window.clearInterval(id);
   }, []);
 
-  if (countdown.ended) return null;
+  if (!countdown || countdown.ended) return null;
 
   return (
     <span className={className}>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useLayoutEffect, useState, useMemo, useRef } from 'react';
 import StepByStepChat from './StepByStepChat';
 import DiagramCanvas from './DiagramCanvas';
 import { DiagramCanvasProvider, useDiagramCanvasRef } from './diagram/DiagramCanvasContext';
@@ -16,7 +16,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Download, Layout, Loader2, Menu, X } from 'lucide-react';
+import { Download, Loader2, Menu, X, ArrowLeft, ChevronLeft, ChevronRight, BookOpen, HelpCircle } from 'lucide-react';
 import { SystemDesignProblem } from '@/types';
 import Link from 'next/link';
 import { exportPracticeSession } from '@/lib/pdf-export-compact';
@@ -25,7 +25,7 @@ import { toast } from 'sonner';
 
 import { useSession } from 'next-auth/react';
 
-import { getDiagramStepKeysForProblem, getGenericFallbackSteps, isDiagramSubStep, resolvePhaseSteps } from '@/lib/step-journey';
+import { getDiagramStepKeysForProblem, getGenericFallbackSteps, isDiagramSubStep, resolvePhaseSteps, computePracticeProgress } from '@/lib/step-journey';
 import { exportSceneToPng, resolveBestDiagramSnapshot } from '@/lib/diagram-persistence';
 import { cn } from '@/lib/utils';
 import { FEATURES } from '@/lib/features';
@@ -50,6 +50,11 @@ import { PracticeAloudToggle } from './PracticeAloudToggle';
 import { PracticeTour } from './PracticeTour';
 import { Compass } from 'lucide-react';
 import { ErrorBoundary } from './ErrorBoundary';
+import { ProblemIntroStep } from './ProblemIntroStep';
+import { introSeenKey, shouldAutoShowIntro } from '@/lib/problem-intro';
+import type { ProblemIntroContent } from '@/types';
+import { parseStepKey } from '@/lib/pdf-export-helpers';
+import { PracticeProgress } from '@/components/PracticeProgress';
 
 export default function PracticeUI({
   problem,
@@ -59,6 +64,8 @@ export default function PracticeUI({
   interviewAllowed = false,
   probeEnabled = false,
   voiceEnabled = false,
+  intro = null,
+  adaptiveCoachEnabled = false,
 }: {
   problem: SystemDesignProblem;
   stepMode?: PracticeStepMode;
@@ -67,6 +74,8 @@ export default function PracticeUI({
   interviewAllowed?: boolean;
   probeEnabled?: boolean;
   voiceEnabled?: boolean;
+  intro?: ProblemIntroContent | null;
+  adaptiveCoachEnabled?: boolean;
 }) {
   return (
     <DiagramCanvasProvider>
@@ -78,6 +87,8 @@ export default function PracticeUI({
         interviewAllowed={interviewAllowed}
         probeEnabled={probeEnabled}
         voiceEnabled={voiceEnabled}
+        intro={intro}
+        adaptiveCoachEnabled={adaptiveCoachEnabled}
       />
     </DiagramCanvasProvider>
   );
@@ -91,6 +102,8 @@ function PracticeUIContent({
   interviewAllowed = false,
   probeEnabled = false,
   voiceEnabled = false,
+  intro = null,
+  adaptiveCoachEnabled = false,
 }: {
   problem: SystemDesignProblem;
   stepMode: PracticeStepMode;
@@ -99,6 +112,8 @@ function PracticeUIContent({
   interviewAllowed?: boolean;
   probeEnabled?: boolean;
   voiceEnabled?: boolean;
+  intro?: ProblemIntroContent | null;
+  adaptiveCoachEnabled?: boolean;
 }) {
   const diagramRef = useDiagramCanvasRef();
   const { data: session, status } = useSession();
@@ -115,6 +130,7 @@ function PracticeUIContent({
   const [currentSubStep, setCurrentSubStep] = useState<string>('');
   const [currentStepKey, setCurrentStepKey] = useState<string>('');
   const [diagramCollapsed, setDiagramCollapsed] = useState(false);
+  const [diagramPromptExpanded, setDiagramPromptExpanded] = useState(false);
   const [completedSteps, setCompletedSteps] = useState<string[]>([]);
     const [savedStepData, setSavedStepData] = useState<Map<string, any>>(new Map());
   const [isExporting, setIsExporting] = useState(false);
@@ -129,6 +145,47 @@ function PracticeUIContent({
   const [sessionInit, setSessionInit] = useState<{ sessionId: string | null } | null>(null);
   const [practiceAloudOn, setPracticeAloudOn] = useState(false);
   const [summaryDismissed, setSummaryDismissed] = useState(false);
+  const [onIntroStep, setOnIntroStep] = useState(false);
+  const [introGateReady, setIntroGateReady] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
+  const sidebarRef = useRef<HTMLDivElement>(null);
+
+  // First-entry: intro is step 0 — skipped for interviews and e2e suppress.
+  useLayoutEffect(() => {
+    if (!intro || interviewConfig) {
+      setIntroGateReady(true);
+      return;
+    }
+    setOnIntroStep(shouldAutoShowIntro(problem.slug));
+    setIntroGateReady(true);
+  }, [intro, interviewConfig, problem.slug]);
+
+  const completeIntro = () => {
+    try {
+      localStorage.setItem(introSeenKey(problem.slug), '1');
+    } catch { /* ignore */ }
+    setOnIntroStep(false);
+  };
+
+  // Close desktop sidebar on outside click or Escape
+  useEffect(() => {
+    if (!sidebarOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSidebarOpen(false);
+    };
+    const onDown = (e: MouseEvent) => {
+      if (sidebarRef.current && !sidebarRef.current.contains(e.target as Node)) {
+        setSidebarOpen(false);
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('mousedown', onDown);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('mousedown', onDown);
+    };
+  }, [sidebarOpen]);
   const dispatchInterview = (event: InterviewEvent) =>
     setInterviewStatus((s) => interviewStatusReducer(s, event));
 
@@ -186,15 +243,24 @@ function PracticeUIContent({
           setServerPausedSeconds(result.totalPausedSeconds ?? 0);
           setLastPausedAt(result.lastPausedAt ?? null);
         }
+        if (!result.success || !result.sessionId) {
+          toast.error(
+            result.error ?? 'Could not start practice session — answers may not be saved',
+          );
+        }
         setSessionInit({ sessionId: (result.success && result.sessionId) || null });
       } catch (error) {
         console.error("Failed to auto-start session:", error);
+        toast.error('Could not start practice session — answers may not be saved');
         // Unblock StepByStepChat's load — it degrades to not recording.
         setSessionInit({ sessionId: null });
       }
     };
     initSession();
   }, [problem.id, isAuthenticated]);
+
+  const [liveStepPrompt, setLiveStepPrompt] = useState<string | null>(null);
+  const [canStepForward, setCanStepForward] = useState(false);
 
   useEffect(() => {
         const handler = (e: any) => {
@@ -203,8 +269,14 @@ function PracticeUIContent({
       if (e?.detail?.stepKey) {
         setCurrentStepKey(e.detail.stepKey);
       }
+      if (typeof e?.detail?.prompt === 'string' && e.detail.prompt.trim()) {
+        setLiveStepPrompt(e.detail.prompt);
+      }
       if (e?.detail?.completedSteps) setCompletedSteps(e.detail.completedSteps);
       if (e?.detail?.savedStepData) setSavedStepData(e.detail.savedStepData);
+      if (typeof e?.detail?.canGoForward === 'boolean') {
+        setCanStepForward(e.detail.canGoForward);
+      }
     };
     window.addEventListener('sd-phase-change', handler as EventListener);
     window.addEventListener('sd-progress-update', handler as EventListener);
@@ -244,7 +316,106 @@ function PracticeUIContent({
     return count;
   }, [savedStepData]);
 
+  const currentStepTitle = useMemo(() => {
+    if (onIntroStep && intro) return 'Problem Brief';
+    if (!currentStepKey) return currentSubStep || phase || 'Practice';
+    const { phaseKey, stepIndex } = parseStepKey(currentStepKey);
+    return activeSteps[phaseKey]?.[stepIndex]?.title ?? currentSubStep;
+  }, [onIntroStep, intro, currentStepKey, activeSteps, currentSubStep, phase]);
+
+  const currentSectionTitle = useMemo(() => {
+    if (onIntroStep && intro) return null;
+    if (!currentStepKey) {
+      if (!phase) return null;
+      const phaseKeys = Object.keys(activeSteps);
+      const phaseIndex = phaseKeys.findIndex((pk) =>
+        activeSteps[pk]?.some((s) => s.phase === phase)
+      );
+      return phaseIndex >= 0 ? `${phaseIndex + 1}. ${phase}` : phase;
+    }
+    const { phaseKey } = parseStepKey(currentStepKey);
+    const phaseSteps = activeSteps[phaseKey];
+    if (!phaseSteps?.length) return null;
+    const sectionLabel = phaseSteps[0].phase;
+    const phaseIndex = Object.keys(activeSteps).indexOf(phaseKey);
+    return phaseIndex >= 0 ? `${phaseIndex + 1}. ${sectionLabel}` : sectionLabel;
+  }, [onIntroStep, intro, currentStepKey, activeSteps, phase]);
+
+  const currentStepPrompt = useMemo(() => {
+    if (liveStepPrompt) return liveStepPrompt;
+    if (!currentStepKey) return '';
+    const { phaseKey, stepIndex } = parseStepKey(currentStepKey);
+    return activeSteps[phaseKey]?.[stepIndex]?.prompt ?? '';
+  }, [currentStepKey, activeSteps, liveStepPrompt]);
+
+  const currentGlobalIndex = useMemo(() => {
+    if (!currentStepKey) return -1;
+    const { phaseKey, stepIndex } = parseStepKey(currentStepKey);
+    let idx = 0;
+    for (const [pk, steps] of Object.entries(activeSteps)) {
+      if (pk === phaseKey) return idx + stepIndex;
+      idx += steps.length;
+    }
+    return idx;
+  }, [currentStepKey, activeSteps]);
+
+  const isStepRevealed = (phaseKey: string, stepIndex: number) => {
+    if (onIntroStep) return false;
+    let idx = 0;
+    for (const [pk, steps] of Object.entries(activeSteps)) {
+      if (pk === phaseKey) return idx + stepIndex <= currentGlobalIndex;
+      idx += steps.length;
+    }
+    return false;
+  };
+
   const isFullyComplete = completedSteps.length >= totalSteps && totalSteps > 0;
+
+  const hasIntroStep = !!intro && !interviewConfig;
+  const practiceStepNumber = Math.max(1, currentGlobalIndex + 1);
+  const { current: progressCurrent, total: progressTotal } = computePracticeProgress({
+    hasIntro: hasIntroStep,
+    onIntro: onIntroStep,
+    practiceStepNumber,
+    practiceStepCount: totalSteps,
+  });
+
+  const canHeaderBack = onIntroStep ? false : currentGlobalIndex > 0;
+  const canHeaderForward = onIntroStep
+    ? !!intro
+    : currentGlobalIndex >= 0 && currentGlobalIndex < totalSteps - 1 && canStepForward;
+
+  const handleHeaderNav = (direction: 'prev' | 'next') => {
+    if (onIntroStep) {
+      if (direction === 'next') completeIntro();
+      return;
+    }
+    window.dispatchEvent(
+      new CustomEvent('sd-practice-nav', { detail: { direction } })
+    );
+  };
+
+  // Arrow keys on the intro brief page (StepByStepChat is mounted but paused)
+  useEffect(() => {
+    if (!onIntroStep) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement)?.isContentEditable) return;
+      e.preventDefault();
+      if (e.key === 'ArrowRight' && canHeaderForward) {
+        completeIntro();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onIntroStep, canHeaderForward]);
+
+  const practiceTimerSeconds =
+    stepMode === 'lite' ? 2700 :
+    problem.difficulty === 'Easy' ? 1800 :
+      problem.difficulty === 'Medium' ? 2700 :
+        3600;
 
   const handleUnlockSolution = () => {
     if (!solution) return;
@@ -286,152 +457,174 @@ function PracticeUIContent({
     }
   };
 
+  const splitDiagramLayout = Boolean(currentStepKey && !onIntroStep && isDiagramRelevant);
+
+  useEffect(() => {
+    if (isDiagramRelevant) {
+      setDiagramCollapsed(false);
+      setDiagramPromptExpanded(false);
+    }
+  }, [currentStepKey, isDiagramRelevant]);
+
+  const renderStepContent = () => (
+    <>
+      {(interviewConfig && interviewVariantUsesVoice(interviewConfig.variant)) ||
+      (!interviewConfig && practiceAloudOn && voiceEnabled) ? (
+        <VoicePanel
+          slug={problem.slug}
+          problemTitle={problem.title}
+          practiceSessionId={existingProgress?.activeSessionId ?? null}
+        />
+      ) : null}
+
+      {!introGateReady ? (
+        <div className="flex items-center justify-center py-24 text-muted-foreground">
+          <Loader2 className="h-6 w-6 animate-spin" />
+        </div>
+      ) : (
+        <>
+          {onIntroStep && intro && (
+            <ProblemIntroStep problem={problem} intro={intro} onBegin={completeIntro} />
+          )}
+          <div
+            data-tour="chat"
+            className={cn('animate-fade-in', onIntroStep && 'hidden')}
+            style={{ animationDelay: '100ms' }}
+          >
+            <StepByStepChat
+              problem={problem}
+              probeEnabled={probeEnabled}
+              sessionInit={sessionInit}
+              keyboardNavPaused={onIntroStep}
+              diagramBeside={splitDiagramLayout}
+              progressIncludesIntro={hasIntroStep}
+              adaptiveCoachEnabled={adaptiveCoachEnabled && !interviewConfig}
+            />
+          </div>
+        </>
+      )}
+    </>
+  );
+
+  const renderDiagramPanel = () => (
+    <div data-tour="canvas" className="flex flex-col flex-1 min-h-0 h-full w-full animate-fade-in">
+      <ErrorBoundary
+        label="diagram canvas"
+        detail="Your chat progress is unaffected, and previously saved diagrams are safe."
+      >
+        <DiagramCanvas
+          stepKey={currentStepKey}
+          isVisible={isDiagramRelevant && !diagramCollapsed}
+        />
+      </ErrorBoundary>
+    </div>
+  );
+
   // Reusable Sidebar Content
   const renderSidebar = () => (
-    <div className="flex flex-col h-full bg-card/30 backdrop-blur-xl">
-      {/* Sidebar Header */}
-      <div className="p-6 border-b border-border/50 shrink-0">
-        <div className="flex items-center gap-3 mb-6 min-w-0">
-          <Link href="/" className="hover:opacity-80 transition-opacity shrink-0">
-            <div className={`p-2 rounded-lg bg-gradient-to-br ${theme.gradient} shadow-md text-white`}>
-              <Icon className="h-5 w-5" />
-            </div>
-          </Link>
+    <div className="flex flex-col h-full min-h-0 bg-card/95 backdrop-blur-xl">
+      <div className="p-4 border-b border-border/50 shrink-0">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className={`p-2 rounded-lg bg-gradient-to-br ${theme.gradient} shadow-md text-white shrink-0`}>
+            <Icon className="h-5 w-5" />
+          </div>
           <div className="flex-1 min-w-0">
-            <h1 className="font-bold text-lg truncate leading-tight">
-              {problem.title}
-            </h1>
+            <h1 className="font-bold text-base truncate leading-tight">{problem.title}</h1>
             <p className="text-xs text-muted-foreground truncate">System Design Practice</p>
             {stepMode === 'lite' && (
-              <Badge
-                variant="outline"
-                className="mt-1.5 text-[10px] border-sky-500/30 text-sky-600 bg-sky-500/10"
-              >
+              <Badge variant="outline" className="mt-1.5 text-[10px] border-sky-500/30 text-sky-600 bg-sky-500/10">
                 <Sparkles className="h-3 w-3 mr-1" />
                 Interview Lite · 45 min
               </Badge>
             )}
             {interviewConfig && (
-              <Badge
-                variant="outline"
-                className="mt-1.5 text-[10px] border-red-500/30 text-red-600 bg-red-500/10"
-              >
+              <Badge variant="outline" className="mt-1.5 text-[10px] border-red-500/30 text-red-600 bg-red-500/10">
                 Interview · {interviewConfig.durationSeconds / 60} min
               </Badge>
             )}
           </div>
         </div>
-
-        {/* Interview Timer */}
-        <div className="mb-4">
-          {interviewConfig && interviewStatus === 'running' ? (
-            <TimerWidget
-              className="w-full justify-between"
-              problemId={`interview-${interviewConfig.variant}-${problem.id}`}
-              initialTimeSeconds={interviewConfig.durationSeconds}
-              onComplete={() => {
-                toast.warning("Time's up! Your interview has ended.");
-                dispatchInterview('TIME_EXPIRED');
-              }}
-            />
-          ) : !interviewConfig ? (
-            <TimerWidget
-              className="w-full justify-between"
-              problemId={problem.id}
-              initialTimeSeconds={
-                stepMode === 'lite' ? 2700 :
-                problem.difficulty === 'Easy' ? 1800 :
-                  problem.difficulty === 'Medium' ? 2700 :
-                    3600
-              }
-              startedAt={serverStartedAt}
-              isTimerRunning={isTimerRunning}
-              totalPausedSeconds={serverPausedSeconds}
-              lastPausedAt={lastPausedAt}
-              onToggle={async () => {
-                if (!isAuthenticated) return;
-                const result = await togglePracticeTimer(problem.id);
-                if (result.success) {
-                  setIsTimerRunning(result.isTimerRunning ?? false);
-                  setServerPausedSeconds(result.totalPausedSeconds ?? 0);
-                  setLastPausedAt(result.lastPausedAt ?? null);
-                }
-              }}
-              onComplete={async () => {
-                toast.warning("Time's up! The practice session has ended.");
-              }}
-            />
-          ) : null}
-        </div>
       </div>
 
-      {/* Sidebar Navigation */}
-      <div data-tour="steps" className="flex-1 overflow-y-auto p-4 space-y-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
-        <div className="space-y-1">
-          {Object.entries(activeSteps).map(([phaseKey, steps], idx) => {
-            const phaseTitle = steps.length > 0 ? steps[0].phase : phaseKey;
-            const isPhaseActive = phaseTitle === phase;
+      <div data-tour="steps" className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3">
+        {onIntroStep && intro && (
+          <div className="px-2 py-2 rounded-lg bg-primary/10 text-primary text-sm font-medium">
+            Problem Brief
+          </div>
+        )}
 
-            return (
-              <div key={phaseKey} className="mb-4">
-                <div className="px-2 mb-2 flex items-center gap-2">
-                  <span className={`text-[10px] font-bold uppercase tracking-wider ${isPhaseActive ? 'text-primary' : 'text-muted-foreground opacity-70'}`}>
-                    {idx + 1}. {phaseTitle}
-                  </span>
+        {!onIntroStep && (
+          <div className="space-y-1">
+            {Object.entries(activeSteps).map(([phaseKey, steps], idx) => {
+              const visibleSteps = steps
+                .map((step, stepIndex) => ({ step, stepIndex }))
+                .filter(({ stepIndex }) => isStepRevealed(phaseKey, stepIndex));
+              if (visibleSteps.length === 0) return null;
+
+              const phaseTitle = steps.length > 0 ? steps[0].phase : phaseKey;
+              const isPhaseActive = phaseTitle === phase;
+
+              return (
+                <div key={phaseKey} className="mb-3">
+                  <div className="px-2 mb-1.5 flex items-center gap-2">
+                    <span className={`text-[10px] font-bold uppercase tracking-wider ${isPhaseActive ? 'text-primary' : 'text-muted-foreground opacity-70'}`}>
+                      {idx + 1}. {phaseTitle}
+                    </span>
+                  </div>
+
+                  <div className="space-y-0.5">
+                    {visibleSteps.map(({ step, stepIndex }) => {
+                      const stepKey = `${phaseKey}-${stepIndex}`;
+                      const data = savedStepData.get(stepKey);
+                      const isCompleted = data?.completed;
+                      const isFailed = data?.feedback && !data.feedback.isAcceptable;
+                      const isCurrent = stepKey === currentStepKey;
+
+                      return (
+                        <button
+                          key={stepIndex}
+                          onClick={() => {
+                            setSidebarOpen(false);
+                            window.dispatchEvent(new CustomEvent('sd-navigate-step', {
+                              detail: { phase: phaseKey, stepIndex }
+                            }));
+                          }}
+                          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200 text-left group
+                            ${isCurrent
+                              ? 'bg-primary/10 text-primary font-medium'
+                              : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+                            }
+                          `}
+                        >
+                          <div className={`
+                            w-5 h-5 rounded-full flex items-center justify-center text-[10px] border shrink-0 transition-colors
+                            ${isCurrent
+                              ? 'border-primary bg-background shadow-sm text-primary'
+                              : isCompleted
+                                ? 'bg-green-500/10 border-green-500/20 text-green-600'
+                                : isFailed
+                                  ? 'bg-red-500/10 border-red-500/20 text-red-600'
+                                  : 'border-muted bg-muted/20 text-muted-foreground group-hover:border-foreground/20'
+                            }
+                          `}>
+                            {isCompleted ? <CheckCircle className="h-3 w-3" /> :
+                              isFailed ? <X className="h-3 w-3" /> :
+                                isCurrent ? <div className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" /> :
+                                  <span className="opacity-0 group-hover:opacity-100 transition-opacity">•</span>
+                            }
+                          </div>
+                          <span className={`truncate ${isCompleted || isFailed ? 'opacity-80' : ''}`}>
+                            {step.title}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-
-                <div className="space-y-0.5">
-                  {steps.map((step, stepIndex) => {
-                    const stepKey = `${phaseKey}-${stepIndex}`;
-                    const data = savedStepData.get(stepKey);
-                    const isCompleted = data?.completed;
-                    const isFailed = data?.feedback && !data.feedback.isAcceptable;
-                    const isCurrent = stepKey === currentStepKey;
-
-                    return (
-                      <button
-                        key={stepIndex}
-                        onClick={() => {
-                          window.dispatchEvent(new CustomEvent('sd-navigate-step', {
-                            detail: { phase: phaseKey, stepIndex }
-                          }));
-                        }}
-                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200 text-left group
-                          ${isCurrent
-                            ? 'bg-primary/10 text-primary font-medium'
-                            : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
-                          }
-                        `}
-                      >
-                        <div className={`
-                          w-5 h-5 rounded-full flex items-center justify-center text-[10px] border shrink-0 transition-colors
-                          ${isCurrent
-                            ? 'border-primary bg-background shadow-sm text-primary'
-                            : isCompleted
-                              ? 'bg-green-500/10 border-green-500/20 text-green-600'
-                              : isFailed
-                                ? 'bg-red-500/10 border-red-500/20 text-red-600'
-                                : 'border-muted bg-muted/20 text-muted-foreground group-hover:border-foreground/20'
-                          }
-                        `}>
-                          {isCompleted ? <CheckCircle className="h-3 w-3" /> :
-                            isFailed ? <X className="h-3 w-3" /> :
-                              isCurrent ? <div className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" /> :
-                                <span className="opacity-0 group-hover:opacity-100 transition-opacity">•</span>
-                          }
-                        </div>
-
-                        <span className={`truncate ${isCompleted || isFailed ? 'opacity-80' : ''}`}>
-                          {step.title}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Sidebar Footer Actions */}
@@ -502,120 +695,248 @@ function PracticeUIContent({
             Take the tour
           </Button>
         )}
+
+        {intro && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setSidebarOpen(false);
+              setOnIntroStep(true);
+            }}
+            className="w-full justify-start hover:bg-muted text-muted-foreground"
+          >
+            <BookOpen className="h-3.5 w-3.5 mr-2" />
+            Problem brief
+          </Button>
+        )}
       </div>
     </div>
   );
 
   return (
-    <div className="flex flex-col md:flex-row h-[100dvh] bg-background overflow-hidden">
+    <div className="flex flex-col h-[100dvh] bg-background overflow-hidden relative">
 
-      {/* Mobile Header */}
-      <div className="md:hidden h-14 border-b border-border flex items-center px-4 bg-background/80 backdrop-blur-md shrink-0 justify-between">
-        <div className="flex items-center gap-3 flex-1 min-w-0">
-          {isMounted ? (
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="-ml-2 shrink-0" aria-label="Toggle menu" title="Toggle menu">
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="p-0 w-80 border-r border-border">
-                {renderSidebar()}
-              </SheetContent>
-            </Sheet>
-          ) : (
-            <Button variant="ghost" size="icon" className="-ml-2 shrink-0" aria-label="Toggle menu" title="Toggle menu">
-              <Menu className="h-5 w-5" />
+      {/* Practice top bar */}
+      <header className="shrink-0 z-40 border-b border-border/60 bg-background/90 backdrop-blur-md">
+        <div className="flex items-center gap-2 px-3 md:px-4 h-12">
+          <Button variant="ghost" size="sm" className="shrink-0 -ml-1 gap-1" asChild>
+            <Link href="/problems">
+              <ArrowLeft className="h-4 w-4" />
+              <span className="hidden sm:inline text-xs">Back</span>
+            </Link>
+          </Button>
+
+          {intro && !interviewConfig && !onIntroStep && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="shrink-0 h-8 gap-1 text-xs border-primary/30 text-primary hover:bg-primary/10"
+              onClick={() => setOnIntroStep(true)}
+            >
+              <BookOpen className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Brief</span>
             </Button>
           )}
-          <span className="font-semibold text-sm truncate flex-1">{problem.title}</span>
-        </div>
-        <Link href="/" className="shrink-0 ml-2">
-          <div className={`p-1.5 rounded-lg bg-gradient-to-br ${theme.gradient} shadow-sm text-white`}>
-            <Icon className="h-4 w-4" />
-          </div>
-        </Link>
-      </div>
 
-      {/* Desktop Sidebar - Fixed Left */}
-      <aside className="hidden md:flex w-80 border-r border-border flex-col shrink-0">
-        {renderSidebar()}
-      </aside>
-
-      {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto bg-gradient-to-br from-background via-background to-muted/20 relative">
-        <div className="max-w-5xl mx-auto p-4 md:p-8 pb-32">
-
-          {(interviewConfig && interviewVariantUsesVoice(interviewConfig.variant)) ||
-          (!interviewConfig && practiceAloudOn && voiceEnabled) ? (
-            <VoicePanel
-              slug={problem.slug}
-              problemTitle={problem.title}
-              practiceSessionId={existingProgress?.activeSessionId ?? null}
-            />
-          ) : null}
-
-          {/* Main Chat Interface */}
-          <div data-tour="chat" className="animate-fade-in" style={{ animationDelay: '100ms' }}>
-            <StepByStepChat problem={problem} probeEnabled={probeEnabled} sessionInit={sessionInit} />
-          </div>
-
-          {/* Diagram Section — always mounted when stepKey is set */}
-          {currentStepKey && (
-            <div data-tour="canvas" className="mt-8 animate-fade-in space-y-4">
-              {isDiagramRelevant && (
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="p-1.5 rounded-md bg-primary/10">
-                      <Layout className="h-4 w-4 text-primary" />
-                    </div>
-                    <h3 className="font-semibold text-sm">System Diagram</h3>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setDiagramCollapsed(!diagramCollapsed)}
-                    className="text-xs"
-                  >
-                    {diagramCollapsed ? 'Show Canvas' : 'Hide Canvas'}
-                  </Button>
-                </div>
-              )}
-
-              <div
-                className={cn(
-                  'transition-all duration-300 border-2 border-border/60 rounded-xl overflow-hidden shadow-sm bg-card flex flex-col min-h-0',
-                  !isDiagramRelevant || diagramCollapsed
-                    ? 'h-0 opacity-0 overflow-hidden pointer-events-none border-0'
-                    : 'h-[600px] opacity-100'
-                )}
-              >
-                <ErrorBoundary
-                  label="diagram canvas"
-                  detail="Your chat progress is unaffected, and previously saved diagrams are safe."
-                >
-                  <DiagramCanvas
-                    stepKey={currentStepKey}
-                    isVisible={isDiagramRelevant && !diagramCollapsed}
-                  />
-                </ErrorBoundary>
-              </div>
-            </div>
+          {!interviewConfig && !onIntroStep && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="shrink-0 h-8 gap-1 text-xs"
+              onClick={() => setHelpOpen(true)}
+              data-tour="help"
+            >
+              <HelpCircle className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Hint</span>
+            </Button>
           )}
 
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 shrink-0"
+            disabled={!canHeaderBack}
+            onClick={() => handleHeaderNav('prev')}
+            aria-label="Previous step"
+            title="Previous step (←)"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+
+          <div className="flex-1 min-w-0 text-center px-1 min-h-[2.75rem] flex flex-col items-center justify-center">
+            <p className="text-[10px] md:text-xs font-medium text-muted-foreground truncate leading-tight max-w-full">
+              {problem.title}
+            </p>
+            {currentSectionTitle && (
+              <p className="text-[10px] md:text-xs font-semibold uppercase tracking-wide text-primary truncate leading-tight max-w-full">
+                {currentSectionTitle}
+              </p>
+            )}
+            <h2 className="font-semibold text-sm md:text-base truncate leading-tight max-w-full">
+              {currentStepTitle}
+            </h2>
+          </div>
+
+          <div className="flex items-center gap-0.5 shrink-0">
+            {interviewConfig && interviewStatus === 'running' ? (
+              <TimerWidget
+                minimal
+                mode="countdown"
+                problemId={`interview-${interviewConfig.variant}-${problem.id}`}
+                initialTimeSeconds={interviewConfig.durationSeconds}
+                onComplete={() => {
+                  toast.warning("Time's up! Your interview has ended.");
+                  dispatchInterview('TIME_EXPIRED');
+                }}
+              />
+            ) : !interviewConfig ? (
+              <TimerWidget
+                minimal
+                mode="countup"
+                problemId={problem.id}
+                initialTimeSeconds={practiceTimerSeconds}
+                startedAt={serverStartedAt}
+                isTimerRunning={isTimerRunning}
+                totalPausedSeconds={serverPausedSeconds}
+                lastPausedAt={lastPausedAt}
+                onToggle={async () => {
+                  if (!isAuthenticated) return;
+                  const result = await togglePracticeTimer(problem.id);
+                  if (result.success) {
+                    setIsTimerRunning(result.isTimerRunning ?? false);
+                    setServerPausedSeconds(result.totalPausedSeconds ?? 0);
+                    setLastPausedAt(result.lastPausedAt ?? null);
+                  }
+                }}
+              />
+            ) : null}
+
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 shrink-0"
+            disabled={!canHeaderForward}
+            onClick={() => handleHeaderNav('next')}
+            aria-label={onIntroStep ? 'Start practice' : 'Next step'}
+            title={onIntroStep ? 'Start practice (→)' : 'Next step (→)'}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+
+          <div className="w-8 shrink-0 md:hidden">
+            {isMounted ? (
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Open menu">
+                    <Menu className="h-4 w-4" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="p-0 w-72 border-r border-border">
+                  {renderSidebar()}
+                </SheetContent>
+              </Sheet>
+            ) : (
+              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Open menu">
+                <Menu className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+          </div>
         </div>
-      </main>
 
-      {/* First-run tour — not during timed interviews */}
-      {!interviewConfig && <PracticeTour />}
+        {progressTotal > 0 && (
+          <div className="px-4 pb-2">
+            <PracticeProgress current={progressCurrent} total={progressTotal} />
+          </div>
+        )}
+      </header>
 
-      {/* Help Assistant */}
+      <div className="flex flex-1 min-h-0 relative">
+        {/* Desktop: persistent step rail */}
+        <aside className="hidden md:flex w-60 shrink-0 flex-col border-r border-border bg-card/40 overflow-hidden">
+          {renderSidebar()}
+        </aside>
+
+        {/* Main Content Area — stable tree so StepByStepChat never remounts on diagram layout toggle */}
+        <main
+          className={cn(
+            'flex-1 min-h-0',
+            splitDiagramLayout
+              ? 'flex flex-col overflow-hidden bg-background'
+              : 'overflow-y-auto bg-gradient-to-b from-background to-muted/10'
+          )}
+        >
+          <div
+            className={cn(
+              'shrink-0 flex items-center gap-3 border-b border-border/60 bg-card/90 px-4 py-2.5',
+              !(splitDiagramLayout && !diagramPromptExpanded) && 'hidden'
+            )}
+          >
+            <p className="flex-1 min-w-0 text-sm md:text-base font-semibold text-foreground truncate leading-snug">
+              {currentStepPrompt}
+            </p>
+            <Button
+              size="sm"
+              variant="outline"
+              className="shrink-0"
+              onClick={() => setDiagramPromptExpanded(true)}
+            >
+              Answer &amp; submit
+            </Button>
+          </div>
+
+          <div
+            className={cn(
+              splitDiagramLayout
+                ? cn(
+                    'shrink-0 border-b border-border/60 bg-card/95',
+                    diagramPromptExpanded ? '' : 'hidden'
+                  )
+                : 'max-w-3xl mx-auto w-full p-4 md:p-6 pb-20 md:px-8 md:py-6'
+            )}
+          >
+            {splitDiagramLayout && diagramPromptExpanded && (
+              <div className="flex justify-end px-3 pt-1.5">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs text-muted-foreground"
+                  onClick={() => setDiagramPromptExpanded(false)}
+                >
+                  <ChevronLeft className="h-3.5 w-3.5 mr-0.5 rotate-90" />
+                  Minimize
+                </Button>
+              </div>
+            )}
+            <div className={splitDiagramLayout ? 'px-3 pb-2' : undefined}>
+              {renderStepContent()}
+            </div>
+          </div>
+
+          <div
+            className={cn(
+              'min-h-0 w-full',
+              splitDiagramLayout ? 'flex flex-1 flex-col' : 'hidden'
+            )}
+          >
+            {splitDiagramLayout ? renderDiagramPanel() : null}
+          </div>
+        </main>
+      </div>
+
+      {/* First-run tour — not during timed interviews or intro step */}
+      {!interviewConfig && !onIntroStep && <PracticeTour />}
+
+      {/* Help Assistant — unchanged position */}
       {!interviewConfig && (
         <HelpAssistant
           problem={problem}
           currentPhase={phase}
           completedSteps={completedSteps}
           savedStepData={savedStepData}
+          open={helpOpen}
+          onOpenChange={setHelpOpen}
         />
       )}
 

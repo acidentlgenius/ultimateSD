@@ -9,6 +9,13 @@ import {
   resolveEvaluationSubStepKey,
 } from '@/lib/step-journey';
 import posthog from '@/lib/posthog';
+import { canAccessFeature } from '@/lib/feature-flags-server';
+import { evaluateClassicAnswer } from '@/lib/adaptive-coach/adapters/classic';
+import { prisma } from '@/lib/prisma';
+import {
+  resolveSessionUserId,
+  SESSION_STALE_MESSAGE,
+} from '@/lib/session-user';
 
 // Detailed evaluation prompts for each phase
 const EVALUATION_GUIDES = {
@@ -237,16 +244,35 @@ const EVALUATION_GUIDES = {
 
 export async function POST(req: NextRequest) {
   const session = await auth();
-  if (!session?.user?.id) {
+  if (!session?.user?.id && !session?.user?.email) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const userId = await resolveSessionUserId(session.user);
+  if (!userId) {
+    return NextResponse.json(
+      { error: 'session_stale', message: SESSION_STALE_MESSAGE },
+      { status: 403 }
+    );
+  }
+
   const body = await req.json();
-  const { problem, phase, phaseKey, subStep, userAnswer, problemDetails } = body;
+  const {
+    problem,
+    phase,
+    phaseKey,
+    subStep,
+    userAnswer,
+    problemDetails,
+    stageId,
+    stepId,
+    sessionId,
+    attemptCount,
+  } = body;
 
   let llm;
   try {
-    ({ llm } = await getUserLLM(session.user.id, {
+    ({ llm } = await getUserLLM(userId, {
       temperature: 0.3,
       problemSlug: problemDetails?.slug,
     }));
@@ -263,6 +289,86 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    const problemSlug = problemDetails?.slug || problem;
+    const adaptiveCoachEnabled = await canAccessFeature(userId, 'adaptiveCoach');
+
+    if (adaptiveCoachEnabled) {
+      const clientAttemptCount =
+        typeof attemptCount === 'number' && attemptCount >= 1
+          ? Math.floor(attemptCount)
+          : 1;
+
+      const resolvedStepId =
+        typeof stepId === 'string' && stepId.trim()
+          ? stepId.trim()
+          : typeof stageId === 'string' && stageId.trim()
+            ? stageId.trim()
+            : undefined;
+
+      // Server-authoritative attempts when session context is present; otherwise
+      // fall back to the client's local attempt counter.
+      let resolvedAttemptCount = clientAttemptCount;
+      if (typeof sessionId === 'string' && sessionId.trim() && resolvedStepId) {
+        const priorFailures = await prisma.stepSubmission.count({
+          where: {
+            userId,
+            sessionId: sessionId.trim(),
+            stepId: resolvedStepId,
+            isPassing: false,
+          },
+        });
+        resolvedAttemptCount = Math.max(clientAttemptCount, priorFailures + 1);
+      }
+
+      const previousFeedback =
+        body.previousFeedback &&
+        typeof body.previousFeedback === 'object' &&
+        Array.isArray(body.previousFeedback.weaknesses) &&
+        Array.isArray(body.previousFeedback.missed)
+          ? {
+              weaknesses: body.previousFeedback.weaknesses.filter(
+                (item: unknown): item is string => typeof item === 'string'
+              ),
+              missed: body.previousFeedback.missed.filter(
+                (item: unknown): item is string => typeof item === 'string'
+              ),
+            }
+          : undefined;
+
+      const result = await evaluateClassicAnswer({
+        userId,
+        llm,
+        problemSlug,
+        difficulty: problemDetails?.difficulty || 'Medium',
+        userAnswer,
+        attemptCount: resolvedAttemptCount,
+        stageId,
+        phaseKey,
+        subStep,
+        previousFeedback,
+      });
+
+      posthog.capture({
+        distinctId: userId,
+        event: 'ai evaluation requested',
+        properties: {
+          problem: body.problem,
+          phase: body.phase,
+          sub_step: body.subStep,
+          score: result.feedback.score,
+          is_acceptable: result.feedback.isAcceptable,
+          gate_action: result.gate.action,
+          adaptive_coach: true,
+        },
+      });
+
+      return NextResponse.json({
+        feedback: result.feedback,
+        gate: result.gate,
+        tip: result.tip,
+      });
+    }
+
     // Get evaluation criteria
     const evaluationPhase = resolveEvaluationPhaseKey(phaseKey, phase);
     const evaluationSubStep = evaluationPhase
@@ -273,8 +379,8 @@ export async function POST(req: NextRequest) {
 
     const problemTitle = problemDetails?.title || problem;
     const problemDesc = problemDetails?.context || '';
-    const problemSlug = problemDetails?.slug || '';
-    const expertSolution = getSolution(problemSlug);
+    const legacyProblemSlug = problemDetails?.slug || '';
+    const expertSolution = getSolution(legacyProblemSlug);
 
     // Ground the evaluator in the problem's authored requirements — these
     // carry the scale numbers and quantified targets the candidate is
@@ -377,7 +483,7 @@ Be constructive, encouraging, but honest. This is practice for a real interview.
     const feedback = await invokeWithValidation(llm, evaluationPrompt);
 
     posthog.capture({
-      distinctId: session.user.id,
+      distinctId: userId,
       event: 'ai evaluation requested',
       properties: {
         problem: body.problem,

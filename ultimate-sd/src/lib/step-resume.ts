@@ -1,4 +1,23 @@
 /**
+ * Forward nav (Next / →) is allowed only after the current step is cleared:
+ * passed (completed) or explicitly skipped. Free-skipping via arrows is blocked
+ * so a 1/10 retry cannot walk into the next stage.
+ */
+export function canAdvancePastStep(
+  stepKey: string,
+  completedSteps: Set<string> | Iterable<string>,
+  saved?: { skipped?: boolean; completed?: boolean } | null,
+): boolean {
+  const completed =
+    completedSteps instanceof Set
+      ? completedSteps.has(stepKey)
+      : new Set(completedSteps).has(stepKey);
+  if (completed || saved?.completed) return true;
+  if (saved?.skipped) return true;
+  return false;
+}
+
+/**
  * Where to place the user when a practice session is restored.
  *
  * Resume AFTER the furthest completed step, not at the first incomplete one.

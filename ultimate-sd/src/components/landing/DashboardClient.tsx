@@ -1,11 +1,10 @@
 'use client';
 
-import { PROBLEMS } from '@/lib/problems';
-import { useState } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Hero } from '@/components/landing/Hero';
 import { FeatureShowcase } from '@/components/landing/FeatureShowcase';
+import { AdaptiveCoachDemo } from '@/components/landing/AdaptiveCoachDemo';
 import { AiInterviewerSection } from '@/components/landing/AiInterviewerSection';
 import { RoadmapPreview } from '@/components/landing/RoadmapPreview';
 import { UserHero } from '@/components/landing/UserHero';
@@ -13,12 +12,10 @@ import { ClaimPlatformAccessBanner } from '@/components/landing/ClaimPlatformAcc
 import type { LaunchOfferPublicStats, LaunchOfferUserState } from '@/lib/launch-offer';
 
 import Link from 'next/link';
+import { useState } from 'react';
 import OnboardingModal from '@/components/OnboardingModal';
 import { ProblemWithStatus } from '@/types';
 import { type PlanType } from '@/lib/plans';
-import { ProblemExplorer } from '@/components/ProblemExplorer';
-import { MostAskedSection } from '@/components/landing/MostAskedSection';
-import { StartHereTrack } from '@/components/landing/StartHereTrack';
 
 interface DashboardClientProps {
     user?: {
@@ -37,7 +34,6 @@ interface DashboardClientProps {
         recommended: ProblemWithStatus[];
     };
     onboardingCompleted?: boolean;
-    problems?: ProblemWithStatus[];
     launchStats?: LaunchOfferPublicStats;
     launchUserState?: LaunchOfferUserState | null;
     fresherTrackEnabled?: boolean;
@@ -48,15 +44,11 @@ export function DashboardClient({
     user,
     recommendations,
     onboardingCompleted = false,
-    problems: problemsProp,
     launchStats,
     launchUserState = null,
     fresherTrackEnabled = false,
     interviewModeEnabled = false,
 }: DashboardClientProps) {
-    const problems: ProblemWithStatus[] = problemsProp ?? PROBLEMS;
-    const [companyCollection, setCompanyCollection] = useState<string | null>(null);
-
     const [showOnboarding, setShowOnboarding] = useState(!!(user && !onboardingCompleted));
 
     return (
@@ -69,7 +61,6 @@ export function DashboardClient({
                 />
             )}
 
-            {/* 1. High Impact Hero - Personalized if Logged In */}
             {user ? (
                 <>
                     <UserHero
@@ -92,36 +83,12 @@ export function DashboardClient({
                 />
             )}
 
-            {/* 1.5 Beginner ramp — the curated first five problems */}
-            <StartHereTrack problems={problemsProp} />
-
-            {/* 2. Problems come before marketing sections — picking one IS the product */}
-            <MostAskedSection
-                selectedCollectionId={companyCollection}
-                onSelectCollection={(id) => {
-                    setCompanyCollection(id);
-                    if (id) {
-                        document.getElementById('problems')?.scrollIntoView({ behavior: 'smooth' });
-                    }
-                }}
-            />
-
-            <ProblemExplorer
-                user={user}
-                problems={problems}
-                heading={user ? 'All Challenges' : 'Start Practicing'}
-                companyCollection={companyCollection}
-                setCompanyCollection={setCompanyCollection}
-            />
-
-            {/* 3. Interactive Feature Showcase (Hide if logged in) */}
             {!user && <FeatureShowcase />}
+            {!user && <AdaptiveCoachDemo />}
             {!user && <AiInterviewerSection interviewModeEnabled={interviewModeEnabled} />}
 
-            {/* 3.5 Roadmap Preview */}
             <RoadmapPreview />
 
-            {/* CTA Section - Hide if logged in */}
             {!user && (
                 <div className="container mx-auto px-4 pb-24 relative z-10 max-w-7xl">
                     <div className="rounded-[3rem] relative overflow-hidden bg-gradient-to-br from-primary to-purple-700 px-6 py-24 text-center shadow-2xl shadow-primary/30">
@@ -131,12 +98,17 @@ export function DashboardClient({
                         <div className="relative z-10 space-y-8 max-w-2xl mx-auto">
                             <h2 className="text-4xl md:text-6xl font-bold text-white tracking-tight">Ready to Design?</h2>
                             <p className="text-white/80 text-xl font-light leading-relaxed">
-                                Your journey to mastering distributed systems starts with a single component. Try the free canvas or start with TinyURL today.
+                                Your journey to mastering distributed systems starts with a single component. Browse the problem set or launch the free canvas.
                             </p>
-                            <div className="pt-6 flex justify-center gap-4">
-                                <Link href="/draw">
+                            <div className="pt-6 flex flex-wrap justify-center gap-4">
+                                <Link href="/problems">
                                     <Button size="lg" className="bg-white text-primary hover:bg-white/90 shadow-xl shadow-black/20 border-0 h-16 px-10 font-bold text-lg rounded-full transition-transform hover:-translate-y-1 hover:shadow-2xl">
-                                        Launch Canvas <ArrowRight className="ml-2 h-5 w-5" />
+                                        Browse problems <ArrowRight className="ml-2 h-5 w-5" />
+                                    </Button>
+                                </Link>
+                                <Link href="/draw">
+                                    <Button size="lg" variant="outline" className="h-16 px-10 font-bold text-lg rounded-full border-white/40 bg-transparent text-white hover:bg-white/10 hover:text-white">
+                                        Launch Canvas
                                     </Button>
                                 </Link>
                             </div>
@@ -149,6 +121,9 @@ export function DashboardClient({
                 <div className="container mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
                     <p>&copy; {new Date().getFullYear()} Ultimate SD. Built for Engineers.</p>
                     <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+                        <Link href="/problems" className="hover:text-foreground transition-colors">
+                            Problems
+                        </Link>
                         <Link href="/pricing" className="hover:text-foreground transition-colors">
                             Pricing
                         </Link>

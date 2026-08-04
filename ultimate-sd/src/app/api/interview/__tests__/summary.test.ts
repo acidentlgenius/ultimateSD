@@ -13,6 +13,10 @@ vi.mock('@/lib/user-llm', () => {
   return { AIAccessError, getUserLLM: vi.fn() };
 });
 vi.mock('@/lib/langgraph', () => ({ getInterviewSummary: vi.fn() }));
+vi.mock('@/lib/adaptive-coach/adapters/interview', () => ({
+  generateInterviewDebrief: vi.fn(),
+  scheduleInterviewCoachFinish: vi.fn(),
+}));
 vi.mock('@/lib/prisma', () => ({
   prisma: { interviewDebrief: { create: vi.fn() } },
 }));
@@ -21,6 +25,10 @@ import { auth } from '@/auth';
 import { canAccessFeature } from '@/lib/feature-flags-server';
 import { AIAccessError, getUserLLM } from '@/lib/user-llm';
 import { getInterviewSummary } from '@/lib/langgraph';
+import {
+  generateInterviewDebrief,
+  scheduleInterviewCoachFinish,
+} from '@/lib/adaptive-coach/adapters/interview';
 import { prisma } from '@/lib/prisma';
 import { POST } from '@/app/api/interview/summary/route';
 
@@ -28,6 +36,8 @@ const mockedAuth = vi.mocked(auth);
 const mockedFlag = vi.mocked(canAccessFeature);
 const mockedLLM = vi.mocked(getUserLLM);
 const mockedSummary = vi.mocked(getInterviewSummary);
+const mockedCoachDebrief = vi.mocked(generateInterviewDebrief);
+const mockedCoachFinish = vi.mocked(scheduleInterviewCoachFinish);
 const mockedCreate = vi.mocked(prisma.interviewDebrief.create);
 
 const VALID_BODY = {
@@ -47,7 +57,7 @@ function makeRequest(body: unknown): NextRequest {
 beforeEach(() => {
   vi.clearAllMocks();
   mockedAuth.mockResolvedValue({ user: { id: 'u1' } } as never);
-  mockedFlag.mockResolvedValue(true);
+  mockedFlag.mockImplementation(async (_userId, key) => key === 'interviewMode');
 });
 
 describe('POST /api/interview/summary', () => {
@@ -98,6 +108,34 @@ describe('POST /api/interview/summary', () => {
     expect(body.summary.verdict).toBe('Hire');
     expect(body.debriefId).toBe('d1');
     expect(mockedCreate).toHaveBeenCalled();
+    expect(mockedCoachDebrief).not.toHaveBeenCalled();
+  });
+
+  it('uses adaptive coach debrief and schedules finish when flag is on', async () => {
+    mockedFlag.mockImplementation(async (_userId, key) =>
+      key === 'interviewMode' || key === 'adaptiveCoach'
+    );
+    mockedLLM.mockResolvedValue({ llm: {} as never, source: 'byok' });
+    mockedCoachDebrief.mockResolvedValue({
+      overallScore: 6,
+      verdict: 'Lean Hire',
+      strengths: ['s'],
+      improvements: ['i'],
+      phaseNotes: [],
+    });
+    mockedCreate.mockResolvedValue({ id: 'd2' } as never);
+    const res = await POST(makeRequest(VALID_BODY));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.summary.verdict).toBe('Lean Hire');
+    expect(mockedCoachDebrief).toHaveBeenCalled();
+    expect(mockedSummary).not.toHaveBeenCalled();
+    expect(mockedCoachFinish).toHaveBeenCalledWith({
+      userId: 'u1',
+      problemSlug: 'design-tinyurl',
+      finalScore: 6,
+      variant: 'lite',
+    });
   });
 
   it('returns 500 when the generator yields null', async () => {

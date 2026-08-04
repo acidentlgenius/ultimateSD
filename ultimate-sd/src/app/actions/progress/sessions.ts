@@ -6,6 +6,8 @@ import { revalidatePath } from 'next/cache';
 import { ProgressStatus, SessionStatus } from '@prisma/client';
 import type { Prisma } from '@prisma/client';
 import posthog from '@/lib/posthog';
+import { PROBLEMS } from '@/lib/problems';
+import { scheduleClassicProfileReflect } from '@/lib/adaptive-coach/tools/schedule-profile-reflect';
 
 export async function startPracticeSession(problemId: string) {
   const session = await auth();
@@ -13,9 +15,33 @@ export async function startPracticeSession(problemId: string) {
     return { success: false, error: 'Unauthorized' };
   }
 
-  const userId = session.user.id;
+  let userId = session.user.id;
 
   try {
+    const userExists = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true },
+    });
+
+    if (!userExists) {
+      const email = session.user.email;
+      if (email) {
+        const byEmail = await prisma.user.findFirst({
+          where: { email: { equals: email, mode: 'insensitive' } },
+          select: { id: true },
+        });
+        if (byEmail) {
+          userId = byEmail.id;
+        }
+      }
+      if (userId === session.user.id) {
+        return {
+          success: false,
+          error: 'Account out of sync — sign out and sign in again',
+        };
+      }
+    }
+
     const existing = await prisma.problemProgress.findUnique({
       where: { userId_problemId: { userId, problemId } },
       include: { activeSession: true },
@@ -194,6 +220,8 @@ export async function completeSession(
   nextRepetitionDate.setDate(nextRepetitionDate.getDate() + 7);
 
   try {
+    let problemIdForReflect: string | undefined;
+
     await prisma.$transaction(async (tx) => {
       const practiceSession = await tx.practiceSession.findUnique({
         where: { id: sessionId },
@@ -202,6 +230,8 @@ export async function completeSession(
       if (!practiceSession || practiceSession.userId !== userId) {
         throw new Error('Session not found');
       }
+
+      problemIdForReflect = practiceSession.problemId;
 
       await tx.practiceSession.update({
         where: { id: sessionId },
@@ -255,6 +285,13 @@ export async function completeSession(
         final_score: finalScore,
       },
     })
+
+    if (problemIdForReflect) {
+      const problemSlug = PROBLEMS.find((p) => p.id === problemIdForReflect)?.slug;
+      if (problemSlug) {
+        scheduleClassicProfileReflect({ userId, problemSlug, finalScore });
+      }
+    }
 
     revalidatePath('/');
     return { success: true };

@@ -178,3 +178,26 @@ export function getDiagramStepKeysForProblem(
   }
   return keys;
 }
+
+/**
+ * Unified progress display for header + restore banner.
+ * When an intro brief exists, it counts as step 1; practice steps follow.
+ */
+export function computePracticeProgress(args: {
+  hasIntro: boolean;
+  onIntro: boolean;
+  /** 1-based position among practice steps (ignored when onIntro). */
+  practiceStepNumber: number;
+  practiceStepCount: number;
+}): { current: number; total: number } {
+  const practiceCount = Math.max(0, args.practiceStepCount);
+  const total = args.hasIntro ? practiceCount + 1 : Math.max(1, practiceCount);
+  if (args.hasIntro && args.onIntro) {
+    return { current: 1, total };
+  }
+  const practiceNum = Math.max(1, args.practiceStepNumber);
+  if (args.hasIntro) {
+    return { current: practiceNum + 1, total };
+  }
+  return { current: practiceNum, total };
+}

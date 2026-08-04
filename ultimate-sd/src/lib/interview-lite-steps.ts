@@ -20,9 +20,9 @@ export const INTERVIEW_LITE_PHASE_STEPS: Record<string, StepData[]> = {
       subStep: 'non-functional',
       title: 'Scale & Constraints',
       prompt:
-        'Rough back-of-the-envelope: traffic, storage, latency. What matters most for this problem?',
+        'How busy will the system be? Estimate traffic, storage, and what matters most (speed, uptime, etc.).',
       inputType: 'textarea',
-      placeholder: 'e.g., 100M URLs/day, 100:1 read/write ratio, <100ms redirects',
+      placeholder: 'e.g., 100M links/day, mostly reads, redirects should feel instant',
     },
   ],
   hld: [

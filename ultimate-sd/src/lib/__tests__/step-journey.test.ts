@@ -14,6 +14,7 @@ import {
   resolveEvaluationPhaseKey,
   resolveEvaluationSubStepKey,
   resolvePhaseSteps,
+  computePracticeProgress,
 } from '../step-journey';
 import type { SystemDesignProblem } from '@/types';
 
@@ -187,5 +188,37 @@ describe('getGenericFallbackSteps', () => {
   it('selects the default generic template for everything else', () => {
     const problem = { slug: 'design-tinyurl' } as SystemDesignProblem;
     expect(getGenericFallbackSteps(problem)).toBe(DEFAULT_PHASE_STEPS);
+  });
+});
+describe('computePracticeProgress', () => {
+  it('counts intro as step 1 then practice steps', () => {
+    expect(
+      computePracticeProgress({
+        hasIntro: true,
+        onIntro: true,
+        practiceStepNumber: 1,
+        practiceStepCount: 8,
+      })
+    ).toEqual({ current: 1, total: 9 });
+
+    expect(
+      computePracticeProgress({
+        hasIntro: true,
+        onIntro: false,
+        practiceStepNumber: 1,
+        practiceStepCount: 8,
+      })
+    ).toEqual({ current: 2, total: 9 });
+  });
+
+  it('omits intro when none exists', () => {
+    expect(
+      computePracticeProgress({
+        hasIntro: false,
+        onIntro: false,
+        practiceStepNumber: 1,
+        practiceStepCount: 8,
+      })
+    ).toEqual({ current: 1, total: 8 });
   });
 });

@@ -14,6 +14,7 @@ import {
   getInterviewSteps,
   parseInterviewParam,
 } from '@/lib/interview-mode';
+import { getProblemIntro } from '@/lib/problem-intro-resolver';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
@@ -64,6 +65,7 @@ export default async function PracticePage({
   const interviewAllowed = await canAccessFeature(session.user.id, 'interviewMode');
   const probeAllowed = await canAccessFeature(session.user.id, 'aiProbe');
   const voiceAllowed = await canAccessFeature(session.user.id, 'voiceInterview');
+  const adaptiveCoachEnabled = await canAccessFeature(session.user.id, 'adaptiveCoach');
   const requestedVariant = parseInterviewParam(interview);
   if (requestedVariant && !interviewAllowed) {
     // Feature not launched for this user: pitch it instead of silently stripping the param.
@@ -92,6 +94,7 @@ export default async function PracticePage({
     ? getInterviewSteps(slug, problemMetadata.difficulty, interviewConfig.variant)
     : steps;
   const problem = { ...problemMetadata, steps: activeSteps };
+  const intro = await getProblemIntro(problem);
 
   const existingProgress = await prisma.problemProgress.findUnique({
     where: {
@@ -124,6 +127,8 @@ export default async function PracticePage({
       interviewAllowed={interviewAllowed}
       probeEnabled={probeAllowed}
       voiceEnabled={voiceEnabled}
+      intro={intro}
+      adaptiveCoachEnabled={adaptiveCoachEnabled}
     />
   );
 }

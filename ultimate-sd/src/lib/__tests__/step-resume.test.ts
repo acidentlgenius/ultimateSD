@@ -1,11 +1,27 @@
 import { describe, expect, it } from 'vitest';
-import { findResumePosition } from '../step-resume';
+import { canAdvancePastStep, findResumePosition } from '../step-resume';
 
 const PHASES: Record<string, unknown[]> = {
   requirements: [{}, {}],       // requirements-0, requirements-1
   hld: [{}],                    // hld-0
   lld: [{}, {}],                // lld-0, lld-1
 };
+
+describe('canAdvancePastStep', () => {
+  it('blocks forward when the step is neither completed nor skipped', () => {
+    expect(canAdvancePastStep('requirements-0', new Set(), null)).toBe(false);
+    expect(canAdvancePastStep('requirements-0', new Set(), { completed: false })).toBe(false);
+  });
+
+  it('allows forward after pass / completed', () => {
+    expect(canAdvancePastStep('requirements-0', new Set(['requirements-0']), null)).toBe(true);
+    expect(canAdvancePastStep('requirements-0', [], { completed: true })).toBe(true);
+  });
+
+  it('allows forward after explicit skip', () => {
+    expect(canAdvancePastStep('requirements-0', new Set(), { skipped: true })).toBe(true);
+  });
+});
 
 describe('findResumePosition', () => {
   it('starts at the first step when nothing is completed', () => {

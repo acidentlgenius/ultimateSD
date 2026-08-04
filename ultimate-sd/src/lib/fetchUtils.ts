@@ -19,6 +19,34 @@ export class HttpError extends Error {
   }
 }
 
+/** Credits / BYOK / plan gate — expected product states, not bugs. */
+export function isAiAccessUserError(error: unknown): boolean {
+  if (error instanceof HttpError) {
+    return error.status === 402 || error.status === 403;
+  }
+  if (error instanceof Error) {
+    return /credits|API key|Settings to use AI|upgrade for more|ai_unavailable/i.test(
+      error.message,
+    );
+  }
+  return false;
+}
+
+/** Prefer server copy; fall back to status-aware defaults. */
+export function getUserFacingFetchError(error: unknown): string {
+  if (error instanceof HttpError && error.serverMessage) {
+    return error.serverMessage;
+  }
+  if (
+    error instanceof Error &&
+    error.message &&
+    !/^HTTP error! status:\s*\d+/i.test(error.message)
+  ) {
+    return error.message;
+  }
+  return getFetchErrorMessage(error);
+}
+
 export function getFetchErrorMessage(error: unknown): string {
   if (error instanceof DOMException && error.name === 'AbortError') {
     return 'The request timed out. Check your connection and try again.';

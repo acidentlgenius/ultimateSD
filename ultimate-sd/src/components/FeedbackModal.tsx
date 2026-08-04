@@ -10,6 +10,7 @@ import html2canvas from 'html2canvas';
 import { updateStreak } from '@/app/actions/gamification';
 import { LockedFeatureButton } from '@/components/LockedFeatureButton';
 import { FEATURES } from '@/lib/features';
+import type { GateDecision } from '@/lib/adaptive-coach/types';
 
 interface FeedbackData {
   score: number;
@@ -29,31 +30,11 @@ interface FeedbackModalProps {
   probeEntitled: boolean;
   onStartProbe: () => void;
   xpEarned?: number;
-}
-
-// Confetti component for celebrations
-function Confetti({ show }: { show: boolean }) {
-  if (!show) return null;
-  
-  return (
-    <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
-      {Array.from({ length: 50 }).map((_, i) => (
-        <div
-          key={i}
-          className="absolute animate-confetti"
-          style={{
-            left: `${Math.random() * 100}%`,
-            animationDelay: `${Math.random() * 2}s`,
-            animationDuration: `${2 + Math.random() * 2}s`,
-            backgroundColor: ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#a855f7'][Math.floor(Math.random() * 5)],
-            width: '8px',
-            height: '8px',
-            borderRadius: '50%',
-          }}
-        />
-      ))}
-    </div>
-  );
+  canAdvance?: boolean;
+  tip?: string | null;
+  gate?: GateDecision | null;
+  /** Exact answer that was scored — shown so the user can see what earned the score. */
+  userAnswer?: string | null;
 }
 
 export default function FeedbackModal({
@@ -64,16 +45,21 @@ export default function FeedbackModal({
   probeEntitled,
   onStartProbe,
   xpEarned = 0,
+  canAdvance,
+  tip,
+  gate,
+  userAnswer,
 }: FeedbackModalProps) {
+  const allowAdvance = canAdvance ?? feedback.isAcceptable;
+  const isCoachedAdvance =
+    gate?.action === 'teach_forward' || gate?.action === 'advance_budget';
   const [animatedScore, setAnimatedScore] = useState(0);
   const [animatedAccuracy, setAnimatedAccuracy] = useState(0);
-  const [showConfetti, setShowConfetti] = useState(false);
   const accuracyBarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isOpen) {
-      if (feedback.isAcceptable) {
-        // If passed, update streak!
+      if (feedback.isAcceptable && !isCoachedAdvance) {
         const handleStreakUpdate = async () => {
           try {
             const result = await updateStreak();
@@ -85,10 +71,6 @@ export default function FeedbackModal({
           }
         };
         handleStreakUpdate();
-
-        // Show confetti for successful evaluations
-        setShowConfetti(true);
-        setTimeout(() => setShowConfetti(false), 3000);
       }
 
       // Animate score counting up
@@ -145,12 +127,11 @@ export default function FeedbackModal({
     } else {
       setAnimatedScore(0);
       setAnimatedAccuracy(0);
-      setShowConfetti(false);
     }
-  }, [isOpen, feedback]);
+  }, [isOpen, feedback, isCoachedAdvance]);
 
   const handleContinue = () => {
-    if (feedback.isAcceptable && onContinue) {
+    if (allowAdvance && onContinue) {
       onContinue();
     }
     onClose();
@@ -196,7 +177,6 @@ export default function FeedbackModal({
 
   return (
     <>
-      <Confetti show={showConfetti} />
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
         <DialogContent className="max-w-5xl w-full max-h-[90vh] overflow-y-auto p-0">
           <DialogHeader className="px-6 pt-6 pb-4 border-b border-border/50">
@@ -209,12 +189,45 @@ export default function FeedbackModal({
                 )}
               </div>
               <span className={feedback.isAcceptable ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'}>
-                {feedback.isAcceptable ? 'Great Job!' : 'Keep Practicing'}
+                {feedback.isAcceptable
+                  ? 'Great Job!'
+                  : isCoachedAdvance
+                    ? 'Coached advance'
+                    : 'Keep Practicing'}
               </span>
             </DialogTitle>
           </DialogHeader>
 
           <div id="feedback-content" className="p-6 space-y-5">
+            {userAnswer?.trim() ? (
+              <Card className="border-2 border-sky-500/30 bg-sky-500/5 shadow-sm">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2 text-sky-700 dark:text-sky-300 text-lg">
+                    Your submission
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <pre className="text-sm leading-relaxed whitespace-pre-wrap font-mono bg-background/60 border border-border/60 rounded-lg p-3 text-foreground">
+                    {userAnswer.trim()}
+                  </pre>
+                </CardContent>
+              </Card>
+            ) : null}
+
+            {tip && isCoachedAdvance && (
+              <Card className="border-2 border-amber-500/30 bg-amber-500/5 shadow-sm">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2 text-amber-700 dark:text-amber-300 text-lg">
+                    <Lightbulb className="h-5 w-5" />
+                    Coach tip
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm leading-relaxed text-foreground">{tip}</p>
+                </CardContent>
+              </Card>
+            )}
+
             {/* XP Rewards Card - Enhanced */}
             {xpEarned > 0 && (
               <Card className={`glass border-2 border-amber-500/30 shadow-2xl bg-gradient-to-br from-amber-500/10 via-yellow-500/5 to-transparent animate-slide-up overflow-hidden relative`}>
@@ -250,11 +263,13 @@ export default function FeedbackModal({
             )}
 
             {/* Performance Score Card - Enhanced */}
-            <Card className={`glass border-2 ${scoreColors.border} shadow-xl bg-gradient-to-br ${scoreColors.gradient} relative overflow-hidden`}>
+            <Card className={`glass border-2 ${scoreColors.border} shadow-xl bg-gradient-to-br ${scoreColors.gradient} relative overflow-hidden ${isCoachedAdvance ? 'opacity-80' : ''}`}>
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2 text-xl">
                   <Award className={`h-6 w-6 ${scoreColors.primary}`} />
-                  <span className={scoreColors.primary}>Performance Score</span>
+                  <span className={scoreColors.primary}>
+                    {isCoachedAdvance ? 'Score (for reference)' : 'Performance Score'}
+                  </span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -263,9 +278,7 @@ export default function FeedbackModal({
                     {/* Score Circle Background */}
                     <div className={`absolute inset-0 rounded-full ${scoreColors.bg} blur-2xl opacity-50`} style={{ transform: 'scale(1.5)' }} />
                     <div className="relative">
-                      <div className={`text-8xl font-extrabold ${scoreColors.primary} transition-all duration-300`} style={{ 
-                        textShadow: `0 0 20px ${scoreColors.primary.replace('text-', 'rgba(')}`
-                      }}>
+                      <div className={`${isCoachedAdvance ? 'text-5xl' : 'text-8xl'} font-extrabold ${scoreColors.primary} transition-all duration-300`}>
                         {animatedScore}
                       </div>
                       <div className="text-sm text-muted-foreground mt-2 font-medium">out of 10</div>
@@ -421,13 +434,15 @@ export default function FeedbackModal({
               ))}
             <Button
               onClick={handleContinue}
-              className={`w-full sm:w-auto gradient-bg hover:opacity-90 transition-all hover:scale-105 shadow-lg ${
-                feedback.isAcceptable 
-                  ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700' 
-                  : 'bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700'
+              className={`w-full sm:w-auto gradient-bg hover:opacity-90 transition-all shadow-sm ${
+                allowAdvance
+                  ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                  : 'bg-primary text-primary-foreground hover:bg-primary/90'
               }`}
             >
-              {feedback.isAcceptable ? 'Continue to Next Step' : 'Try Again'}
+              {allowAdvance
+                ? (feedback.isAcceptable ? 'Continue to Next Step' : 'Continue with coach tip')
+                : 'Try Again'}
             </Button>
           </div>
         </DialogContent>

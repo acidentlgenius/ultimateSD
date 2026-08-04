@@ -91,7 +91,7 @@ export function UserHero({ user, recommendations, setShowOnboarding }: UserHeroP
 
                             {(!recommendations?.dailyPick && !recommendations?.recommended?.length) && (
                                 <div className="col-span-2 p-12 text-center text-muted-foreground bg-black/5 dark:bg-white/5 rounded-3xl border border-dashed border-black/10 dark:border-white/10 flex flex-col items-center">
-                                    <p className="mb-6 text-lg">Complete your profile to get personalized recommendations!</p>
+                                    <p className="mb-6 text-lg">No recommendations yet — refresh your preferences and we&apos;ll pick problems for you.</p>
                                     <Button variant="outline" size="lg" onClick={() => setShowOnboarding(true)} className="rounded-full px-8 hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-all">
                                         Set Preferences
                                     </Button>
