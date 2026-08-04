@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { AdminClient } from './AdminClient';
 import { AdminSessionExplorer } from './AdminSessionExplorer';
 import { LaunchOfferPanel } from './LaunchOfferPanel';
@@ -121,6 +122,12 @@ export function AdminDashboard({
         >
           Problem Intros
         </button>
+        <Link
+          href="/admin/blog"
+          className="flex-1 sm:flex-none px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-md transition-colors text-center text-zinc-500 hover:text-foreground"
+        >
+          Blog
+        </Link>
       </div>
 
       {tab === 'users' ? (

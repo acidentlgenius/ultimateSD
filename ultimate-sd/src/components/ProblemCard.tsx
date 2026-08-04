@@ -96,7 +96,7 @@ export default function ProblemCard({ problem, featured, locked, badge, signedIn
             legacyTags={problem.tags}
             limit={4}
             className="mt-2"
-            onTagClick={onTagClick}
+            onTagClick={locked ? undefined : onTagClick}
           />
 
           {problem.companies.length > 0 && (

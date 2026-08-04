@@ -1,9 +1,10 @@
 import { MetadataRoute } from 'next'
 import { PROBLEMS } from '@/lib/problems'
 import { getAllGuides } from '@/content/guides'
+import { getPublishedBlogPosts } from '@/lib/blog-posts'
 import { SITE_URL } from '@/lib/site'
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const problemUrls = PROBLEMS.map((problem) => ({
         url: `${SITE_URL}/practice/${problem.slug}`,
         lastModified: new Date(),
@@ -16,6 +17,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
         lastModified: new Date(guide.metadata.updatedAt),
         changeFrequency: 'weekly' as const,
         priority: 0.9,
+    }))
+
+    const blogPosts = await getPublishedBlogPosts()
+    const blogUrls = blogPosts.map((post) => ({
+        url: `${SITE_URL}/blog/${post.slug}`,
+        lastModified: post.updatedAt,
+        changeFrequency: 'weekly' as const,
+        priority: 0.7,
     }))
 
     return [
@@ -49,7 +58,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
             changeFrequency: 'weekly',
             priority: 0.9,
         },
+        {
+            url: `${SITE_URL}/blog`,
+            lastModified: new Date(),
+            changeFrequency: 'weekly',
+            priority: 0.8,
+        },
         ...guideUrls,
+        ...blogUrls,
         ...problemUrls,
     ]
 }

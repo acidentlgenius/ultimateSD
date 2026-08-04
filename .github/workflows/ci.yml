@@ -57,11 +57,11 @@ jobs:
       - name: Test
         run: pnpm test run
 
-      - name: Build
-        run: pnpm build
-
       - name: Push database schema
         run: npx prisma db push
+
+      - name: Build
+        run: pnpm build
 
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium
