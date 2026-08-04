@@ -7,18 +7,22 @@ import {
   getLaunchOfferUserState,
 } from "@/app/actions/launch-offer";
 import { canAccessFeature } from "@/lib/feature-flags-server";
+import { resolveSessionUserId } from "@/lib/session-user";
 import { ProblemWithStatus } from "@/types";
 
 export default async function Home() {
   const session = await auth();
+  const resolvedUserId = session?.user
+    ? await resolveSessionUserId(session.user)
+    : null;
 
   const [launchStats, launchUserState, fresherTrackEnabled, interviewModeEnabled] = await Promise.all([
     getLaunchOfferStats(),
-    session?.user?.id
-      ? getLaunchOfferUserState(session.user.id)
+    resolvedUserId
+      ? getLaunchOfferUserState(resolvedUserId)
       : Promise.resolve(null),
-    canAccessFeature(session?.user?.id ?? null, 'fresherTrack'),
-    canAccessFeature(session?.user?.id ?? null, 'interviewMode'),
+    canAccessFeature(resolvedUserId, 'fresherTrack'),
+    canAccessFeature(resolvedUserId, 'interviewMode'),
   ]);
 
   let recommendations: {
@@ -28,11 +32,11 @@ export default async function Home() {
   } = { dailyPick: null, needsReview: [], recommended: [] };
   let onboardingCompleted = false;
 
-  if (session?.user?.id) {
+  if (resolvedUserId) {
     const [recs, user] = await Promise.all([
       getUserRecommendations(),
       prisma.user.findUnique({
-        where: { id: session.user.id },
+        where: { id: resolvedUserId },
         select: { onboardingCompleted: true }
       }),
     ]);

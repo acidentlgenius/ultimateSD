@@ -6,73 +6,16 @@ import {
   submitCurrentStep,
   submitFunctionalRequirements,
 } from './helpers/practice-flow';
-import { ADAPTIVE_COACH_TIP } from './helpers/ai-mocks';
+import {
+  ADAPTIVE_COACH_TIP,
+  mockAiCoachTurnAdaptive,
+  type CoachTurnEvalMode,
+} from './helpers/ai-mocks';
 import { seedE2eUser } from '../scripts/seed-e2e';
 
 test.describe.configure({ mode: 'serial' });
 
-type EvalMode = 'teach_forward' | 'pass';
-const evalMode: { current: EvalMode } = { current: 'teach_forward' };
-
-async function installAdaptiveEvaluateRouter(page: Page) {
-  await page.route('**/api/ai/evaluate', async (route) => {
-    if (evalMode.current === 'pass') {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          feedback: {
-            score: 8,
-            accuracy: 85,
-            strengths: ['Good'],
-            weaknesses: [],
-            missed: [],
-            isAcceptable: true,
-          },
-          gate: { action: 'pass', reason: 'Score meets threshold', threshold: 6 },
-        }),
-      });
-      return;
-    }
-
-    const body = route.request().postDataJSON() as { attemptCount?: number };
-    const attempt = body?.attemptCount ?? 1;
-    if (attempt >= 3) {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          feedback: {
-            score: 3,
-            accuracy: 30,
-            strengths: [],
-            weaknesses: ['Too vague'],
-            missed: ['Custom aliases'],
-            isAcceptable: false,
-          },
-          gate: { action: 'teach_forward', reason: 'Attempts exhausted (3/3)' },
-          tip: ADAPTIVE_COACH_TIP,
-        }),
-      });
-      return;
-    }
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        feedback: {
-          score: 3,
-          accuracy: 30,
-          strengths: [],
-          weaknesses: ['Too vague'],
-          missed: ['Custom aliases'],
-          isAcceptable: false,
-        },
-        gate: { action: 'retry', reason: 'Score below threshold (3/10)' },
-      }),
-    });
-  });
-}
+const evalMode: { current: CoachTurnEvalMode } = { current: 'teach_forward' };
 
 async function passTextStep(page: Page, answer: string) {
   await dismissProblemIntroIfVisible(page);
@@ -116,11 +59,16 @@ test.describe('TinyURL adaptive coach extended flow', () => {
     test.setTimeout(120_000);
     evalMode.current = 'teach_forward';
     await suppressFirstRunUx(page);
-    await installAdaptiveEvaluateRouter(page);
+    await mockAiCoachTurnAdaptive(page, evalMode);
 
     await page.goto('/practice/design-tinyurl');
     await expect(page.getByText('Functional Requirements').first()).toBeVisible();
     await dismissProblemIntroIfVisible(page);
+
+    // Live agenda prompt from coach/turn start
+    await expect(
+      page.getByText(/As your coach: list three must-have functional requirements/i).first(),
+    ).toBeVisible({ timeout: 15_000 });
 
     await submitFunctionalRequirements(page);
     await expect(page.getByRole('heading', { name: 'Keep Practicing' })).toBeVisible({

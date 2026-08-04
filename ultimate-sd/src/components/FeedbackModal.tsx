@@ -33,6 +33,8 @@ interface FeedbackModalProps {
   canAdvance?: boolean;
   tip?: string | null;
   gate?: GateDecision | null;
+  /** Exact answer that was scored — shown so the user can see what earned the score. */
+  userAnswer?: string | null;
 }
 
 export default function FeedbackModal({
@@ -46,6 +48,7 @@ export default function FeedbackModal({
   canAdvance,
   tip,
   gate,
+  userAnswer,
 }: FeedbackModalProps) {
   const allowAdvance = canAdvance ?? feedback.isAcceptable;
   const isCoachedAdvance =
@@ -196,6 +199,21 @@ export default function FeedbackModal({
           </DialogHeader>
 
           <div id="feedback-content" className="p-6 space-y-5">
+            {userAnswer?.trim() ? (
+              <Card className="border-2 border-sky-500/30 bg-sky-500/5 shadow-sm">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2 text-sky-700 dark:text-sky-300 text-lg">
+                    Your submission
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <pre className="text-sm leading-relaxed whitespace-pre-wrap font-mono bg-background/60 border border-border/60 rounded-lg p-3 text-foreground">
+                    {userAnswer.trim()}
+                  </pre>
+                </CardContent>
+              </Card>
+            ) : null}
+
             {tip && isCoachedAdvance && (
               <Card className="border-2 border-amber-500/30 bg-amber-500/5 shadow-sm">
                 <CardHeader className="pb-2">

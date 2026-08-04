@@ -80,12 +80,12 @@ describe('FeedbackModal', () => {
 
     consoleSpy.mockRestore();
   });
+
   it('clears animation frames on unmount', () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.mocked(updateStreak).mockResolvedValue({ success: true, streak: 1 } as any);
     vi.useFakeTimers();
 
-    // Spy on the global animation frame functions
     const requestSpy = vi.spyOn(global, 'requestAnimationFrame');
     const cancelSpy = vi.spyOn(global, 'cancelAnimationFrame');
     const clearTimeoutSpy = vi.spyOn(global, 'clearTimeout');
@@ -109,13 +109,10 @@ describe('FeedbackModal', () => {
       />
     );
 
-    // Initial render should have called requestAnimationFrame for score
     expect(requestSpy).toHaveBeenCalled();
 
-    // Unmount the component to trigger cleanup
     unmount();
 
-    // Cleanup should call cancelAnimationFrame and clearTimeout
     expect(cancelSpy).toHaveBeenCalled();
     expect(clearTimeoutSpy).toHaveBeenCalled();
 
@@ -124,5 +121,29 @@ describe('FeedbackModal', () => {
     clearTimeoutSpy.mockRestore();
     consoleSpy.mockRestore();
     vi.useRealTimers();
+  });
+
+  it('shows the submitted answer that was scored', () => {
+    const feedback = {
+      score: 1,
+      accuracy: 10,
+      strengths: [],
+      weaknesses: ['Too thin'],
+      isAcceptable: false,
+    };
+
+    render(
+      <FeedbackModal
+        isOpen={true}
+        feedback={feedback}
+        onClose={() => {}}
+        probeEntitled={false}
+        onStartProbe={() => {}}
+        userAnswer={'shorten urls'}
+      />
+    );
+
+    expect(screen.getByText('Your submission')).toBeTruthy();
+    expect(screen.getByText('shorten urls')).toBeTruthy();
   });
 });

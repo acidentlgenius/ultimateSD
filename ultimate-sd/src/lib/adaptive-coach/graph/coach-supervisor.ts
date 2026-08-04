@@ -35,7 +35,15 @@ const DEFAULT_SESSION_BUDGET_SEC = 45 * 60;
 
 export type CoachTurnEvent =
   | { type: 'start' }
-  | { type: 'submit'; userAnswer: string; stageId: string }
+  | {
+      type: 'submit';
+      userAnswer: string;
+      stageId: string;
+      previousFeedback?: {
+        weaknesses: string[];
+        missed: string[];
+      };
+    }
   | { type: 'tick'; sessionRemainingSec: number }
   | { type: 'finish' };
 
@@ -177,7 +185,7 @@ async function planForStage(
     problemTitle: problemTitle(request.problemSlug),
     stage,
     gold,
-    lastEvaluation,
+    ...(lastEvaluation ? { lastEvaluation } : {}),
   });
 }
 
@@ -252,6 +260,8 @@ async function evaluateNode(
     stage,
     userAnswer: request.event.userAnswer,
     gold,
+    attemptCount: (sessionState.attempts[request.event.stageId] ?? 0) + 1,
+    previousFeedback: request.event.previousFeedback,
   });
 
   return { evaluation };
@@ -391,7 +401,9 @@ async function persistNode(
       const nextId = nextStageId(rails, stageId);
       if (nextId) {
         const nextStage = findStage(rails, nextId);
-        agenda = await planForStage(request, profile, nextStage, evaluation);
+        // Cold-start the next stage. Passing prior-stage evaluation makes the
+        // planner continue that topic (e.g. algorithm probe on Database Schema).
+        agenda = await planForStage(request, profile, nextStage);
         nextSession = {
           ...sessionState,
           stageId: nextId,
@@ -411,7 +423,7 @@ async function persistNode(
       const nextId = nextStageId(rails, stageId);
       if (nextId) {
         const nextStage = findStage(rails, nextId);
-        agenda = await planForStage(request, profile, nextStage, evaluation);
+        agenda = await planForStage(request, profile, nextStage);
         nextSession = {
           ...sessionState,
           stageId: nextId,
@@ -431,7 +443,7 @@ async function persistNode(
       const nextId = nextStageId(rails, stageId);
       if (nextId) {
         const nextStage = findStage(rails, nextId);
-        agenda = await planForStage(request, profile, nextStage, evaluation);
+        agenda = await planForStage(request, profile, nextStage);
         nextSession = {
           ...sessionState,
           stageId: nextId,

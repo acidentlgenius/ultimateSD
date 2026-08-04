@@ -20,9 +20,10 @@ import { Card } from '@/components/ui/card';
 import { SystemDesignProblem } from '@/types';
 import { tokens } from '@/styles/tokens';
 import SchemaBuilder from '@/components/SchemaBuilder';
-import { fetchWithRetry, getFetchErrorMessage } from '@/lib/fetchUtils';
+import { fetchWithRetry, getUserFacingFetchError, HttpError, isAiAccessUserError } from '@/lib/fetchUtils';
 import { cn } from '@/lib/utils';
-import { findResumePosition } from '@/lib/step-resume';
+import Link from 'next/link';
+import { canAdvancePastStep, findResumePosition } from '@/lib/step-resume';
 import {
   saveSessionState,
   loadSessionState,
@@ -36,7 +37,7 @@ import {
   abandonSession,
   getActiveSession,
 } from '@/app/actions/progress';
-import FeedbackModal from './FeedbackModal';
+import StepFeedbackPanel from '@/components/StepFeedbackPanel';
 import { useSession } from 'next-auth/react';
 import {
   Sparkles,
@@ -81,7 +82,13 @@ import {
 import { buildDiagramDescription } from '@/lib/diagram-description';
 import { shouldUseLocalSessionDraft } from '@/lib/session-persistence-policy';
 import type { StepDiagramData } from '@/types/diagram';
-import type { GateDecision } from '@/lib/adaptive-coach/types';
+import type { AgendaMove, GateDecision, SessionState } from '@/lib/adaptive-coach/types';
+import {
+  activeAgendaAsk,
+  parseCoachStageId,
+  postCoachTurn,
+  seedCoachSessionState,
+} from '@/lib/adaptive-coach/client-turn';
 
 // Widget registry is shared with public guide pages (see widgets/registry.tsx)
 import { WIDGETS } from './widgets/registry';
@@ -102,6 +109,91 @@ function isStepCompletable(feedback: FeedbackResult, gate?: GateDecision | null)
   return gate?.action === 'teach_forward' || gate?.action === 'advance_budget';
 }
 
+function EvaluationErrorBanner({
+  message,
+  onRetry,
+  compact = false,
+}: {
+  message: string;
+  onRetry: () => void;
+  compact?: boolean;
+}) {
+  const isCredits = /credits/i.test(message);
+  const needsKeyOrUpgrade = isCredits || /API key|Settings/i.test(message);
+  const title = isCredits
+    ? 'AI credits used up'
+    : needsKeyOrUpgrade
+      ? 'AI access needed'
+      : "We couldn't grade your answer";
+
+  if (compact) {
+    return (
+      <div
+        className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-300"
+        data-testid="evaluation-error-banner"
+        role="alert"
+      >
+        <p className="font-medium">{title}</p>
+        <p className="mt-0.5 text-muted-foreground">{message}</p>
+        {needsKeyOrUpgrade ? (
+          <p className="mt-1.5 flex flex-wrap gap-3">
+            <Link href="/settings" className="font-medium underline underline-offset-2">
+              Add API key
+            </Link>
+            <Link href="/pricing" className="font-medium underline underline-offset-2">
+              Upgrade
+            </Link>
+          </p>
+        ) : (
+          <button type="button" className="mt-1 underline" onClick={onRetry}>
+            Retry
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 text-sm"
+      data-testid="evaluation-error-banner"
+      role="alert"
+    >
+      <div className="mb-1 flex items-center gap-2 font-semibold text-amber-700 dark:text-amber-400">
+        <AlertCircle className="h-4 w-4" />
+        <span>{title}</span>
+      </div>
+      <p className="mb-3 text-muted-foreground">
+        {message} Your answer is still here — nothing was scored or recorded.
+      </p>
+      {needsKeyOrUpgrade ? (
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" asChild className="bg-amber-600 text-white hover:bg-amber-700">
+            <Link href="/settings">Add API key in Settings</Link>
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            asChild
+            className="border-amber-500/40 hover:bg-amber-500/10"
+          >
+            <Link href="/pricing">Upgrade plan</Link>
+          </Button>
+        </div>
+      ) : (
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={onRetry}
+          className="border-amber-500/40 hover:bg-amber-500/10"
+        >
+          Try again
+        </Button>
+      )}
+    </div>
+  );
+}
+
 function submissionOutcome(
   feedback: FeedbackResult,
   gate?: GateDecision | null,
@@ -117,6 +209,11 @@ interface SavedStepData {
   schemaData: any[];
   feedback: FeedbackResult | null;
   completed: boolean;
+  /** Explicit Skip — allows forward nav without a passing score. */
+  skipped?: boolean;
+  /** Last evaluate gate — needed to restore Continue after coached advance. */
+  gate?: GateDecision | null;
+  tip?: string | null;
   diagramData?: StepDiagramData | null;
 }
 
@@ -135,6 +232,11 @@ interface Props {
   diagramBeside?: boolean;
   /** When true, restore-banner step counts include the intro brief as step 1. */
   progressIncludesIntro?: boolean;
+  /**
+   * When true, practice uses live `/api/ai/coach/turn` agenda (plan-agenda on
+   * start / pass / retry) instead of static prompts + `/api/ai/evaluate` only.
+   */
+  adaptiveCoachEnabled?: boolean;
 }
 
 type DbSubmission = {
@@ -278,6 +380,7 @@ export default function StepByStepChat({
   keyboardNavPaused = false,
   diagramBeside = false,
   progressIncludesIntro = false,
+  adaptiveCoachEnabled = false,
 }: Props) {
   const [currentPhase, setCurrentPhase] = useState(() => {
     const keys = Object.keys(resolvePhaseSteps(problem.steps, getGenericFallbackSteps(problem)));
@@ -307,6 +410,12 @@ export default function StepByStepChat({
   const [evaluationTip, setEvaluationTip] = useState<string | null>(null);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [isSessionCompleted, setIsSessionCompleted] = useState(false);
+  const [coachSession, setCoachSession] = useState<SessionState | null>(null);
+  const [coachAgenda, setCoachAgenda] = useState<AgendaMove[]>([]);
+  const [coachBootstrapping, setCoachBootstrapping] = useState(false);
+  /** When bootstrap/start fails, fall back to classic evaluate so practice stays usable. */
+  const [coachUnavailable, setCoachUnavailable] = useState(false);
+  const coachBootstrapKeyRef = useRef<string | null>(null);
 
   // Session restoration state
   const [sessionRestored, setSessionRestored] = useState(false);
@@ -329,8 +438,30 @@ export default function StepByStepChat({
   const safeStepIndex = clampStepIndex(currentStepIndex, currentSteps.length);
   const currentStep = currentSteps[safeStepIndex];
   const currentStepKey = buildStepKey(effectivePhase, safeStepIndex);
+  const useCoachLive = adaptiveCoachEnabled && !coachUnavailable;
+  const agendaAsk = useCoachLive ? activeAgendaAsk(coachAgenda) : undefined;
+  // Never show an agenda ask from a different stage (manual Next/sidebar can desync).
+  const displayPrompt =
+    (useCoachLive &&
+      coachSession &&
+      coachSession.stageId === currentStepKey &&
+      agendaAsk?.prompt) ||
+    currentStep?.prompt ||
+    '';
 
   const currentSubStep = currentStep?.subStep;
+
+  const applyCoachStage = useCallback(
+    (stageId: string) => {
+      const { phaseKey, stepIndex } = parseCoachStageId(stageId);
+      if (!phases.includes(phaseKey)) return;
+      const clamped = clampStepIndex(stepIndex, PHASE_STEPS[phaseKey]?.length ?? 0);
+      setCurrentPhase(phaseKey);
+      setCurrentStepIndex(clamped);
+      return { phaseKey, stepIndex: clamped };
+    },
+    [phases, PHASE_STEPS],
+  );
 
   const getDiagramDataForStep = useCallback(
     (stepKey: string): StepDiagramData | null => {
@@ -400,7 +531,12 @@ export default function StepByStepChat({
     if (sessionStatus === 'loading') return;
 
     const loadKey = `${problem.id}:${session?.user?.id ?? 'guest'}`;
-    if (sessionLoadedKeys.has(loadKey)) return;
+    // Module-level cache survives remounts; state does not. Still mark restored
+    // so coach bootstrap / drafts can run after remount without re-fetching.
+    if (sessionLoadedKeys.has(loadKey)) {
+      setSessionRestored(true);
+      return;
+    }
 
     let isMounted = true;
 
@@ -615,6 +751,11 @@ export default function StepByStepChat({
     setSavedStepData(new Map());
     setSessionRestored(true);
     setRestoredDate(null);
+    setCoachSession(null);
+    setCoachAgenda([]);
+    setCoachUnavailable(false);
+    setCoachBootstrapping(false);
+    coachBootstrapKeyRef.current = null;
 
     sessionLoadedKeys.delete(`${problem.id}:${session?.user?.id ?? 'guest'}`);
     userHasNavigatedKeys.delete(`${problem.id}:${session?.user?.id ?? 'guest'}`);
@@ -622,46 +763,160 @@ export default function StepByStepChat({
     toast.success('Session cleared! Starting fresh.');
   }, [problem.id, problem.slug, session?.user]);
 
-  // Load saved form data when navigating between steps. Feedback modal opens only
-  // from handleSubmit — never re-open from saved state (that caused modal flicker/loops).
+  const reviewDismissedForStepRef = useRef<string | null>(null);
+
+  const enterEditFromReview = () => {
+    reviewDismissedForStepRef.current = currentStepKey;
+    setShowFeedback(false);
+  };
+
+  // Load saved form + restore inline review when navigating between steps.
   useEffect(() => {
+    reviewDismissedForStepRef.current = null;
     const saved = savedStepData.get(currentStepKey);
     if (saved) {
       setListItems(saved.listItems);
       setTextInput(saved.textInput);
       setSchemaData(saved.schemaData || []);
       setFeedback(saved.feedback);
+      setEvaluationGate(saved.gate ?? null);
+      setEvaluationTip(saved.tip ?? null);
+      setShowFeedback(Boolean(saved.feedback) && !saved.skipped);
     } else {
       setListItems([]);
       setTextInput('');
       setSchemaData([]);
       setFeedback(null);
+      setEvaluationGate(null);
+      setEvaluationTip(null);
+      setShowFeedback(false);
     }
-    setShowFeedback(false);
     setProbeContext(null);
-    setEvaluationGate(null);
     setNewItemInput('');
+    // Intentionally only on step change — not on every savedStepData write (autosave).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStepKey]);
 
-  // Dispatch phase change events
+  // After async session restore on the same step key, open review if feedback exists.
   useEffect(() => {
+    if (!sessionRestored) return;
+    if (reviewDismissedForStepRef.current === currentStepKey) return;
+    const saved = savedStepData.get(currentStepKey);
+    if (!saved?.feedback || saved.skipped) return;
+    setFeedback(saved.feedback);
+    setEvaluationGate(saved.gate ?? null);
+    setEvaluationTip(saved.tip ?? null);
+    if (saved.listItems.length) setListItems(saved.listItems);
+    if (saved.textInput) setTextInput(saved.textInput);
+    if (saved.schemaData?.length) setSchemaData(saved.schemaData);
+    setShowFeedback(true);
+    // Only react to restore completing / step key — not ongoing autosave mutations.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionRestored, currentStepKey]);
+
+  // Dispatch phase change events (include live agenda prompt for diagram header)
+  useEffect(() => {
+    if (!currentStep) return;
     const evt = new CustomEvent('sd-phase-change', {
-      detail: { phase: currentStep.phase, subStep: currentStep.subStep, stepKey: currentStepKey }
+      detail: {
+        phase: currentStep.phase,
+        subStep: currentStep.subStep,
+        stepKey: currentStepKey,
+        prompt: displayPrompt || currentStep.prompt,
+      },
     });
     window.dispatchEvent(evt);
-  }, [currentStep.phase, currentStep.subStep, currentStepKey]);
+  }, [currentStep, currentStepKey, displayPrompt]);
 
-  // Dispatch progress updates
+  // Bootstrap live coach agenda once intro is done and session position is restored.
+  // Only mark bootstrapKeyRef after a successful apply. React Strict Mode remounts
+  // cancel the first in-flight start; setting the ref before the fetch made the
+  // remount bail early so the LLM agenda never landed (static rail prompt forever).
   useEffect(() => {
+    if (!useCoachLive || keyboardNavPaused || !sessionRestored || !currentStep) return;
+
+    const bootstrapKey = `${problem.slug}:${session?.user?.id ?? 'guest'}`;
+    if (coachBootstrapKeyRef.current === bootstrapKey) return;
+
+    let cancelled = false;
+    (async () => {
+      setCoachBootstrapping(true);
+      try {
+        // Always plan-agenda on the first rail stage so the opening ask is LLM-written.
+        // Mid-resume elsewhere: seed the static rail prompt until the next submit re-plans.
+        const onFirstRail = isFirstJourneyStep(effectivePhase, safeStepIndex, phases);
+
+        if (onFirstRail) {
+          const res = await postCoachTurn({
+            problemSlug: problem.slug,
+            mode: 'practice',
+            event: { type: 'start' },
+            sessionState: null,
+          });
+          if (cancelled) return;
+          setCoachSession(res.sessionState);
+          setCoachAgenda(res.ui.agenda);
+          applyCoachStage(res.sessionState.stageId);
+        } else {
+          const seedAgenda: AgendaMove[] = [
+            {
+              id: `seed-${currentStepKey}`,
+              kind: 'ask',
+              prompt: currentStep.prompt,
+              skillFocus: [],
+              source: 'rail',
+            },
+          ];
+          if (cancelled) return;
+          setCoachSession(
+            seedCoachSessionState({
+              problemSlug: problem.slug,
+              stageId: currentStepKey,
+              agenda: seedAgenda,
+            }),
+          );
+          setCoachAgenda(seedAgenda);
+        }
+        coachBootstrapKeyRef.current = bootstrapKey;
+      } catch (error) {
+        // Expected AI-access states (credits / BYOK) — toast only, don't console.error(Error)
+        // or Next.js surfaces a red "Console Error" overlay.
+        if (!cancelled) {
+          setCoachUnavailable(true);
+          const message = getUserFacingFetchError(error);
+          toast.error(message, { duration: 8000 });
+          if (!isAiAccessUserError(error)) {
+            console.error('Adaptive coach bootstrap failed:', error);
+          }
+        }
+      } finally {
+        if (!cancelled) setCoachBootstrapping(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // Bootstrap once per problem visit after restore; navigation must not re-plan.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [useCoachLive, keyboardNavPaused, sessionRestored, problem.slug, session?.user?.id]);
+
+  useEffect(() => {
+    if (!currentStep) return;
     const evt = new CustomEvent('sd-progress-update', {
       detail: {
         phase: currentStep.phase,
         completedSteps: Array.from(completedSteps),
-        savedStepData: savedStepData
+        savedStepData: savedStepData,
+        canGoForward: canAdvancePastStep(
+          currentStepKey,
+          completedSteps,
+          savedStepData.get(currentStepKey),
+        ),
       }
     });
     window.dispatchEvent(evt);
-  }, [currentStep.phase, completedSteps, savedStepData]);
+  }, [currentStep, currentStepKey, completedSteps, savedStepData]);
 
   const addListItem = () => {
     if (newItemInput.trim()) {
@@ -702,6 +957,7 @@ export default function StepByStepChat({
         : textInput;
 
     if (!userAnswer.trim() || (currentStep.inputType === 'schema' && schemaData.length === 0)) return;
+    if (useCoachLive && (coachBootstrapping || !coachSession)) return;
 
     // Check if diagram should be included (for High Level Architecture and Data Flow steps)
     const shouldIncludeDiagram = isDiagramSubStep(currentStep.subStep);
@@ -754,24 +1010,72 @@ export default function StepByStepChat({
         }
       }
 
-      const res = await fetchWithRetry('/api/ai/evaluate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody),
-        retries: 2,
-        timeout: 15000,
-      });
+      let feedbackResult: FeedbackResult;
+      let gate: GateDecision | undefined;
+      let tip: string | undefined;
 
-      const data = await res.json();
-      const gate = data.gate as GateDecision | undefined;
-      const tip = typeof data.tip === 'string' ? data.tip : undefined;
-      const stepCompletable = isStepCompletable(data.feedback, gate);
+      if (useCoachLive && coachSession) {
+        const sessionForTurn =
+          coachSession.stageId === currentStepKey
+            ? coachSession
+            : { ...coachSession, stageId: currentStepKey };
+
+        const coachRes = await postCoachTurn({
+          problemSlug: problem.slug,
+          mode: 'practice',
+          event: {
+            type: 'submit',
+            userAnswer: requestBody.userAnswer,
+            stageId: currentStepKey,
+            ...(requestBody.previousFeedback
+              ? { previousFeedback: requestBody.previousFeedback }
+              : {}),
+          },
+          sessionState: sessionForTurn,
+        });
+
+        if (!coachRes.ui.feedback) {
+          throw new Error('Adaptive coach returned no feedback for this submit.');
+        }
+
+        feedbackResult = coachRes.ui.feedback;
+        gate = coachRes.ui.gate;
+        tip = typeof coachRes.ui.tip === 'string' ? coachRes.ui.tip : undefined;
+        setCoachSession(coachRes.sessionState);
+        setCoachAgenda(coachRes.ui.agenda);
+      } else {
+        const res = await fetchWithRetry('/api/ai/evaluate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody),
+          retries: 2,
+          timeout: 15000,
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new HttpError(
+            res.status,
+            typeof data?.message === 'string'
+              ? data.message
+              : typeof data?.error === 'string'
+                ? data.error
+                : 'Evaluation failed.',
+          );
+        }
+        feedbackResult = data.feedback;
+        gate = data.gate as GateDecision | undefined;
+        tip = typeof data.tip === 'string' ? data.tip : undefined;
+      }
+
+      const stepCompletable = isStepCompletable(feedbackResult, gate);
 
       setAttemptsByStep((prev) => ({ ...prev, [currentStepKey]: attemptCount }));
       setEvaluationGate(gate ?? null);
       setEvaluationTip(tip ?? null);
-      setFeedback(data.feedback);
+      setFeedback(feedbackResult);
       setShowFeedback(true);
+      reviewDismissedForStepRef.current = null;
 
       if (gate?.action === 'advance_budget') {
         toast.info(gate.reason, {
@@ -785,8 +1089,11 @@ export default function StepByStepChat({
         listItems: [...listItems],
         textInput,
         schemaData: [...schemaData],
-        feedback: data.feedback,
+        feedback: feedbackResult,
         completed: stepCompletable,
+        skipped: false,
+        gate: gate ?? null,
+        tip: tip ?? null,
         diagramData: usedDiagramData ?? savedStepData.get(currentStepKey)?.diagramData ?? null,
       });
       setSavedStepData(newSavedData);
@@ -794,7 +1101,7 @@ export default function StepByStepChat({
       const wasAlreadyCompleted = completedSteps.has(currentStepKey);
 
       (async () => {
-        if (data.feedback.isAcceptable && !wasAlreadyCompleted) {
+        if (feedbackResult.isAcceptable && !wasAlreadyCompleted) {
           try {
             const result = await awardStepXp(problem.id, currentStepKey);
             if (result.success) {
@@ -817,7 +1124,7 @@ export default function StepByStepChat({
           } catch (error) {
             console.error('Failed to award XP:', error);
           }
-        } else if (data.feedback.isAcceptable && wasAlreadyCompleted) {
+        } else if (feedbackResult.isAcceptable && wasAlreadyCompleted) {
           toast.info('Step Updated (Already Completed)', {
             icon: '✓',
             className: 'bg-muted border-border text-muted-foreground'
@@ -842,22 +1149,28 @@ export default function StepByStepChat({
 
         if (sessionIdForRecord && userAnswer.trim()) {
           try {
-            await recordStepSubmission({
+            const recorded = await recordStepSubmission({
               sessionId: sessionIdForRecord,
               problemId: problem.id,
               stepId: currentStepKey,
               phase: effectivePhase,
               content: userAnswer,
-              feedback: JSON.stringify(data.feedback),
-              score: Math.round(data.feedback.score),
+              feedback: JSON.stringify(feedbackResult),
+              score: Math.round(feedbackResult.score),
               isPassing: stepCompletable,
               problemSlug: problem.slug,
               gateAction: gate?.action ?? null,
-              outcome: submissionOutcome(data.feedback, gate) ?? null,
+              outcome: submissionOutcome(feedbackResult, gate) ?? null,
             });
+            if (!recorded.success) {
+              toast.error(recorded.error ?? 'Could not save your submission');
+            }
           } catch (error) {
             console.error('Failed to record step submission:', error);
+            toast.error('Could not save your submission');
           }
+        } else if (session?.user && userAnswer.trim() && !sessionIdForRecord) {
+          toast.error('Progress session missing — sign out and sign in again to save answers');
         }
 
         if (stepCompletable) {
@@ -889,7 +1202,7 @@ export default function StepByStepChat({
               }
               await completeSession(
                 sessionIdForRecord,
-                Math.round(data.feedback.score),
+                Math.round(feedbackResult.score),
                 snapshot ?? undefined
               );
               toast.success('🎉 Problem Completed! You have finished all steps!');
@@ -904,8 +1217,13 @@ export default function StepByStepChat({
         setCompletedSteps(new Set(completedSteps).add(currentStepKey));
       }
     } catch (error) {
-      console.error('Error evaluating answer:', error);
-      setEvaluationError(getFetchErrorMessage(error));
+      const message = getUserFacingFetchError(error);
+      setEvaluationError(message);
+      if (isAiAccessUserError(error)) {
+        toast.error(message, { duration: 8000 });
+      } else {
+        console.error('Error evaluating answer:', error);
+      }
     }
 
     setLoading(false);
@@ -925,10 +1243,66 @@ export default function StepByStepChat({
   const handleNext = () => {
     setShowFeedback(false);
     markUserNavigated(problem.id, session?.user?.id);
+
+    const followCoachIfAhead = () => {
+      if (!useCoachLive || !coachSession) return false;
+      if (
+        !evaluationGate ||
+        !(
+          evaluationGate.action === 'pass' ||
+          evaluationGate.action === 'teach_forward' ||
+          evaluationGate.action === 'advance_budget' ||
+          evaluationGate.action === 'end_mock'
+        )
+      ) {
+        return false;
+      }
+
+      if (coachSession.status === 'complete') {
+        const finishing = coachSession;
+        setIsSessionCompleted(true);
+        toast.success('🎉 Congratulations! You have completed all sections!');
+        void postCoachTurn({
+          problemSlug: problem.slug,
+          mode: 'practice',
+          event: { type: 'finish' },
+          sessionState: finishing,
+        }).catch((err) => console.error('Coach finish turn failed:', err));
+        return true;
+      }
+
+      if (coachSession.stageId !== currentStepKey) {
+        const applied = applyCoachStage(coachSession.stageId);
+        if (applied) {
+          persistStepPosition(applied.phaseKey, applied.stepIndex);
+        }
+        return true;
+      }
+
+      return false;
+    };
+
+    if (followCoachIfAhead()) return;
+
+    // Static +1 (Skip / ungated). Keep coach stageId in sync and drop stale agenda
+    // so we never show an algorithm probe on Database Schema.
+    const syncCoachToStep = (nextStepKey: string) => {
+      if (!useCoachLive || !coachSession) return;
+      if (coachSession.stageId === nextStepKey) return;
+      setCoachSession({
+        ...coachSession,
+        stageId: nextStepKey,
+        agenda: [],
+        stageStartedAt: new Date().toISOString(),
+      });
+      setCoachAgenda([]);
+    };
+
     if (safeStepIndex < currentSteps.length - 1) {
       const next = safeStepIndex + 1;
       setCurrentStepIndex(next);
       persistStepPosition(effectivePhase, next);
+      syncCoachToStep(buildStepKey(effectivePhase, next));
     } else {
       const currentPhaseIndex = phases.indexOf(effectivePhase);
       if (currentPhaseIndex < phases.length - 1) {
@@ -936,6 +1310,7 @@ export default function StepByStepChat({
         setCurrentPhase(nextPhase);
         setCurrentStepIndex(0);
         persistStepPosition(nextPhase, 0);
+        syncCoachToStep(buildStepKey(nextPhase, 0));
       } else {
         setIsSessionCompleted(true);
         toast.success('🎉 Congratulations! You have completed all sections!');
@@ -979,7 +1354,7 @@ export default function StepByStepChat({
   };
 
   const handleSkip = () => {
-    // Save as skipped
+    // Save as skipped — explicit opt-out; does not count as a pass.
     const newSavedData = new Map(savedStepData);
     newSavedData.set(currentStepKey, {
       listItems: [],
@@ -987,6 +1362,7 @@ export default function StepByStepChat({
       schemaData: [],
       feedback: null,
       completed: false,
+      skipped: true,
       diagramData: getDiagramDataForStep(currentStepKey),
     });
     setSavedStepData(newSavedData);
@@ -995,8 +1371,7 @@ export default function StepByStepChat({
   };
 
   const handleRetry = () => {
-    setShowFeedback(false);
-    // setFeedback(null); // Retain feedback for user reference
+    enterEditFromReview();
   };
 
   const getPhaseColor = (phase: string) => {
@@ -1007,11 +1382,28 @@ export default function StepByStepChat({
   const progress = currentSteps.length > 0 ? ((safeStepIndex + 1) / currentSteps.length) * 100 : 0;
   const isFirstStep = isFirstJourneyStep(effectivePhase, safeStepIndex, phases);
   const canGoBack = !isFirstStep;
-  const canGoForward = useMemo(() => {
+  const hasNextStep = useMemo(() => {
     if (safeStepIndex < currentSteps.length - 1) return true;
     const currentPhaseIndex = phases.indexOf(effectivePhase);
     return currentPhaseIndex < phases.length - 1;
   }, [safeStepIndex, currentSteps.length, phases, effectivePhase]);
+
+  const stepClearedForAdvance = canAdvancePastStep(
+    currentStepKey,
+    completedSteps,
+    savedStepData.get(currentStepKey),
+  );
+
+  // Next / → only after pass (or coached advance) or explicit Skip — not free roam.
+  const canGoForward = hasNextStep && stepClearedForAdvance;
+
+  const currentUserAnswer = !currentStep
+    ? ''
+    : currentStep.inputType === 'list'
+      ? listItems.join('\n')
+      : currentStep.inputType === 'schema'
+        ? JSON.stringify(schemaData, null, 2)
+        : textInput;
 
   // Arrow-key + header navigation when not typing in an input
   useEffect(() => {
@@ -1024,6 +1416,9 @@ export default function StepByStepChat({
       if (e.key === 'ArrowRight' && canGoForward) {
         e.preventDefault();
         navigateForward();
+      } else if (e.key === 'ArrowRight' && hasNextStep && !stepClearedForAdvance) {
+        e.preventDefault();
+        toast.info('Pass this step (or Skip) before moving on');
       } else if (e.key === 'ArrowLeft' && canGoBack) {
         e.preventDefault();
         handlePrevious();
@@ -1034,6 +1429,9 @@ export default function StepByStepChat({
       if (loading || showFeedback) return;
       if (direction === 'prev' && canGoBack) handlePrevious();
       if (direction === 'next' && canGoForward) navigateForward();
+      if (direction === 'next' && hasNextStep && !stepClearedForAdvance) {
+        toast.info('Pass this step (or Skip) before moving on');
+      }
     };
     window.addEventListener('keydown', onKey);
     window.addEventListener('sd-practice-nav', onPracticeNav);
@@ -1041,7 +1439,7 @@ export default function StepByStepChat({
       window.removeEventListener('keydown', onKey);
       window.removeEventListener('sd-practice-nav', onPracticeNav);
     };
-  }, [loading, showFeedback, canGoBack, canGoForward, safeStepIndex, effectivePhase, phases, PHASE_STEPS, currentSteps.length, keyboardNavPaused]);
+  }, [loading, showFeedback, canGoBack, canGoForward, hasNextStep, stepClearedForAdvance, safeStepIndex, effectivePhase, phases, PHASE_STEPS, currentSteps.length, keyboardNavPaused]);
 
   const totalStepCount = useMemo(
     () => phases.reduce((sum, p) => sum + (PHASE_STEPS[p]?.length ?? 0), 0),
@@ -1128,17 +1526,18 @@ return (
       {diagramBeside ? (
         <div className="space-y-2" data-testid="diagram-step-compact">
           {evaluationError && !loading && (
-            <p className="text-xs text-amber-700 dark:text-amber-400" data-testid="evaluation-error-banner">
-              {evaluationError}{' '}
-              <button type="button" className="underline" onClick={handleSubmit}>Retry</button>
-            </p>
+            <EvaluationErrorBanner
+              message={evaluationError}
+              onRetry={handleSubmit}
+              compact
+            />
           )}
           {!showFeedback && feedback && !feedback.isAcceptable && (
             <p className="text-xs text-amber-800 dark:text-amber-200">
               Needs revision — revise your answer and submit again.
             </p>
           )}
-          {currentStep.inputType === 'list' ? (
+          {!showFeedback && (currentStep.inputType === 'list' ? (
             <Input
               value={newItemInput}
               onChange={(e) => setNewItemInput(e.target.value)}
@@ -1152,20 +1551,16 @@ return (
               className="h-9 text-sm"
             />
           ) : currentStep.inputType === 'schema' ? (
-            <SchemaBuilder value={schemaData} onChange={setSchemaData} readOnly={showFeedback} />
+            <SchemaBuilder value={schemaData} onChange={setSchemaData} readOnly={false} />
           ) : (
             <Textarea
               value={textInput}
               onChange={(e) => setTextInput(e.target.value)}
               placeholder={currentStep.placeholder}
               rows={2}
-              className={cn(
-                'min-h-[52px] max-h-24 resize-none text-sm',
-                showFeedback && 'bg-muted/50 cursor-not-allowed'
-              )}
-              readOnly={showFeedback}
+              className="min-h-[52px] max-h-24 resize-none text-sm"
             />
-          )}
+          ))}
           {!showFeedback && (
             <div className="flex items-center justify-end gap-2">
               <Button variant="ghost" size="sm" onClick={handleSkip} className="h-8 text-muted-foreground">
@@ -1174,7 +1569,7 @@ return (
               <Button
                 size="sm"
                 onClick={handleSubmit}
-                disabled={loading || (
+                disabled={loading || coachBootstrapping || (useCoachLive && !coachSession) || (
                   currentStep.inputType === 'list'
                     ? listItems.length === 0 && !newItemInput.trim()
                     : currentStep.inputType === 'schema'
@@ -1197,28 +1592,64 @@ return (
               </Button>
             </div>
           )}
-          {feedback && (
-            <FeedbackModal
-              isOpen={showFeedback}
-              onClose={() => setShowFeedback(false)}
-              onContinue={handleNext}
-              onStartProbe={() => {
-                const stepAnswer =
-                  currentStep.inputType === 'list'
-                    ? listItems.join('\n')
-                    : currentStep.inputType === 'schema'
-                      ? JSON.stringify(schemaData, null, 2)
-                      : textInput;
-                setProbeContext({ phase: currentStep.phase, stepAnswer });
-                setShowFeedback(false);
-              }}
-              probeEntitled={probeEnabled}
-              feedback={feedback}
-              xpEarned={feedback.isAcceptable ? 20 : 0}
-              canAdvance={isStepCompletable(feedback, evaluationGate)}
-              tip={evaluationTip}
-              gate={evaluationGate}
-            />
+          {showFeedback && feedback && (
+            <div className="space-y-3" data-testid="step-review-split">
+              <div className="rounded-lg border border-border/80 bg-muted/20 p-3 space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Your submission
+                </p>
+                {currentStep.inputType === 'list' ? (
+                  <ul className="space-y-1.5">
+                    {listItems.map((item, index) => (
+                      <li key={index} className="flex gap-2 text-sm">
+                        <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : currentStep.inputType === 'schema' ? (
+                  <SchemaBuilder value={schemaData} onChange={setSchemaData} readOnly />
+                ) : (
+                  <pre className="whitespace-pre-wrap text-sm font-mono">{textInput}</pre>
+                )}
+              </div>
+              <StepFeedbackPanel
+                feedback={feedback}
+                tip={evaluationTip}
+                gate={evaluationGate}
+                xpEarned={feedback.isAcceptable ? 20 : 0}
+                probeEntitled={probeEnabled}
+                onStartProbe={() => {
+                  setProbeContext({ phase: currentStep.phase, stepAnswer: currentUserAnswer });
+                  enterEditFromReview();
+                }}
+              />
+              <div className="flex items-center justify-between gap-2 pt-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8"
+                  onClick={enterEditFromReview}
+                >
+                  Edit answer
+                </Button>
+                {isStepCompletable(feedback, evaluationGate) ? (
+                  <Button size="sm" onClick={handleNext} className="h-8 gradient-bg">
+                    {feedback.isAcceptable ? 'Continue' : 'Continue with tip'}
+                    <ArrowRight className="h-3.5 w-3.5 ml-1" />
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    onClick={enterEditFromReview}
+                    className="h-8 gradient-bg"
+                  >
+                    Try Again
+                    <ArrowRight className="h-3.5 w-3.5 ml-1" />
+                  </Button>
+                )}
+              </div>
+            </div>
           )}
         </div>
       ) : (
@@ -1227,9 +1658,24 @@ return (
           {/* Prompt */}
           <div className="space-y-3">
             <div className="flex justify-between items-start gap-3">
-              <p className="text-lg md:text-xl font-medium leading-snug text-foreground flex-1">
-                {currentStep.prompt}
-              </p>
+              <div className="flex-1 min-w-0 space-y-1.5">
+                <p
+                  className={cn(
+                    'font-medium leading-snug',
+                    showFeedback && feedback
+                      ? 'text-sm text-muted-foreground'
+                      : 'text-lg md:text-xl text-foreground',
+                  )}
+                >
+                  {displayPrompt}
+                </p>
+                {useCoachLive && coachBootstrapping && (
+                  <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Personalizing this step…
+                  </p>
+                )}
+              </div>
               <div className="flex items-center gap-0.5 shrink-0">
                 {(() => {
                   const hint = getStepInteractionHint(currentStep);
@@ -1271,20 +1717,9 @@ return (
             );
           })()}
 
-          {/* AI failure banner — amber, retryable, nothing recorded. Distinct from red "needs improvement" feedback. */}
+          {/* AI failure banner — amber, actionable. Credits → Settings/Upgrade; others → retry. */}
           {evaluationError && !loading && (
-            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 mb-4 text-sm" data-testid="evaluation-error-banner">
-              <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 font-semibold mb-1">
-                <AlertCircle className="h-4 w-4" />
-                <span>We couldn&apos;t grade your answer</span>
-              </div>
-              <p className="text-muted-foreground mb-3">
-                {evaluationError} Your answer is still here — nothing was scored or recorded.
-              </p>
-              <Button size="sm" variant="outline" onClick={handleSubmit} className="border-amber-500/40 hover:bg-amber-500/10">
-                Try again
-              </Button>
-            </div>
+            <EvaluationErrorBanner message={evaluationError} onRetry={handleSubmit} />
           )}
 
           {/* Persistent Retry Feedback Banner */}
@@ -1312,18 +1747,80 @@ return (
             </div>
           )}
 
-          {/* Input Area - Always show, but make read-only when feedback is available */}
+          {showFeedback && feedback ? (
+            <div className="space-y-3" data-testid="step-review-split">
+              <div className="grid gap-0 overflow-hidden rounded-xl border border-border/70 md:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
+                <div className="border-b border-border/70 bg-muted/20 p-4 md:border-b-0 md:border-r">
+                  <p className="mb-3 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                    Your answer
+                  </p>
+                  {currentStep.inputType === 'list' ? (
+                    <ul className="space-y-2">
+                      {listItems.map((item, index) => (
+                        <li key={index} className="flex gap-2 text-sm leading-snug">
+                          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-foreground/35" />
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : currentStep.inputType === 'schema' ? (
+                    <SchemaBuilder value={schemaData} onChange={setSchemaData} readOnly />
+                  ) : (
+                    <pre className="whitespace-pre-wrap font-mono text-sm leading-relaxed text-foreground/90">
+                      {textInput}
+                    </pre>
+                  )}
+                </div>
+                <div className="bg-card p-4">
+                  <StepFeedbackPanel
+                    feedback={feedback}
+                    tip={evaluationTip}
+                    gate={evaluationGate}
+                    xpEarned={feedback.isAcceptable ? 20 : 0}
+                    probeEntitled={probeEnabled}
+                    onStartProbe={() => {
+                      setProbeContext({ phase: currentStep.phase, stepAnswer: currentUserAnswer });
+                      enterEditFromReview();
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="sticky bottom-0 -mx-5 md:-mx-6 px-5 md:px-6 py-3 bg-gradient-to-t from-card via-card to-card/80 border-t border-border/60 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
+                <Button
+                  variant="outline"
+                  onClick={enterEditFromReview}
+                  className="flex-1 sm:flex-none"
+                >
+                  Edit answer
+                </Button>
+                {isStepCompletable(feedback, evaluationGate) ? (
+                  <Button
+                    onClick={handleNext}
+                    className="gradient-bg w-full sm:w-auto sm:min-w-[160px] h-11"
+                  >
+                    {feedback.isAcceptable ? 'Continue to Next Step' : 'Continue with coach tip'}
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={enterEditFromReview}
+                    className="gradient-bg w-full sm:w-auto sm:min-w-[160px] h-11"
+                  >
+                    Try Again
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                )}
+              </div>
+            </div>
+          ) : (
           <div className="space-y-4">
             {currentStep.inputType === 'list' ? (
               <div className="space-y-3">
-                {/* List items */}
                 {listItems.map((item, index) => (
                   <div
                     key={index}
-                    className={`flex items-start gap-2 p-3 rounded-lg border group transition-colors ${showFeedback
-                      ? 'bg-muted/50 border-muted-foreground/20'
-                      : 'bg-muted/30 border-border hover:border-primary/50'
-                      }`}
+                    className="flex items-start gap-2 p-3 rounded-lg border group transition-colors bg-muted/30 border-border hover:border-primary/50"
                   >
                     <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5 shrink-0" />
                     {editingItemIndex === index ? (
@@ -1345,78 +1842,73 @@ return (
                       />
                     ) : (
                       <p
-                        className={`flex-1 text-sm ${!showFeedback ? 'cursor-text' : ''}`}
-                        onClick={() => !showFeedback && startEditingListItem(index)}
+                        className="flex-1 text-sm cursor-text"
+                        onClick={() => startEditingListItem(index)}
                       >
                         {item}
                       </p>
                     )}
-                    {!showFeedback && (
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
-                        {editingItemIndex === index ? (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onMouseDown={(e) => e.preventDefault()}
-                            onClick={commitEditingListItem}
-                            className="h-6 w-6 p-0"
-                            aria-label="Save item"
-                          >
-                            <Check className="h-4 w-4" />
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => startEditingListItem(index)}
-                            className="h-6 w-6 p-0"
-                            aria-label="Edit item"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                        )}
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                      {editingItemIndex === index ? (
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => removeListItem(index)}
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={commitEditingListItem}
                           className="h-6 w-6 p-0"
-                          aria-label="Remove item"
+                          aria-label="Save item"
                         >
-                          <X className="h-4 w-4" />
+                          <Check className="h-4 w-4" />
                         </Button>
-                      </div>
-                    )}
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => startEditingListItem(index)}
+                          className="h-6 w-6 p-0"
+                          aria-label="Edit item"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeListItem(index)}
+                        className="h-6 w-6 p-0"
+                        aria-label="Remove item"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 ))}
 
-                {/* Add new item - only show if not showing feedback */}
-                {!showFeedback && (
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <Input
-                      value={newItemInput}
-                      onChange={(e) => setNewItemInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          addListItem();
-                        }
-                      }}
-                      placeholder={currentStep.placeholder}
-                      className="flex-1"
-                    />
-                    <Button
-                      onClick={addListItem}
-                      disabled={!newItemInput.trim()}
-                      variant="outline"
-                      className="shrink-0 w-full sm:w-auto"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add
-                    </Button>
-                  </div>
-                )}
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Input
+                    value={newItemInput}
+                    onChange={(e) => setNewItemInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        addListItem();
+                      }
+                    }}
+                    placeholder={currentStep.placeholder}
+                    className="flex-1"
+                  />
+                  <Button
+                    onClick={addListItem}
+                    disabled={!newItemInput.trim()}
+                    variant="outline"
+                    className="shrink-0 w-full sm:w-auto"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add
+                  </Button>
+                </div>
 
-                {listItems.length === 0 && !showFeedback && (
+                {listItems.length === 0 && (
                   <p className="text-sm text-muted-foreground text-center py-6 bg-muted/30 rounded-lg border border-dashed border-border">
                     Type an idea above and press <strong>Add</strong> — even one entry is enough to submit.
                   </p>
@@ -1427,9 +1919,9 @@ return (
                 <SchemaBuilder
                   value={schemaData}
                   onChange={setSchemaData}
-                  readOnly={showFeedback}
+                  readOnly={false}
                 />
-                {schemaData.length === 0 && !showFeedback && (
+                {schemaData.length === 0 && (
                   <p className="text-xs text-muted-foreground text-center py-4 mt-4">
                     Add at least one entity with fields to continue
                   </p>
@@ -1440,88 +1932,57 @@ return (
                 value={textInput}
                 onChange={(e) => setTextInput(e.target.value)}
                 placeholder={currentStep.placeholder}
-                className={cn(
-                  'resize-none min-h-[200px]',
-                  showFeedback && 'bg-muted/50 cursor-not-allowed'
-                )}
-                readOnly={showFeedback}
+                className="resize-none min-h-[200px]"
               />
             )}
 
-            {/* Action buttons */}
-            {!showFeedback && (
-              <div className="sticky bottom-0 -mx-5 md:-mx-6 px-5 md:px-6 py-4 bg-gradient-to-t from-card via-card to-card/80 border-t border-border/60 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
-                <div className="flex gap-2">
-                  {canGoBack && (
-                    <Button
-                      variant="outline"
-                      onClick={handlePrevious}
-                      className="flex-1 sm:flex-none"
-                    >
-                      <ArrowLeft className="h-4 w-4 mr-1.5" />
-                      Back
-                    </Button>
-                  )}
+            <div className="sticky bottom-0 -mx-5 md:-mx-6 px-5 md:px-6 py-4 bg-gradient-to-t from-card via-card to-card/80 border-t border-border/60 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
+              <div className="flex gap-2">
+                {canGoBack && (
                   <Button
-                    variant="ghost"
-                    onClick={handleSkip}
-                    className="text-muted-foreground flex-1 sm:flex-none"
+                    variant="outline"
+                    onClick={handlePrevious}
+                    className="flex-1 sm:flex-none"
                   >
-                    <SkipForward className="h-4 w-4 mr-1.5" />
-                    Skip
+                    <ArrowLeft className="h-4 w-4 mr-1.5" />
+                    Back
                   </Button>
-                </div>
-
+                )}
                 <Button
-                  onClick={handleSubmit}
-                  disabled={loading || (
-                    currentStep.inputType === 'list'
-                      ? listItems.length === 0
-                      : currentStep.inputType === 'schema'
-                        ? schemaData.length === 0
-                        : !textInput.trim()
-                  )}
-                  className="gradient-bg w-full sm:w-auto sm:min-w-[160px] h-11"
+                  variant="ghost"
+                  onClick={handleSkip}
+                  className="text-muted-foreground flex-1 sm:flex-none"
                 >
-                  {loading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Checking…
-                    </>
-                  ) : (
-                    <>
-                      {isDiagramSubStep(currentStep.subStep) ? 'Submit design' : 'Submit answer'}
-                      <ArrowRight className="h-4 w-4 ml-2" />
-                    </>
-                  )}
+                  <SkipForward className="h-4 w-4 mr-1.5" />
+                  Skip
                 </Button>
               </div>
-            )}
-          </div>
 
-          {/* Feedback Modal */}
-          {feedback && (
-            <FeedbackModal
-              isOpen={showFeedback}
-              onClose={() => setShowFeedback(false)}
-              onContinue={handleNext}
-              onStartProbe={() => {
-                const stepAnswer =
+              <Button
+                onClick={handleSubmit}
+                disabled={loading || coachBootstrapping || (useCoachLive && !coachSession) || (
                   currentStep.inputType === 'list'
-                    ? listItems.join('\n')
+                    ? listItems.length === 0
                     : currentStep.inputType === 'schema'
-                      ? JSON.stringify(schemaData, null, 2)
-                      : textInput;
-                setProbeContext({ phase: currentStep.phase, stepAnswer });
-                setShowFeedback(false);
-              }}
-              probeEntitled={probeEnabled}
-              feedback={feedback}
-              xpEarned={feedback.isAcceptable ? 20 : 0}
-              canAdvance={isStepCompletable(feedback, evaluationGate)}
-              tip={evaluationTip}
-              gate={evaluationGate}
-            />
+                      ? schemaData.length === 0
+                      : !textInput.trim()
+                )}
+                className="gradient-bg w-full sm:w-auto sm:min-w-[160px] h-11"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Checking…
+                  </>
+                ) : (
+                  <>
+                    {isDiagramSubStep(currentStep.subStep) ? 'Submit design' : 'Submit answer'}
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
           )}
 
           <SubmissionHistory

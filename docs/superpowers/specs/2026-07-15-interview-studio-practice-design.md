@@ -23,9 +23,10 @@ Live `/practice/*` mixes marketing gradients (HelpAssistant), a flyout step menu
 
 ## Non-goals
 
-- Wiring `/api/ai/coach/turn` or Flow V2 live agenda.
 - Landing / marketing redesign.
 - Changing coach gate policy thresholds.
+
+> **Note (2026-07-15):** Live `/api/ai/coach/turn` agenda (plan-agenda on start / gate) is wired into classic practice when `adaptiveCoach` is on — tracked outside this studio-visuals spec.
 
 ---
 

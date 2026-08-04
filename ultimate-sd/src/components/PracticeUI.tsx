@@ -65,6 +65,7 @@ export default function PracticeUI({
   probeEnabled = false,
   voiceEnabled = false,
   intro = null,
+  adaptiveCoachEnabled = false,
 }: {
   problem: SystemDesignProblem;
   stepMode?: PracticeStepMode;
@@ -74,6 +75,7 @@ export default function PracticeUI({
   probeEnabled?: boolean;
   voiceEnabled?: boolean;
   intro?: ProblemIntroContent | null;
+  adaptiveCoachEnabled?: boolean;
 }) {
   return (
     <DiagramCanvasProvider>
@@ -86,6 +88,7 @@ export default function PracticeUI({
         probeEnabled={probeEnabled}
         voiceEnabled={voiceEnabled}
         intro={intro}
+        adaptiveCoachEnabled={adaptiveCoachEnabled}
       />
     </DiagramCanvasProvider>
   );
@@ -100,6 +103,7 @@ function PracticeUIContent({
   probeEnabled = false,
   voiceEnabled = false,
   intro = null,
+  adaptiveCoachEnabled = false,
 }: {
   problem: SystemDesignProblem;
   stepMode: PracticeStepMode;
@@ -109,6 +113,7 @@ function PracticeUIContent({
   probeEnabled?: boolean;
   voiceEnabled?: boolean;
   intro?: ProblemIntroContent | null;
+  adaptiveCoachEnabled?: boolean;
 }) {
   const diagramRef = useDiagramCanvasRef();
   const { data: session, status } = useSession();
@@ -238,15 +243,24 @@ function PracticeUIContent({
           setServerPausedSeconds(result.totalPausedSeconds ?? 0);
           setLastPausedAt(result.lastPausedAt ?? null);
         }
+        if (!result.success || !result.sessionId) {
+          toast.error(
+            result.error ?? 'Could not start practice session — answers may not be saved',
+          );
+        }
         setSessionInit({ sessionId: (result.success && result.sessionId) || null });
       } catch (error) {
         console.error("Failed to auto-start session:", error);
+        toast.error('Could not start practice session — answers may not be saved');
         // Unblock StepByStepChat's load — it degrades to not recording.
         setSessionInit({ sessionId: null });
       }
     };
     initSession();
   }, [problem.id, isAuthenticated]);
+
+  const [liveStepPrompt, setLiveStepPrompt] = useState<string | null>(null);
+  const [canStepForward, setCanStepForward] = useState(false);
 
   useEffect(() => {
         const handler = (e: any) => {
@@ -255,8 +269,14 @@ function PracticeUIContent({
       if (e?.detail?.stepKey) {
         setCurrentStepKey(e.detail.stepKey);
       }
+      if (typeof e?.detail?.prompt === 'string' && e.detail.prompt.trim()) {
+        setLiveStepPrompt(e.detail.prompt);
+      }
       if (e?.detail?.completedSteps) setCompletedSteps(e.detail.completedSteps);
       if (e?.detail?.savedStepData) setSavedStepData(e.detail.savedStepData);
+      if (typeof e?.detail?.canGoForward === 'boolean') {
+        setCanStepForward(e.detail.canGoForward);
+      }
     };
     window.addEventListener('sd-phase-change', handler as EventListener);
     window.addEventListener('sd-progress-update', handler as EventListener);
@@ -322,10 +342,11 @@ function PracticeUIContent({
   }, [onIntroStep, intro, currentStepKey, activeSteps, phase]);
 
   const currentStepPrompt = useMemo(() => {
+    if (liveStepPrompt) return liveStepPrompt;
     if (!currentStepKey) return '';
     const { phaseKey, stepIndex } = parseStepKey(currentStepKey);
     return activeSteps[phaseKey]?.[stepIndex]?.prompt ?? '';
-  }, [currentStepKey, activeSteps]);
+  }, [currentStepKey, activeSteps, liveStepPrompt]);
 
   const currentGlobalIndex = useMemo(() => {
     if (!currentStepKey) return -1;
@@ -362,7 +383,7 @@ function PracticeUIContent({
   const canHeaderBack = onIntroStep ? false : currentGlobalIndex > 0;
   const canHeaderForward = onIntroStep
     ? !!intro
-    : currentGlobalIndex >= 0 && currentGlobalIndex < totalSteps - 1;
+    : currentGlobalIndex >= 0 && currentGlobalIndex < totalSteps - 1 && canStepForward;
 
   const handleHeaderNav = (direction: 'prev' | 'next') => {
     if (onIntroStep) {
@@ -477,6 +498,7 @@ function PracticeUIContent({
               keyboardNavPaused={onIntroStep}
               diagramBeside={splitDiagramLayout}
               progressIncludesIntro={hasIntroStep}
+              adaptiveCoachEnabled={adaptiveCoachEnabled && !interviewConfig}
             />
           </div>
         </>

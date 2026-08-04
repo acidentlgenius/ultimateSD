@@ -139,6 +139,13 @@ describe('invokePlanAgenda', () => {
       },
     ]);
     expect(llm.invoke).toHaveBeenCalledOnce();
+    const [messages] = llm.invoke.mock.calls[0];
+    expect(messages).toHaveLength(2);
+    expect(String(messages[0].content)).toMatch(/senior staff interviewer/i);
+    expect(String(messages[1].content)).toMatch(/## Session/);
+    expect(String(messages[1].content)).toMatch(/Competency signals/);
+    expect(String(messages[1].content)).toMatch(/Memory notes/);
+    expect(String(messages[1].content)).not.toMatch(/senior staff interviewer/i);
   });
 
   it('falls back to rail ask when the LLM throws', async () => {

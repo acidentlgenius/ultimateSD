@@ -1,9 +1,10 @@
 import 'server-only';
 
-import { HumanMessage } from '@langchain/core/messages';
+import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { z } from 'zod';
 
+import { appendCoachTrace } from '@/lib/adaptive-coach/coach-trace';
 import { isCompetencyId } from '@/lib/adaptive-coach/competencies';
 import { loadSkill } from '@/lib/adaptive-coach/skills-loader';
 import type { CoachStage } from '@/lib/adaptive-coach/tools/stage-rails';
@@ -106,6 +107,45 @@ function parseEvaluateOutput(raw: string): EvaluateSkillOutput | null {
   return parseJsonWithSchema(raw, EvaluateSkillOutputSchema);
 }
 
+/** Drop missed/weakness items that contradict the answer or wander out of FR scope. */
+export function sanitizeEvaluateAgainstAnswer(
+  evaluation: EvaluateSkillOutput,
+  userAnswer: string,
+  stage?: Pick<CoachStage, 'title' | 'phase' | 'phaseKey'>,
+): EvaluateSkillOutput {
+  const answer = userAnswer.toLowerCase();
+  const isFunctionalReqs =
+    stage?.phaseKey === 'requirements' ||
+    /functional\s+requirements/i.test(stage?.title ?? '');
+
+  const missed = evaluation.missed.filter((item) => {
+    if (
+      /although|even though|are listed|already (listed|mentioned|included)|candidate'?s answer/i.test(
+        item,
+      )
+    ) {
+      return false;
+    }
+    const quoted = [...item.matchAll(/['"]([^'"]{3,})['"]/g)].map((m) =>
+      m[1].toLowerCase(),
+    );
+    if (quoted.some((q) => answer.includes(q))) return false;
+    return true;
+  });
+
+  let weaknesses = evaluation.weaknesses;
+  if (isFunctionalReqs) {
+    weaknesses = weaknesses.filter(
+      (item) =>
+        !/\b301\b|\b302\b|\b307\b|base62|md5|sha-?1|hash\+?truncat|bloom filter|consistent hashing|cap theorem|db schema|cassandra|dynamodb/i.test(
+          item,
+        ),
+    );
+  }
+
+  return { ...evaluation, missed, weaknesses };
+}
+
 function parseAgendaOutput(raw: string): AgendaOutput | null {
   return parseJsonWithSchema(raw, AgendaOutputSchema);
 }
@@ -128,23 +168,50 @@ function parseSessionDebriefOutput(raw: string): SessionDebriefOutput | null {
   return parseJsonWithSchema(raw, SessionDebriefOutputSchema);
 }
 
+type SkillMessages = {
+  skill: string;
+  system: string;
+  human: string;
+};
+
 async function invokeWithValidation(
   llm: BaseChatModel,
-  prompt: string,
+  messages: SkillMessages,
 ): Promise<EvaluateSkillOutput> {
-  const response = await llm.invoke([new HumanMessage(prompt)]);
+  const response = await llm.invoke([
+    new SystemMessage(messages.system),
+    new HumanMessage(messages.human),
+  ]);
   const first = parseEvaluateOutput(String(response.content));
   if (first) {
+    appendCoachTrace({
+      at: new Date().toISOString(),
+      skill: messages.skill,
+      systemPrompt: messages.system,
+      humanPrompt: messages.human,
+      llmRaw: String(response.content),
+      parsed: first,
+    });
     return first;
   }
 
   const retry = await llm.invoke([
+    new SystemMessage(messages.system),
     new HumanMessage(
-      `${prompt}\n\nIMPORTANT: Your previous response was not valid JSON matching the required schema. Respond with ONLY the JSON object — fields score, accuracy, strengths, weaknesses, and missed are required. Do not include isAcceptable or markdown.`,
+      `${messages.human}\n\nIMPORTANT: Your previous response was not valid JSON matching the required schema. Respond with ONLY the JSON object — fields score, accuracy, strengths, weaknesses, and missed are required. Do not include isAcceptable or markdown.`,
     ),
   ]);
   const second = parseEvaluateOutput(String(retry.content));
   if (second) {
+    appendCoachTrace({
+      at: new Date().toISOString(),
+      skill: messages.skill,
+      systemPrompt: messages.system,
+      humanPrompt: messages.human,
+      llmRaw: String(retry.content),
+      parsed: second,
+      meta: { retry: true },
+    });
     return second;
   }
 
@@ -153,21 +220,42 @@ async function invokeWithValidation(
 
 async function invokeAgendaWithValidation(
   llm: BaseChatModel,
-  prompt: string,
+  messages: SkillMessages,
 ): Promise<AgendaOutput> {
-  const response = await llm.invoke([new HumanMessage(prompt)]);
+  const response = await llm.invoke([
+    new SystemMessage(messages.system),
+    new HumanMessage(messages.human),
+  ]);
   const first = parseAgendaOutput(String(response.content));
   if (first) {
+    appendCoachTrace({
+      at: new Date().toISOString(),
+      skill: messages.skill,
+      systemPrompt: messages.system,
+      humanPrompt: messages.human,
+      llmRaw: String(response.content),
+      parsed: first,
+    });
     return first;
   }
 
   const retry = await llm.invoke([
+    new SystemMessage(messages.system),
     new HumanMessage(
-      `${prompt}\n\nIMPORTANT: Your previous response was not valid JSON matching the required schema. Respond with ONLY the JSON object — field "moves" is required with 1–3 items, each having kind, prompt, and skillFocus. Do not include markdown.`,
+      `${messages.human}\n\nIMPORTANT: Your previous response was not valid JSON matching the required schema. Respond with ONLY the JSON object — field "moves" is required with 1–3 items, each having kind, prompt, and skillFocus. Do not include markdown.`,
     ),
   ]);
   const second = parseAgendaOutput(String(retry.content));
   if (second) {
+    appendCoachTrace({
+      at: new Date().toISOString(),
+      skill: messages.skill,
+      systemPrompt: messages.system,
+      humanPrompt: messages.human,
+      llmRaw: String(retry.content),
+      parsed: second,
+      meta: { retry: true },
+    });
     return second;
   }
 
@@ -176,21 +264,42 @@ async function invokeAgendaWithValidation(
 
 async function invokeTeachForwardWithValidation(
   llm: BaseChatModel,
-  prompt: string,
+  messages: SkillMessages,
 ): Promise<TeachForwardOutput> {
-  const response = await llm.invoke([new HumanMessage(prompt)]);
+  const response = await llm.invoke([
+    new SystemMessage(messages.system),
+    new HumanMessage(messages.human),
+  ]);
   const first = parseTeachForwardOutput(String(response.content));
   if (first) {
+    appendCoachTrace({
+      at: new Date().toISOString(),
+      skill: messages.skill,
+      systemPrompt: messages.system,
+      humanPrompt: messages.human,
+      llmRaw: String(response.content),
+      parsed: first,
+    });
     return first;
   }
 
   const retry = await llm.invoke([
+    new SystemMessage(messages.system),
     new HumanMessage(
-      `${prompt}\n\nIMPORTANT: Your previous response was not valid JSON matching the required schema. Respond with ONLY the JSON object — fields tip and skillFocus are required. Do not include markdown or dump the full expert architecture.`,
+      `${messages.human}\n\nIMPORTANT: Your previous response was not valid JSON matching the required schema. Respond with ONLY the JSON object — fields tip and skillFocus are required. Do not include markdown or dump the full expert architecture.`,
     ),
   ]);
   const second = parseTeachForwardOutput(String(retry.content));
   if (second) {
+    appendCoachTrace({
+      at: new Date().toISOString(),
+      skill: messages.skill,
+      systemPrompt: messages.system,
+      humanPrompt: messages.human,
+      llmRaw: String(retry.content),
+      parsed: second,
+      meta: { retry: true },
+    });
     return second;
   }
 
@@ -300,7 +409,7 @@ function toAgendaMoves(stage: CoachStage, output: AgendaOutput): AgendaMove[] {
   }));
 }
 
-function buildEvaluatePrompt(args: {
+function buildEvaluateMessages(args: {
   profile: LearnerProfile;
   problemTitle: string;
   stage: CoachStage;
@@ -311,7 +420,7 @@ function buildEvaluatePrompt(args: {
     weaknesses: string[];
     missed: string[];
   };
-}): string {
+}): SkillMessages {
   const skill = loadSkill('evaluate-for-level');
   const attempt = args.attemptCount && args.attemptCount >= 1 ? args.attemptCount : 1;
   const prior =
@@ -325,12 +434,14 @@ Focus on what is still missing or newly weak relative to the prior notes.`
       : `## Attempt
 - This is attempt ${attempt} on this stage.`;
 
-  return `${skill.body}
-
-## Session context
+  return {
+    skill: 'evaluate-for-level',
+    system: skill.body,
+    human: `## Session
 - Problem: ${args.problemTitle}
+- Stage id: ${args.stage.id}
 - Stage: ${args.stage.title} (${args.stage.phase})
-- Stage prompt: ${args.stage.prompt}
+- Rail prompt (authoring spine — grade against this scope): ${args.stage.prompt}
 ${formatProfileContext(args.profile)}
 
 ${prior}
@@ -341,77 +452,75 @@ ${formatGoldBlock(args.gold)}
 ## Candidate answer
 ${args.userAnswer}
 
-Respond with ONLY valid JSON matching this schema:
-{
-  "score": <number 0-10>,
-  "accuracy": <number 0-100>,
-  "strengths": ["specific strength"],
-  "weaknesses": ["specific weakness"],
-  "missed": ["missed key point"]
+Grade this submission now.
+Rules reminder: missed = absent from the answer; weaknesses = flaws in what they wrote for THIS stage only. Never say something is missing if it appears above. For Functional Requirements, do not grade 301/302, encoding internals, or schema.
+`,
+  };
 }
 
-Do not include isAcceptable or any fields outside the schema.`;
-}
-
-function buildPlanAgendaPrompt(args: {
+function buildPlanAgendaMessages(args: {
   profile: LearnerProfile;
   problemTitle: string;
   stage: CoachStage;
   gold: string[];
   lastEvaluation?: EvaluateSkillOutput;
-}): string {
+}): SkillMessages {
   const skill = loadSkill('plan-agenda');
   const evaluationBlock = args.lastEvaluation
-    ? `## Last evaluation
+    ? `## Last evaluation (same stage only — use for probes)
 - Score: ${args.lastEvaluation.score}/10
 - Accuracy: ${args.lastEvaluation.accuracy}%
+- Strengths: ${args.lastEvaluation.strengths.join('; ') || 'none noted'}
 - Weaknesses: ${args.lastEvaluation.weaknesses.join('; ') || 'none noted'}
-- Missed: ${args.lastEvaluation.missed.join('; ') || 'none noted'}`
-    : '## Last evaluation\nNo prior evaluation for this stage.';
+- Missed: ${args.lastEvaluation.missed.join('; ') || 'none noted'}
+Mode: retry / deepen on THIS stage (${args.stage.title}). Do not invent fake prior conversation. Stay on this stage's deliverable.`
+    : `## Last evaluation
+None — this is a cold start for ${args.stage.title} (${args.stage.phase}).
+Mode: cold start — emit one sharp primary ask for THIS stage only (optional short teach). No continuity from earlier stages. No fake continuity.`;
 
-  return `${skill.body}
-
-## Session context
+  return {
+    skill: 'plan-agenda',
+    system: skill.body,
+    human: `## Session
 - Problem: ${args.problemTitle}
+- Stage id: ${args.stage.id}
 - Stage: ${args.stage.title} (${args.stage.phase})
-- Stage prompt: ${args.stage.prompt}
+- Rail prompt (spine — improve on it, do not merely rephrase): ${args.stage.prompt}
 ${formatProfileContext(args.profile)}
+
+## Competency signals
+${formatCompetencySummary(args.profile)}
+
+## Memory notes (recent)
+${formatMemoryNotesSummary(args.profile)}
 
 ${evaluationBlock}
 
-## Reference material
+## Reference material (shape prompts; never leak answers)
 ${formatGoldBlock(args.gold)}
 
-Respond with ONLY valid JSON matching this schema:
-{
-  "moves": [
-    {
-      "kind": "ask" | "probe" | "teach" | "skip" | "advance",
-      "prompt": "<non-empty coaching prompt>",
-      "skillFocus": ["competency-tag"]
-    }
-  ]
+Plan the next agenda moves for this stage now.`,
+  };
 }
 
-Provide 1–3 moves. Do not include markdown or fields outside the schema.`;
-}
-
-function buildTeachForwardPrompt(args: {
+function buildTeachForwardMessages(args: {
   profile: LearnerProfile;
   problemTitle: string;
   stage: CoachStage;
   userAnswer: string;
   gold: string[];
   gateReason: string;
-}): string {
+}): SkillMessages {
   const skill = loadSkill('teach-forward');
 
-  return `${skill.body}
-
-## Session context
+  return {
+    skill: 'teach-forward',
+    system: skill.body,
+    human: `## Session
 - Problem: ${args.problemTitle}
+- Stage id: ${args.stage.id}
 - Stage: ${args.stage.title} (${args.stage.phase})
-- Stage prompt: ${args.stage.prompt}
+- Rail prompt: ${args.stage.prompt}
 ${formatProfileContext(args.profile)}
 - Gate reason: ${args.gateReason}
 
@@ -421,13 +530,8 @@ ${formatGoldBlock(args.gold)}
 ## Candidate answer
 ${args.userAnswer}
 
-Respond with ONLY valid JSON matching this schema:
-{
-  "tip": "<one focused coaching tip>",
-  "skillFocus": ["competency-tag"]
-}
-
-Do not dump the full expert architecture. Do not include markdown or fields outside the schema.`;
+Write the single teach-forward tip now.`,
+  };
 }
 
 function formatCompetencySummary(profile: LearnerProfile): string {
@@ -523,7 +627,8 @@ export async function invokeEvaluateForLevel(args: {
     missed: string[];
   };
 }): Promise<EvaluateSkillOutput> {
-  return invokeWithValidation(args.llm, buildEvaluatePrompt(args));
+  const evaluation = await invokeWithValidation(args.llm, buildEvaluateMessages(args));
+  return sanitizeEvaluateAgainstAnswer(evaluation, args.userAnswer, args.stage);
 }
 
 export async function invokePlanAgenda(args: {
@@ -537,7 +642,7 @@ export async function invokePlanAgenda(args: {
   try {
     const output = await invokeAgendaWithValidation(
       args.llm,
-      buildPlanAgendaPrompt(args),
+      buildPlanAgendaMessages(args),
     );
     return toAgendaMoves(args.stage, output);
   } catch {
@@ -554,7 +659,7 @@ export async function invokeTeachForward(args: {
   gold: string[];
   gateReason: string;
 }): Promise<TeachForwardOutput> {
-  return invokeTeachForwardWithValidation(args.llm, buildTeachForwardPrompt(args));
+  return invokeTeachForwardWithValidation(args.llm, buildTeachForwardMessages(args));
 }
 
 function buildMockProbePrompt(args: {

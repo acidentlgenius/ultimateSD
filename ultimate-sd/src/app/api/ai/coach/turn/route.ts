@@ -8,6 +8,10 @@ import { canAccessFeature } from '@/lib/feature-flags-server';
 import posthog from '@/lib/posthog';
 import { getProblemBySlug } from '@/lib/problems';
 import { getUserLLM, AIAccessError } from '@/lib/user-llm';
+import {
+  resolveSessionUserId,
+  SESSION_STALE_MESSAGE,
+} from '@/lib/session-user';
 
 const AgendaMoveSchema = z.object({
   id: z.string(),
@@ -35,6 +39,12 @@ const CoachTurnEventSchema = z.discriminatedUnion('type', [
     type: z.literal('submit'),
     userAnswer: z.string().min(1),
     stageId: z.string().min(1),
+    previousFeedback: z
+      .object({
+        weaknesses: z.array(z.string()),
+        missed: z.array(z.string()),
+      })
+      .optional(),
   }),
   z.object({
     type: z.literal('tick'),
@@ -58,11 +68,19 @@ function aiAccessStatus(error: AIAccessError): number {
 
 export async function POST(req: NextRequest) {
   const session = await auth();
-  if (!session?.user?.id) {
+  if (!session?.user?.id && !session?.user?.email) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  if (!(await canAccessFeature(session.user.id, 'adaptiveCoach'))) {
+  const userId = await resolveSessionUserId(session.user);
+  if (!userId) {
+    return NextResponse.json(
+      { error: 'session_stale', message: SESSION_STALE_MESSAGE },
+      { status: 403 }
+    );
+  }
+
+  if (!(await canAccessFeature(userId, 'adaptiveCoach'))) {
     return NextResponse.json({ error: 'Not available' }, { status: 403 });
   }
 
@@ -80,7 +98,7 @@ export async function POST(req: NextRequest) {
 
   let llm;
   try {
-    ({ llm } = await getUserLLM(session.user.id, {
+    ({ llm } = await getUserLLM(userId, {
       temperature: 0.3,
       problemSlug: body.problemSlug,
     }));
@@ -101,7 +119,7 @@ export async function POST(req: NextRequest) {
   try {
     const [response, profile] = await Promise.all([
       runCoachTurn({
-        userId: session.user.id,
+        userId,
         problemSlug: body.problemSlug,
         difficulty: problem.difficulty,
         mode: body.mode,
@@ -110,16 +128,18 @@ export async function POST(req: NextRequest) {
         sessionState: body.sessionState,
         llm,
       }),
-      loadProfile(session.user.id),
+      loadProfile(userId),
     ]);
 
     posthog.capture({
-      distinctId: session.user.id,
+      distinctId: userId,
       event: 'coach_turn',
       properties: {
         gateAction: response.ui.gate?.action,
         mode: body.mode,
         level: profile.level,
+        eventType: body.event.type,
+        stageId: response.sessionState.stageId,
       },
     });
 

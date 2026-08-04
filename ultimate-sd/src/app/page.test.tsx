@@ -27,6 +27,11 @@ vi.mock('@/lib/prisma', () => ({
   },
 }));
 
+vi.mock('@/lib/session-user', () => ({
+  resolveSessionUserId: vi.fn(async (user: { id?: string | null }) => user.id ?? null),
+  SESSION_STALE_MESSAGE: 'Your session is out of date. Sign out and sign back in.',
+}));
+
 vi.mock('@/app/actions/recommendations', () => ({
   getUserRecommendations: vi.fn(() => Promise.resolve({ dailyPick: null, needsReview: [], recommended: [] })),
 }));
@@ -52,6 +57,8 @@ vi.mock('@/app/actions/launch-offer', () => ({
   getLaunchOfferUserState: vi.fn(() => Promise.resolve(null)),
 }));
 
+import { resolveSessionUserId } from '@/lib/session-user';
+
 describe('Home', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -66,6 +73,7 @@ describe('Home', () => {
 
   it('does not load the problem catalog on the home page when logged in', async () => {
     vi.mocked(auth).mockResolvedValue({ user: { id: 'user-1' } } as never);
+    vi.mocked(resolveSessionUserId).mockResolvedValue('user-1');
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       onboardingCompleted: true,
     } as never);
@@ -78,6 +86,31 @@ describe('Home', () => {
       expect.not.objectContaining({
         problems: expect.anything(),
       })
+    );
+  });
+
+  it('reads onboardingCompleted via resolved user id when session id is stale', async () => {
+    vi.mocked(auth).mockResolvedValue({
+      user: { id: 'stale-id', email: 'a@b.com' },
+    } as never);
+    vi.mocked(resolveSessionUserId).mockResolvedValue('real-user-id');
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      onboardingCompleted: true,
+    } as never);
+
+    const Component = await Home();
+    renderToStaticMarkup(Component);
+
+    expect(resolveSessionUserId).toHaveBeenCalledWith({
+      id: 'stale-id',
+      email: 'a@b.com',
+    });
+    expect(prisma.user.findUnique).toHaveBeenCalledWith({
+      where: { id: 'real-user-id' },
+      select: { onboardingCompleted: true },
+    });
+    expect(dashboardProps).toHaveBeenCalledWith(
+      expect.objectContaining({ onboardingCompleted: true })
     );
   });
 

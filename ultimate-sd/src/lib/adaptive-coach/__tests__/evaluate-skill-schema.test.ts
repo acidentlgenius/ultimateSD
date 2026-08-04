@@ -138,9 +138,34 @@ describe('invokeEvaluateForLevel', () => {
       },
     });
 
-    const prompt = String(llm.invoke.mock.calls[0]?.[0]?.[0]?.content ?? '');
-    expect(prompt).toMatch(/Prior attempt feedback/i);
-    expect(prompt).toMatch(/Attempt number: 2/);
-    expect(prompt).toMatch(/Too vague/);
+    const human = String(llm.invoke.mock.calls[0]?.[0]?.[1]?.content ?? '');
+    expect(human).toMatch(/Prior attempt feedback/i);
+    expect(human).toMatch(/Attempt number: 2/);
+    expect(human).toMatch(/Too vague/);
+  });
+});
+
+describe('sanitizeEvaluateAgainstAnswer', () => {
+  it('drops missed items that contradict the candidate answer', async () => {
+    const { sanitizeEvaluateAgainstAnswer } = await import(
+      '@/lib/adaptive-coach/skills/invoke'
+    );
+
+    const cleaned = sanitizeEvaluateAgainstAnswer(
+      {
+        score: 7,
+        accuracy: 80,
+        strengths: ['Good breadth'],
+        weaknesses: ['Should discuss 301 vs 302 redirects'],
+        missed: [
+          "No mention of 'User accounts', although 'User accounts' are listed in the candidate's answer",
+        ],
+      },
+      'URL shortening\nUser accounts\nDashboard for managing links',
+      stage,
+    );
+
+    expect(cleaned.missed).toEqual([]);
+    expect(cleaned.weaknesses).toEqual([]);
   });
 });

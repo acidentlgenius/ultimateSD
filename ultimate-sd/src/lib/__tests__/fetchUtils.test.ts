@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { fetchWithRetry, getFetchErrorMessage } from '../fetchUtils';
+import { fetchWithRetry, getFetchErrorMessage, getUserFacingFetchError, HttpError, isAiAccessUserError } from '../fetchUtils';
 
 describe('fetchWithRetry', () => {
   beforeEach(() => {
@@ -83,5 +83,29 @@ describe('getFetchErrorMessage', () => {
   it('maps network failures', () => {
     expect(getFetchErrorMessage(new TypeError('Failed to fetch'))).toContain('Could not reach');
     expect(getFetchErrorMessage(new Error('Network error'))).toContain('Could not reach');
+  });
+});
+
+describe('isAiAccessUserError', () => {
+  it('treats 402/403 HttpErrors and credit messages as access errors', () => {
+    expect(isAiAccessUserError(new HttpError(402, 'Credits gone'))).toBe(true);
+    expect(isAiAccessUserError(new HttpError(403, 'Add API key'))).toBe(true);
+    expect(
+      isAiAccessUserError(
+        new Error("You've used your 20 free AI credits this month. Add an API key in Settings."),
+      ),
+    ).toBe(true);
+    expect(isAiAccessUserError(new HttpError(500, 'boom'))).toBe(false);
+    expect(isAiAccessUserError(new Error('Network blip'))).toBe(false);
+  });
+});
+
+describe('getUserFacingFetchError', () => {
+  it('prefers HttpError serverMessage over status text', () => {
+    expect(
+      getUserFacingFetchError(
+        new HttpError(402, "You've used your 20 free AI credits this month."),
+      ),
+    ).toBe("You've used your 20 free AI credits this month.");
   });
 });

@@ -168,13 +168,31 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             }
 
             if (token.id) {
-                const freshUser = await prisma.user.findUnique({
+                let freshUser = await prisma.user.findUnique({
                     where: { id: token.id as string },
-                    select: accessSelect,
+                    select: { id: true, ...accessSelect },
                 });
+
+                // After a DB reset/reseed, the JWT can still hold a deleted user id.
+                // Re-bind by email so practice sessions and submissions keep working.
+                if (!freshUser && typeof token.email === 'string' && token.email) {
+                    const byEmail = await prisma.user.findFirst({
+                        where: { email: { equals: token.email, mode: 'insensitive' } },
+                        select: { id: true, ...accessSelect },
+                    });
+                    if (byEmail) {
+                        token.id = byEmail.id;
+                        token.sub = byEmail.id;
+                        freshUser = byEmail;
+                    }
+                }
 
                 if (freshUser) {
                     applyAccessToToken(token, freshUser);
+                } else {
+                    // Stale cookie with no matching user — force a clean re-login
+                    // rather than letting FK writes fail silently.
+                    delete token.id;
                 }
             }
 

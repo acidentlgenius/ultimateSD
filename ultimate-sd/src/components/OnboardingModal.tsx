@@ -64,17 +64,30 @@ export default function OnboardingModal({ isOpen, onClose, userId }: OnboardingM
         return result.success;
     };
 
-    const handleSkip = () => {
-        // Fire-and-forget: never block dismissal on the network.
-        skipOnboarding().catch(() => { });
-        onClose();
+    const handleSkip = async () => {
+        try {
+            const result = await skipOnboarding();
+            if (!result.success) {
+                toast.error(
+                    result.error === 'session_stale'
+                        ? 'Your session is out of date. Sign out and sign back in.'
+                        : 'Could not save onboarding status. Please try again.'
+                );
+                return;
+            }
+            onClose();
+            router.refresh();
+        } catch {
+            toast.error('Could not save onboarding status. Please try again.');
+        }
     };
 
     const handleStartSolving = async () => {
         if (!recommendedProblem) return;
         setIsSaving(true);
         try {
-            await savePreferences();
+            const ok = await savePreferences();
+            if (!ok) return;
             onClose();
             router.push(`/practice/${recommendedProblem.slug}`);
         } finally {
@@ -85,8 +98,10 @@ export default function OnboardingModal({ isOpen, onClose, userId }: OnboardingM
     const handleExplore = async () => {
         setIsSaving(true);
         try {
-            await savePreferences();
+            const ok = await savePreferences();
+            if (!ok) return;
             onClose();
+            router.refresh();
             document.getElementById('problems')?.scrollIntoView({ behavior: 'smooth' });
         } finally {
             setIsSaving(false);
@@ -100,6 +115,7 @@ export default function OnboardingModal({ isOpen, onClose, userId }: OnboardingM
             if (ok) {
                 toast.success('Preferences saved!', { description: 'We will use these to recommend problems on your dashboard.' });
                 setStep('ready');
+                router.refresh();
             }
         } finally {
             setIsSaving(false);

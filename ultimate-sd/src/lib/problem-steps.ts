@@ -6,7 +6,7 @@ const TINYURL_STEPS: Record<string, StepData[]> = {
       phase: 'Requirements',
       subStep: 'functional',
       title: 'Functional Requirements',
-      prompt: 'List the core features for TinyURL. (e.g., Shorten URL, Redirect, Custom alias, Expiration)',
+      prompt: 'List the core features for TinyURL.',
       inputType: 'list',
       placeholder: 'e.g., User provides long URL -> gets short URL'
     },

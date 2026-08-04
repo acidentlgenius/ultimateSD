@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { suppressFirstRunUx } from './helpers/first-run';
 import {
   ADAPTIVE_COACH_TIP,
-  mockAiEvaluateAdaptiveCoach,
+  mockAiCoachTurnAdaptive,
 } from './helpers/ai-mocks';
 import { grantFlagToE2eUser, removeFlagOverrideForE2eUser } from './helpers/flags';
 import {
@@ -28,7 +28,7 @@ test.describe('Adaptive coach teach_forward (flag granted)', () => {
 
   test.beforeEach(async ({ page }) => {
     await suppressFirstRunUx(page);
-    await mockAiEvaluateAdaptiveCoach(page);
+    await mockAiCoachTurnAdaptive(page);
   });
 
   test('low scores retry then teach_forward tip unblocks the step', async ({ page }) => {
@@ -37,6 +37,9 @@ test.describe('Adaptive coach teach_forward (flag granted)', () => {
     await page.goto('/practice/design-tinyurl');
     await expect(page.getByText('Functional Requirements').first()).toBeVisible();
     await dismissProblemIntroIfVisible(page);
+    await expect(
+      page.getByText(/As your coach: list three must-have functional requirements/i).first(),
+    ).toBeVisible({ timeout: 15_000 });
     await waitForSubmitAnswerButton(page);
 
     // Attempts 1–2: gate retry — modal shows Try Again, no infinite pass loop.

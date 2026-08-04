@@ -4,6 +4,10 @@ import { NextRequest } from 'next/server';
 
 vi.mock('@/auth', () => ({ auth: vi.fn() }));
 vi.mock('@/lib/feature-flags-server', () => ({ canAccessFeature: vi.fn() }));
+vi.mock('@/lib/session-user', () => ({
+  resolveSessionUserId: vi.fn(async (user: { id?: string | null }) => user.id ?? null),
+  SESSION_STALE_MESSAGE: 'Your session is out of date. Sign out and sign back in.',
+}));
 vi.mock('@/lib/user-llm', () => {
   class AIAccessError extends Error {
     constructor(message: string) {
@@ -139,7 +143,18 @@ describe('POST /api/ai/coach/turn', () => {
         gateAction: undefined,
         mode: 'practice',
         level: 'sde1',
+        eventType: 'start',
+        stageId: 'requirements-0',
       },
     });
+  });
+
+  it('returns 403 session_stale when JWT user id is missing from DB', async () => {
+    const { resolveSessionUserId } = await import('@/lib/session-user');
+    vi.mocked(resolveSessionUserId).mockResolvedValueOnce(null);
+    const res = await POST(makeRequest(START_BODY));
+    expect(res.status).toBe(403);
+    expect((await res.json()).error).toBe('session_stale');
+    expect(mockedRunCoachTurn).not.toHaveBeenCalled();
   });
 });

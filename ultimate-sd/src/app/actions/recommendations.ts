@@ -4,14 +4,18 @@ import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { PROBLEMS } from '@/lib/problems';
 import { categorizeRecommendations, pickDailyPick } from '@/lib/recommendations-logic';
+import { resolveSessionUserId } from '@/lib/session-user';
 
 export async function getUserRecommendations() {
     const session = await auth();
-    if (!session?.user?.id) {
+    if (!session?.user?.id && !session?.user?.email) {
         return { dailyPick: null, needsReview: [], recommended: [] };
     }
 
-    const userId = session.user.id;
+    const userId = await resolveSessionUserId(session.user);
+    if (!userId) {
+        return { dailyPick: null, needsReview: [], recommended: [] };
+    }
 
     // 1. Fetch User Profile & Progress
     interface UserPreferences {

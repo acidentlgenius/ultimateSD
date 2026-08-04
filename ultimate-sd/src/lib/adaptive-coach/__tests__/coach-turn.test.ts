@@ -165,6 +165,10 @@ describe('runCoachTurn', () => {
         type: 'submit',
         userAnswer: 'Still incomplete answer.',
         stageId: 'requirements-0',
+        previousFeedback: {
+          weaknesses: first.ui.feedback?.weaknesses ?? [],
+          missed: first.ui.feedback?.missed ?? [],
+        },
       },
       sessionState: session,
       llm,
@@ -173,6 +177,14 @@ describe('runCoachTurn', () => {
     expect(second.ui.gate?.action).toBe('retry');
     expect(second.ui.feedback?.isAcceptable).toBe(false);
     expect(second.sessionState.attempts['requirements-0']).toBe(2);
+    expect(invokeEvaluateForLevel).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        previousFeedback: {
+          weaknesses: first.ui.feedback?.weaknesses ?? [],
+          missed: first.ui.feedback?.missed ?? [],
+        },
+      }),
+    );
 
     session = second.sessionState;
 
@@ -236,6 +248,16 @@ describe('runCoachTurn', () => {
     expect(response.ui.gate?.action).toBe('pass');
     expect(response.ui.feedback?.isAcceptable).toBe(true);
     expect(response.ui.feedback?.score).toBe(7);
+    expect(response.sessionState.stageId).not.toBe('requirements-0');
+    // Next-stage plan must be a cold start — prior evaluation would leak stage topics.
+    const planCalls = vi.mocked(invokePlanAgenda).mock.calls;
+    const advancePlanCall = planCalls[planCalls.length - 1]?.[0];
+    expect(advancePlanCall).toEqual(
+      expect.objectContaining({
+        stage: expect.objectContaining({ id: response.sessionState.stageId }),
+      }),
+    );
+    expect(advancePlanCall).not.toHaveProperty('lastEvaluation');
     expect(recordOutcome).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: 'user-1',

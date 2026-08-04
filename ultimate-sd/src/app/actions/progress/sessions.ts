@@ -15,9 +15,33 @@ export async function startPracticeSession(problemId: string) {
     return { success: false, error: 'Unauthorized' };
   }
 
-  const userId = session.user.id;
+  let userId = session.user.id;
 
   try {
+    const userExists = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true },
+    });
+
+    if (!userExists) {
+      const email = session.user.email;
+      if (email) {
+        const byEmail = await prisma.user.findFirst({
+          where: { email: { equals: email, mode: 'insensitive' } },
+          select: { id: true },
+        });
+        if (byEmail) {
+          userId = byEmail.id;
+        }
+      }
+      if (userId === session.user.id) {
+        return {
+          success: false,
+          error: 'Account out of sync — sign out and sign in again',
+        };
+      }
+    }
+
     const existing = await prisma.problemProgress.findUnique({
       where: { userId_problemId: { userId, problemId } },
       include: { activeSession: true },

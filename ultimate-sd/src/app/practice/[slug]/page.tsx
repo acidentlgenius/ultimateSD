@@ -65,6 +65,7 @@ export default async function PracticePage({
   const interviewAllowed = await canAccessFeature(session.user.id, 'interviewMode');
   const probeAllowed = await canAccessFeature(session.user.id, 'aiProbe');
   const voiceAllowed = await canAccessFeature(session.user.id, 'voiceInterview');
+  const adaptiveCoachEnabled = await canAccessFeature(session.user.id, 'adaptiveCoach');
   const requestedVariant = parseInterviewParam(interview);
   if (requestedVariant && !interviewAllowed) {
     // Feature not launched for this user: pitch it instead of silently stripping the param.
@@ -127,6 +128,7 @@ export default async function PracticePage({
       probeEnabled={probeAllowed}
       voiceEnabled={voiceEnabled}
       intro={intro}
+      adaptiveCoachEnabled={adaptiveCoachEnabled}
     />
   );
 }
