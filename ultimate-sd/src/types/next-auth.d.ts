@@ -36,7 +36,8 @@ declare module "next-auth" {
 
 declare module "next-auth/jwt" {
     interface JWT {
-        id: string
+        /** Absent when the JWT user was deleted and cannot be rebound. */
+        id?: string
         xp: number
         level: number
         streak: number
