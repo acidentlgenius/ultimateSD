@@ -12,7 +12,10 @@
     "code_changes": {
       "files_modified": [
         "src/lib/session-user.ts",
-        "src/lib/__tests__/session-user.test.ts"
+        "src/lib/__tests__/session-user.test.ts",
+        "src/components/landing/AdaptiveCoachDemo.tsx",
+        "src/app/sitemap.ts",
+        "src/app/page.tsx"
       ],
       "tests_added": true
     },
