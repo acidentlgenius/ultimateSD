@@ -148,7 +148,7 @@ export async function awardStepXp(problemId: string, stepId: string) {
     const newLevel = calculateLevel(newXp);
 
     await prisma.user.update({
-      where: { email: userEmail },
+      where: { id: user.id },
       data: {
         xp: newXp,
         level: newLevel,
