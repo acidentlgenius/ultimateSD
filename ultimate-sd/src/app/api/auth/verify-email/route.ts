@@ -37,8 +37,17 @@ export async function GET(req: Request) {
             return NextResponse.redirect(loginUrl);
         }
 
+        const user = await prisma.user.findFirst({
+            where: { email: { equals: email, mode: 'insensitive' } }
+        });
+
+        if (!user) {
+            loginUrl.searchParams.set('error', 'invalid_token');
+            return NextResponse.redirect(loginUrl);
+        }
+
         await prisma.user.update({
-            where: { email },
+            where: { id: user.id },
             data: { emailVerified: new Date() },
         });
 
