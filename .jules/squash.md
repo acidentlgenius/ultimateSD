@@ -68,3 +68,9 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+
+## 2026-08-06 - [Next.js Static Generation Database Connection Errors]
+
+**Learning:** When Next.js statically generates pages or sitemaps at build time (e.g., `sitemap.ts`) that rely on database queries (like Prisma `findMany`), it can cause `ECONNREFUSED` errors during `pnpm build` if a database is not running in the build environment (e.g., CI/CD).
+
+**Action:** Always add `export const dynamic = 'force-dynamic';` to Next.js routes/sitemaps that query the database to prevent them from attempting static generation during the build phase when the database may not be available.
