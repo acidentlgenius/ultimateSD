@@ -10,6 +10,8 @@ import { canAccessFeature } from "@/lib/feature-flags-server";
 import { resolveSessionUserId } from "@/lib/session-user";
 import { ProblemWithStatus } from "@/types";
 
+export const dynamic = 'force-dynamic';
+
 export default async function Home() {
   const session = await auth();
   const resolvedUserId = session?.user
