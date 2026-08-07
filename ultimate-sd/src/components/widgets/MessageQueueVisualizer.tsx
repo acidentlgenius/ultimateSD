@@ -38,10 +38,15 @@ export default function MessageQueueVisualizer() {
         setMessages(prev => [...prev, newMessage]);
     };
 
+    const messagesRef = React.useRef(messages);
+    useEffect(() => {
+        messagesRef.current = messages;
+    }, [messages]);
+
     const consumeMessages = () => {
         setConsumers(prev => prev.map(c => {
             // Find max available offset in this partition
-            const partitionMsgs = messages.filter(m => m.partition === c.assignedPartition);
+            const partitionMsgs = messagesRef.current.filter(m => m.partition === c.assignedPartition);
             const limit = partitionMsgs.length;
 
             if (c.offset < limit) {
@@ -55,7 +60,7 @@ export default function MessageQueueVisualizer() {
     useEffect(() => {
         const interval = setInterval(consumeMessages, 1000);
         return () => clearInterval(interval);
-    }, [messages]);
+    }, []);
 
     const addConsumer = () => {
         if (consumers.length >= partitions.length) return;
