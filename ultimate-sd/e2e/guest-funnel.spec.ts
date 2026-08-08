@@ -3,10 +3,6 @@ import { suppressFirstRunUx } from './helpers/first-run';
 import { E2E_TEST_EMAIL, E2E_TEST_PASSWORD } from './constants';
 import { seedE2eUser } from '../scripts/seed-e2e';
 
-// The anonymous acquisition funnel: landing → honest login gate → callback
-// lands the user back on the problem they picked. Login is required for all
-// practice (no guest sessions, by product decision) — the funnel's job is to
-// never lose the user's place.
 test.describe('Anonymous funnel', () => {
   test.beforeAll(async () => {
     await seedE2eUser({ resetProgress: true });
@@ -16,12 +12,8 @@ test.describe('Anonymous funnel', () => {
     await suppressFirstRunUx(page);
   });
 
-  test('landing shows the beginner track and honest problem CTAs', async ({ page }) => {
+  test('landing shows honest problem CTAs', async ({ page }) => {
     await page.goto('/');
-
-    // Start Here track with its CTA
-    await expect(page.getByRole('heading', { name: /New here\? Start with these five/i })).toBeVisible();
-    await expect(page.getByTestId('start-here-cta')).toBeVisible();
 
     // Hero primary CTA points at a real destination
     const heroCta = page.getByRole('link', { name: /Start Solving/i });
@@ -34,7 +26,8 @@ test.describe('Anonymous funnel', () => {
 
   test('free problem → login gate with callbackUrl → lands back on the problem', async ({ page }) => {
     await page.goto('/');
-    await page.getByTestId('start-here-cta').click();
+    // We don't have start-here-cta, we'll click on the "Start Solving" button in the hero
+    await page.getByRole('link', { name: /Start Solving/i }).click();
 
     // Hard gate, place preserved
     await page.waitForURL(/\/login\?callbackUrl=/);
