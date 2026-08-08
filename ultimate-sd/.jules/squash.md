@@ -27,3 +27,9 @@
 **Learning:** `loadSessionState` relied on `clearSessionState(problemSlug)` to handle invalid data. However, if the `localStorage` key contained structurally valid JSON but the *content itself* was not valid JSON (causing `JSON.parse` to throw), the catch block would execute. But if `clearSessionState` failed or wasn't robust enough, the corrupted data stayed. On every subsequent mount, the UI would try to parse the corrupt data, throw, and crash again.
 
 **Action:** When purging corrupted or unparseable `localStorage` state, use direct `localStorage.removeItem(key)` rather than higher-level helpers to guarantee the bad data is purged, since helper methods might inadvertently fail when interacting with corrupted state.
+
+## 2026-08-08 - React Ref accessed during render
+
+**Learning:** Accessing `ref.current` during render (e.g. conditionally rendering elements based on its value) is an anti-pattern and throws an error in strict React 19. In `AdaptiveCoachDemo`, `preferReducedMotion.current` was accessed during render but it wasn't reactive, causing linter/runtime errors.
+
+**Action:** Replace `useRef` with `useState` when the value is used during the render phase to determine the component output.
