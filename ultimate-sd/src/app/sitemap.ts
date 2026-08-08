@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { MetadataRoute } from 'next'
 import { PROBLEMS } from '@/lib/problems'
 import { getAllGuides } from '@/content/guides'

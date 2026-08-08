@@ -5,7 +5,7 @@ import { headers } from 'next/headers';
 const ipCache = new Map<string, { count: number, timestamp: number }[]>();
 
 // Cleans up old entries periodically
-setInterval(() => {
+const cleanupInterval = setInterval(() => {
   const now = Date.now();
   for (const [ip, history] of ipCache.entries()) {
     const valid = history.filter(h => now - h.timestamp < 60000); // 1 min window
@@ -15,7 +15,11 @@ setInterval(() => {
       ipCache.set(ip, valid);
     }
   }
-}, 60000).unref();
+}, 60000);
+
+if (cleanupInterval && typeof cleanupInterval.unref === 'function') {
+  cleanupInterval.unref();
+}
 
 export async function rateLimit(limit: number = 5, windowMs: number = 60000) {
   const headersList = await headers();
