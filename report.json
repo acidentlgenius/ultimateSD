@@ -5,12 +5,14 @@
       "Identified that fixing the bug required switching from `useRef` to `useState` for `preferReducedMotion`, allowing safe conditional rendering and satisfying the exhaustive-deps linter rules."
     ],
     "features_improved": [
-      "Refactored `AdaptiveCoachDemo.tsx` to use `useState` instead of `useRef` for `preferReducedMotion`, resolving linter errors and potential rendering bugs."
+      "Refactored `AdaptiveCoachDemo.tsx` to use `useState` instead of `useRef` for `preferReducedMotion`, resolving linter errors and potential rendering bugs.",
+      "Fixed Next.js production build crash by adding `export const dynamic = 'force-dynamic'` to `sitemap.ts` to prevent direct Prisma DB queries during static generation."
     ],
     "new_features_added": [],
     "code_changes": {
       "files_modified": [
-        "ultimate-sd/src/components/landing/AdaptiveCoachDemo.tsx"
+        "ultimate-sd/src/components/landing/AdaptiveCoachDemo.tsx",
+        "ultimate-sd/src/app/sitemap.ts"
       ],
       "tests_added": false
     },
