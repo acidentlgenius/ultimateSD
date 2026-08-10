@@ -68,3 +68,9 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+
+## 2026-06-30 - [Case Sensitive Email Lookup Fragmentation]
+
+**Learning:** `findUnique` by email in PostgreSQL via Prisma is strictly case-sensitive. Users creating accounts or trying to verify emails/reset passwords with different casing (e.g. `User@example.com` vs `user@example.com`) leads to duplicate accounts, fragmented session data, or 404 errors during critical authentication flows. If we try to use `prisma.user.update({ where: { email } })`, it can also fail because `email` must match exactly, and Prisma `update` doesn't support case-insensitive unique matching yet.
+
+**Action:** Replace `prisma.user.update({ where: { email } })` with a preceding `prisma.user.findFirst({ where: { email: { equals: email, mode: 'insensitive' } } })`, check if user exists, and then update by the immutable `where: { id: user.id }`. Apply this fix to auth verification, gamification, and submission paths.
