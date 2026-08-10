@@ -177,7 +177,6 @@ export function HelpAssistant({
             onClick={() => void handleSend()}
             disabled={isLoading || !input.trim()}
             aria-label="Send hint question"
-            title="Send hint question"
           >
             <Send className="h-4 w-4" />
           </Button>

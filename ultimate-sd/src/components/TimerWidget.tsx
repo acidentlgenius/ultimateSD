@@ -260,7 +260,6 @@ export function TimerWidget({
                     variant="ghost"
                     size="icon"
                     aria-label={isRunning ? 'Pause timer' : 'Start timer'}
-                    title={isRunning ? 'Pause timer' : 'Start timer'}
                     className="h-7 w-7"
                     onClick={toggleTimer}
                     disabled={isLoading}
