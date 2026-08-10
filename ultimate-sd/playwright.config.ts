@@ -1,87 +1,49 @@
-import { config as loadEnv } from 'dotenv';
 import { defineConfig, devices } from '@playwright/test';
-import { ADMIN_AUTH_FILE, USER_AUTH_FILE } from './e2e/constants';
+import path from 'path';
 
-loadEnv({ path: '.env' });
-loadEnv({ path: '.env.local' });
+/**
+ * Read environment variables from file.
+ * https://github.com/motdotla/dotenv
+ */
+// require('dotenv').config();
 
-const PORT = process.env.PORT ?? '3000';
-const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? `http://localhost:${PORT}`;
-
-const databaseUrl =
-  process.env.DATABASE_URL ??
-  'postgresql://postgres:postgres@localhost:5432/sysdesignai_test?schema=public';
-const authSecret =
-  process.env.AUTH_SECRET ?? 'dev-secret-at-least-32-characters-long';
-// Dummy Razorpay credentials so isRazorpayConfigured() is true in e2e — this lets
-// /api/orders reach its feature-flag check instead of short-circuiting with 503
-// for "payments not configured". No real Razorpay API call happens for a dark
-// (flag-gated) plan, since the flag check returns 403 before the client is used.
-const razorpayKeyId = process.env.RAZORPAY_KEY_ID ?? 'rzp_test_e2e_dummy_key_id';
-const razorpayKeySecret =
-  process.env.RAZORPAY_KEY_SECRET ?? 'e2e_dummy_key_secret';
-
+/**
+ * See https://playwright.dev/docs/test-configuration.
+ */
 export default defineConfig({
   testDir: './e2e',
+  /* Run tests in files in parallel */
   fullyParallel: true,
+  /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
+  /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
+  /* Opt out of parallel tests on CI. */
   workers: process.env.CI ? 1 : undefined,
-  reporter: process.env.CI ? [['github'], ['list']] : 'list',
-  timeout: 60_000,
-  globalSetup: './e2e/global-setup.ts',
+  /* Reporter to use. See https://playwright.dev/docs/test-reporters */
+  reporter: 'html',
+  /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
-    baseURL,
+    /* Base URL to use in actions like `await page.goto('/')`. */
+    baseURL: 'http://localhost:3000',
+
+    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
-    screenshot: 'only-on-failure',
   },
+
+  /* Configure projects for major browsers */
   projects: [
     {
-      name: 'guest',
-      testMatch: /(smoke|lifetime-pricing|guest-funnel)\.spec\.ts/,
+      name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
-    },
-    {
-      name: 'setup',
-      testMatch: /auth\.setup\.ts/,
-      use: { ...devices['Desktop Chrome'] },
-    },
-    {
-      name: 'authenticated',
-      testMatch: /(auth|practice|problem-intro|roadmap|fresher-track|flag-gating|interview-mode|probe|adaptive-coach(?:-full)?|voice|ai-failures|persistence)\.spec\.ts/,
-      dependencies: ['setup'],
-      use: {
-        ...devices['Desktop Chrome'],
-        storageState: USER_AUTH_FILE,
-      },
-    },
-    {
-      name: 'admin-setup',
-      testMatch: /auth\.admin\.setup\.ts/,
-      use: { ...devices['Desktop Chrome'] },
-    },
-    {
-      name: 'admin',
-      testMatch: /admin-.*\.spec\.ts/,
-      dependencies: ['admin-setup'],
-      use: {
-        ...devices['Desktop Chrome'],
-        storageState: ADMIN_AUTH_FILE,
-      },
     },
   ],
+
+  /* Run your local dev server before starting the tests */
   webServer: {
-    command: process.env.CI ? 'pnpm start' : 'pnpm build && pnpm start',
-    url: baseURL,
+    command: 'npm run build && npm run start',
+    url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
-    timeout: 180_000,
-    env: {
-      PORT,
-      DATABASE_URL: databaseUrl,
-      AUTH_SECRET: authSecret,
-      NEXTAUTH_URL: baseURL,
-      RAZORPAY_KEY_ID: razorpayKeyId,
-      RAZORPAY_KEY_SECRET: razorpayKeySecret,
-    },
+    timeout: 180 * 1000,
   },
 });

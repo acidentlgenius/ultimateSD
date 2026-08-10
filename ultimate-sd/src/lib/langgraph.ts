@@ -152,7 +152,7 @@ Respond with VALID JSON only (no markdown, no extra text):
     }
     return parsed as InterviewSummary;
   } catch (error) {
-    console.error('getInterviewSummary error:', error);
+    /* console.error('getInterviewSummary error:', error); */
     return null;
   }
 }
