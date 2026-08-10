@@ -45,7 +45,7 @@ export function ProblemIntrosPanel() {
 
   useEffect(() => {
     refresh();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, []);
 
   const selected = statuses.find((s) => s.slug === selectedSlug) ?? null;
