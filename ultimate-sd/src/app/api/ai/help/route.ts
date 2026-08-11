@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { getHelpResponse } from '@/lib/help-langgraph';
+import { aiRateLimiter } from '@/lib/rate-limit';
 import { getUserLLM, AIAccessError } from '@/lib/user-llm';
 
 export async function POST(req: NextRequest) {
@@ -8,6 +9,13 @@ export async function POST(req: NextRequest) {
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (!aiRateLimiter.check(session.user.id)) {
+      return NextResponse.json(
+        { error: 'Rate limit exceeded', message: 'Too many requests. Please slow down.' },
+        { status: 429 }
+      );
     }
 
     const { problem, messages, currentPhase, completedSteps = [], savedStepData = [] } = await req.json();

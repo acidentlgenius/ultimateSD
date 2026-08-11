@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { HumanMessage } from '@langchain/core/messages';
+import { aiRateLimiter } from '@/lib/rate-limit';
 import { z } from 'zod';
 import { auth } from '@/auth';
 import { getSolution } from '@/lib/solutions';
@@ -253,6 +254,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       { error: 'session_stale', message: SESSION_STALE_MESSAGE },
       { status: 403 }
+    );
+  }
+
+  if (!aiRateLimiter.check(userId)) {
+    return NextResponse.json(
+      { error: 'Rate limit exceeded', message: 'Too many requests. Please slow down.' },
+      { status: 429 }
     );
   }
 
