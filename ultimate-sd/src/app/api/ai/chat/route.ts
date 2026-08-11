@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { PROBLEMS } from '@/lib/problems';
+import { aiRateLimiter } from '@/lib/rate-limit';
 import { getStepsForProblem } from '@/lib/problem-steps';
 import { getAIResponse, getFeedback, getProbeResponse } from '@/lib/langgraph';
 import { BaseChatModel } from '@langchain/core/language_models/chat_models';
@@ -13,6 +14,13 @@ export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  if (!aiRateLimiter.check(session.user.id)) {
+    return NextResponse.json(
+      { error: 'Rate limit exceeded', message: 'Too many requests. Please slow down.' },
+      { status: 429 }
+    );
   }
 
   const body = await req.json();
