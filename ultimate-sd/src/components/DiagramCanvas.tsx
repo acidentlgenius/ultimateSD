@@ -89,6 +89,9 @@ export default function DiagramCanvas({ stepKey, isVisible = true }: DiagramCanv
   const [canvasEpoch, setCanvasEpoch] = useState(0);
 
   stepKeyRef.current = stepKey;
+  const instanceKey = `${stepKey}-${canvasEpoch}`;
+  const instanceKeyRef = useRef(instanceKey);
+  instanceKeyRef.current = instanceKey;
 
   const beginRestoreGuard = useCallback(() => {
     isRestoringRef.current = true;
@@ -212,6 +215,15 @@ export default function DiagramCanvas({ stepKey, isVisible = true }: DiagramCanv
 
   const handleSceneChange = useCallback(
     (elements: ExcalidrawScene['elements'], appState: AppState, files: BinaryFiles) => {
+      // Root cause: Excalidraw instances sometimes fire empty onChange events
+      // during unmount. If this happens during a step transition, the empty scene
+      // overwrites pendingSceneRef for the old step, wiping the user's diagram.
+      // Fix: we track the active instance via instanceKeyRef and ignore events
+      // from stale/unmounting canvases.
+      if (instanceKey !== instanceKeyRef.current) {
+        diagramDebug('onChange:ignored-stale', { sourceInstanceKey: instanceKey, currentInstanceKey: instanceKeyRef.current });
+        return;
+      }
       filesRef.current = files;
       const scene: ExcalidrawScene = {
         type: 'excalidraw',
@@ -238,7 +250,7 @@ export default function DiagramCanvas({ stepKey, isVisible = true }: DiagramCanv
       });
       scheduleSave();
     },
-    [scheduleSave]
+    [instanceKey, scheduleSave]
   );
 
   useEffect(() => {
@@ -481,7 +493,7 @@ export default function DiagramCanvas({ stepKey, isVisible = true }: DiagramCanv
       <div className="min-h-0 flex-1">
         {canMountCanvas ? (
           <Excalidraw
-            key={`${stepKey}-${canvasEpoch}`}
+            key={instanceKey}
             excalidrawAPI={bindApi}
             initialData={initialData ?? undefined}
             onChange={handleSceneChange}
