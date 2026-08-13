@@ -445,6 +445,8 @@ export default function DiagramCanvas({ stepKey, isVisible = true }: DiagramCanv
             size="sm"
             className="h-7 px-2 text-xs"
             onClick={() => fileInputRef.current?.click()}
+            aria-label="Import diagram"
+            title="Import diagram"
           >
             <Upload className="mr-1 h-3 w-3" /> Import
           </Button>
@@ -453,6 +455,8 @@ export default function DiagramCanvas({ stepKey, isVisible = true }: DiagramCanv
             size="sm"
             className="h-7 px-2 text-xs"
             onClick={() => diagramRef.current?.exportExcalidrawFile()}
+            aria-label="Export as .excalidraw"
+            title="Export as .excalidraw"
           >
             <Download className="mr-1 h-3 w-3" /> .excalidraw
           </Button>
@@ -465,6 +469,8 @@ export default function DiagramCanvas({ stepKey, isVisible = true }: DiagramCanv
                 getPngBlob: () => diagramRef.current?.getPng() ?? Promise.resolve(null),
               })
             }
+            aria-label="Export as PNG"
+            title="Export as PNG"
           >
             <ImageIcon className="mr-1 h-3 w-3" /> PNG
           </Button>
@@ -473,6 +479,8 @@ export default function DiagramCanvas({ stepKey, isVisible = true }: DiagramCanv
             size="sm"
             className="h-7 px-2 text-xs"
             onClick={() => diagramRef.current?.clear(true)}
+            aria-label="Clear diagram"
+            title="Clear diagram"
           >
             <Eraser className="mr-1 h-3 w-3" /> Clear
           </Button>
