@@ -68,3 +68,9 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+
+## 2024-08-12 - Diagram persistence cleared-empty race condition
+
+**Learning:** When switching `stepKey` props, Excalidraw's unmount lifecycle fires a synchronous empty `onChange` event before React cleans up the previous `useEffect`. Since `hasHydratedRef.current` remains true, the empty scene erroneously overwrote `pendingSceneRef` and wiped the persisted diagram on flush.
+
+**Action:** Generate a unique `instanceKey` per step+epoch using `useRef`. Close over this key in `handleSceneChange` and reject any event where the caller's key doesn't match the current active instance ref.
