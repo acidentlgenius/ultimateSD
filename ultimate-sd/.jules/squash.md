@@ -27,3 +27,9 @@
 **Learning:** `loadSessionState` relied on `clearSessionState(problemSlug)` to handle invalid data. However, if the `localStorage` key contained structurally valid JSON but the *content itself* was not valid JSON (causing `JSON.parse` to throw), the catch block would execute. But if `clearSessionState` failed or wasn't robust enough, the corrupted data stayed. On every subsequent mount, the UI would try to parse the corrupt data, throw, and crash again.
 
 **Action:** When purging corrupted or unparseable `localStorage` state, use direct `localStorage.removeItem(key)` rather than higher-level helpers to guarantee the bad data is purged, since helper methods might inadvertently fail when interacting with corrupted state.
+
+## 2024-08-13 - P2025 errors due to case-sensitive email lookups
+
+**Learning:** Prisma `findUnique` does not support case-insensitive unique matching natively for text fields without altering the database collation or using a specific extension. Thus, performing `findUnique({ where: { email: userEmail } })` when email casing might differ (e.g. session restoration, logins) can lead to duplicate accounts or update failures.
+
+**Action:** Replace `findUnique` email lookups with `findFirst` using `{ equals: email, mode: 'insensitive' }` across critical authentication paths.

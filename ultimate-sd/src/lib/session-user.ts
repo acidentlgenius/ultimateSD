@@ -15,8 +15,10 @@ export async function resolveSessionUserId(
     if (byId) return byId.id;
   }
   if (sessionUser.email) {
-    const byEmail = await prisma.user.findUnique({
-      where: { email: sessionUser.email },
+    // Root cause: `findUnique` on email is case-sensitive, which can cause duplicate accounts or lookup failures.
+    // Fix: Use `findFirst` with `mode: 'insensitive'` to reliably resolve IDs regardless of email casing.
+    const byEmail = await prisma.user.findFirst({
+      where: { email: { equals: sessionUser.email, mode: 'insensitive' } },
       select: { id: true },
     });
     if (byEmail) return byEmail.id;
