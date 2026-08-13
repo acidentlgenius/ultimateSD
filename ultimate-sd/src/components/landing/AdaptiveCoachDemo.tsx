@@ -48,7 +48,7 @@ export function AdaptiveCoachDemo() {
   useEffect(() => {
     setElapsedMs(preferReducedMotion ? durationMs : 0);
     setPlaying(!preferReducedMotion);
-  }, [level, replayKey, durationMs]);
+  }, [level, replayKey, durationMs, preferReducedMotion]);
 
   useEffect(() => {
     if (!playing) return;
