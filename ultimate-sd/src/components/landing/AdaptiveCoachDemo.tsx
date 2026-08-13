@@ -32,7 +32,9 @@ export function AdaptiveCoachDemo() {
   const [playing, setPlaying] = useState(true);
   const [elapsedMs, setElapsedMs] = useState(0);
   const [replayKey, setReplayKey] = useState(0);
-  const [preferReducedMotion, setPreferReducedMotion] = useState(false);
+  const [preferReducedMotion, setPreferReducedMotion] = useState(
+    typeof window !== 'undefined' ? window.matchMedia('(prefers-reduced-motion: reduce)').matches : false
+  );
 
   const script = useMemo(() => getDemoScript(level), [level]);
   const durationMs = useMemo(() => scriptDurationMs(script), [script]);
