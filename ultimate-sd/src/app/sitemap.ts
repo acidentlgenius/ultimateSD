@@ -4,6 +4,8 @@ import { getAllGuides } from '@/content/guides'
 import { getPublishedBlogPosts } from '@/lib/blog-posts'
 import { SITE_URL } from '@/lib/site'
 
+export const dynamic = 'force-dynamic';
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const problemUrls = PROBLEMS.map((problem) => ({
         url: `${SITE_URL}/practice/${problem.slug}`,
