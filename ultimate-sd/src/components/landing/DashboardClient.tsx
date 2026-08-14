@@ -3,6 +3,8 @@
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Hero } from '@/components/landing/Hero';
+import { MostAskedSection } from '@/components/landing/MostAskedSection';
+import { StartHereTrack } from '@/components/landing/StartHereTrack';
 import { FeatureShowcase } from '@/components/landing/FeatureShowcase';
 import { AdaptiveCoachDemo } from '@/components/landing/AdaptiveCoachDemo';
 import { AiInterviewerSection } from '@/components/landing/AiInterviewerSection';
@@ -16,6 +18,7 @@ import { useState } from 'react';
 import OnboardingModal from '@/components/OnboardingModal';
 import { ProblemWithStatus } from '@/types';
 import { type PlanType } from '@/lib/plans';
+import { PROBLEMS } from '@/lib/problems';
 
 interface DashboardClientProps {
     user?: {
@@ -87,6 +90,8 @@ export function DashboardClient({
             {!user && <AdaptiveCoachDemo />}
             {!user && <AiInterviewerSection interviewModeEnabled={interviewModeEnabled} />}
 
+            <MostAskedSection selectedCollectionId={null} onSelectCollection={() => {}} />
+            {!user && <StartHereTrack problems={PROBLEMS} />}
             <RoadmapPreview />
 
             {!user && (
