@@ -32,22 +32,24 @@ export function AdaptiveCoachDemo() {
   const [playing, setPlaying] = useState(true);
   const [elapsedMs, setElapsedMs] = useState(0);
   const [replayKey, setReplayKey] = useState(0);
-  const preferReducedMotion = useRef(false);
+  const [preferReducedMotion, setPreferReducedMotion] = useState(false);
 
   const script = useMemo(() => getDemoScript(level), [level]);
   const durationMs = useMemo(() => scriptDurationMs(script), [script]);
 
   useEffect(() => {
-    preferReducedMotion.current =
+    setPreferReducedMotion(
       typeof window !== 'undefined' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   }, []);
 
+  // SQUASH: Root Cause: Accessing useRef current value during render caused 'Cannot access refs during render' React linter errors, and didn't trigger re-renders properly.
+  // SQUASH: Fix: Replace useRef with useState hook and add it to the dependency array.
   // Restart clock when level or replay changes
   useEffect(() => {
-    setElapsedMs(preferReducedMotion.current ? durationMs : 0);
-    setPlaying(!preferReducedMotion.current);
-  }, [level, replayKey, durationMs]);
+    setElapsedMs(preferReducedMotion ? durationMs : 0);
+    setPlaying(!preferReducedMotion);
+  }, [level, replayKey, durationMs, preferReducedMotion]);
 
   useEffect(() => {
     if (!playing) return;
@@ -73,7 +75,7 @@ export function AdaptiveCoachDemo() {
     }
   }, [playing, elapsedMs, durationMs]);
 
-  const shown = preferReducedMotion.current
+  const shown = preferReducedMotion
     ? script
     : visibleBeats(script, elapsedMs);
   const finished = elapsedMs >= durationMs;
@@ -153,7 +155,7 @@ export function AdaptiveCoachDemo() {
             {shown.map((beat) => (
               <motion.div
                 key={`${level}-${beat.id}`}
-                initial={preferReducedMotion.current ? false : { opacity: 0, y: 10 }}
+                initial={preferReducedMotion ? false : { opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.28 }}
               >
