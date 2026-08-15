@@ -78,3 +78,8 @@
 
 **Learning:** When Next.js static generation (e.g., `sitemap.ts`, `page.tsx`) queries the database directly (like via Prisma), it can cause `ECONNREFUSED` errors during `pnpm build` if the database is unavailable (which often happens in CI environments).
 **Action:** Use `export const dynamic = 'force-dynamic'` to bypass build-time rendering for those files, ensuring they run at request time instead of crashing the build.
+
+## 2024-05-24 - Broken E2E Test Selectors After Landing Page Updates
+
+**Learning:** When UI components on the landing page (e.g., `StartHereTrack` or `MostAskedSection`) are removed or refactored for non-authenticated users, hardcoded E2E tests relying on their specific text or data-testids will consistently fail with timeouts waiting for elements that no longer exist.
+**Action:** Audit and update E2E Playwright tests alongside major UI refactors to ensure selectors align with the rendered state.
