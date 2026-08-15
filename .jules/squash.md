@@ -73,3 +73,8 @@
 
 **Learning:** Accessing a `useRef` value (`.current`) directly during the render cycle (e.g., conditionally rendering UI based on the ref's value) is an anti-pattern that violates React's strict rules, preventing the component from re-rendering or updating properly.
 **Action:** When a value controls conditional rendering or output, it must be stored in `useState` (or evaluated cleanly without side effects during render). Ensure ESLint's `react-hooks/refs` rule is not ignored to catch this automatically.
+
+## 2024-05-24 - Database Connections During Build
+
+**Learning:** When Next.js static generation (e.g., `sitemap.ts`, `page.tsx`) queries the database directly (like via Prisma), it can cause `ECONNREFUSED` errors during `pnpm build` if the database is unavailable (which often happens in CI environments).
+**Action:** Use `export const dynamic = 'force-dynamic'` to bypass build-time rendering for those files, ensuring they run at request time instead of crashing the build.
