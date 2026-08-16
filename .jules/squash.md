@@ -83,3 +83,13 @@
 
 **Learning:** When UI components on the landing page (e.g., `StartHereTrack` or `MostAskedSection`) are removed or refactored for non-authenticated users, hardcoded E2E tests relying on their specific text or data-testids will consistently fail with timeouts waiting for elements that no longer exist.
 **Action:** Audit and update E2E Playwright tests alongside major UI refactors to ensure selectors align with the rendered state.
+
+## 2024-05-24 - Submit Button Text Change Causing E2E Failures
+
+**Learning:** Changing the text of a primary call-to-action button (like "Submit for Review" to "Submit answer") without updating the E2E tests that interact with it will cause widespread pipeline failures due to hardcoded selectors.
+**Action:** Always run `pnpm test` (and preferably full E2E suites) locally before merging any copy changes to heavily-used functional buttons.
+
+## 2024-05-24 - HTML Tag Changes Breaking E2E Tests
+
+**Learning:** Changing semantic HTML tags (e.g., changing an `<h3>` to an `<h2>` for styling or accessibility reasons) in core components like `PracticeUI` will break E2E tests that explicitly locate elements by tag name (`page.locator('h3')`).
+**Action:** When updating heading levels or semantic structure, always perform a global search (or verify test failures) to ensure Playwright locators are updated to reflect the new DOM structure, or preferably use semantic `getByRole('heading', { level: X })` instead of raw tag locators where possible.
