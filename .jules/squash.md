@@ -68,3 +68,28 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+
+## 2024-05-24 - React Refs Accessed During Render
+
+**Learning:** Accessing a `useRef` value (`.current`) directly during the render cycle (e.g., conditionally rendering UI based on the ref's value) is an anti-pattern that violates React's strict rules, preventing the component from re-rendering or updating properly.
+**Action:** When a value controls conditional rendering or output, it must be stored in `useState` (or evaluated cleanly without side effects during render). Ensure ESLint's `react-hooks/refs` rule is not ignored to catch this automatically.
+
+## 2024-05-24 - Database Connections During Build
+
+**Learning:** When Next.js static generation (e.g., `sitemap.ts`, `page.tsx`) queries the database directly (like via Prisma), it can cause `ECONNREFUSED` errors during `pnpm build` if the database is unavailable (which often happens in CI environments).
+**Action:** Use `export const dynamic = 'force-dynamic'` to bypass build-time rendering for those files, ensuring they run at request time instead of crashing the build.
+
+## 2024-05-24 - Broken E2E Test Selectors After Landing Page Updates
+
+**Learning:** When UI components on the landing page (e.g., `StartHereTrack` or `MostAskedSection`) are removed or refactored for non-authenticated users, hardcoded E2E tests relying on their specific text or data-testids will consistently fail with timeouts waiting for elements that no longer exist.
+**Action:** Audit and update E2E Playwright tests alongside major UI refactors to ensure selectors align with the rendered state.
+
+## 2024-05-24 - Submit Button Text Change Causing E2E Failures
+
+**Learning:** Changing the text of a primary call-to-action button (like "Submit for Review" to "Submit answer") without updating the E2E tests that interact with it will cause widespread pipeline failures due to hardcoded selectors.
+**Action:** Always run `pnpm test` (and preferably full E2E suites) locally before merging any copy changes to heavily-used functional buttons.
+
+## 2024-05-24 - HTML Tag Changes Breaking E2E Tests
+
+**Learning:** Changing semantic HTML tags (e.g., changing an `<h3>` to an `<h2>` for styling or accessibility reasons) in core components like `PracticeUI` will break E2E tests that explicitly locate elements by tag name (`page.locator('h3')`).
+**Action:** When updating heading levels or semantic structure, always perform a global search (or verify test failures) to ensure Playwright locators are updated to reflect the new DOM structure, or preferably use semantic `getByRole('heading', { level: X })` instead of raw tag locators where possible.

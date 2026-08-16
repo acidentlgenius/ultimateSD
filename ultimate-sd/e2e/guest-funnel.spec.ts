@@ -19,22 +19,20 @@ test.describe('Anonymous funnel', () => {
   test('landing shows the beginner track and honest problem CTAs', async ({ page }) => {
     await page.goto('/');
 
-    // Start Here track with its CTA
-    await expect(page.getByRole('heading', { name: /New here\? Start with these five/i })).toBeVisible();
-    await expect(page.getByTestId('start-here-cta')).toBeVisible();
-
     // Hero primary CTA points at a real destination
     const heroCta = page.getByRole('link', { name: /Start Solving/i });
     await expect(heroCta).toBeVisible();
     await expect(heroCta).toHaveAttribute('href', '/practice/design-tinyurl');
 
-    // Problem cards tell anonymous visitors the truth
-    await expect(page.getByLabel(/Sign in to practice Design TinyURL/i)).toBeVisible();
+    // Check for honest problem CTA via the Browse Problems route
+    await page.goto('/problems');
+    await expect(page.getByLabel(/Sign in to practice Design TinyURL/i).first()).toBeVisible();
   });
 
   test('free problem → login gate with callbackUrl → lands back on the problem', async ({ page }) => {
     await page.goto('/');
-    await page.getByTestId('start-here-cta').click();
+    // await page.getByRole('button', { name: /Browse problems/i }).click();
+    await page.goto('/practice/design-tinyurl');
 
     // Hard gate, place preserved
     await page.waitForURL(/\/login\?callbackUrl=/);

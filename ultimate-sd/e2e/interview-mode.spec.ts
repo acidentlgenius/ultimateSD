@@ -34,7 +34,7 @@ test.describe('timed interview mode (flag granted)', () => {
     await page.goto('/practice/design-tinyurl');
 
     // Entry visible when granted
-    await page.getByRole('button', { name: 'Start Interview' }).click();
+    await page.getByRole('button', { name: 'Start Interview', exact: true }).click();
     await page.getByRole('button', { name: /45-min lite/ }).click();
     await expect(page).toHaveURL(/interview=lite/);
 

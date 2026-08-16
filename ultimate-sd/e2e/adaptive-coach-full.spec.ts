@@ -67,7 +67,7 @@ test.describe('TinyURL adaptive coach extended flow', () => {
 
     // Live agenda prompt from coach/turn start
     await expect(
-      page.getByText(/As your coach: list three must-have functional requirements/i).first(),
+      page.getByText(/List the core features users need/i).first(),
     ).toBeVisible({ timeout: 15_000 });
 
     await submitFunctionalRequirements(page);
