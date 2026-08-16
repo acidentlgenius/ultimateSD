@@ -182,11 +182,13 @@ export function ProblemFilterBar({
                     )}
 
                     {/* View Toggle */}
-                    <div className="flex bg-black/5 dark:bg-white/5 p-1 rounded-2xl h-12 items-center gap-1 shrink-0 border border-black/5 dark:border-white/5">
+                    <div className="flex bg-black/5 dark:bg-white/5 p-1 rounded-2xl h-12 items-center gap-1 shrink-0 border border-black/5 dark:border-white/5" role="group" aria-label="View mode">
                         <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => setViewMode('grid')}
+                            aria-label="Grid view"
+                            aria-pressed={viewMode === 'grid'}
                             className={cn(
                                 "h-full px-3 rounded-xl transition-all duration-300",
                                 viewMode === 'grid'
@@ -200,6 +202,8 @@ export function ProblemFilterBar({
                             variant="ghost"
                             size="sm"
                             onClick={() => setViewMode('list')}
+                            aria-label="List view"
+                            aria-pressed={viewMode === 'list'}
                             className={cn(
                                 "h-full px-3 rounded-xl transition-all duration-300",
                                 viewMode === 'list'
