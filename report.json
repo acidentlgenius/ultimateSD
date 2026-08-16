@@ -1,21 +1,26 @@
 {
   "task_execution_summary": {
     "research_findings": [
-      "Investigated a `localStorage` JSON parsing bug in `ultimate-sd/src/lib/session-storage.ts` where a single corrupted item could break the `getAllSessions` iteration because `try/catch` wrapped the entire loop.",
-      "Identified that fixing the bug by wrapping `JSON.parse` individually meant that removing corrupted items required carefully decrementing the loop index (`i--`), but a much cleaner and safer approach is to iterate backwards."
+      "Identified that static generation for `/sitemap.xml` was failing during the Next.js build (`ECONNREFUSED` on database query) because it was not explicitly marked as dynamic.",
+      "Identified that `preferReducedMotion` in `AdaptiveCoachDemo.tsx` was causing React to throw a `react-hooks/refs` error (cannot access refs during render)."
     ],
     "features_improved": [
-      "Refactored `getAllSessions` in `ultimate-sd/src/lib/session-storage.ts` to iterate backwards over `localStorage` (`for (let i = localStorage.length - 1; i >= 0; i--)`). This natively prevents index skipping when removing items without manual iterator adjustments."
+      "Added `export const dynamic = 'force-dynamic'` to `src/app/sitemap.ts` to prevent build-time database connection errors.",
+      "Replaced `useRef` with `useState` for `preferReducedMotion` and properly updated its dependency array in the `useEffect` hooks."
     ],
-    "new_features_added": [],
+    "new_features_added": [
+      "No new capabilities were added in this run; focus was on improving resilience and fixing build errors."
+    ],
     "code_changes": {
       "files_modified": [
-        "ultimate-sd/src/lib/session-storage.ts"
+        "src/app/sitemap.ts",
+        "src/components/landing/AdaptiveCoachDemo.tsx"
       ],
       "tests_added": false
     },
     "next_steps_for_next_run": [
-      "Implement a session dashboard to allow users to view all of their saved offline sessions, as noted in the SESSION_PERSISTENCE.md future enhancements section."
+      "Investigate replacing native `fetch` calls with `fetchWithRetry` in non-UI modules (e.g., `cloudinary-upload-client.ts`, `analytics-client.ts`).",
+      "Address Vitest warnings regarding React `act(...)` in `DiagramCanvas.test.tsx` and `FeedbackModal.defend.test.tsx`."
     ]
   }
 }
