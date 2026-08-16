@@ -27,3 +27,11 @@
 **Learning:** `loadSessionState` relied on `clearSessionState(problemSlug)` to handle invalid data. However, if the `localStorage` key contained structurally valid JSON but the *content itself* was not valid JSON (causing `JSON.parse` to throw), the catch block would execute. But if `clearSessionState` failed or wasn't robust enough, the corrupted data stayed. On every subsequent mount, the UI would try to parse the corrupt data, throw, and crash again.
 
 **Action:** When purging corrupted or unparseable `localStorage` state, use direct `localStorage.removeItem(key)` rather than higher-level helpers to guarantee the bad data is purged, since helper methods might inadvertently fail when interacting with corrupted state.
+
+## 2024-08-16 - Next.js 'use client' Directive Placement
+**Learning:** In Next.js App Router applications, the `'use client'` directive must be placed at the very top of the file, before any import statements, to prevent Turbopack build compilation errors related to React hooks.
+**Action:** Always verify that `'use client'` is the first line when modifying or migrating Next.js client components.
+
+## 2024-08-16 - Non-Idempotent Fetch Retries
+**Learning:** Do not blindly replace native `fetch` calls with custom retry wrappers (e.g., `fetchWithRetry`) on non-idempotent `POST` requests (like payments, auth, or AI chat), as automatic retries can cause catastrophic side effects like double charges or duplicate records.
+**Action:** Only apply retry wrappers to idempotent operations (e.g., `GET`) or explicitly configure them to handle non-idempotent retries safely based on the backend API's capabilities.
