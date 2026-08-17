@@ -1,11 +1,13 @@
 {
   "task_execution_summary": {
     "research_findings": [
-      "Discovered missing rate-limit implementation in waitlist action (joinWaitlist).",
-      "Identified that server actions can be hit repeatedly without mitigation, exposing the DB to bot spam.",
-      "Researched Next.js 15+ headers resolution and in-memory Map strategies for simple server-side limiting with periodic garbage collection via interval.unref()."
+      "Investigated CI failure revealing a React hooks linter error 'Cannot access refs during render' in AdaptiveCoachDemo.tsx.",
+      "Identified that accessing 'preferReducedMotion.current' during the render cycle breaks React rendering invariants and triggers the linter.",
+      "Researched Next.js patterns to fix this by replacing the 'useRef' with a 'useState' hook to store the 'window.matchMedia' evaluation, which is safely executed inside a 'useEffect'.",
+      "Discovered missing rate-limit implementation in waitlist action (joinWaitlist) and added an in-memory RateLimiter with periodic garbage collection via interval.unref()."
     ],
     "features_improved": [
+      "AdaptiveCoachDemo landing component refactored to use standard state bindings instead of improper ref accesses, improving UI stability and passing CI linter rules.",
       "Waitlist signup endpoint (joinWaitlist) secured against automated spam with an in-memory RateLimiter."
     ],
     "new_features_added": [
@@ -13,14 +15,15 @@
     ],
     "code_changes": {
       "files_modified": [
+        "ultimate-sd/src/components/landing/AdaptiveCoachDemo.tsx",
         "ultimate-sd/src/lib/rate-limit.ts",
         "ultimate-sd/src/app/actions/waitlist.ts"
       ],
       "tests_added": true
     },
     "next_steps_for_next_run": [
-      "Expand rate limiting to other sensitive unauthenticated server actions (e.g. magic link emails).",
-      "Investigate upgrading to Redis-backed distributed rate limiting for multi-region deployments."
+      "Audit other React components for 'useRef' usage to ensure 'ref.current' is only read in event handlers or 'useEffect' hooks, not during the render cycle.",
+      "Expand rate limiting to other sensitive unauthenticated server actions."
     ]
   }
 }
