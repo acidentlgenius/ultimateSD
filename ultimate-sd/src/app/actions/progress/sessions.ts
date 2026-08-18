@@ -4,7 +4,7 @@ import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { ProgressStatus, SessionStatus } from '@prisma/client';
-import type { Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import posthog from '@/lib/posthog';
 import { PROBLEMS } from '@/lib/problems';
 import { scheduleClassicProfileReflect } from '@/lib/adaptive-coach/tools/schedule-profile-reflect';
@@ -66,59 +66,69 @@ export async function startPracticeSession(problemId: string) {
       }
     }
 
-    const result = await prisma.$transaction(async (tx) => {
-      // Re-check inside the transaction: two concurrent callers (double mount,
-      // second tab) both passing the outside check must not create two
-      // sessions and inflate attemptNumber.
-      const progress = await tx.problemProgress.findUnique({
-        where: { userId_problemId: { userId, problemId } },
-        include: { activeSession: true },
-      });
+    let result;
+    try {
+      result = await prisma.$transaction(async (tx) => {
+        // Re-check inside the transaction: two concurrent callers (double mount,
+        // second tab) both passing the outside check must not create two
+        // sessions and inflate attemptNumber.
+        const progress = await tx.problemProgress.findUnique({
+          where: { userId_problemId: { userId, problemId } },
+          include: { activeSession: true },
+        });
 
-      if (
-        progress?.activeSession &&
-        (progress.activeSession.status === SessionStatus.ACTIVE ||
-          progress.activeSession.status === SessionStatus.COMPLETED)
-      ) {
-        return progress.activeSession;
+        if (
+          progress?.activeSession &&
+          (progress.activeSession.status === SessionStatus.ACTIVE ||
+            progress.activeSession.status === SessionStatus.COMPLETED)
+        ) {
+          return progress.activeSession;
+        }
+
+        const attemptNumber = (progress?.totalAttempts ?? 0) + 1;
+        const now = new Date();
+
+        const practiceSession = await tx.practiceSession.create({
+          data: {
+            userId,
+            problemId,
+            status: SessionStatus.ACTIVE,
+            attemptNumber,
+            isTimerRunning: true,
+            totalPausedSeconds: 0,
+          },
+        });
+
+        await tx.problemProgress.upsert({
+          where: { userId_problemId: { userId, problemId } },
+          create: {
+            userId,
+            problemId,
+            status: ProgressStatus.IN_PROGRESS,
+            activeSessionId: practiceSession.id,
+            totalAttempts: 1,
+            startedAt: now,
+            lastAttemptAt: now,
+          },
+          update: {
+            status: ProgressStatus.IN_PROGRESS,
+            activeSessionId: practiceSession.id,
+            totalAttempts: attemptNumber,
+            lastAttemptAt: now,
+            startedAt: progress?.startedAt ?? now,
+          },
+        });
+
+        return practiceSession;
+      }, {
+        isolationLevel: Prisma.TransactionIsolationLevel.Serializable
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034') {
+        throw new Error('Session creation conflict. Please try again.');
       }
-
-      const attemptNumber = (progress?.totalAttempts ?? 0) + 1;
-      const now = new Date();
-
-      const practiceSession = await tx.practiceSession.create({
-        data: {
-          userId,
-          problemId,
-          status: SessionStatus.ACTIVE,
-          attemptNumber,
-          isTimerRunning: true,
-          totalPausedSeconds: 0,
-        },
-      });
-
-      await tx.problemProgress.upsert({
-        where: { userId_problemId: { userId, problemId } },
-        create: {
-          userId,
-          problemId,
-          status: ProgressStatus.IN_PROGRESS,
-          activeSessionId: practiceSession.id,
-          totalAttempts: 1,
-          startedAt: now,
-          lastAttemptAt: now,
-        },
-        update: {
-          status: ProgressStatus.IN_PROGRESS,
-          activeSessionId: practiceSession.id,
-          totalAttempts: attemptNumber,
-          lastAttemptAt: now,
-          startedAt: progress?.startedAt ?? now,
-        },
-      });
-
-      return practiceSession;
-    });
+      throw error;
+    }
 
     posthog.capture({
       distinctId: userId,
