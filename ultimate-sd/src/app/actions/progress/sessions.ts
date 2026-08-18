@@ -1,11 +1,10 @@
 'use server';
 
 import { auth } from '@/auth';
-import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { ProgressStatus, SessionStatus } from '@prisma/client';
-import type { Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import posthog from '@/lib/posthog';
 import { PROBLEMS } from '@/lib/problems';
 import { scheduleClassicProfileReflect } from '@/lib/adaptive-coach/tools/schedule-profile-reflect';
