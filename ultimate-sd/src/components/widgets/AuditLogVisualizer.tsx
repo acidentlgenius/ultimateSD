@@ -106,7 +106,7 @@ export default function AuditLogVisualizer() {
     const tamperLog = (id: number) => {
         setLogs(logs.map(log => {
             if (log.id === id) {
-                return { ...log, action: log.action + ' (Hack)', isTampered: true };
+                return { ...log, action: log.action + ' (Tampered)', isTampered: true };
             }
             return log;
         }));
