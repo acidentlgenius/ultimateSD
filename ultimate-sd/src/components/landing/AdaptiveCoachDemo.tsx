@@ -73,7 +73,12 @@ export function AdaptiveCoachDemo() {
     }
   }, [playing, elapsedMs, durationMs]);
 
-  const shown = preferReducedMotion.current
+  const [isReducedMotion, setIsReducedMotion] = useState(false);
+  useEffect(() => {
+    setIsReducedMotion(preferReducedMotion.current);
+  }, []);
+
+  const shown = isReducedMotion
     ? script
     : visibleBeats(script, elapsedMs);
   const finished = elapsedMs >= durationMs;
@@ -153,7 +158,7 @@ export function AdaptiveCoachDemo() {
             {shown.map((beat) => (
               <motion.div
                 key={`${level}-${beat.id}`}
-                initial={preferReducedMotion.current ? false : { opacity: 0, y: 10 }}
+                initial={isReducedMotion ? false : { opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.28 }}
               >
