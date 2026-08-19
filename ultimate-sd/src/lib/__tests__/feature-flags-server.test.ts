@@ -9,11 +9,12 @@ vi.mock('@/lib/prisma', () => ({
 }));
 
 import { prisma } from '@/lib/prisma';
-import { canAccessFeature, getFeatureFlagState } from '@/lib/feature-flags-server';
+import { canAccessFeature, getFeatureFlagState, _resetFeatureFlagCacheForTesting } from '@/lib/feature-flags-server';
 
 const mocked = vi.mocked(prisma, true);
 
 beforeEach(() => {
+  _resetFeatureFlagCacheForTesting();
   vi.clearAllMocks();
 });
 

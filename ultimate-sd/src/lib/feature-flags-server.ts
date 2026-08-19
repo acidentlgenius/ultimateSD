@@ -3,12 +3,42 @@ import { FEATURE_SEED_DEFAULTS, FEATURE_KEYS, type FeatureKey, type PlanType } f
 import { getEffectivePlanType } from '@/lib/access';
 import { resolveFeatureAccess, type OverrideMode } from '@/lib/feature-flags';
 
+// In-memory cache for feature flags to reduce DB load
+const flagCache = new Map<FeatureKey, { data: PlanType[], timestamp: number }>();
+const CACHE_TTL_MS = 60 * 1000; // 1 minute
+
+// Periodic cleanup to prevent memory leaks
+const cleanupInterval = setInterval(() => {
+  const now = Date.now();
+  for (const [key, value] of flagCache.entries()) {
+    if (now - value.timestamp > CACHE_TTL_MS) {
+      flagCache.delete(key);
+    }
+  }
+}, CACHE_TTL_MS);
+if (cleanupInterval.unref) {
+  cleanupInterval.unref();
+}
+
+export function _resetFeatureFlagCacheForTesting() {
+  flagCache.clear();
+}
+
 export async function getFeatureFlagState(feature: FeatureKey): Promise<PlanType[]> {
+  const cached = flagCache.get(feature);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+    return cached.data;
+  }
+
   const row = await prisma.featureFlag.findUnique({ where: { key: feature } });
   if (!row) {
-    return FEATURE_SEED_DEFAULTS[feature];
+    const defaults = FEATURE_SEED_DEFAULTS[feature];
+    flagCache.set(feature, { data: defaults, timestamp: Date.now() });
+    return defaults;
   }
-  return row.enabledPlans as PlanType[];
+  const plans = row.enabledPlans as PlanType[];
+  flagCache.set(feature, { data: plans, timestamp: Date.now() });
+  return plans;
 }
 
 export async function canAccessFeature(
@@ -44,6 +74,9 @@ export async function canAccessFeature(
 export async function getAccessibleFeatures(
   userId: string | null
 ): Promise<Record<FeatureKey, boolean>> {
+  // Always query flags fresh here because `getAccessibleFeatures` is used
+  // to populate a broad payload of all flags at once. The caching layer in
+  // `getFeatureFlagState` only caches individual flags accessed during requests.
   const [flags, overrides, user] = await Promise.all([
     prisma.featureFlag.findMany(),
     userId
