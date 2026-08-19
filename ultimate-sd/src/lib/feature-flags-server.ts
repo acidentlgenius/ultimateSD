@@ -74,6 +74,9 @@ export async function canAccessFeature(
 export async function getAccessibleFeatures(
   userId: string | null
 ): Promise<Record<FeatureKey, boolean>> {
+  // Always query flags fresh here because `getAccessibleFeatures` is used
+  // to populate a broad payload of all flags at once. The caching layer in
+  // `getFeatureFlagState` only caches individual flags accessed during requests.
   const [flags, overrides, user] = await Promise.all([
     prisma.featureFlag.findMany(),
     userId
