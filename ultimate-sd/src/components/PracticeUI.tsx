@@ -589,7 +589,7 @@ function PracticeUIContent({
                               detail: { phase: phaseKey, stepIndex }
                             }));
                           }}
-                          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200 text-left group
+                          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200 text-left group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary
                             ${isCurrent
                               ? 'bg-primary/10 text-primary font-medium'
                               : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
