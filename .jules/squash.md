@@ -68,3 +68,8 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+## 2024-03-22 - Act Warnings with vi.advanceTimersByTimeAsync
+
+**Learning:** When using Vitest's `vi.advanceTimersByTimeAsync` to test components that trigger asynchronous state updates on timeouts (like Excalidraw's debounced save in DiagramCanvas), the timer advancement itself triggers the state update. If it's not wrapped in `act()`, React testing library will throw "not wrapped in act(...)" warnings because the state updates happen outside of its tracking scope.
+
+**Action:** Always wrap `await vi.advanceTimersByTimeAsync(...)` in `await act(async () => { ... })` when testing React components that rely on timers for state updates.
