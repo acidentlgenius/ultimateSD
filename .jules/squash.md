@@ -68,3 +68,8 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+## 2026-07-24 - launch-offer-grant.ts timezone/timebomb issue
+
+**Learning:** When using time-dependent logic, mocking a single top-level utility (e.g. `vi.spyOn(launchOffer, 'isLaunchOfferActive').mockReturnValue(true)`) is often cleaner than manipulating the global system time which can introduce flakiness or fail when tests run after hard-coded deadline dates. The test suite failed because the hard-coded launch deadline (2026-07-15) was passed in real-time, causing `isLaunchOfferActive()` to return `false` inside `claimPlatformLaunchOffer()` and fail assertions.
+
+**Action:** When a test relies on time-limited active conditions, consider mocking the abstraction directly before falling back on global timer overrides. Also, add the missing import when setting up spies.

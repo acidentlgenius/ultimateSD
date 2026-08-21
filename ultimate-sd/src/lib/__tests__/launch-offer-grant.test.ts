@@ -37,8 +37,12 @@ import {
   drawAiGiveawayWinners,
   grantAdminPlatformPlan,
 } from '../launch-offer-grant';
+import * as launchOffer from '../launch-offer';
 
 describe('claimPlatformLaunchOffer', () => {
+  beforeEach(() => {
+    vi.spyOn(launchOffer, 'isLaunchOfferActive').mockReturnValue(true);
+  });
   beforeEach(() => {
     vi.clearAllMocks();
     // Pin time inside the launch offer's active window (ends 2026-07-15,
