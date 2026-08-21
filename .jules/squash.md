@@ -68,3 +68,9 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+
+## 2025-01-20 - Missing Serializable Isolation in Prisma Counts
+
+**Learning:** When using Prisma `$transaction` to enforce strict slot limits (e.g., counting `launchOfferRedemption` before inserting), the default ReadCommitted isolation level allows phantom reads. Two concurrent transactions can both read `claimed = 499`, assume a slot is available, and both insert, resulting in `501` redemptions.
+
+**Action:** Explicitly pass `{ isolationLevel: Prisma.TransactionIsolationLevel.Serializable }` to `prisma.$transaction` when performing check-then-act logic involving aggregate functions like `count()` that do not inherently lock rows.

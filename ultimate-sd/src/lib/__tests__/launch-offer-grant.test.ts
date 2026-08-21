@@ -63,7 +63,8 @@ describe('claimPlatformLaunchOffer', () => {
   });
 
   it('grants platform plan when slots are available', async () => {
-    mockTransaction.mockImplementation(async (fn: (tx: unknown) => Promise<unknown>) => {
+    mockTransaction.mockImplementation(async (fn: (tx: unknown) => Promise<unknown>, options?: any) => {
+      expect(options).toEqual(expect.objectContaining({ isolationLevel: 'Serializable' }));
       const tx = {
         launchOfferRedemption: {
           findUnique: vi.fn().mockResolvedValue(null),
@@ -159,7 +160,8 @@ describe('grantAdminPlatformPlan', () => {
 
   it('creates redemption when consuming a launch slot', async () => {
     const mockCreate = vi.fn().mockResolvedValue({});
-    mockTransaction.mockImplementation(async (fn: (tx: unknown) => Promise<unknown>) => {
+    mockTransaction.mockImplementation(async (fn: (tx: unknown) => Promise<unknown>, options?: any) => {
+      expect(options).toEqual(expect.objectContaining({ isolationLevel: 'Serializable' }));
       const tx = {
         launchOfferRedemption: {
           findUnique: vi.fn().mockResolvedValue(null),
