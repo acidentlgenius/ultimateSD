@@ -32,16 +32,25 @@ function getStorageKey(problemSlug: string): string {
   return `${STORAGE_PREFIX}${STORAGE_VERSION}-${problemSlug}`;
 }
 
+let _isStorageAvailableCached: boolean | null = null;
+
 /**
  * Check if localStorage is available and accessible
+ * SQUASH FIX: Cache localStorage availability to avoid triggering StorageEvents and performance overhead on every call.
  */
 function isStorageAvailable(): boolean {
+  if (_isStorageAvailableCached !== null) {
+    return _isStorageAvailableCached;
+  }
+
   try {
     const test = '__storage_test__';
     localStorage.setItem(test, test);
     localStorage.removeItem(test);
+    _isStorageAvailableCached = true;
     return true;
   } catch (e) {
+    _isStorageAvailableCached = false;
     return false;
   }
 }
@@ -301,4 +310,11 @@ export function formatStorageSize(bytes: number): string {
   const sizes = ['B', 'KB', 'MB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return `${Math.round(bytes / Math.pow(k, i) * 100) / 100} ${sizes[i]}`;
+}
+
+/**
+ * Reset storage cache (FOR TESTING ONLY)
+ */
+export function _resetStorageCacheForTesting() {
+  _isStorageAvailableCached = null;
 }
