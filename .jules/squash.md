@@ -68,3 +68,8 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+## 2024-05-18 - Interval Starvation via Stale Closure in React Effects
+
+**Learning:** When using `setInterval` inside a `useEffect` that depends on a rapidly updating state variable (like a message array in a queue visualization), the interval is constantly cleared and reset before it can ever fire. This causes "interval starvation", where the background task completely halts as long as the state is updating faster than the interval duration.
+
+**Action:** To solve this without triggering re-renders or premature resets, store the rapidly updating state in a `useRef` updated via a separate `useEffect`. Then, wrap the interval's callback in a `useCallback` that reads from the ref, and depend only on that callback in the interval's `useEffect`. This ensures the interval remains stable while still accessing the freshest data.

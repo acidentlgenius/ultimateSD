@@ -1,11 +1,11 @@
 💥 The Bug
-The Vercel deployment is failing with the error `ERR_PNPM_OUTDATED_LOCKFILE Cannot install with "frozen-lockfile" because pnpm-lock.yaml is not up to date with <ROOT>/package.json`.
+In `MessageQueueVisualizer.tsx`, an interval was created inside a `useEffect` that had `messages` in its dependency array. Because `messages` updates frequently (every time a new message is published), the `useEffect` would constantly clear and recreate the interval. If messages were published rapidly (e.g., every 300ms) relative to the interval duration (1000ms), the interval would never get a chance to fire. This resulted in "interval starvation," completely halting the background message processing logic.
 
 🔍 Root Cause
-The `package.json` file specified `@testing-library/dom` but this dependency was missing from the `pnpm-lock.yaml` file. Vercel runs `pnpm install --frozen-lockfile` by default on CI environments, which strictly enforces that the lockfile perfectly matches `package.json`. This mismatch caused the build to abort.
+The interval was tied directly to the `messages` state dependency, meaning any state change reset the timer before it could execute its callback.
 
 🛠️ The Fix
-Ran `pnpm install` locally to update the `pnpm-lock.yaml` file, syncing the lockfile definitions with the updated `package.json` specifiers (specifically adding `@testing-library/dom` and deduplicating some minor `@babel` versions).
+Introduced a `messagesRef` to hold the most up-to-date `messages` state. Extracted the `consumeMessages` logic into a `useCallback` that reads from `messagesRef.current` rather than the stale closure of `messages`. Updated the interval's `useEffect` to depend only on the stable `consumeMessages` callback, allowing the interval to fire consistently without being prematurely cleared by state updates.
 
 🛡️ Prevention
-When updating `package.json` dependencies, ensure to always run `pnpm install` and commit the updated `pnpm-lock.yaml` file to avoid breaking CI/CD pipelines that rely on frozen lockfiles.
+Added a targeted regression test (`MessageQueueVisualizer.test.tsx`) that specifically simulates rapid message publishing and verifies that consumers still correctly advance their offsets (proving the interval fires).
