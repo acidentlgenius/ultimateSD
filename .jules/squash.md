@@ -68,3 +68,9 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+
+## 2026-07-18 - ["Time Bomb" Test Failures from Hardcoded Dates]
+
+**Learning:** When tests rely on functions that check the current time against a hardcoded campaign end date (like `isLaunchOfferActive`), they act as "time bombs". They pass locally during development but mysteriously fail weeks or months later in CI once the hardcoded deadline is reached, causing false-positive build failures.
+
+**Action:** Whenever writing tests for modules that depend on campaigns, deadlines, or other time-sensitive states, explicitly mock the time-checking functions (e.g., `vi.spyOn(module, 'isLaunchOfferActive').mockReturnValue(true)`) or freeze the system time (`vi.useFakeTimers()`) to ensure the test is deterministic and immune to the passage of actual time.

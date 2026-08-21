@@ -32,6 +32,14 @@ vi.mock('@/lib/email', () => ({
   sendPlanWelcomeEmail: (...args: unknown[]) => mockSendPlanWelcomeEmail(...args),
 }));
 
+vi.mock('@/lib/launch-offer', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...(actual as object),
+    isLaunchOfferActive: vi.fn().mockReturnValue(true),
+  };
+});
+
 import {
   claimPlatformLaunchOffer,
   drawAiGiveawayWinners,
