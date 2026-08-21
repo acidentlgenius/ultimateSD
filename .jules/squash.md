@@ -68,3 +68,8 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+## 2024-05-18 - Stale Closures in setInterval Loops
+
+**Learning:** When using `setInterval` within a `useEffect`, attempting to satisfy React hook dependency requirements (like `react-hooks/exhaustive-deps`) by adding state variables directly to the dependency array is dangerous. It causes the interval to be constantly torn down and recreated on every state change, leading to starvation (the interval may never actually fire if state updates are frequent enough). Alternatively, omitting the dependencies creates a stale closure where the interval reads old state forever.
+
+**Action:** To reliably run a continuous `setInterval` loop that accesses mutable React state without starvation or stale closures, use the `useRef` pattern: mirror the target state in a `useRef` updated via a dedicated `useEffect` (e.g. `useEffect(() => { stateRef.current = state; }, [state])`), and read from `stateRef.current` inside the interval which has an empty `[]` dependency array.
