@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import {
   getInitialAiCreditsForPlan,
   getNextAiCreditsResetDate,
@@ -98,31 +99,45 @@ export async function grantAdminPlatformPlan(
     return { success: true, expiresAt, launchOfferSlotUsed: false };
   }
 
-  const result = await prisma.$transaction(async (tx) => {
-    const existing = await tx.launchOfferRedemption.findUnique({ where: { userId } });
-    if (existing) return { error: 'already_redeemed' as const };
+  // SQUASH: Root Cause: The default Read Committed isolation level allows phantom reads.
+  // When counting `LAUNCH_PLATFORM_SLOTS`, concurrent transactions can both read a value
+  // under the limit and proceed to insert, causing the system to exceed the strict slot cap.
+  // SQUASH: Fix: Explicitly use Serializable isolation to prevent phantom reads.
+  // Additionally, wrap in a try/catch to gracefully handle P2034 (Serialization failure)
+  // rather than crashing the background worker.
+  let result;
+  try {
+    result = await prisma.$transaction(async (tx) => {
+      const existing = await tx.launchOfferRedemption.findUnique({ where: { userId } });
+      if (existing) return { error: 'already_redeemed' as const };
 
-    const claimed = await countPlatformSlotsUsed(tx);
-    if (claimed >= LAUNCH_PLATFORM_SLOTS) {
-      return { error: 'sold_out' as const };
+      const claimed = await countPlatformSlotsUsed(tx);
+      if (claimed >= LAUNCH_PLATFORM_SLOTS) {
+        return { error: 'sold_out' as const };
+      }
+
+      await tx.user.update({
+        where: { id: userId },
+        data: planData,
+      });
+
+      await tx.launchOfferRedemption.create({
+        data: {
+          userId,
+          kind: 'PLATFORM_LAUNCH',
+          expiresAt,
+          grantedBy: adminId,
+        },
+      });
+
+      return { success: true as const, expiresAt };
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+  } catch (e: any) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2034') {
+      return { error: 'sold_out' };
     }
-
-    await tx.user.update({
-      where: { id: userId },
-      data: planData,
-    });
-
-    await tx.launchOfferRedemption.create({
-      data: {
-        userId,
-        kind: 'PLATFORM_LAUNCH',
-        expiresAt,
-        grantedBy: adminId,
-      },
-    });
-
-    return { success: true as const, expiresAt };
-  });
+    throw e;
+  }
 
   if ('error' in result) {
     if (result.error === 'already_redeemed') {
@@ -143,39 +158,53 @@ export async function claimPlatformLaunchOffer(userId: string): Promise<ClaimPla
     return { error: 'has_paid_plan' };
   }
 
-  const result = await prisma.$transaction(async (tx) => {
-    const existing = await tx.launchOfferRedemption.findUnique({ where: { userId } });
-    if (existing) return { error: 'already_redeemed' as const };
+  // SQUASH: Root Cause: The default Read Committed isolation level allows phantom reads.
+  // When counting `LAUNCH_PLATFORM_SLOTS`, concurrent transactions can both read a value
+  // under the limit and proceed to insert, causing the system to exceed the strict slot cap.
+  // SQUASH: Fix: Explicitly use Serializable isolation to prevent phantom reads.
+  // Additionally, wrap in a try/catch to gracefully handle P2034 (Serialization failure)
+  // rather than crashing the background worker.
+  let result;
+  try {
+    result = await prisma.$transaction(async (tx) => {
+      const existing = await tx.launchOfferRedemption.findUnique({ where: { userId } });
+      if (existing) return { error: 'already_redeemed' as const };
 
-    const claimed = await countPlatformSlotsUsed(tx);
-    if (claimed >= LAUNCH_PLATFORM_SLOTS) {
-      return { error: 'sold_out' as const };
+      const claimed = await countPlatformSlotsUsed(tx);
+      if (claimed >= LAUNCH_PLATFORM_SLOTS) {
+        return { error: 'sold_out' as const };
+      }
+
+      const now = new Date();
+      const expiresAt = getLaunchOfferExpiry(now);
+
+      await tx.user.update({
+        where: { id: userId },
+        data: {
+          planType: 'platform',
+          planActivatedAt: now,
+          planExpiresAt: expiresAt,
+          aiCredits: getInitialAiCreditsForPlan('platform'),
+          aiCreditsResetAt: null,
+        },
+      });
+
+      await tx.launchOfferRedemption.create({
+        data: {
+          userId,
+          kind: 'PLATFORM_LAUNCH',
+          expiresAt,
+        },
+      });
+
+      return { success: true as const, expiresAt };
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+  } catch (e: any) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2034') {
+      return { error: 'sold_out' };
     }
-
-    const now = new Date();
-    const expiresAt = getLaunchOfferExpiry(now);
-
-    await tx.user.update({
-      where: { id: userId },
-      data: {
-        planType: 'platform',
-        planActivatedAt: now,
-        planExpiresAt: expiresAt,
-        aiCredits: getInitialAiCreditsForPlan('platform'),
-        aiCreditsResetAt: null,
-      },
-    });
-
-    await tx.launchOfferRedemption.create({
-      data: {
-        userId,
-        kind: 'PLATFORM_LAUNCH',
-        expiresAt,
-      },
-    });
-
-    return { success: true as const, expiresAt };
-  });
+    throw e;
+  }
 
   if (!('success' in result) || !result.success) {
     return result;

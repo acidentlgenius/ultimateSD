@@ -68,3 +68,9 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+
+## 2026-07-10 - [Phantom Reads in Prisma Transactions]
+
+**Learning:** When using Prisma transactions to enforce strict limits (like counting available launch offer slots before inserting a redemption record), the default database isolation level (Read Committed) allows phantom reads. Two concurrent requests can both read that 49/50 slots are used, and both will proceed to insert, exceeding the strict limit of 50.
+
+**Action:** To prevent race conditions and enforce strict counting limits, explicitly set the transaction isolation level to Serializable (`{ isolationLevel: Prisma.TransactionIsolationLevel.Serializable }`). Additionally, you must wrap the `$transaction` call in a `try/catch` block to explicitly handle `P2034` (serialization failure) errors gracefully, mapping them to application-specific states like `sold_out` instead of crashing.
