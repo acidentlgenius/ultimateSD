@@ -37,6 +37,9 @@ import {
   drawAiGiveawayWinners,
   grantAdminPlatformPlan,
 } from '../launch-offer-grant';
+import * as launchOffer from '../launch-offer';
+
+vi.spyOn(launchOffer, 'isLaunchOfferActive').mockReturnValue(true);
 
 describe('claimPlatformLaunchOffer', () => {
   beforeEach(() => {
