@@ -107,18 +107,18 @@ export function MobileMenu({ user }: MobileMenuProps) {
 
                 {!user && (
                   <div className="mt-8 pt-8 border-t border-border flex flex-col gap-4">
-                    <Link href="/login" className="w-full">
-                      <Button variant="outline" className="w-full justify-start h-12 text-base font-medium">
+                    <Button asChild variant="outline" className="w-full justify-start h-12 text-base font-medium">
+                      <Link href="/login" className="w-full">
                         <LogIn className="mr-2 h-4 w-4" />
                         Sign In
-                      </Button>
-                    </Link>
-                    <Link href="/signup" className="w-full">
-                      <Button className="w-full justify-start h-12 text-base font-medium bg-gradient-to-r from-primary to-purple-600">
+                      </Link>
+                    </Button>
+                    <Button asChild className="w-full justify-start h-12 text-base font-medium bg-gradient-to-r from-primary to-purple-600">
+                      <Link href="/signup" className="w-full">
                         <Sparkles className="mr-2 h-4 w-4" />
                         Get Started
-                      </Button>
-                    </Link>
+                      </Link>
+                    </Button>
                   </div>
                 )}
 

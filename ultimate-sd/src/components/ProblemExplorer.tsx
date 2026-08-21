@@ -235,11 +235,11 @@ export function ProblemExplorer({
                         user={user}
                     />
                 </div>
-                <Link href="/custom" className="shrink-0 self-start lg:mt-2">
-                    <Button className="h-12 px-6 rounded-xl font-bold bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5 whitespace-nowrap">
+                <Button asChild className="shrink-0 self-start lg:mt-2 h-12 px-6 rounded-xl font-bold bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5 whitespace-nowrap">
+                    <Link href="/custom">
                         <span className="mr-2">✨</span> Design Custom Problem
-                    </Button>
-                </Link>
+                    </Link>
+                </Button>
             </div>
 
             {/* Problems Grid */}
@@ -375,11 +375,11 @@ export function ProblemExplorer({
                                                         Unlock <Lock className="ml-2 h-4 w-4" />
                                                     </Button>
                                                 ) : (
-                                                    <Link href={`/practice/${problem.slug}`}>
-                                                        <Button size="sm" variant="ghost" className="hover:bg-primary/10 hover:text-primary font-bold rounded-full h-9 px-4 group-hover:translate-x-1 transition-all">
-                                                            {user?.id ? 'Practice' : 'Sign in to practice'} <ArrowRight className="ml-2 h-4 w-4" />
+                                                        <Button asChild size="sm" variant="ghost" className="hover:bg-primary/10 hover:text-primary font-bold rounded-full h-9 px-4 group-hover:translate-x-1 transition-all">
+                                                            <Link href={`/practice/${problem.slug}`}>
+                                                                {user?.id ? 'Practice' : 'Sign in to practice'} <ArrowRight className="ml-2 h-4 w-4" />
+                                                            </Link>
                                                         </Button>
-                                                    </Link>
                                                 )}
                                             </TableCell>
                                         </TableRow>
