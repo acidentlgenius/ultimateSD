@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -38,10 +38,16 @@ export default function MessageQueueVisualizer() {
         setMessages(prev => [...prev, newMessage]);
     };
 
-    const consumeMessages = () => {
+    const messagesRef = useRef(messages);
+
+    useEffect(() => {
+        messagesRef.current = messages;
+    }, [messages]);
+
+    const consumeMessages = useCallback(() => {
         setConsumers(prev => prev.map(c => {
             // Find max available offset in this partition
-            const partitionMsgs = messages.filter(m => m.partition === c.assignedPartition);
+            const partitionMsgs = messagesRef.current.filter(m => m.partition === c.assignedPartition);
             const limit = partitionMsgs.length;
 
             if (c.offset < limit) {
@@ -49,13 +55,13 @@ export default function MessageQueueVisualizer() {
             }
             return c;
         }));
-    };
+    }, []);
 
     // Auto-consume effect
     useEffect(() => {
         const interval = setInterval(consumeMessages, 1000);
         return () => clearInterval(interval);
-    }, [messages]);
+    }, [consumeMessages]);
 
     const addConsumer = () => {
         if (consumers.length >= partitions.length) return;

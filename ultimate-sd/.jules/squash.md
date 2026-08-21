@@ -27,3 +27,9 @@
 **Learning:** `loadSessionState` relied on `clearSessionState(problemSlug)` to handle invalid data. However, if the `localStorage` key contained structurally valid JSON but the *content itself* was not valid JSON (causing `JSON.parse` to throw), the catch block would execute. But if `clearSessionState` failed or wasn't robust enough, the corrupted data stayed. On every subsequent mount, the UI would try to parse the corrupt data, throw, and crash again.
 
 **Action:** When purging corrupted or unparseable `localStorage` state, use direct `localStorage.removeItem(key)` rather than higher-level helpers to guarantee the bad data is purged, since helper methods might inadvertently fail when interacting with corrupted state.
+
+## 2024-07-14 - Stale Closures and Interval Starvation in React
+
+**Learning:** When using dynamic timers (`setInterval`) inside a `useEffect` that frequently re-runs due to dependency changes (like a state array that updates often), clearing the timeout in the `useEffect`'s cleanup function and recreating it will cause "interval starvation". The timer keeps resetting before it can fire if the state updates are faster than the interval. Conversely, if you remove the dependency, the timer will have a stale closure to old state.
+
+**Action:** To prevent stale closures inside `setInterval` without triggering constant re-renders or interval starvation (premature resets) due to exhaustive React hook dependencies, mirror the target state in a `useRef` (e.g., `const stateRef = useRef(state)`) updated via a dedicated `useEffect`, and read from `stateRef.current` inside the interval. The interval setup should have an empty or minimal dependency array.
