@@ -124,7 +124,7 @@ export default function OnboardingModal({ isOpen, onClose, userId }: OnboardingM
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleSkip()}>
-            <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden border-none shadow-2xl bg-card">
+            <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden border-none shadow-2xl bg-card" aria-describedby={undefined}>
                 <div className="p-8">
                     <AnimatePresence mode="wait">
                         {step === 'goal' && (

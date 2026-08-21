@@ -49,7 +49,7 @@ export function StartInterviewDialog({
         Start Interview
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
+        <DialogContent aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle>Start a timed interview</DialogTitle>
             <DialogDescription>

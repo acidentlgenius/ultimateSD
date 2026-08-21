@@ -966,7 +966,7 @@ function PracticeUIContent({
           />
 
           <Dialog open={showSolutionConfirm} onOpenChange={setShowSolutionConfirm}>
-            <DialogContent showCloseButton={false}>
+            <DialogContent showCloseButton={false} aria-describedby={undefined}>
               <DialogHeader>
                 <DialogTitle>View expert solution?</DialogTitle>
                 <DialogDescription>

@@ -122,7 +122,7 @@ export default function InterviewSummaryPanel({
 
   return (
     <Dialog open onOpenChange={(next) => { if (!next && canClose) onClose(); }}>
-      <DialogContent showCloseButton={canClose} className="max-w-lg">
+      <DialogContent showCloseButton={canClose} className="max-w-lg" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>Interview Debrief</DialogTitle>
           <DialogDescription>

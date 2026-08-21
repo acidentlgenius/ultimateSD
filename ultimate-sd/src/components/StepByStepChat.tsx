@@ -2008,7 +2008,7 @@ return (
       {/* Progress History and Mini Indicator removed for clean Sidebar layout */}
 
       <Dialog open={showStartOverConfirm} onOpenChange={setShowStartOverConfirm}>
-        <DialogContent showCloseButton={false}>
+        <DialogContent showCloseButton={false} aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle>Start over?</DialogTitle>
             <DialogDescription>
