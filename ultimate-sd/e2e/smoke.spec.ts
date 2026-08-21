@@ -23,7 +23,7 @@ test.describe('Guest smoke', () => {
 
   test('roadmap page loads without auth', async ({ page }) => {
     await page.goto('/roadmap?track=se');
-    await expect(page.getByText(/Phase 1: Web Fundamentals/i)).toBeVisible();
+    await expect(page.getByText(/Phase 1: Web Fundamentals/i).first()).toBeVisible();
     await expect(page.getByText(/8-week study schedule/i)).toBeVisible();
   });
 
