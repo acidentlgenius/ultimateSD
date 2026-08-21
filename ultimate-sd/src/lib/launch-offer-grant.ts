@@ -4,6 +4,7 @@ import {
   getNextAiCreditsResetDate,
 } from '@/lib/access';
 import { EmailConfigurationError, sendPlanWelcomeEmail } from '@/lib/email';
+import { Prisma } from '@prisma/client';
 import {
   buildLaunchOfferStats,
   getLaunchOfferExpiry,
@@ -98,7 +99,10 @@ export async function grantAdminPlatformPlan(
     return { success: true, expiresAt, launchOfferSlotUsed: false };
   }
 
-  const result = await prisma.$transaction(async (tx) => {
+  let result;
+  try {
+    result = await prisma.$transaction(
+      async (tx) => {
     const existing = await tx.launchOfferRedemption.findUnique({ where: { userId } });
     if (existing) return { error: 'already_redeemed' as const };
 
@@ -122,7 +126,17 @@ export async function grantAdminPlatformPlan(
     });
 
     return { success: true as const, expiresAt };
-  });
+      },
+      {
+        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+      }
+    );
+  } catch (error: any) {
+    if (error.code === 'P2034') {
+      return { error: 'sold_out' as const };
+    }
+    throw error;
+  }
 
   if ('error' in result) {
     if (result.error === 'already_redeemed') {
@@ -143,7 +157,10 @@ export async function claimPlatformLaunchOffer(userId: string): Promise<ClaimPla
     return { error: 'has_paid_plan' };
   }
 
-  const result = await prisma.$transaction(async (tx) => {
+  let result;
+  try {
+    result = await prisma.$transaction(
+      async (tx) => {
     const existing = await tx.launchOfferRedemption.findUnique({ where: { userId } });
     if (existing) return { error: 'already_redeemed' as const };
 
@@ -175,7 +192,17 @@ export async function claimPlatformLaunchOffer(userId: string): Promise<ClaimPla
     });
 
     return { success: true as const, expiresAt };
-  });
+      },
+      {
+        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+      }
+    );
+  } catch (error: any) {
+    if (error.code === 'P2034') {
+      return { error: 'sold_out' as const };
+    }
+    throw error;
+  }
 
   if (!('success' in result) || !result.success) {
     return result;

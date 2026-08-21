@@ -7,6 +7,8 @@ import { FeatureShowcase } from '@/components/landing/FeatureShowcase';
 import { AdaptiveCoachDemo } from '@/components/landing/AdaptiveCoachDemo';
 import { AiInterviewerSection } from '@/components/landing/AiInterviewerSection';
 import { RoadmapPreview } from '@/components/landing/RoadmapPreview';
+import { MostAskedSection } from '@/components/landing/MostAskedSection';
+import { StartHereTrack } from '@/components/landing/StartHereTrack';
 import { UserHero } from '@/components/landing/UserHero';
 import { ClaimPlatformAccessBanner } from '@/components/landing/ClaimPlatformAccessBanner';
 import type { LaunchOfferPublicStats, LaunchOfferUserState } from '@/lib/launch-offer';
@@ -88,6 +90,15 @@ export function DashboardClient({
             {!user && <AiInterviewerSection interviewModeEnabled={interviewModeEnabled} />}
 
             <RoadmapPreview />
+
+            {!user && <StartHereTrack />}
+
+            {!user && (
+                <MostAskedSection
+                    selectedCollectionId={null}
+                    onSelectCollection={() => {}}
+                />
+            )}
 
             {!user && (
                 <div className="container mx-auto px-4 pb-24 relative z-10 max-w-7xl">
