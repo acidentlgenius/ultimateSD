@@ -49,4 +49,30 @@ describe('BlockchainDemo', () => {
     // We expect it to be called with the ID that was returned by setInterval
     expect(clearIntervalSpy).toHaveBeenCalled();
   });
+  it('clears previous mining interval if another block starts mining', async () => {
+    const setIntervalSpy = vi.spyOn(global, 'setInterval');
+    const clearIntervalSpy = vi.spyOn(global, 'clearInterval');
+
+    const { unmount } = render(<BlockchainDemo />);
+
+    const addButton = screen.getByText('Add New Block');
+    fireEvent.click(addButton);
+
+    const buttons = screen.getAllByRole('button');
+    const mineButton1 = buttons[1];
+    const mineButton2 = buttons[2];
+
+    fireEvent.click(mineButton1);
+
+    // Wait for the first interval to start
+    await waitFor(() => {
+        expect(setIntervalSpy).toHaveBeenCalled();
+    });
+
+    fireEvent.click(mineButton2);
+
+    expect(clearIntervalSpy).toHaveBeenCalled();
+
+    unmount();
+  });
 });

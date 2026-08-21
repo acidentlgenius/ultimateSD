@@ -68,3 +68,8 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+## 2025-08-03 - BlockchainDemo Interval Leak
+
+**Learning:** A common React anti-pattern is assigning the result of `setInterval` to a `useRef` without first clearing the previous interval, especially inside event handlers that can be called repeatedly (like a 'mine' button). This orphans the previous interval, causing it to run indefinitely in the background and leading to memory leaks and unintended repeated state updates.
+
+**Action:** Always check `if (intervalRef.current) clearInterval(intervalRef.current);` before starting and assigning a new interval to that ref. Also, ensure cleanup happens on unmount using a `useEffect` with a cleanup function.
