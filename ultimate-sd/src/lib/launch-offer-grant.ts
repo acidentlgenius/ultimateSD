@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import {
   getInitialAiCreditsForPlan,
   getNextAiCreditsResetDate,
@@ -98,40 +99,47 @@ export async function grantAdminPlatformPlan(
     return { success: true, expiresAt, launchOfferSlotUsed: false };
   }
 
-  const result = await prisma.$transaction(async (tx) => {
-    const existing = await tx.launchOfferRedemption.findUnique({ where: { userId } });
-    if (existing) return { error: 'already_redeemed' as const };
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      const existing = await tx.launchOfferRedemption.findUnique({ where: { userId } });
+      if (existing) return { error: 'already_redeemed' as const };
 
-    const claimed = await countPlatformSlotsUsed(tx);
-    if (claimed >= LAUNCH_PLATFORM_SLOTS) {
-      return { error: 'sold_out' as const };
+      const claimed = await countPlatformSlotsUsed(tx);
+      if (claimed >= LAUNCH_PLATFORM_SLOTS) {
+        return { error: 'sold_out' as const };
+      }
+
+      await tx.user.update({
+        where: { id: userId },
+        data: planData,
+      });
+
+      await tx.launchOfferRedemption.create({
+        data: {
+          userId,
+          kind: 'PLATFORM_LAUNCH',
+          expiresAt,
+          grantedBy: adminId,
+        },
+      });
+
+      return { success: true as const, expiresAt };
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+
+    if ('error' in result) {
+      if (result.error === 'already_redeemed') {
+        return { error: 'already_redeemed' };
+      }
+      return { error: 'sold_out' };
     }
 
-    await tx.user.update({
-      where: { id: userId },
-      data: planData,
-    });
-
-    await tx.launchOfferRedemption.create({
-      data: {
-        userId,
-        kind: 'PLATFORM_LAUNCH',
-        expiresAt,
-        grantedBy: adminId,
-      },
-    });
-
-    return { success: true as const, expiresAt };
-  });
-
-  if ('error' in result) {
-    if (result.error === 'already_redeemed') {
-      return { error: 'already_redeemed' };
+    return { success: true, expiresAt: result.expiresAt, launchOfferSlotUsed: true };
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034') {
+      return { error: 'sold_out' };
     }
-    return { error: 'sold_out' };
+    throw error;
   }
-
-  return { success: true, expiresAt: result.expiresAt, launchOfferSlotUsed: true };
 }
 
 export async function claimPlatformLaunchOffer(userId: string): Promise<ClaimPlatformResult> {
@@ -143,39 +151,47 @@ export async function claimPlatformLaunchOffer(userId: string): Promise<ClaimPla
     return { error: 'has_paid_plan' };
   }
 
-  const result = await prisma.$transaction(async (tx) => {
-    const existing = await tx.launchOfferRedemption.findUnique({ where: { userId } });
-    if (existing) return { error: 'already_redeemed' as const };
+  let result;
+  try {
+    result = await prisma.$transaction(async (tx) => {
+      const existing = await tx.launchOfferRedemption.findUnique({ where: { userId } });
+      if (existing) return { error: 'already_redeemed' as const };
 
-    const claimed = await countPlatformSlotsUsed(tx);
-    if (claimed >= LAUNCH_PLATFORM_SLOTS) {
-      return { error: 'sold_out' as const };
+      const claimed = await countPlatformSlotsUsed(tx);
+      if (claimed >= LAUNCH_PLATFORM_SLOTS) {
+        return { error: 'sold_out' as const };
+      }
+
+      const now = new Date();
+      const expiresAt = getLaunchOfferExpiry(now);
+
+      await tx.user.update({
+        where: { id: userId },
+        data: {
+          planType: 'platform',
+          planActivatedAt: now,
+          planExpiresAt: expiresAt,
+          aiCredits: getInitialAiCreditsForPlan('platform'),
+          aiCreditsResetAt: null,
+        },
+      });
+
+      await tx.launchOfferRedemption.create({
+        data: {
+          userId,
+          kind: 'PLATFORM_LAUNCH',
+          expiresAt,
+        },
+      });
+
+      return { success: true as const, expiresAt };
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034') {
+      return { error: 'sold_out' };
     }
-
-    const now = new Date();
-    const expiresAt = getLaunchOfferExpiry(now);
-
-    await tx.user.update({
-      where: { id: userId },
-      data: {
-        planType: 'platform',
-        planActivatedAt: now,
-        planExpiresAt: expiresAt,
-        aiCredits: getInitialAiCreditsForPlan('platform'),
-        aiCreditsResetAt: null,
-      },
-    });
-
-    await tx.launchOfferRedemption.create({
-      data: {
-        userId,
-        kind: 'PLATFORM_LAUNCH',
-        expiresAt,
-      },
-    });
-
-    return { success: true as const, expiresAt };
-  });
+    throw error;
+  }
 
   if (!('success' in result) || !result.success) {
     return result;
