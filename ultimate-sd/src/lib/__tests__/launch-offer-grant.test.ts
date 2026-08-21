@@ -32,6 +32,10 @@ vi.mock('@/lib/email', () => ({
   sendPlanWelcomeEmail: (...args: unknown[]) => mockSendPlanWelcomeEmail(...args),
 }));
 
+import * as launchOffer from '../launch-offer';
+
+vi.spyOn(launchOffer, 'isLaunchOfferActive').mockReturnValue(true);
+
 import {
   claimPlatformLaunchOffer,
   drawAiGiveawayWinners,

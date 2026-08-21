@@ -7,7 +7,7 @@ test.describe.serial('Roadmap progress unlocks', () => {
 
     await page.goto('/roadmap?track=se');
 
-    await expect(page.getByText(/Phase 1: Web Fundamentals/i)).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Phase 1: Web Fundamentals/i }).first()).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Design TinyURL' })).toBeVisible();
 
     const restApiCard = page.getByRole('heading', { name: 'Design a REST API' });
