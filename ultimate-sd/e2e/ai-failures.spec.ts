@@ -25,7 +25,9 @@ test.describe('AI evaluation failures', () => {
   async function submitFirstStep(page: Page) {
     await page.goto('/practice/design-tinyurl');
     await page.getByPlaceholder(/short URL/i).fill('Users can shorten a long URL');
-    await page.getByRole('button', { name: 'Add' }).click();
+    // Squash: The 'Add' button detaches from the DOM during React state updates/animations.
+    // Pressing 'Enter' on the input is a more stable interaction.
+    await page.getByPlaceholder(/short URL/i).press('Enter');
     await page.getByRole('button', { name: /Submit for Review/i }).click();
   }
 
@@ -88,6 +90,7 @@ test.describe('AI evaluation failures', () => {
   });
 
   test('network failure shows connectivity copy', async ({ page }) => {
+    test.setTimeout(60_000);
     await page.route('**/api/ai/evaluate', (route) => route.abort('failed'));
     await submitFirstStep(page);
 

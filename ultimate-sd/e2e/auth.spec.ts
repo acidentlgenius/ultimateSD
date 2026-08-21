@@ -9,7 +9,8 @@ test.describe('Authenticated dashboard', () => {
 
   test('locked premium problem opens upgrade modal', async ({ page }) => {
     await page.goto('/#problems');
-    await page.getByRole('button', { name: /Unlock Design Uber/i }).click();
+    // Squash: Locked problem cards are implemented as accessible divs rather than standard buttons.
+    await page.locator('div[role="button"][aria-label="Unlock Design Uber"]').click();
     await expect(page.getByRole('heading', { name: /Unlock Premium Problems/i })).toBeVisible();
     await expect(page.getByText(/Design Uber/i).first()).toBeVisible();
   });
