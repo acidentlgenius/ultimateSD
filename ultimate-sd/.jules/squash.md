@@ -27,3 +27,21 @@
 **Learning:** `loadSessionState` relied on `clearSessionState(problemSlug)` to handle invalid data. However, if the `localStorage` key contained structurally valid JSON but the *content itself* was not valid JSON (causing `JSON.parse` to throw), the catch block would execute. But if `clearSessionState` failed or wasn't robust enough, the corrupted data stayed. On every subsequent mount, the UI would try to parse the corrupt data, throw, and crash again.
 
 **Action:** When purging corrupted or unparseable `localStorage` state, use direct `localStorage.removeItem(key)` rather than higher-level helpers to guarantee the bad data is purged, since helper methods might inadvertently fail when interacting with corrupted state.
+
+## 2024-07-15 - Unwrapped React State Updates in Timers
+
+**Learning:** Vitest tests advancing fake timers asynchronously (`vi.advanceTimersByTimeAsync`) can trigger unhandled React state updates if the timer resolves a promise that updates state (e.g., auto-saving). This leads to noisy `act(...)` console warnings which can fail strict CI checks or obscure real failures.
+
+**Action:** Always wrap `vi.advanceTimersByTimeAsync` (and similar async fake timer advances) inside `act()` when testing React components with side effects, to properly flush the React rendering queue.
+
+## 2024-07-15 - Test Output Pollution from Expected Error Paths
+
+**Learning:** Testing explicit error paths (like unparseable JSON, server action failures, or missing configuration) causes intentional error logs to pollute the Vitest runner output. If a codebase considers warnings/errors as failures (or just to keep test output clean), this can cause confusion or break CI.
+
+**Action:** Suppress expected `console.error` and `console.warn` calls locally within the specific test blocks testing error handling, using `vi.spyOn(console, 'error').mockImplementation(() => {})` and ensuring `.mockRestore()` is called afterward.
+
+## 2024-07-15 - Missing Accessibility Labels on Radix UI Dialogs
+
+**Learning:** Radix UI `DialogContent` requires either a `<DialogDescription>` or an explicit `aria-describedby={undefined}` to be fully accessible to screen readers; otherwise, it throws React warnings which pollute test logs.
+
+**Action:** Always provide `aria-describedby={undefined}` on `DialogContent` when a description text is intentionally omitted to suppress accessibility warnings and maintain clean test output.
