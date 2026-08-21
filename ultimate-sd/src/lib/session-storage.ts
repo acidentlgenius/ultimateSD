@@ -32,16 +32,27 @@ function getStorageKey(problemSlug: string): string {
   return `${STORAGE_PREFIX}${STORAGE_VERSION}-${problemSlug}`;
 }
 
+let _storageAvailableCache: boolean | null = null;
+
+export function _resetStorageCacheForTesting() {
+  _storageAvailableCache = null;
+}
+
 /**
  * Check if localStorage is available and accessible
  */
 function isStorageAvailable(): boolean {
+  if (_storageAvailableCache !== null) {
+    return _storageAvailableCache;
+  }
   try {
     const test = '__storage_test__';
     localStorage.setItem(test, test);
     localStorage.removeItem(test);
+    _storageAvailableCache = true;
     return true;
   } catch (e) {
+    _storageAvailableCache = false;
     return false;
   }
 }
