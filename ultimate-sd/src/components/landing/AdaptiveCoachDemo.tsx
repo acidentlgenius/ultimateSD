@@ -38,9 +38,10 @@ export function AdaptiveCoachDemo() {
   const durationMs = useMemo(() => scriptDurationMs(script), [script]);
 
   useEffect(() => {
-    preferReducedMotion =
+    setPreferReducedMotion(
       typeof window !== 'undefined' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    );
   }, []);
 
   // Restart clock when level or replay changes

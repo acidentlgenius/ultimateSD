@@ -1,15 +1,16 @@
 {
   "task_execution_summary": {
-    "research_findings": "Identified 'not wrapped in act(...)' warnings in DiagramCanvas.test.tsx and 'Cannot access refs during render' linter error in AdaptiveCoachDemo.tsx. Fixed both to ensure a clean test and lint run.",
-    "features_improved": ["DiagramCanvas tests", "AdaptiveCoachDemo"],
+    "research_findings": "Fixed 'ECONNREFUSED' error during Next.js build caused by `sitemap.ts` attempting to query Prisma at build time without an active DB connection by setting it to force-dynamic.",
+    "features_improved": ["Build pipeline", "Sitemap"],
     "new_features_added": [],
     "code_changes": {
       "files_modified": [
         "ultimate-sd/src/components/__tests__/DiagramCanvas.test.tsx",
-        "ultimate-sd/src/components/landing/AdaptiveCoachDemo.tsx"
+        "ultimate-sd/src/components/landing/AdaptiveCoachDemo.tsx",
+        "ultimate-sd/src/app/sitemap.ts"
       ],
       "tests_added": []
     },
-    "next_steps_for_next_run": "Review other components for similar useRef anti-patterns during render."
+    "next_steps_for_next_run": "Monitor CI builds for any other statically pre-rendered Next.js files that require database connections."
   }
 }
