@@ -1,12 +1,15 @@
 {
   "task_execution_summary": {
-    "research_findings": "Identified 'not wrapped in act(...)' warnings in DiagramCanvas.test.tsx caused by asynchronous timer advancements (vi.advanceTimersByTimeAsync) triggering state updates without React's act context.",
-    "features_improved": ["DiagramCanvas tests"],
+    "research_findings": "Identified 'not wrapped in act(...)' warnings in DiagramCanvas.test.tsx and 'Cannot access refs during render' linter error in AdaptiveCoachDemo.tsx. Fixed both to ensure a clean test and lint run.",
+    "features_improved": ["DiagramCanvas tests", "AdaptiveCoachDemo"],
     "new_features_added": [],
     "code_changes": {
-      "files_modified": ["ultimate-sd/src/components/__tests__/DiagramCanvas.test.tsx"],
+      "files_modified": [
+        "ultimate-sd/src/components/__tests__/DiagramCanvas.test.tsx",
+        "ultimate-sd/src/components/landing/AdaptiveCoachDemo.tsx"
+      ],
       "tests_added": []
     },
-    "next_steps_for_next_run": "Review other tests for similar act(...) warnings related to fake timers and asynchronous state updates."
+    "next_steps_for_next_run": "Review other components for similar useRef anti-patterns during render."
   }
 }
