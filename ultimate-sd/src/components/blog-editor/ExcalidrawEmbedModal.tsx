@@ -3,6 +3,7 @@
 import { useRef } from 'react';
 import dynamic from 'next/dynamic';
 import {
+  DialogDescription,
   Dialog,
   DialogContent,
   DialogFooter,
@@ -54,6 +55,7 @@ export function ExcalidrawEmbedModal({
       <DialogContent className="max-w-4xl">
         <DialogHeader>
           <DialogTitle>Diagram</DialogTitle>
+          <DialogDescription className="sr-only">Diagram editor</DialogDescription>
         </DialogHeader>
         <div className="h-[500px] w-full overflow-hidden rounded-lg border">
           {open && (
