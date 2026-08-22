@@ -68,3 +68,10 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+
+
+## 2026-06-30 - [Silent UI State Failure via Ref Access During Render]
+
+**Learning:** Accessing `ref.current` directly within the render body of a React component (e.g., `const shown = preferReducedMotion.current ? ...`) is a silent logic bug. Since React does not track ref mutations to trigger re-renders, if the ref value is updated later (like in a `useEffect`), the component UI will not re-render to reflect the new value, leaving the UI permanently stuck in the initial state. This also causes ESLint `react-hooks/refs` errors.
+
+**Action:** When a value needs to dictate conditional rendering or UI output and it's initialized asynchronously (like `window.matchMedia`), use `useState` rather than `useRef`. If the value is updated, the state setter will properly queue a re-render. Always include this state variable in the dependency array of any `useEffect` that relies on it.
