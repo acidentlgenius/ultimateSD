@@ -68,3 +68,9 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+
+## 2024-08-23 - [Cannot access refs during render]
+
+**Learning:** Accessing a React `useRef` directly in the component's render body (e.g., `const shown = preferReducedMotion.current`) violates React's pure render constraints and can lead to the 'Cannot access refs during render' linting error or failure to update correctly, especially on server-side rendering or build environments.
+
+**Action:** Whenever conditional rendering or logic within the render body depends on a value, ensure that value is stored in `useState` instead of `useRef`. If the value needs to be determined after initial render (like checking window media queries), initialize state safely on mount inside a `useEffect` hook.
