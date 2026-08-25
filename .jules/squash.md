@@ -68,3 +68,8 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+
+## 2024-05-31 - [Vitest and React Warning Logs]
+
+**Learning:** When using tests, React unhandled act warnings or Missing Description warnings can create loud test outputs that make it appear as though things are failing when they aren't, or obscure actual failures. The tests for DiagramCanvas and TimerWidget were producing act warnings, and the tests for session-storage, admin, langgraph-interview-summary, problem-intro-resolver, and FeedbackModal were throwing non-failing console.error or console.warn messages causing stderr dumps in vitest.
+**Action:** Always address React act() warnings and console error/warn leaks in vitest for cleaner test output, which makes it easier to spot actual breakages. Furthermore, when squelching test warnings by mocking console.error or console.warn, *always* ensure that the spy is restored (e.g., `consoleSpy.mockRestore()`) at the end of the test to prevent leaking the mocked implementation to other tests in the same worker block.
