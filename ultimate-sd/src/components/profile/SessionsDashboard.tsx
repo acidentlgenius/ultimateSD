@@ -103,7 +103,7 @@ export function SessionsDashboard() {
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4" />
                 <span>
-                  Last updated {formatDistanceToNow(new Date(session.lastUpdated), { addSuffix: true })}
+                  Last updated {formatDistanceToNow(session.lastUpdated, { addSuffix: true })}
                 </span>
               </div>
               <div className="flex items-center gap-2">
