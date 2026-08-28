@@ -27,3 +27,9 @@
 **Learning:** `loadSessionState` relied on `clearSessionState(problemSlug)` to handle invalid data. However, if the `localStorage` key contained structurally valid JSON but the *content itself* was not valid JSON (causing `JSON.parse` to throw), the catch block would execute. But if `clearSessionState` failed or wasn't robust enough, the corrupted data stayed. On every subsequent mount, the UI would try to parse the corrupt data, throw, and crash again.
 
 **Action:** When purging corrupted or unparseable `localStorage` state, use direct `localStorage.removeItem(key)` rather than higher-level helpers to guarantee the bad data is purged, since helper methods might inadvertently fail when interacting with corrupted state.
+
+## 2024-08-28 - Unintended stale renders from accessing refs during render
+
+**Learning:** Reading a `useRef`'s `.current` value directly inside a React component's render body violates React rules (as refs do not trigger re-renders), leading to `react-hooks/refs` linting errors and potentially stale UI if the ref's value changes post-hydration.
+
+**Action:** Convert refs accessed during render to `useState` hooks, and move the initial assignment or side-effects based on DOM APIs (like `window.matchMedia`) into a `useEffect` hook that updates the state variable.
