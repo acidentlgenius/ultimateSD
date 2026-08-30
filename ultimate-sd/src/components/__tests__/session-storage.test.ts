@@ -1,7 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import { getAllSessions, loadSessionState } from '../../lib/session-storage';
 
 describe('session-storage', () => {
+  let consoleSpy: ReturnType<typeof vi.spyOn>;
+  beforeEach(() => { consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {}); });
+  afterEach(() => { consoleSpy.mockRestore(); });
   beforeEach(() => {
     localStorage.clear();
   });

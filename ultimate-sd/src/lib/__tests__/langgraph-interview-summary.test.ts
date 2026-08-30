@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import {describe, expect, it, vi, afterEach, beforeEach} from 'vitest';
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { getInterviewSummary } from '@/lib/langgraph';
 import type { SystemDesignProblem } from '@/types';
@@ -33,6 +33,9 @@ const VALID_JSON = JSON.stringify({
 });
 
 describe('getInterviewSummary', () => {
+  let consoleSpy: ReturnType<typeof vi.spyOn>;
+  beforeEach(() => { consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {}); });
+  afterEach(() => { consoleSpy.mockRestore(); });
   it('parses a valid JSON debrief', async () => {
     const summary = await getInterviewSummary(problem, answers, fakeLlm(VALID_JSON));
     expect(summary).toEqual(JSON.parse(VALID_JSON));

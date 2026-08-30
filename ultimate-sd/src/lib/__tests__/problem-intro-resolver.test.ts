@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import {beforeEach, describe, expect, it, vi, afterEach} from 'vitest';
 
 vi.mock('@/lib/prisma', () => ({
   prisma: {
@@ -31,6 +31,9 @@ beforeEach(() => {
 });
 
 describe('getProblemIntro', () => {
+  let consoleSpy: ReturnType<typeof vi.spyOn>;
+  beforeEach(() => { consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {}); });
+  afterEach(() => { consoleSpy.mockRestore(); });
   it('prefers a valid DB row and stamps source=generated', async () => {
     mocked.problemIntro.findUnique.mockResolvedValue({
       id: 'x',
