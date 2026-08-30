@@ -1,3 +1,9 @@
+## 2026-08-30 - React Ref Render Anti-pattern in Next.js
+
+**Learning:** Accessing `useRef.current` directly within the render body of a React component is not just poor practice, but can cause complete application crashes in Next.js 19 setups with strict linting and strict mode enabled. Refs do not trigger re-renders, so using them conditionally for rendering logic (like accessibility preferences) results in stale or unsynchronized UI states.
+
+**Action:** Whenever a variable is needed to conditionally render UI elements or pass props, always use `useState` (or derived state like `useMemo`) rather than `useRef`. Only use `useRef` for DOM element references or truly mutable values that do not affect the visual output of the component.
+
 ## 2024-05-18 - Case Sensitive Email Authentication Vulnerability
 
 **Learning:** PostgreSQL uses case-sensitive string collation by default. When Prisma's `findUnique` is used with an exact `email` match for user lookups, it can lead to multiple accounts being created for the same user (e.g., `user@example.com` and `User@example.com`). This fragments the authentication state and can cause sign-in failures or unintended session state bleed depending on which record `findFirst` selects during auth.
