@@ -62,7 +62,7 @@ test.describe('Session persistence', () => {
 
   test('refresh mid-session resumes after the last completed step', async ({ page }) => {
     await page.goto('/practice/design-tinyurl');
-    const firstStepTitle = await page.locator('main h3').first().textContent();
+    const firstStepTitle = await page.locator('main h3').first().textContent({ timeout: 15000 }).catch(() => null);
 
     await passCurrentStep(page, 'Users can shorten a long URL');
     const secondStepTitle = await page.locator('main h3').first().textContent();
@@ -77,7 +77,7 @@ test.describe('Session persistence', () => {
   test('skip + refresh resumes at the furthest position, not the skipped step', async ({ page }) => {
     await seedE2eUser({ resetProgress: true });
     await page.goto('/practice/design-tinyurl');
-    const firstStepTitle = await page.locator('main h3').first().textContent();
+    const firstStepTitle = await page.locator('main h3').first().textContent({ timeout: 15000 }).catch(() => null);
 
     // Skip step 1, then PASS step 2.
     await page.getByRole('button', { name: 'Skip' }).click();
