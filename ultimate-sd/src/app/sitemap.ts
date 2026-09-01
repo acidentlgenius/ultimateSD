@@ -19,7 +19,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.9,
     }))
 
-    const blogPosts = await getPublishedBlogPosts()
+    let blogPosts: any[] = []
+    try {
+        blogPosts = await getPublishedBlogPosts()
+    } catch (e) {
+        console.error("Sitemap: Failed to load blog posts (database likely unavailable during build)", e)
+    }
     const blogUrls = blogPosts.map((post) => ({
         url: `${SITE_URL}/blog/${post.slug}`,
         lastModified: post.updatedAt,
