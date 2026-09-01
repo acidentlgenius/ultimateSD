@@ -4,11 +4,16 @@ import { getEffectivePlanType } from '@/lib/access';
 import { resolveFeatureAccess, type OverrideMode } from '@/lib/feature-flags';
 
 export async function getFeatureFlagState(feature: FeatureKey): Promise<PlanType[]> {
-  const row = await prisma.featureFlag.findUnique({ where: { key: feature } });
-  if (!row) {
+  try {
+    const row = await prisma.featureFlag.findUnique({ where: { key: feature } });
+    if (!row) {
+      return FEATURE_SEED_DEFAULTS[feature];
+    }
+    return row.enabledPlans as PlanType[];
+  } catch (error) {
+    console.error("Failed to get feature flag state (database likely unavailable during build)", error);
     return FEATURE_SEED_DEFAULTS[feature];
   }
-  return row.enabledPlans as PlanType[];
 }
 
 export async function canAccessFeature(
@@ -21,15 +26,24 @@ export async function canAccessFeature(
     return resolveFeatureAccess({ override: null, enabledPlans, plan: 'free' });
   }
 
-  const [override, user] = await Promise.all([
-    prisma.featureFlagOverride.findUnique({
-      where: { flagKey_userId: { flagKey: feature, userId } },
-    }),
-    prisma.user.findUnique({
-      where: { id: userId },
-      select: { planType: true, planExpiresAt: true },
-    }),
-  ]);
+  let override: any = null;
+  let user: any = null;
+
+  try {
+    const results = await Promise.all([
+      prisma.featureFlagOverride.findUnique({
+        where: { flagKey_userId: { flagKey: feature, userId } },
+      }),
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: { planType: true, planExpiresAt: true },
+      }),
+    ]);
+    override = results[0];
+    user = results[1];
+  } catch (error) {
+    console.error("Failed to check feature access (database likely unavailable during build)", error);
+  }
 
   const plan = user
     ? getEffectivePlanType({ planType: user.planType as PlanType, planExpiresAt: user.planExpiresAt })
@@ -44,18 +58,29 @@ export async function canAccessFeature(
 export async function getAccessibleFeatures(
   userId: string | null
 ): Promise<Record<FeatureKey, boolean>> {
-  const [flags, overrides, user] = await Promise.all([
-    prisma.featureFlag.findMany(),
-    userId
-      ? prisma.featureFlagOverride.findMany({ where: { userId } })
-      : Promise.resolve([]),
-    userId
-      ? prisma.user.findUnique({
-          where: { id: userId },
-          select: { planType: true, planExpiresAt: true },
-        })
-      : Promise.resolve(null),
-  ]);
+  let flags: any[] = [];
+  let overrides: any[] = [];
+  let user: any = null;
+
+  try {
+    const results = await Promise.all([
+      prisma.featureFlag.findMany(),
+      userId
+        ? prisma.featureFlagOverride.findMany({ where: { userId } })
+        : Promise.resolve([]),
+      userId
+        ? prisma.user.findUnique({
+            where: { id: userId },
+            select: { planType: true, planExpiresAt: true },
+          })
+        : Promise.resolve(null),
+    ]);
+    flags = results[0];
+    overrides = results[1];
+    user = results[2];
+  } catch (e) {
+      console.error("Failed to fetch features (database likely unavailable during build)", e);
+  }
 
   const plan = user
     ? getEffectivePlanType({ planType: user.planType as PlanType, planExpiresAt: user.planExpiresAt })
