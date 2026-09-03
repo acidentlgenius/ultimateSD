@@ -68,3 +68,9 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+
+## 2024-06-25 - [Stale Closure with window.matchMedia and useRef]
+
+**Learning:** When using `window.matchMedia` inside a `useEffect` to initialize a ref (e.g. `preferReducedMotion.current = ...`), the ref does not trigger a re-render when its value is set. If the render body relies on this ref, it will lead to stale closures and incorrect initial renders. Furthermore, accessing a ref value during render violates React's strict mode and causes ESLint errors (`react-hooks/refs`).
+
+**Action:** Refactor the component to replace `useRef` with `useState` for variables that affect the render output (like `preferReducedMotion`). Ensure that `useEffect` hooks updating the state use the proper setter function, and add the new state variable to the dependency arrays of any other hooks that depend on it to prevent stale closures. Mock `window.matchMedia` via `Object.defineProperty` in Vitest tests that render the component.
