@@ -154,39 +154,16 @@ export function ProblemExplorer({
     }, [problems]);
 
     const filtered = useMemo(() => {
-        let filteredProblems = problems;
+        let filteredProblems = search ? fuseIndex.search(search).map(result => result.item) : problems;
 
-        if (search) {
-            filteredProblems = fuseIndex.search(search).map(result => result.item);
-        }
-
-        if (category !== 'All') {
-            filteredProblems = filteredProblems.filter(p => p.category === category);
-        }
-
-        if (difficulty !== 'All') {
-            filteredProblems = filteredProblems.filter(p => p.difficulty === difficulty);
-        }
-
-        if (user && statusFilter !== 'All') {
-            filteredProblems = filteredProblems.filter((p) =>
-                matchesStatusFilter(p, statusFilter)
-            );
-        }
-
-        if (topicFilter !== 'All') {
-            filteredProblems = filteredProblems.filter((p) =>
-                problemMatchesTag(p.slug, p.tags, topicFilter)
-            );
-        }
-
-        if (companyCollection) {
-            filteredProblems = filteredProblems.filter((p) =>
-                problemInCollection(p.slug, companyCollection)
-            );
-        }
-
-        return filteredProblems;
+        return filteredProblems.filter(p => {
+            if (category !== 'All' && p.category !== category) return false;
+            if (difficulty !== 'All' && p.difficulty !== difficulty) return false;
+            if (user && statusFilter !== 'All' && !matchesStatusFilter(p, statusFilter)) return false;
+            if (topicFilter !== 'All' && !problemMatchesTag(p.slug, p.tags, topicFilter)) return false;
+            if (companyCollection && !problemInCollection(p.slug, companyCollection)) return false;
+            return true;
+        });
     }, [problems, search, category, difficulty, statusFilter, topicFilter, companyCollection, user, fuseIndex]);
 
     const categories = ['All', ...new Set(problems.map(p => p.category))];
