@@ -56,9 +56,12 @@ describe('getInterviewSummary', () => {
 
   it('returns null on unparseable output', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    expect(await getInterviewSummary(problem, answers, fakeLlm('sorry, no JSON'))).toBeNull();
-    consoleSpy.mockRestore();
-  });
+    try {
+      expect(await getInterviewSummary(problem, answers, fakeLlm('sorry, no JSON'))).toBeNull();
+    } finally {
+      consoleSpy.mockRestore();
+    }
+    });
 
   it('returns null when no llm is available', async () => {
     expect(await getInterviewSummary(problem, answers, null)).toBeNull();
