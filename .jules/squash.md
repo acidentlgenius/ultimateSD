@@ -37,3 +37,8 @@
 
 **Learning:** Reading `useRef` values (like `preferReducedMotion.current`) during a React component's render phase is an anti-pattern that violates React strict mode (triggering `react-hooks/refs` lint errors) and causes stale closures or failed hydration.
 **Action:** Replace these refs with `useState` and include the state variable in relevant `useEffect` dependency arrays to ensure the component re-renders properly when the value changes.
+
+## 2025-02-23 - Dynamic UI Rendering via Build Config vs Frontend Checking
+
+**Learning:** `Next.js` throws build errors inside client components that expect objects (like `MostAskedSection` taking `initialProblems`) when we bypass the intended hydration pattern. The failing tests exposed a Type Error where we passed `initialProblems` instead of `selectedCollectionId` to `MostAskedSection` due to an incorrect programmatic replacement.
+**Action:** When modifying page layouts or landing components, ensure to map exactly to the component's defined interface. Use the correct prop names like `initialProblems` for `MostAskedSection` only if it accepts them; otherwise verify its actual interface (`selectedCollectionId`, `onSelectCollection`).
