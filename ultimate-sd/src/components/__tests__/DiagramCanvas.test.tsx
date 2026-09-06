@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { useEffect, useState } from 'react';
-import { render, waitFor } from '@testing-library/react';
+import { render, waitFor, act } from '@testing-library/react';
 import DiagramCanvas from '../DiagramCanvas';
 import { DiagramCanvasProvider, useDiagramCanvasRef } from '../diagram/DiagramCanvasContext';
 
@@ -34,14 +34,14 @@ function MockExcalidraw({
     excalidrawAPI?.(api);
 
     const afterGuard = window.setTimeout(() => {
-      onChange?.(currentElements(), { theme: 'light' }, {});
+      act(() => { onChange?.(currentElements(), { theme: 'light' }, {}); });
     }, RESTORE_GUARD_MS + 50);
 
     let deleteTimer: number | undefined;
     if (mockDeleteAllAfterFirstChange) {
       deleteTimer = window.setTimeout(() => {
         deleted = true;
-        onChange?.([], { theme: 'light' }, {});
+        act(() => { onChange?.([], { theme: 'light' }, {}); });
       }, RESTORE_GUARD_MS + 50 + SAVE_DEBOUNCE_MS + 100);
     }
 
@@ -131,7 +131,7 @@ describe('DiagramCanvas', () => {
       </DiagramCanvasProvider>
     );
 
-    await vi.advanceTimersByTimeAsync(RESTORE_GUARD_MS + 50 + SAVE_DEBOUNCE_MS);
+    await act(async () => { await vi.advanceTimersByTimeAsync(RESTORE_GUARD_MS + 50 + SAVE_DEBOUNCE_MS); });
 
     const raw = localStorage.getItem('diagram-hld-0');
     expect(raw).toBeTruthy();
@@ -169,7 +169,7 @@ describe('DiagramCanvas', () => {
       </DiagramCanvasProvider>
     );
 
-    await vi.advanceTimersByTimeAsync(RESTORE_GUARD_MS + 50 + SAVE_DEBOUNCE_MS + 500);
+    await act(async () => { await vi.advanceTimersByTimeAsync(RESTORE_GUARD_MS + 50 + SAVE_DEBOUNCE_MS + 500); });
 
     const raw = localStorage.getItem('diagram-hld-0');
     expect(raw).toBeTruthy();
@@ -192,11 +192,11 @@ describe('DiagramCanvas', () => {
     );
 
     // First onChange (content) + debounce → saved
-    await vi.advanceTimersByTimeAsync(RESTORE_GUARD_MS + 50 + SAVE_DEBOUNCE_MS);
+    await act(async () => { await vi.advanceTimersByTimeAsync(RESTORE_GUARD_MS + 50 + SAVE_DEBOUNCE_MS); });
     expect(localStorage.getItem('diagram-hld-0')).toBeTruthy();
 
     // Delete-all onChange + debounce → storage cleared, old scene must not resurrect
-    await vi.advanceTimersByTimeAsync(SAVE_DEBOUNCE_MS + 200 + SAVE_DEBOUNCE_MS);
+    await act(async () => { await vi.advanceTimersByTimeAsync(SAVE_DEBOUNCE_MS + 200 + SAVE_DEBOUNCE_MS); });
     expect(localStorage.getItem('diagram-hld-0')).toBeNull();
 
     vi.useRealTimers();

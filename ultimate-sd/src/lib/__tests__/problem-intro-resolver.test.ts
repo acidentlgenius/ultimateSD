@@ -50,7 +50,9 @@ describe('getProblemIntro', () => {
   });
 
   it('falls through to bespoke when the DB row is malformed', async () => {
-    mocked.problemIntro.findUnique.mockResolvedValue({
+    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      mocked.problemIntro.findUnique.mockResolvedValue({
       id: 'x',
       problemSlug: 'design-tinyurl',
       hook: '',
@@ -62,7 +64,10 @@ describe('getProblemIntro', () => {
     const intro = await getProblemIntro(problem);
     expect(intro.source).toBe('bespoke');
     expect(intro.hook).toBe(PROBLEM_INTROS['design-tinyurl'].hook);
-  });
+    } finally {
+      consoleSpy.mockRestore();
+    }
+    });
 
   it('falls through to static when there is no DB row', async () => {
     mocked.problemIntro.findUnique.mockResolvedValue(null as never);
@@ -70,9 +75,13 @@ describe('getProblemIntro', () => {
     expect(intro.source).toBe('derived');
   });
 
-  it('never throws when the DB lookup fails', async () => {
-    mocked.problemIntro.findUnique.mockRejectedValue(new Error('db down'));
+  it('never throws when the DB lookup fails', async () => {const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      mocked.problemIntro.findUnique.mockRejectedValue(new Error('db down'));
     const intro = await getProblemIntro(problem);
     expect(intro.source).toBe('bespoke');
-  });
+    } finally {
+      consoleSpy.mockRestore();
+    }
+    });
 });
