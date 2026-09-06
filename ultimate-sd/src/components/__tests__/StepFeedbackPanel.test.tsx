@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import StepFeedbackPanel from '../StepFeedbackPanel';
 import { updateStreak } from '@/app/actions/gamification';
@@ -67,5 +67,29 @@ describe('StepFeedbackPanel', () => {
     );
 
     expect(screen.queryByText('Your submission')).toBeNull();
+  });
+
+  it('handles server action error objects from updateStreak gracefully', async () => {
+    vi.mocked(updateStreak).mockResolvedValue({ error: 'Server validation failed' } as never);
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    render(
+      <StepFeedbackPanel
+        feedback={{ ...baseFeedback, score: 8, accuracy: 80, isAcceptable: true }}
+        probeEntitled={false}
+        xpEarned={20}
+        onStartProbe={() => {}}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(updateStreak).toHaveBeenCalled();
+    });
+
+    await waitFor(() => {
+      expect(consoleSpy).toHaveBeenCalledWith('Error updating streak:', 'Server validation failed');
+    });
+
+    consoleSpy.mockRestore();
   });
 });

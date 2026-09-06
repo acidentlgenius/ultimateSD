@@ -33,8 +33,8 @@ test.describe('Anonymous funnel', () => {
   });
 
   test('free problem → login gate with callbackUrl → lands back on the problem', async ({ page }) => {
-    await page.goto('/');
-    await page.getByTestId('start-here-cta').click();
+    await page.goto('/problems');
+    await page.getByRole('link', { name: /Practice Design TinyURL/i }).click();
 
     // Hard gate, place preserved
     await page.waitForURL(/\/login\?callbackUrl=/);

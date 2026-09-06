@@ -38,7 +38,7 @@ test.describe('Adaptive coach teach_forward (flag granted)', () => {
     await expect(page.getByText('Functional Requirements').first()).toBeVisible();
     await dismissProblemIntroIfVisible(page);
     await expect(
-      page.getByText(/As your coach: list three must-have functional requirements/i).first(),
+      page.getByText(/As your coach: list three must-have functional requirements/i).last(),
     ).toBeVisible({ timeout: 15_000 });
     await waitForSubmitAnswerButton(page);
 
