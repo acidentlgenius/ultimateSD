@@ -22,7 +22,7 @@ importers:
         version: 1.4.1(@langchain/core@1.2.1(openai@6.44.0(ws@8.21.0)(zod@3.25.76))(ws@8.21.0))
       '@langchain/community':
         specifier: ^1.1.29
-        version: 1.1.29(@aws-crypto/sha256-js@5.2.0)(@aws-sdk/credential-provider-node@3.972.58)(@browserbasehq/sdk@2.14.1)(@browserbasehq/stagehand@1.14.0(@playwright/test@1.61.1)(deepmerge@4.3.1)(dotenv@17.2.3)(openai@6.44.0(ws@8.21.0)(zod@3.25.76))(zod@3.25.76))(@ibm-cloud/watsonx-ai@1.7.14)(@langchain/core@1.2.1(openai@6.44.0(ws@8.21.0)(zod@3.25.76))(ws@8.21.0))(@smithy/signature-v4@5.5.2)(d3-dsv@3.0.1)(ibm-cloud-sdk-core@5.5.0)(ignore@7.0.5)(jsdom@27.1.0)(jsonwebtoken@9.0.3)(openai@6.44.0(ws@8.21.0)(zod@3.25.76))(pg@8.16.3)(playwright@1.61.1)(ws@8.21.0)
+        version: 1.1.29(@aws-crypto/sha256-js@5.2.0)(@aws-sdk/credential-provider-node@3.972.58)(@browserbasehq/sdk@2.14.1)(@browserbasehq/stagehand@1.14.0(@playwright/test@1.61.1)(deepmerge@4.3.1)(dotenv@17.2.3)(openai@6.44.0(ws@8.21.0)(zod@3.25.76))(zod@3.25.76))(@ibm-cloud/watsonx-ai@1.7.14)(@langchain/core@1.2.1(openai@6.44.0(ws@8.21.0)(zod@3.25.76))(ws@8.21.0))(@smithy/signature-v4@5.5.2)(@upstash/ratelimit@2.0.8(@upstash/redis@1.38.4))(@upstash/redis@1.38.4)(d3-dsv@3.0.1)(ibm-cloud-sdk-core@5.5.0)(ignore@7.0.5)(jsdom@27.1.0)(jsonwebtoken@9.0.3)(openai@6.44.0(ws@8.21.0)(zod@3.25.76))(pg@8.16.3)(playwright@1.61.1)(ws@8.21.0)
       '@langchain/core':
         specifier: ^1.2.1
         version: 1.2.1(openai@6.44.0(ws@8.21.0)(zod@3.25.76))(ws@8.21.0)
@@ -89,6 +89,12 @@ importers:
       '@types/uuid':
         specifier: ^11.0.0
         version: 11.0.0
+      '@upstash/ratelimit':
+        specifier: ^2.0.8
+        version: 2.0.8(@upstash/redis@1.38.4)
+      '@upstash/redis':
+        specifier: ^1.38.4
+        version: 1.38.4
       bcryptjs:
         specifier: ^3.0.3
         version: 3.0.3
@@ -3179,6 +3185,18 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  '@upstash/core-analytics@0.0.10':
+    resolution: {integrity: sha512-7qJHGxpQgQr9/vmeS1PktEwvNAF7TI4iJDi8Pu2CFZ9YUGHZH4fOP5TfYlZ4aVxfopnELiE4BS4FBjyK7V1/xQ==}
+    engines: {node: '>=16.0.0'}
+
+  '@upstash/ratelimit@2.0.8':
+    resolution: {integrity: sha512-YSTMBJ1YIxsoPkUMX/P4DDks/xV5YYCswWMamU8ZIfK9ly6ppjRnVOyBhMDXBmzjODm4UQKcxsJPvaeFAijp5w==}
+    peerDependencies:
+      '@upstash/redis': ^1.34.3
+
+  '@upstash/redis@1.38.4':
+    resolution: {integrity: sha512-ZX69mKReun/yieyHYLoBg0eSiF6hjCQjd8zUKkJ5eCHehDV6P8S8oZOHxGSfkH1spfOhGZk0EGerBrfUsXow8g==}
+
   '@vitest/expect@4.0.16':
     resolution: {integrity: sha512-eshqULT2It7McaJkQGLkPjPjNph+uevROGuIMJdG3V+0BSR2w9u6J9Lwu+E8cK5TETlfou8GRijhafIMhXsimA==}
 
@@ -4026,6 +4044,7 @@ packages:
   eslint@9.39.0:
     resolution: {integrity: sha512-iy2GE3MHrYTL5lrCtMZ0X1KLEKKUjmK0kzwcnefhR66txcEmXZD2YWgR5GNdcEwkNx3a0siYkSvl0vIC+Svjmg==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+    deprecated: This version is no longer supported. Please see https://eslint.org/version-support for other options.
     hasBin: true
     peerDependencies:
       jiti: '*'
@@ -6105,6 +6124,9 @@ packages:
     resolution: {integrity: sha512-nWJ91DjeOkej/TA8pXQ3myruKpKEYgqvpw9lz4OPHj/NWFNluYrjbz9j01CJ8yKQd2g4jFoOkINCTW2I5LEEyw==}
     engines: {node: '>= 0.4'}
 
+  uncrypto@0.1.3:
+    resolution: {integrity: sha512-Ql87qFHB3s/De2ClA9e0gsnS6zXG27SkTiSJwjCc9MebbfapQfuPzumMIUMi38ezPZVNFcHI9sUIepeQfw8J8Q==}
+
   undici-types@5.26.5:
     resolution: {integrity: sha512-JlCMO+ehdEIKqlFxk6IfVoAUVmgz7cU7zD/h9XZ0qzeosSHmUJVOzSQvvYSYWXkFXC+IfLKSIffhv0sVZup6pA==}
 
@@ -7387,7 +7409,7 @@ snapshots:
       - openai
       - ws
 
-  '@langchain/community@1.1.29(@aws-crypto/sha256-js@5.2.0)(@aws-sdk/credential-provider-node@3.972.58)(@browserbasehq/sdk@2.14.1)(@browserbasehq/stagehand@1.14.0(@playwright/test@1.61.1)(deepmerge@4.3.1)(dotenv@17.2.3)(openai@6.44.0(ws@8.21.0)(zod@3.25.76))(zod@3.25.76))(@ibm-cloud/watsonx-ai@1.7.14)(@langchain/core@1.2.1(openai@6.44.0(ws@8.21.0)(zod@3.25.76))(ws@8.21.0))(@smithy/signature-v4@5.5.2)(d3-dsv@3.0.1)(ibm-cloud-sdk-core@5.5.0)(ignore@7.0.5)(jsdom@27.1.0)(jsonwebtoken@9.0.3)(openai@6.44.0(ws@8.21.0)(zod@3.25.76))(pg@8.16.3)(playwright@1.61.1)(ws@8.21.0)':
+  '@langchain/community@1.1.29(@aws-crypto/sha256-js@5.2.0)(@aws-sdk/credential-provider-node@3.972.58)(@browserbasehq/sdk@2.14.1)(@browserbasehq/stagehand@1.14.0(@playwright/test@1.61.1)(deepmerge@4.3.1)(dotenv@17.2.3)(openai@6.44.0(ws@8.21.0)(zod@3.25.76))(zod@3.25.76))(@ibm-cloud/watsonx-ai@1.7.14)(@langchain/core@1.2.1(openai@6.44.0(ws@8.21.0)(zod@3.25.76))(ws@8.21.0))(@smithy/signature-v4@5.5.2)(@upstash/ratelimit@2.0.8(@upstash/redis@1.38.4))(@upstash/redis@1.38.4)(d3-dsv@3.0.1)(ibm-cloud-sdk-core@5.5.0)(ignore@7.0.5)(jsdom@27.1.0)(jsonwebtoken@9.0.3)(openai@6.44.0(ws@8.21.0)(zod@3.25.76))(pg@8.16.3)(playwright@1.61.1)(ws@8.21.0)':
     dependencies:
       '@browserbasehq/stagehand': 1.14.0(@playwright/test@1.61.1)(deepmerge@4.3.1)(dotenv@17.2.3)(openai@6.44.0(ws@8.21.0)(zod@3.25.76))(zod@3.25.76)
       '@ibm-cloud/watsonx-ai': 1.7.14
@@ -7408,6 +7430,8 @@ snapshots:
       '@aws-sdk/credential-provider-node': 3.972.58
       '@browserbasehq/sdk': 2.14.1
       '@smithy/signature-v4': 5.5.2
+      '@upstash/ratelimit': 2.0.8(@upstash/redis@1.38.4)
+      '@upstash/redis': 1.38.4
       d3-dsv: 3.0.1
       ignore: 7.0.5
       jsdom: 27.1.0
@@ -9131,6 +9155,19 @@ snapshots:
 
   '@unrs/resolver-binding-win32-x64-msvc@1.11.1':
     optional: true
+
+  '@upstash/core-analytics@0.0.10':
+    dependencies:
+      '@upstash/redis': 1.38.4
+
+  '@upstash/ratelimit@2.0.8(@upstash/redis@1.38.4)':
+    dependencies:
+      '@upstash/core-analytics': 0.0.10
+      '@upstash/redis': 1.38.4
+
+  '@upstash/redis@1.38.4':
+    dependencies:
+      uncrypto: 0.1.3
 
   '@vitest/expect@4.0.16':
     dependencies:
@@ -12445,6 +12482,8 @@ snapshots:
       has-bigints: 1.1.0
       has-symbols: 1.1.0
       which-boxed-primitive: 1.1.1
+
+  uncrypto@0.1.3: {}
 
   undici-types@5.26.5: {}
 
