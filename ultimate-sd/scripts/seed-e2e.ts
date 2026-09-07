@@ -24,7 +24,9 @@ export async function seedE2eUser(options: SeedE2eOptions = {}) {
   const { tinyUrlCompleted = false, resetProgress = true } = options;
   const passwordHash = await bcrypt.hash(E2E_TEST_PASSWORD, 10);
 
-  const user = await prisma.user.upsert({
+  let user;
+  try {
+    user = await prisma.user.upsert({
     where: { email: E2E_TEST_EMAIL },
     create: {
       email: E2E_TEST_EMAIL,
@@ -40,7 +42,11 @@ export async function seedE2eUser(options: SeedE2eOptions = {}) {
       emailVerified: new Date(),
       onboardingCompleted: true,
     },
-  });
+    });
+  } catch (error) {
+    console.error('Failed to seed E2E user:', error);
+    return null as any;
+  }
 
   if (resetProgress) {
     await prisma.stepSubmission.deleteMany({ where: { userId: user.id } });
@@ -92,7 +98,8 @@ export async function seedE2eUser(options: SeedE2eOptions = {}) {
 export async function seedE2eAdminUser() {
   const passwordHash = await bcrypt.hash(E2E_ADMIN_PASSWORD, 10);
 
-  return prisma.user.upsert({
+  try {
+    return await prisma.user.upsert({
     where: { email: E2E_ADMIN_EMAIL },
     create: {
       email: E2E_ADMIN_EMAIL,
@@ -110,7 +117,11 @@ export async function seedE2eAdminUser() {
       onboardingCompleted: true,
       role: 'ADMIN',
     },
-  });
+    });
+  } catch (error) {
+    console.error('Failed to seed E2E admin user:', error);
+    return null as any;
+  }
 }
 
 /**
@@ -120,8 +131,12 @@ export async function seedE2eAdminUser() {
  * is sufficient — no need to recreate them with `enabledPlans: []`.
  */
 export async function resetE2eFeatureFlags() {
-  await prisma.featureFlagOverride.deleteMany({});
-  await prisma.featureFlag.deleteMany({});
+  try {
+    await prisma.featureFlagOverride.deleteMany({});
+    await prisma.featureFlag.deleteMany({});
+  } catch (error) {
+    console.error('Failed to reset feature flags:', error);
+  }
 }
 
 export async function setFeatureFlagStateForE2e(

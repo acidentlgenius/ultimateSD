@@ -3,6 +3,7 @@
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Hero } from '@/components/landing/Hero';
+import { StartHereTrack } from '@/components/landing/StartHereTrack';
 import { FeatureShowcase } from '@/components/landing/FeatureShowcase';
 import { AdaptiveCoachDemo } from '@/components/landing/AdaptiveCoachDemo';
 import { AiInterviewerSection } from '@/components/landing/AiInterviewerSection';
@@ -83,6 +84,7 @@ export function DashboardClient({
                 />
             )}
 
+            {!user && <StartHereTrack problems={recommendations?.recommended} />}
             {!user && <FeatureShowcase />}
             {!user && <AdaptiveCoachDemo />}
             {!user && <AiInterviewerSection interviewModeEnabled={interviewModeEnabled} />}

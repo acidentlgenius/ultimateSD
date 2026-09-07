@@ -99,6 +99,7 @@ describe('updateUserPlan', () => {
   });
 
   it('returns success with emailSent false when email is not configured', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const { EmailConfigurationError } = await import('@/lib/email');
     mockSendPlanWelcomeEmail.mockRejectedValue(new EmailConfigurationError());
 
