@@ -4,7 +4,12 @@ import { getEffectivePlanType } from '@/lib/access';
 import { resolveFeatureAccess, type OverrideMode } from '@/lib/feature-flags';
 
 export async function getFeatureFlagState(feature: FeatureKey): Promise<PlanType[]> {
-  const row = await prisma.featureFlag.findUnique({ where: { key: feature } });
+  let row = null;
+  try {
+    row = await prisma.featureFlag.findUnique({ where: { key: feature } });
+  } catch (error) {
+    console.error('Failed to get feature flag state:', error);
+  }
   if (!row) {
     return FEATURE_SEED_DEFAULTS[feature];
   }
