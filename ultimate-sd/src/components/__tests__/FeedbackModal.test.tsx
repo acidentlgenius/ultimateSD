@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import FeedbackModal from '../FeedbackModal';
+import { act } from '@testing-library/react';
 import { updateStreak } from '@/app/actions/gamification';
 
 vi.mock('@/app/actions/gamification', () => ({
@@ -25,6 +26,8 @@ describe('FeedbackModal', () => {
       isAcceptable: true
     };
 
+    await act(async () => {
+
     render(
       <FeedbackModal
         isOpen={true}
@@ -35,6 +38,8 @@ describe('FeedbackModal', () => {
         xpEarned={10}
       />
     );
+
+    });
 
     // Give the promise time to resolve
     await new Promise(r => setTimeout(r, 100));
@@ -60,6 +65,8 @@ describe('FeedbackModal', () => {
       isAcceptable: true
     };
 
+    await act(async () => {
+
     render(
       <FeedbackModal
         isOpen={true}
@@ -71,6 +78,8 @@ describe('FeedbackModal', () => {
       />
     );
 
+    });
+
     // Give the promise time to reject
     await new Promise(r => setTimeout(r, 100));
 
@@ -81,7 +90,7 @@ describe('FeedbackModal', () => {
     consoleSpy.mockRestore();
   });
 
-  it('clears animation frames on unmount', () => {
+  it('clears animation frames on unmount', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.mocked(updateStreak).mockResolvedValue({ success: true, streak: 1 } as any);
     vi.useFakeTimers();
@@ -98,16 +107,20 @@ describe('FeedbackModal', () => {
       isAcceptable: true
     };
 
-    const { unmount } = render(
-      <FeedbackModal
-        isOpen={true}
-        feedback={feedback}
-        onClose={() => {}}
-        probeEntitled={false}
-        onStartProbe={() => {}}
-        xpEarned={10}
-      />
-    );
+    let unmount: () => void = () => {};
+    await act(async () => {
+      const result = render(
+        <FeedbackModal
+          isOpen={true}
+          feedback={feedback}
+          onClose={() => {}}
+          probeEntitled={false}
+          onStartProbe={() => {}}
+          xpEarned={10}
+        />
+      );
+      unmount = result.unmount;
+    });
 
     expect(requestSpy).toHaveBeenCalled();
 
@@ -123,7 +136,7 @@ describe('FeedbackModal', () => {
     vi.useRealTimers();
   });
 
-  it('shows the submitted answer that was scored', () => {
+  it('shows the submitted answer that was scored', async () => {
     const feedback = {
       score: 1,
       accuracy: 10,
@@ -131,6 +144,8 @@ describe('FeedbackModal', () => {
       weaknesses: ['Too thin'],
       isAcceptable: false,
     };
+
+    await act(async () => {
 
     render(
       <FeedbackModal
@@ -142,6 +157,8 @@ describe('FeedbackModal', () => {
         userAnswer={'shorten urls'}
       />
     );
+
+    });
 
     expect(screen.getByText('Your submission')).toBeTruthy();
     expect(screen.getByText('shorten urls')).toBeTruthy();

@@ -70,7 +70,7 @@ export default function FeedbackModal({
             console.error('Error updating streak:', error);
           }
         };
-        handleStreakUpdate();
+        void handleStreakUpdate();
       }
 
       // Animate score counting up
