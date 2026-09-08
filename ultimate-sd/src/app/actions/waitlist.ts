@@ -2,9 +2,29 @@
 
 import { prisma } from '@/lib/prisma';
 import { isValidEmail, normalizeEmail } from '@/lib/waitlist';
+import { headers } from 'next/headers';
+import { ratelimit } from '@/lib/ratelimit';
 
-// TODO: rate-limit before heavy traffic
+
 export async function joinWaitlist(email: string): Promise<{ success: boolean; error?: string }> {
+
+  // Rate limiting (IP based)
+  if (ratelimit) {
+    // Attempt to get IP from headers
+    const headersList = await headers();
+    let ip = headersList.get('x-forwarded-for') || '127.0.0.1';
+
+    // x-forwarded-for can be a comma-separated list of IPs
+    if (ip.includes(',')) {
+      ip = ip.split(',')[0].trim();
+    }
+
+    const { success: rateLimitSuccess } = await ratelimit.limit(ip);
+    if (!rateLimitSuccess) {
+      return { success: false, error: 'Too many requests. Please try again later.' };
+    }
+  }
+
   const normalized = normalizeEmail(email);
   if (!isValidEmail(normalized)) {
     return { success: false, error: 'Please enter a valid email address.' };
