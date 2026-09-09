@@ -1268,9 +1268,7 @@ export default function StepByStepChat({
               event: { type: 'finish' },
               sessionState: finishing,
             });
-            if (result?.error) {
-              console.error('Coach finish turn failed:', result.error);
-            }
+            // postCoachTurn throws on error, no need to check result.error
           } catch (err) {
             console.error('Coach finish turn failed:', err);
           }
