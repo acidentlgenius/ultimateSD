@@ -1,6 +1,4 @@
 'use client';
-/* eslint-disable react-hooks/refs */
-
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -1262,12 +1260,19 @@ export default function StepByStepChat({
         const finishing = coachSession;
         setIsSessionCompleted(true);
         toast.success('🎉 Congratulations! You have completed all sections!');
-        void postCoachTurn({
-          problemSlug: problem.slug,
-          mode: 'practice',
-          event: { type: 'finish' },
-          sessionState: finishing,
-        }).catch((err) => console.error('Coach finish turn failed:', err));
+        void (async () => {
+          try {
+            const result = await postCoachTurn({
+              problemSlug: problem.slug,
+              mode: 'practice',
+              event: { type: 'finish' },
+              sessionState: finishing,
+            });
+            // postCoachTurn throws on error, no need to check result.error
+          } catch (err) {
+            console.error('Coach finish turn failed:', err);
+          }
+        })();
         return true;
       }
 
