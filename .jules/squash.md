@@ -68,3 +68,15 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+
+## 2024-07-02 - Infinite UI crash loops from unparseable JSON in LocalStorage
+
+**Learning:** `loadDiagram` used `JSON.parse` inside a `try/catch` to parse saved diagram states. However, in the `catch` block, it only logged the error via `diagramDebug` and returned `null`. It failed to actively purge the corrupted key using `localStorage.removeItem(key)`. This meant that on every mount, the component would attempt to parse the same corrupted data, repeatedly crashing the UI rendering cycle.
+
+**Action:** Whenever parsing data from `localStorage` within a `try/catch` block, the catch block must proactively clear the offending key using `localStorage.removeItem` to ensure the component can recover cleanly and prevent infinite crash loops.
+
+## 2024-07-03 - Vitest missing act() warnings on timer fast-forwards
+
+**Learning:** When using `vi.advanceTimersByTimeAsync()` to fast-forward debounced operations (like `localStorage` writes) in Vitest, these timer advancements often trigger asynchronous React state updates in the tested component. If these timer mock calls are not wrapped in `act()`, the test suite will emit "not wrapped in act(...)" warnings, which pollutes test logs and can lead to unstable test execution.
+
+**Action:** Always wrap `vi.advanceTimersByTimeAsync` calls in `await act(async () => { await vi.advanceTimersByTimeAsync(...) })` when testing React components to ensure all state updates are flushed synchronously within the testing environment, preventing noisy warnings and race conditions. Ensure `act` is explicitly imported from `@testing-library/react`.
