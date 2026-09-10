@@ -1,6 +1,4 @@
 'use client';
-/* eslint-disable react-hooks/refs */
-
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -503,8 +501,7 @@ export default function StepByStepChat({
       setCurrentStepIndex(nextIndex);
     }
     // Only re-validate when the problem or phase changes — not on every step index change.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [problem.slug, problem.steps, currentPhase]);
+      }, [problem.slug, problem.steps, currentPhase]);
 
   const { data: session, status: sessionStatus } = useSession();
 
@@ -794,8 +791,7 @@ export default function StepByStepChat({
     setProbeContext(null);
     setNewItemInput('');
     // Intentionally only on step change — not on every savedStepData write (autosave).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentStepKey]);
+      }, [currentStepKey]);
 
   // After async session restore on the same step key, open review if feedback exists.
   useEffect(() => {
@@ -811,8 +807,7 @@ export default function StepByStepChat({
     if (saved.schemaData?.length) setSchemaData(saved.schemaData);
     setShowFeedback(true);
     // Only react to restore completing / step key — not ongoing autosave mutations.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionRestored, currentStepKey]);
+      }, [sessionRestored, currentStepKey]);
 
   // Dispatch phase change events (include live agenda prompt for diagram header)
   useEffect(() => {
@@ -898,8 +893,7 @@ export default function StepByStepChat({
       cancelled = true;
     };
     // Bootstrap once per problem visit after restore; navigation must not re-plan.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [useCoachLive, keyboardNavPaused, sessionRestored, problem.slug, session?.user?.id]);
+      }, [useCoachLive, keyboardNavPaused, sessionRestored, problem.slug, session?.user?.id]);
 
   useEffect(() => {
     if (!currentStep) return;

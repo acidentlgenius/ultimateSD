@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle, AlertCircle, Lightbulb, TrendingUp, Award, Trophy, Sparkles, Zap, Target } from 'lucide-react';
@@ -179,6 +179,8 @@ export default function FeedbackModal({
     <>
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
         <DialogContent className="max-w-5xl w-full max-h-[90vh] overflow-y-auto p-0">
+
+
           <DialogHeader className="px-6 pt-6 pb-4 border-b border-border/50">
             <DialogTitle className="text-3xl font-bold flex items-center gap-3">
               <div className={`p-2 rounded-xl ${feedback.isAcceptable ? 'bg-green-500/20' : 'bg-orange-500/20'}`}>
@@ -196,6 +198,9 @@ export default function FeedbackModal({
                     : 'Keep Practicing'}
               </span>
             </DialogTitle>
+            <DialogDescription className="sr-only">
+              Feedback results for your submitted answer, detailing accuracy, strengths, areas for improvement, and key points to remember.
+            </DialogDescription>
           </DialogHeader>
 
           <div id="feedback-content" className="p-6 space-y-5">
