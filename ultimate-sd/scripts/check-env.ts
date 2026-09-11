@@ -25,6 +25,11 @@ const cloudinaryEnvVars = [
     'NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME',
 ];
 
+const rateLimitEnvVars = [
+    'UPSTASH_REDIS_REST_URL',
+    'UPSTASH_REDIS_REST_TOKEN',
+];
+
 const envPath = path.resolve(process.cwd(), '.env');
 const envLocalPath = path.resolve(process.cwd(), '.env.local');
 
@@ -55,6 +60,7 @@ const main = () => {
     const missingPayment = paymentEnvVars.filter(key => !loadedEnv[key]);
     const missingEmail = emailEnvVars.filter(key => !loadedEnv[key]);
     const missingCloudinary = cloudinaryEnvVars.filter(key => !loadedEnv[key]);
+    const missingRateLimit = rateLimitEnvVars.filter(key => !loadedEnv[key]);
 
     if (missing.length > 0) {
         console.warn('⚠️  Missing environment variables (functionality may be limited):');
@@ -78,6 +84,11 @@ const main = () => {
     if (missingCloudinary.length > 0) {
         console.warn('⚠️  Cloudinary env vars missing (blog image uploads disabled until set):');
         missingCloudinary.forEach(key => console.warn(`   - ${key}`));
+    }
+
+    if (missingRateLimit.length > 0) {
+        console.warn('⚠️  Upstash rate limit env vars missing (rate limits disabled until set):');
+        missingRateLimit.forEach(key => console.warn(`   - ${key}`));
     }
 
     console.log('✅ All required environment variables are set.');
