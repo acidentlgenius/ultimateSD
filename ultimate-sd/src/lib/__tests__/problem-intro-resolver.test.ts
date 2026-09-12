@@ -50,6 +50,7 @@ describe('getProblemIntro', () => {
   });
 
   it('falls through to bespoke when the DB row is malformed', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
     mocked.problemIntro.findUnique.mockResolvedValue({
       id: 'x',
       problemSlug: 'design-tinyurl',
@@ -71,6 +72,7 @@ describe('getProblemIntro', () => {
   });
 
   it('never throws when the DB lookup fails', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
     mocked.problemIntro.findUnique.mockRejectedValue(new Error('db down'));
     const intro = await getProblemIntro(problem);
     expect(intro.source).toBe('bespoke');
