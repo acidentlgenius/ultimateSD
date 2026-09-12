@@ -31,3 +31,7 @@
 ## 2024-09-12 - Fix CI linting errors due to ref access during render
 **Learning:** Reading a `useRef` directly during a React component's render phase (e.g. `const shown = preferReducedMotion.current ? ...`) violates React rules and triggers `react-hooks/refs` linting errors, which breaks the CI pipeline.
 **Action:** Replace the `useRef` with `useState` and update the dependency arrays of relevant `useEffect` hooks to ensure safe access and reactivity without breaking strict mode rules.
+
+## 2024-09-12 - Fix E2E test failures caused by button and copy updates
+**Learning:** E2E tests often fail when the visible copy, roles, or structure of UI components change (e.g., changing "Submit for Review" to "Submit answer" or updating a section header from "New here? Start with these five" to "Structured Learning Paths"). Playwright tests rely on explicit text and semantic roles.
+**Action:** When updating UI components, also search the `e2e/` directory for any assertions (`getByRole`, `getByText`) that depend on the old copy and update them accordingly.

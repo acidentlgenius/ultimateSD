@@ -35,7 +35,7 @@ test.describe('AI probe mode (flag granted)', () => {
     // Pass the first step (custom tinyurl list step, same as practice.spec.ts)
     await page.getByPlaceholder(/short URL/i).fill('Users can shorten a long URL');
     await page.getByRole('button', { name: 'Add' }).click();
-    await page.getByRole('button', { name: /Submit for Review/i }).click();
+    await page.getByRole('button', { name: /Submit (answer|design)/i }).click();
     await expect(page.getByRole('heading', { name: /Great Job/i })).toBeVisible({
       timeout: 15_000,
     });
