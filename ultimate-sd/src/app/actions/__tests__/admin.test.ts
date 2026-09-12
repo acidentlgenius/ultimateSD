@@ -99,11 +99,16 @@ describe('updateUserPlan', () => {
   });
 
   it('returns success with emailSent false when email is not configured', async () => {
-    const { EmailConfigurationError } = await import('@/lib/email');
-    mockSendPlanWelcomeEmail.mockRejectedValue(new EmailConfigurationError());
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const { EmailConfigurationError } = await import('@/lib/email');
+      mockSendPlanWelcomeEmail.mockRejectedValue(new EmailConfigurationError());
 
-    const result = await updateUserPlan('user-1', 'ai');
+      const result = await updateUserPlan('user-1', 'ai');
 
-    expect(result).toEqual({ success: true, emailSent: false, launchOfferSlotUsed: false });
+      expect(result).toEqual({ success: true, emailSent: false, launchOfferSlotUsed: false });
+    } finally {
+      consoleSpy.mockRestore();
+    }
   });
 });

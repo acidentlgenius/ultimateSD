@@ -68,3 +68,8 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+
+## 2026-06-30 - [React strict mode violations from reading refs during render]
+
+**Learning:** Reading a `useRef`'s `.current` value directly during a React component's render phase is an anti-pattern that violates React strict mode (`react-hooks/refs`). Refs are mutable, but mutating them does not trigger a re-render. If a component relies on a ref's value during render, it will not update when the ref changes, leading to stale closures and broken logic (e.g. `AdaptiveCoachDemo` silently failing to update its animation state when the `prefers-reduced-motion` check completed).
+**Action:** When evaluating flags or dynamic configurations inside a component that dictate how the UI renders, initialize the value using `useState` and update it securely inside a `useEffect` on mount.

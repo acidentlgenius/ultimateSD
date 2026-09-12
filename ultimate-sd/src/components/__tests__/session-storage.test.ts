@@ -7,6 +7,7 @@ describe('session-storage', () => {
   });
 
   it('getAllSessions skips corrupted sessions without failing completely', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
     localStorage.setItem('sd-practice-v1-test1', '{"lastUpdated":"2023-01-01T00:00:00Z", "savedStepData": {}}');
     localStorage.setItem('sd-practice-v1-test2', 'corrupt json');
     localStorage.setItem('sd-practice-v1-test3', '{"lastUpdated":"2023-01-02T00:00:00Z", "savedStepData": {}}');
@@ -18,6 +19,7 @@ describe('session-storage', () => {
   });
 
   it('loadSessionState clears unparseable session data from localStorage', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
     localStorage.setItem('sd-practice-v1-corrupt', 'not a json');
 
     // Attempt to load should fail and clear the item
