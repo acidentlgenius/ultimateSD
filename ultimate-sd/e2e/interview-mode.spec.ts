@@ -47,7 +47,7 @@ test.describe('timed interview mode (flag granted)', () => {
     // Answer the first lite step (list input)
     await page.getByPlaceholder(/compact link/i).fill('Shorten a long URL');
     await page.getByRole('button', { name: 'Add' }).click();
-    await page.getByRole('button', { name: /Submit for Review/i }).click();
+    await page.getByRole('button', { name: /Submit (answer|design)/i }).click();
     await expect(page.getByRole('heading', { name: /Great Job/i })).toBeVisible({
       timeout: 15_000,
     });

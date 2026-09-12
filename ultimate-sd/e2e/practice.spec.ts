@@ -12,7 +12,7 @@ test.describe('Practice flow', () => {
     await page.goto('/practice/design-tinyurl');
     await expect(page.getByRole('heading', { level: 1, name: /Design TinyURL/i })).toBeVisible();
     await expect(page.getByText('Functional Requirements').first()).toBeVisible();
-    await expect(page.getByRole('button', { name: /Submit for Review/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Submit (answer|design)/i })).toBeVisible();
   });
 
   test('submitting a step opens feedback modal', async ({ page }) => {
@@ -22,7 +22,7 @@ test.describe('Practice flow', () => {
     await page.getByRole('button', { name: 'Add' }).click();
     await expect(page.getByText('Users can shorten a long URL')).toBeVisible();
 
-    await page.getByRole('button', { name: /Submit for Review/i }).click();
+    await page.getByRole('button', { name: /Submit (answer|design)/i }).click();
 
     await expect(page.getByRole('heading', { name: /Great Job/i })).toBeVisible({
       timeout: 15_000,
