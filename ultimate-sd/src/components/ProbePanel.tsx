@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { canEndProbe } from '@/lib/probe';
 import type { ChatMessage, SystemDesignProblem } from '@/types';
+import { fetchWithRetry, getUserFacingFetchError } from '@/lib/fetchUtils';
 
 interface ProbePanelProps {
   problem: SystemDesignProblem;
@@ -29,7 +30,7 @@ export default function ProbePanel({ problem, phase, stepAnswer, onClose }: Prob
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/ai/chat', {
+      const res = await fetchWithRetry('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -42,15 +43,16 @@ export default function ProbePanel({ problem, phase, stepAnswer, onClose }: Prob
         }),
       });
       const data = await res.json();
-      if (!res.ok) {
+      if (!res.ok || data.error) {
         setError(data.error ?? 'Probe unavailable.');
         return;
       }
+
       setMessages([...history, data.message]);
       setRound(data.round);
       setIsFinal(data.isFinal);
-    } catch {
-      setError('Probe unavailable.');
+    } catch (e) {
+      setError(getUserFacingFetchError(e) || 'Probe unavailable.');
     } finally {
       setLoading(false);
     }

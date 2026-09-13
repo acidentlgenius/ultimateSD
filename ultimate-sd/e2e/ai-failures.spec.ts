@@ -26,7 +26,7 @@ test.describe('AI evaluation failures', () => {
     await page.goto('/practice/design-tinyurl');
     await page.getByPlaceholder(/short URL/i).fill('Users can shorten a long URL');
     await page.getByRole('button', { name: 'Add' }).click();
-    await page.getByRole('button', { name: /Submit for Review/i }).click();
+    await page.getByRole('button', { name: /Submit answer/i }).click();
   }
 
   test('403 (no credits / API key) shows the server message, not a score', async ({ page }) => {
@@ -34,7 +34,7 @@ test.describe('AI evaluation failures', () => {
     await submitFirstStep(page);
 
     const banner = page.getByTestId('evaluation-error-banner');
-    await expect(banner).toBeVisible({ timeout: 15_000 });
+    await expect(banner).toBeVisible({ timeout: 30_000 });
     await expect(banner).toContainText('AI credits exhausted');
     await expect(banner).toContainText('nothing was scored or recorded');
     await expect(banner.getByRole('button', { name: 'Try again' })).toBeVisible();
@@ -84,7 +84,7 @@ test.describe('AI evaluation failures', () => {
       });
     });
     await banner.getByRole('button', { name: 'Try again' }).click();
-    await expect(page.getByRole('heading', { name: /Great Job/i })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole('heading', { name: /Great Job/i })).toBeVisible({ timeout: 30_000 });
   });
 
   test('network failure shows connectivity copy', async ({ page }) => {

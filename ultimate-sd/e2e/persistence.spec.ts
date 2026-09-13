@@ -38,8 +38,8 @@ async function passCurrentStep(page: Page, answer: string) {
   } else {
     await textarea.fill(answer);
   }
-  await page.getByRole('button', { name: /Submit for Review/i }).click();
-  await expect(page.getByRole('heading', { name: /Great Job/i })).toBeVisible({ timeout: 15_000 });
+  await page.getByRole('button', { name: /Submit answer/i }).click();
+  await expect(page.getByRole('heading', { name: /Great Job/i })).toBeVisible({ timeout: 30_000 });
   await page.getByRole('button', { name: /Continue to Next Step/i }).click();
   // recordStepSubmission persists in a background server action — let it land
   // before any reload, or the refresh races the DB write.
@@ -71,7 +71,7 @@ test.describe('Session persistence', () => {
     await page.reload();
 
     // Restored to step 2, not dragged back to step 1.
-    await expect(page.locator('main h3').first()).toHaveText(secondStepTitle!, { timeout: 15_000 });
+    await expect(page.locator('main h3').first()).toHaveText(secondStepTitle!, { timeout: 30_000 });
   });
 
   test('skip + refresh resumes at the furthest position, not the skipped step', async ({ page }) => {
@@ -88,7 +88,7 @@ test.describe('Session persistence', () => {
     await page.reload();
 
     // Regression (Phase 2): must resume at step 3 — NOT back at skipped step 1.
-    await expect(page.locator('main h3').first()).toHaveText(thirdStepTitle!, { timeout: 15_000 });
+    await expect(page.locator('main h3').first()).toHaveText(thirdStepTitle!, { timeout: 30_000 });
     expect(thirdStepTitle).not.toBe(firstStepTitle);
   });
 

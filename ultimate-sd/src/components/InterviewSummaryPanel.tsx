@@ -22,6 +22,7 @@ import {
 } from '@/lib/interview-mode';
 import { exportInterviewDebriefPdf } from '@/lib/pdf-export-interview-debrief';
 import { toast } from 'sonner';
+import { fetchWithRetry, getUserFacingFetchError } from '@/lib/fetchUtils';
 
 interface InterviewSummaryPanelProps {
   problem: SystemDesignProblem;
@@ -63,13 +64,13 @@ export default function InterviewSummaryPanel({
     const run = async () => {
       try {
         const answers = buildInterviewAnswers(phaseSteps, savedStepData);
-        const res = await fetch('/api/interview/summary', {
+        const res = await fetchWithRetry('/api/interview/summary', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ slug: problem.slug, answers, variant: interviewVariant }),
         });
         const data = await res.json();
-        if (!res.ok || !data.summary) {
+        if (!res.ok || data.error || !data.summary) {
           setError(data.error ?? 'Could not generate your debrief.');
           onSummaryFailed();
           return;
@@ -77,8 +78,8 @@ export default function InterviewSummaryPanel({
         setSummary(data.summary);
         if (data.debriefId) setDebriefId(data.debriefId);
         onSummaryReady();
-      } catch {
-        setError('Could not generate your debrief.');
+      } catch (e) {
+        setError(getUserFacingFetchError(e) || 'Could not generate your debrief.');
         onSummaryFailed();
       } finally {
         inFlightRef.current = false;
@@ -91,20 +92,20 @@ export default function InterviewSummaryPanel({
     if (!debriefId) return;
     setIsSharing(true);
     try {
-      const res = await fetch('/api/interview/share', {
+      const res = await fetchWithRetry('/api/interview/share', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ debriefId }),
       });
       const data = await res.json();
-      if (!res.ok || !data.url) {
+      if (!res.ok || data.error || !data.url) {
         toast.error(data.error ?? 'Could not create share link.');
         return;
       }
       await navigator.clipboard.writeText(data.url);
       toast.success('Share link copied to clipboard');
-    } catch {
-      toast.error('Could not create share link.');
+    } catch (e) {
+      toast.error(getUserFacingFetchError(e) || 'Could not create share link.');
     } finally {
       setIsSharing(false);
     }

@@ -3,6 +3,7 @@
 import { useCallback, useReducer, useRef, useState } from 'react';
 import { Mic, Phone, Volume2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { fetchWithRetry, getUserFacingFetchError } from '@/lib/fetchUtils';
 import { cn } from '@/lib/utils';
 import {
   INITIAL_VOICE_STATE,
@@ -49,12 +50,13 @@ export default function VoicePanel({
       dispatch(entryEvent);
       const end = () => dispatch({ type: 'PLAYBACK_ENDED' });
       try {
-        const res = await fetch('/api/voice/speak', {
+        const res = await fetchWithRetry('/api/voice/speak', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ sessionId: currentSessionId, text }),
         });
-        if (!res.ok) {
+        const data = await res.clone().json().catch(() => ({}));
+        if (!res.ok || data.error) {
           // No audio is non-fatal: the transcript is on screen. End the turn.
           end();
           return;
@@ -73,21 +75,21 @@ export default function VoicePanel({
 
   const startSession = useCallback(async () => {
     try {
-      const res = await fetch('/api/voice/session', {
+      const res = await fetchWithRetry('/api/voice/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ slug, practiceSessionId }),
       });
       const body = await res.json();
-      if (!res.ok) {
-        fail(body.error ?? 'Could not start the voice session.');
+      if (!res.ok || body.error) {
+        fail(body.error);
         return;
       }
       setSessionId(body.sessionId);
       setTranscript([{ role: 'interviewer', text: body.question }]);
       await speak(body.question, body.sessionId, { type: 'SPEAK' });
-    } catch {
-      fail('Could not start the voice session.');
+    } catch (e) {
+      fail(getUserFacingFetchError(e) || 'Could not start the voice session.');
     }
   }, [slug, practiceSessionId, fail, speak]);
 
@@ -107,29 +109,29 @@ export default function VoicePanel({
           const form = new FormData();
           form.append('sessionId', sessionId);
           form.append('audio', audio, 'answer.webm');
-          const sttRes = await fetch('/api/voice/transcribe', { method: 'POST', body: form });
+          const sttRes = await fetchWithRetry('/api/voice/transcribe', { method: 'POST', body: form });
           const sttBody = await sttRes.json();
-          if (!sttRes.ok) {
-            fail(sttBody.error ?? 'Transcription failed.');
+          if (!sttRes.ok || sttBody.error) {
+            fail(sttBody.error);
             return;
           }
           setTranscript((prev) => [...prev, { role: 'candidate', text: sttBody.transcript }]);
           dispatch({ type: 'TRANSCRIBED' });
 
-          const replyRes = await fetch('/api/voice/reply', {
+          const replyRes = await fetchWithRetry('/api/voice/reply', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ sessionId, transcript: sttBody.transcript }),
           });
           const replyBody = await replyRes.json();
-          if (!replyRes.ok) {
-            fail(replyBody.error ?? 'The interviewer did not respond.');
+          if (!replyRes.ok || replyBody.error) {
+            fail(replyBody.error);
             return;
           }
           setTranscript((prev) => [...prev, { role: 'interviewer', text: replyBody.text }]);
           await speak(replyBody.text, sessionId, { type: 'REPLY_READY' });
-        } catch {
-          fail('Network error during the voice turn.');
+        } catch (e) {
+          fail(getUserFacingFetchError(e) || 'Network error during the voice turn.');
         }
       };
       recorderRef.current = recorder;
