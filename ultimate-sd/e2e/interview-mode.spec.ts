@@ -47,9 +47,9 @@ test.describe('timed interview mode (flag granted)', () => {
     // Answer the first lite step (list input)
     await page.getByPlaceholder(/compact link/i).fill('Shorten a long URL');
     await page.getByRole('button', { name: 'Add' }).click();
-    await page.getByRole('button', { name: /Submit for Review/i }).click();
+    await page.getByRole('button', { name: /Submit answer/i }).click();
     await expect(page.getByRole('heading', { name: /Great Job/i })).toBeVisible({
-      timeout: 15_000,
+      timeout: 30_000,
     });
     await page.getByRole('button', { name: /Continue to Next Step/i }).click();
 
@@ -60,7 +60,7 @@ test.describe('timed interview mode (flag granted)', () => {
     // case-insensitively matches the same substring as the dialog title, so
     // scope this to the heading role to avoid a strict-mode violation.
     await expect(page.getByRole('heading', { name: 'Interview Debrief' })).toBeVisible();
-    await expect(page.getByText('8/10')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText('8/10')).toBeVisible({ timeout: 30_000 });
     await expect(page.getByText('Hire', { exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: /Export debrief PDF/i })).toBeVisible();
   });

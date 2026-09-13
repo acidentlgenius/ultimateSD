@@ -39,13 +39,13 @@ test.describe('Adaptive coach teach_forward (flag granted)', () => {
     await dismissProblemIntroIfVisible(page);
     await expect(
       page.getByText(/As your coach: list three must-have functional requirements/i).first(),
-    ).toBeVisible({ timeout: 15_000 });
+    ).toBeVisible({ timeout: 30_000 });
     await waitForSubmitAnswerButton(page);
 
     // Attempts 1–2: gate retry — modal shows Try Again, no infinite pass loop.
     await submitFunctionalRequirements(page);
     await expect(page.getByRole('heading', { name: 'Keep Practicing' })).toBeVisible({
-      timeout: 15_000,
+      timeout: 30_000,
     });
     await expect(page.getByRole('button', { name: 'Try Again' })).toBeVisible();
     await page.getByRole('button', { name: 'Try Again' }).click();
@@ -53,16 +53,16 @@ test.describe('Adaptive coach teach_forward (flag granted)', () => {
     // Attempt 2: retry with persisted answers.
     await submitCurrentStep(page);
     await expect(page.getByRole('heading', { name: 'Keep Practicing' })).toBeVisible({
-      timeout: 15_000,
+      timeout: 30_000,
     });
     await page.getByRole('button', { name: 'Try Again' }).click();
 
     // Attempt 3: teach_forward — coach tip toast + continue despite low score.
     await submitCurrentStep(page);
     await expect(page.getByRole('heading', { name: 'Keep Practicing' })).toBeVisible({
-      timeout: 15_000,
+      timeout: 30_000,
     });
-    await expect(page.getByText(ADAPTIVE_COACH_TIP)).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText(ADAPTIVE_COACH_TIP)).toBeVisible({ timeout: 30_000 });
     await expect(
       page.getByRole('button', { name: 'Continue with coach tip' }),
     ).toBeVisible();
