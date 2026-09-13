@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import StepFeedbackPanel from '../StepFeedbackPanel';
 import { updateStreak } from '@/app/actions/gamification';
 
@@ -24,6 +24,10 @@ describe('StepFeedbackPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(updateStreak).mockResolvedValue({ success: true, streak: 1 } as never);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('shows a compact needs-work status with actionable notes', () => {
@@ -67,5 +71,48 @@ describe('StepFeedbackPanel', () => {
     );
 
     expect(screen.queryByText('Your submission')).toBeNull();
+  });
+
+  it('handles server action errors from updateStreak', async () => {
+    vi.mocked(updateStreak).mockResolvedValue({ error: 'Server error occurred' } as any);
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    render(
+      <StepFeedbackPanel
+        feedback={{ ...baseFeedback, score: 8, accuracy: 80, isAcceptable: true }}
+        probeEntitled={false}
+        xpEarned={20}
+        onStartProbe={() => {}}
+      />,
+    );
+
+    // Give the async useEffect time to resolve
+    await vi.waitFor(() => {
+      expect(updateStreak).toHaveBeenCalled();
+    });
+
+    expect(consoleSpy).toHaveBeenCalledWith('Failed to update streak:', 'Server error occurred');
+  });
+
+  it('handles network errors from updateStreak', async () => {
+    const error = new Error('Network failure');
+    vi.mocked(updateStreak).mockRejectedValue(error);
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    render(
+      <StepFeedbackPanel
+        feedback={{ ...baseFeedback, score: 8, accuracy: 80, isAcceptable: true }}
+        probeEntitled={false}
+        xpEarned={20}
+        onStartProbe={() => {}}
+      />,
+    );
+
+    // Give the async useEffect time to resolve
+    await vi.waitFor(() => {
+      expect(updateStreak).toHaveBeenCalled();
+    });
+
+    expect(consoleSpy).toHaveBeenCalledWith('Error updating streak:', error);
   });
 });
