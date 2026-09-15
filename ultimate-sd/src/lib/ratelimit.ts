@@ -18,8 +18,8 @@ const redis = createRedisClient();
 export const getWaitlistRateLimit = () => {
     if (!redis) {
         return {
-            limit: async () => ({ success: true })
-        };
+            limit: async (identifier: string) => ({ success: true })
+        } as any;
     }
     return new Ratelimit({
         redis,
