@@ -16,12 +16,8 @@ test.describe('Anonymous funnel', () => {
     await suppressFirstRunUx(page);
   });
 
-  test('landing shows the beginner track and honest problem CTAs', async ({ page }) => {
+  test('landing shows honest problem CTAs', async ({ page }) => {
     await page.goto('/');
-
-    // Start Here track with its CTA
-    await expect(page.getByRole('heading', { name: /New here\? Start with these five/i })).toBeVisible();
-    await expect(page.getByTestId('start-here-cta')).toBeVisible();
 
     // Hero primary CTA points at a real destination
     const heroCta = page.getByRole('link', { name: /Start Solving/i });
@@ -34,7 +30,7 @@ test.describe('Anonymous funnel', () => {
 
   test('free problem → login gate with callbackUrl → lands back on the problem', async ({ page }) => {
     await page.goto('/');
-    await page.getByTestId('start-here-cta').click();
+    await page.getByRole('link', { name: /Start Solving/i }).click();
 
     // Hard gate, place preserved
     await page.waitForURL(/\/login\?callbackUrl=/);
