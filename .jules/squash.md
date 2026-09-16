@@ -68,3 +68,8 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+## 2026-06-30 - [React Refs in Render Phase]
+
+**Learning:** When dealing with UI flags like `preferReducedMotion` that dictate render output (e.g., whether to render an animated element vs a static element), do not use `useRef` to hold the state. Setting `useRef.current` does not trigger a re-render. If a component evaluates such a condition in a `useEffect` and saves it to a ref, the component will not re-render to reflect the updated preference, resulting in bugs and linting errors.
+
+**Action:** For variables that affect the render phase (e.g., conditionally mapping an array, conditionally applying styles), always use `useState` rather than `useRef`. Always include the state variable in the dependency array of any `useEffect` that reads from it to prevent stale closures.
