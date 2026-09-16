@@ -43,9 +43,19 @@ export default function StepFeedbackPanel({
 
   useEffect(() => {
     if (feedback.isAcceptable && !isCoachedAdvance) {
-      void updateStreak().catch((error) => {
-        console.error('Error updating streak:', error);
-      });
+      // SQUASH: Root Cause: Server actions return error objects on failure, not promise rejections.
+      // SQUASH: Fix: Explicitly await the result and check for the `error` property.
+      const handleStreakUpdate = async () => {
+        try {
+          const result = await updateStreak();
+          if (result && 'error' in result && result.error) {
+            console.error('Error updating streak:', result.error);
+          }
+        } catch (error) {
+          console.error('Error updating streak:', error);
+        }
+      };
+      void handleStreakUpdate();
     }
   }, [feedback.isAcceptable, isCoachedAdvance]);
 
