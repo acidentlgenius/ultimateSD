@@ -69,34 +69,36 @@ export const BlogEditor = forwardRef<BlogEditorHandle, BlogEditorProps>(function
         }}
       />
       <div className="flex flex-wrap items-center gap-1 border-b p-2">
-        <Button type="button" variant="ghost" size="icon-sm" onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}>
+        <Button aria-label="Heading 2" title="Heading 2" type="button" variant="ghost" size="icon-sm" onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}>
           <Heading2 className="h-4 w-4" />
         </Button>
-        <Button type="button" variant="ghost" size="icon-sm" onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}>
+        <Button aria-label="Heading 3" title="Heading 3" type="button" variant="ghost" size="icon-sm" onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}>
           <Heading3 className="h-4 w-4" />
         </Button>
-        <Button type="button" variant="ghost" size="icon-sm" onClick={() => editor.chain().focus().toggleBold().run()}>
+        <Button aria-label="Bold" title="Bold" type="button" variant="ghost" size="icon-sm" onClick={() => editor.chain().focus().toggleBold().run()}>
           <Bold className="h-4 w-4" />
         </Button>
-        <Button type="button" variant="ghost" size="icon-sm" onClick={() => editor.chain().focus().toggleItalic().run()}>
+        <Button aria-label="Italic" title="Italic" type="button" variant="ghost" size="icon-sm" onClick={() => editor.chain().focus().toggleItalic().run()}>
           <Italic className="h-4 w-4" />
         </Button>
-        <Button type="button" variant="ghost" size="icon-sm" onClick={() => editor.chain().focus().toggleBulletList().run()}>
+        <Button aria-label="Bullet List" title="Bullet List" type="button" variant="ghost" size="icon-sm" onClick={() => editor.chain().focus().toggleBulletList().run()}>
           <List className="h-4 w-4" />
         </Button>
-        <Button type="button" variant="ghost" size="icon-sm" onClick={() => editor.chain().focus().toggleOrderedList().run()}>
+        <Button aria-label="Ordered List" title="Ordered List" type="button" variant="ghost" size="icon-sm" onClick={() => editor.chain().focus().toggleOrderedList().run()}>
           <ListOrdered className="h-4 w-4" />
         </Button>
-        <Button type="button" variant="ghost" size="icon-sm" onClick={() => editor.chain().focus().toggleBlockquote().run()}>
+        <Button aria-label="Blockquote" title="Blockquote" type="button" variant="ghost" size="icon-sm" onClick={() => editor.chain().focus().toggleBlockquote().run()}>
           <Quote className="h-4 w-4" />
         </Button>
-        <Button type="button" variant="ghost" size="icon-sm" onClick={() => editor.chain().focus().toggleCodeBlock().run()}>
+        <Button aria-label="Code Block" title="Code Block" type="button" variant="ghost" size="icon-sm" onClick={() => editor.chain().focus().toggleCodeBlock().run()}>
           <Code className="h-4 w-4" />
         </Button>
-        <Button type="button" variant="ghost" size="icon-sm" onClick={() => fileInputRef.current?.click()}>
+        <Button aria-label="Insert Image" title="Insert Image" type="button" variant="ghost" size="icon-sm" onClick={() => fileInputRef.current?.click()}>
           <ImageIcon className="h-4 w-4" />
         </Button>
         <Button
+          aria-label="Insert Diagram"
+          title="Insert Diagram"
           type="button"
           variant="ghost"
           size="icon-sm"
