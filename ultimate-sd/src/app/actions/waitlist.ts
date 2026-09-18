@@ -2,8 +2,9 @@
 
 import { prisma } from '@/lib/prisma';
 import { isValidEmail, normalizeEmail } from '@/lib/waitlist';
+import { rateLimit } from '@/lib/ratelimit';
+import { headers } from 'next/headers';
 
-// TODO: rate-limit before heavy traffic
 export async function joinWaitlist(email: string): Promise<{ success: boolean; error?: string }> {
   const normalized = normalizeEmail(email);
   if (!isValidEmail(normalized)) {
@@ -11,6 +12,16 @@ export async function joinWaitlist(email: string): Promise<{ success: boolean; e
   }
 
   try {
+    const headersList = await headers();
+    const ip = headersList.get('x-forwarded-for') || '127.0.0.1';
+
+    // Rate limit based on IP
+    const { success: rateLimitSuccess } = await rateLimit(`waitlist_${ip}`);
+
+    if (!rateLimitSuccess) {
+      return { success: false, error: 'Too many requests. Please try again later.' };
+    }
+
     // Upsert = idempotent: signing up twice is a no-op, not an error.
     await prisma.waitlistSignup.upsert({
       where: { email: normalized },
