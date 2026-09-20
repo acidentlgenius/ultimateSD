@@ -27,3 +27,9 @@
 **Learning:** `loadSessionState` relied on `clearSessionState(problemSlug)` to handle invalid data. However, if the `localStorage` key contained structurally valid JSON but the *content itself* was not valid JSON (causing `JSON.parse` to throw), the catch block would execute. But if `clearSessionState` failed or wasn't robust enough, the corrupted data stayed. On every subsequent mount, the UI would try to parse the corrupt data, throw, and crash again.
 
 **Action:** When purging corrupted or unparseable `localStorage` state, use direct `localStorage.removeItem(key)` rather than higher-level helpers to guarantee the bad data is purged, since helper methods might inadvertently fail when interacting with corrupted state.
+
+## 2024-09-20 - Module-level exceptions in rate-limiter initialization
+
+**Learning:** Initializing `@upstash/ratelimit` with `Redis.fromEnv()` at the top-level scope of a module causes an immediate runtime exception during application startup or build if the required environment variables (`UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`) are missing, even if defensive checks exist downstream in the consumer functions.
+
+**Action:** When creating a rate-limiter utility instance, conditionally check for the presence of required environment variables *before* invoking `Redis.fromEnv()` and instantiating `Ratelimit`. Assign it to `null` if the variables are missing, and gracefully degrade in the consumer by checking for the `ratelimit` instance before calling `.limit()`.
