@@ -68,3 +68,9 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+
+## 2025-02-23 - [Cannot Access Refs During Render React Strict Mode Violation]
+
+**Learning:** When using conditional logic in a React component that depends on a `useRef` value (like `preferReducedMotion.current`) directly within the render phase (e.g., to conditionally skip animations), it violates React's "Cannot access refs during render" rule. Because mutating a ref does not trigger a re-render, if the ref is modified inside a `useEffect` (e.g., after checking `window.matchMedia`), the component will not re-render to reflect the updated ref value, leading to broken UI states (like animations still playing despite the user's preference).
+
+**Action:** Never read from a `useRef` during the render phase for conditional rendering. Always replace it with a `useState` variable initialized with a safe default (or the synchronous value if available on the server). Update the state inside the `useEffect` and explicitly include the new state variable in the dependency arrays of any other `useEffect` or `useCallback` hooks that rely on that condition to prevent stale closures.
