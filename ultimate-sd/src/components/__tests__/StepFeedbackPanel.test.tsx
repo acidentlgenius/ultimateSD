@@ -68,4 +68,46 @@ describe('StepFeedbackPanel', () => {
 
     expect(screen.queryByText('Your submission')).toBeNull();
   });
+
+  it('logs an error if updateStreak returns an error object (silent failure prevention)', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.mocked(updateStreak).mockResolvedValue({ error: 'Database timeout' } as never);
+
+    const { waitFor } = await import('@testing-library/react');
+
+    render(
+      <StepFeedbackPanel
+        feedback={{ ...baseFeedback, isAcceptable: true }}
+        probeEntitled={false}
+        onStartProbe={() => {}}
+      />
+    );
+
+    await waitFor(() => {
+      expect(consoleSpy).toHaveBeenCalledWith('Error updating streak:', 'Database timeout');
+    });
+
+    consoleSpy.mockRestore();
+  });
+
+  it('logs an error if updateStreak throws a network exception', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.mocked(updateStreak).mockRejectedValue(new Error('Network disconnected'));
+
+    const { waitFor } = await import('@testing-library/react');
+
+    render(
+      <StepFeedbackPanel
+        feedback={{ ...baseFeedback, isAcceptable: true }}
+        probeEntitled={false}
+        onStartProbe={() => {}}
+      />
+    );
+
+    await waitFor(() => {
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('streak'), expect.any(Error));
+    });
+
+    consoleSpy.mockRestore();
+  });
 });
