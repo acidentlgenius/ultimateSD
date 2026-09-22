@@ -43,10 +43,19 @@ export default function StepFeedbackPanel({
 
   useEffect(() => {
     if (feedback.isAcceptable && !isCoachedAdvance) {
-      void updateStreak().catch((error) => {
-        console.error('Error updating streak:', error);
-      });
+      const handleStreakUpdate = async () => {
+        try {
+          const result = await updateStreak();
+          if (result && 'error' in result && result.error) {
+            console.error('Failed to update streak:', result.error);
+          }
+        } catch (error) {
+          console.error('Error updating streak:', error);
+        }
+      };
+      handleStreakUpdate();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [feedback.isAcceptable, isCoachedAdvance]);
 
   const statusLabel = feedback.isAcceptable
