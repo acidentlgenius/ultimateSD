@@ -123,6 +123,38 @@ describe('FeedbackModal', () => {
     vi.useRealTimers();
   });
 
+  it('does not throw accessibility warnings regarding missing DialogDescription', () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const feedback = {
+      score: 10,
+      accuracy: 100,
+      strengths: [],
+      weaknesses: [],
+      isAcceptable: true
+    };
+
+    render(
+      <FeedbackModal
+        isOpen={true}
+        feedback={feedback}
+        onClose={() => {}}
+        probeEntitled={false}
+        onStartProbe={() => {}}
+      />
+    );
+
+    // Verify console.error was not called with the specific Radix UI warning
+    const calls = consoleSpy.mock.calls;
+    const hasAccessibilityWarning = calls.some(call =>
+      call.join(' ').includes('Warning: Missing `Description` or `aria-describedby')
+    );
+
+    expect(hasAccessibilityWarning).toBe(false);
+
+    consoleSpy.mockRestore();
+  });
+
   it('shows the submitted answer that was scored', () => {
     const feedback = {
       score: 1,
