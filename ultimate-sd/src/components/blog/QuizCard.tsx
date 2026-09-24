@@ -45,10 +45,13 @@ export function QuizCard({ block }: { block: QuizBlock }) {
           }
 
           return (
-            <div
+            <button
+              type="button"
+              disabled={selected !== null}
               key={index}
               onClick={() => handleSelect(index)}
               className={cn(
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                 "w-full text-left p-4 rounded-lg border transition-all flex items-center justify-between group",
                 stateClass
               )}
@@ -62,7 +65,7 @@ export function QuizCard({ block }: { block: QuizBlock }) {
                   isActuallyCorrect ? "text-green-500" : "text-red-500"
                 )} />
               )}
-            </div>
+            </button>
           );
         })}
       </div>
