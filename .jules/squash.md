@@ -68,3 +68,9 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+
+## 2024-09-24 - [React hooks refs anti-pattern during render]
+
+**Learning:** Reading `useRef` values during a React component's render phase is an anti-pattern that violates React strict mode (triggering `react-hooks/refs` lint errors). A ref value should only be accessed outside of render (e.g. inside `useEffect` or event handlers).
+
+**Action:** When replacing these refs with `useState`, explicitly ensure the newly introduced state variable is meticulously added to the dependency arrays of all relevant `useEffect` or `useCallback` hooks that reference it to prevent stale closures and functional regressions.
