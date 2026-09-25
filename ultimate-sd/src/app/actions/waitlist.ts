@@ -2,12 +2,21 @@
 
 import { prisma } from '@/lib/prisma';
 import { isValidEmail, normalizeEmail } from '@/lib/waitlist';
+import { checkRateLimit } from '@/lib/ratelimit';
+import { headers } from 'next/headers';
 
-// TODO: rate-limit before heavy traffic
 export async function joinWaitlist(email: string): Promise<{ success: boolean; error?: string }> {
   const normalized = normalizeEmail(email);
   if (!isValidEmail(normalized)) {
     return { success: false, error: 'Please enter a valid email address.' };
+  }
+
+  const h = await headers();
+  const ip = h.get('x-forwarded-for') || h.get('x-real-ip') || 'anonymous';
+  const { success: rateLimitSuccess } = await checkRateLimit(ip);
+
+  if (!rateLimitSuccess) {
+    return { success: false, error: 'Too many requests. Please try again later.' };
   }
 
   try {
