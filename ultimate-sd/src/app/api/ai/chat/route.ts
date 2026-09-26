@@ -8,8 +8,15 @@ import { ChatMessage } from '@/types';
 import { getUserLLM, AIAccessError } from '@/lib/user-llm';
 import { canAccessFeature } from '@/lib/feature-flags-server';
 import { isFinalProbeRound, isValidProbeRound } from '@/lib/probe';
+import { checkRateLimit, aiRatelimit } from '@/lib/ratelimit';
+import { headers } from 'next/headers';
 
 export async function POST(req: NextRequest) {
+  const ip = (await headers()).get('x-forwarded-for') || '127.0.0.1';
+  const rateLimitResult = await checkRateLimit(ip, aiRatelimit);
+  if (!rateLimitResult.success) {
+    return NextResponse.json({ error: 'Too many requests. Please wait a moment.' }, { status: 429 });
+  }
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

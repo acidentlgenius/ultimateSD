@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
 
+vi.mock('next/headers', () => ({
+  headers: vi.fn().mockResolvedValue({ get: vi.fn().mockReturnValue('127.0.0.1') }),
+}));
+
 vi.mock('@/auth', () => ({ auth: vi.fn() }));
 vi.mock('@/lib/feature-flags-server', () => ({ canAccessFeature: vi.fn() }));
 vi.mock('@/lib/user-llm', () => {
@@ -22,6 +26,7 @@ import { auth } from '@/auth';
 import { canAccessFeature } from '@/lib/feature-flags-server';
 import { AIAccessError, getUserLLM } from '@/lib/user-llm';
 import { getProbeResponse } from '@/lib/langgraph';
+import { headers } from 'next/headers';
 import { POST } from '@/app/api/ai/chat/route';
 
 const mockedAuth = vi.mocked(auth);
