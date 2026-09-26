@@ -68,4 +68,25 @@ describe('StepFeedbackPanel', () => {
 
     expect(screen.queryByText('Your submission')).toBeNull();
   });
+
+  it('logs error when updateStreak returns an error object (floating promise test)', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.mocked(updateStreak).mockResolvedValue({ error: 'Server error string' } as never);
+
+    const { unmount } = render(
+      <StepFeedbackPanel
+        feedback={{ ...baseFeedback, score: 8, accuracy: 80, isAcceptable: true }}
+        probeEntitled={false}
+        onStartProbe={() => {}}
+      />,
+    );
+
+    // Wait for the async effect to fire
+    await vi.waitFor(() => {
+        expect(consoleSpy).toHaveBeenCalledWith('Failed to update streak:', 'Server error string');
+    });
+
+    consoleSpy.mockRestore();
+    unmount();
+  });
 });
