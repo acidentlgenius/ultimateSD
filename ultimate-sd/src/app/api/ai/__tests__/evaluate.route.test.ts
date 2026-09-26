@@ -2,6 +2,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
 
+vi.mock('next/headers', () => ({
+  headers: vi.fn().mockResolvedValue({ get: vi.fn().mockReturnValue('127.0.0.1') }),
+}));
+
 vi.mock('@/auth', () => ({ auth: vi.fn() }));
 vi.mock('@/lib/feature-flags-server', () => ({ canAccessFeature: vi.fn() }));
 vi.mock('@/lib/session-user', () => ({
