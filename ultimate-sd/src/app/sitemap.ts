@@ -19,13 +19,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.9,
     }))
 
-    const blogPosts = await getPublishedBlogPosts()
-    const blogUrls = blogPosts.map((post) => ({
-        url: `${SITE_URL}/blog/${post.slug}`,
-        lastModified: post.updatedAt,
-        changeFrequency: 'weekly' as const,
-        priority: 0.7,
-    }))
+    let blogUrls: any[] = []
+    try {
+        const blogPosts = await getPublishedBlogPosts()
+        blogUrls = blogPosts.map((post) => ({
+            url: `${SITE_URL}/blog/${post.slug}`,
+            lastModified: post.updatedAt,
+            changeFrequency: 'weekly' as const,
+            priority: 0.7,
+        }))
+    } catch (err) {
+        console.warn('Skipping dynamic blog posts for sitemap due to DB error (likely prerender without DB):', err)
+    }
 
     return [
         {
