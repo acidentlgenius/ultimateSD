@@ -33,6 +33,9 @@ const VALID_JSON = JSON.stringify({
 });
 
 describe('getInterviewSummary', () => {
+  beforeEach(() => { vi.spyOn(console, 'error').mockImplementation(() => {}); });
+  afterEach(() => { vi.restoreAllMocks(); });
+
   it('parses a valid JSON debrief', async () => {
     const summary = await getInterviewSummary(problem, answers, fakeLlm(VALID_JSON));
     expect(summary).toEqual(JSON.parse(VALID_JSON));

@@ -1,10 +1,12 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { getAllSessions, loadSessionState } from '../../lib/session-storage';
 
 describe('session-storage', () => {
   beforeEach(() => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
     localStorage.clear();
   });
+  afterEach(() => { vi.restoreAllMocks(); });
 
   it('getAllSessions skips corrupted sessions without failing completely', () => {
     localStorage.setItem('sd-practice-v1-test1', '{"lastUpdated":"2023-01-01T00:00:00Z", "savedStepData": {}}');
