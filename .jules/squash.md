@@ -68,3 +68,9 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+
+## 2024-06-25 - Mocking Media Devices in JSDOM
+
+**Learning:** When testing UI components that utilize microphone or media recording in a Vitest JSDOM environment, the test environment lacks native browser APIs like `navigator.mediaDevices` and `MediaRecorder`. Failing to mock these results in the component crashing during the test when it attempts to start a voice session.
+
+**Action:** Always mock `navigator.mediaDevices.getUserMedia` using `Object.defineProperty` and provide a mock implementation for `window.MediaRecorder` to prevent tests from crashing when asserting on voice or media-dependent components in JSDOM.
