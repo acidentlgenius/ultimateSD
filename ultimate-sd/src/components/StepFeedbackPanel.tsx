@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useEffect, type ReactNode } from 'react';
-import { Button } from '@/components/ui/button';
-import { CheckCircle2, CircleAlert, Lightbulb } from 'lucide-react';
-import { updateStreak } from '@/app/actions/gamification';
-import { LockedFeatureButton } from '@/components/LockedFeatureButton';
-import { cn } from '@/lib/utils';
-import type { GateDecision } from '@/lib/adaptive-coach/types';
+import { useEffect, type ReactNode } from "react";
+import { Button } from "@/components/ui/button";
+import { CheckCircle2, CircleAlert, Lightbulb } from "lucide-react";
+import { updateStreak } from "@/app/actions/gamification";
+import { LockedFeatureButton } from "@/components/LockedFeatureButton";
+import { cn } from "@/lib/utils";
+import type { GateDecision } from "@/lib/adaptive-coach/types";
 
 export type StepFeedbackData = {
   score: number;
@@ -39,50 +39,61 @@ export default function StepFeedbackPanel({
   onStartProbe,
 }: StepFeedbackPanelProps) {
   const isCoachedAdvance =
-    gate?.action === 'teach_forward' || gate?.action === 'advance_budget';
+    gate?.action === "teach_forward" || gate?.action === "advance_budget";
 
   useEffect(() => {
     if (feedback.isAcceptable && !isCoachedAdvance) {
-      void updateStreak().catch((error) => {
-        console.error('Error updating streak:', error);
-      });
+      const handleStreakUpdate = async () => {
+        try {
+          const result = await updateStreak();
+          if (result && "error" in result && result.error) {
+            console.error("Failed to update streak:", result.error);
+          }
+        } catch (error) {
+          console.error("Error updating streak:", error);
+        }
+      };
+      handleStreakUpdate();
     }
   }, [feedback.isAcceptable, isCoachedAdvance]);
 
   const statusLabel = feedback.isAcceptable
-    ? 'Passed'
+    ? "Passed"
     : isCoachedAdvance
-      ? 'Coached forward'
-      : 'Needs work';
+      ? "Coached forward"
+      : "Needs work";
 
   const statusTone = feedback.isAcceptable
-    ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
+    ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
     : isCoachedAdvance
-      ? 'bg-amber-500/15 text-amber-800 dark:text-amber-200'
-      : 'bg-orange-500/15 text-orange-800 dark:text-orange-200';
+      ? "bg-amber-500/15 text-amber-800 dark:text-amber-200"
+      : "bg-orange-500/15 text-orange-800 dark:text-orange-200";
 
   const scoreTone =
     feedback.score >= 8
-      ? 'text-emerald-700 dark:text-emerald-300'
+      ? "text-emerald-700 dark:text-emerald-300"
       : feedback.score >= 6
-        ? 'text-sky-700 dark:text-sky-300'
+        ? "text-sky-700 dark:text-sky-300"
         : feedback.score >= 4
-          ? 'text-amber-700 dark:text-amber-300'
-          : 'text-rose-700 dark:text-rose-300';
+          ? "text-amber-700 dark:text-amber-300"
+          : "text-rose-700 dark:text-rose-300";
 
   return (
-    <div className="flex min-h-0 flex-col gap-4" data-testid="step-feedback-panel">
+    <div
+      className="flex min-h-0 flex-col gap-4"
+      data-testid="step-feedback-panel"
+    >
       {/* Status strip — one glance, then get out of the way */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-border/60 pb-3">
         <span
           className={cn(
-            'inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium',
+            "inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium",
             statusTone,
           )}
         >
           {statusLabel}
         </span>
-        <p className={cn('text-sm font-semibold tabular-nums', scoreTone)}>
+        <p className={cn("text-sm font-semibold tabular-nums", scoreTone)}>
           {feedback.score}
           <span className="font-normal text-muted-foreground">/10</span>
         </p>
@@ -90,14 +101,16 @@ export default function StepFeedbackPanel({
           <div className="h-1 flex-1 overflow-hidden rounded-full bg-muted">
             <div
               className={cn(
-                'h-full rounded-full',
+                "h-full rounded-full",
                 feedback.accuracy >= 70
-                  ? 'bg-emerald-500'
+                  ? "bg-emerald-500"
                   : feedback.accuracy >= 50
-                    ? 'bg-amber-500'
-                    : 'bg-rose-500',
+                    ? "bg-amber-500"
+                    : "bg-rose-500",
               )}
-              style={{ width: `${Math.min(100, Math.max(0, feedback.accuracy))}%` }}
+              style={{
+                width: `${Math.min(100, Math.max(0, feedback.accuracy))}%`,
+              }}
             />
           </div>
           <span className="text-xs tabular-nums text-muted-foreground">
@@ -105,7 +118,9 @@ export default function StepFeedbackPanel({
           </span>
         </div>
         {xpEarned > 0 ? (
-          <span className="text-xs tabular-nums text-muted-foreground">+{xpEarned} XP</span>
+          <span className="text-xs tabular-nums text-muted-foreground">
+            +{xpEarned} XP
+          </span>
         ) : null}
       </div>
 
@@ -149,7 +164,12 @@ export default function StepFeedbackPanel({
         {feedback.isAcceptable ? (
           <div>
             {probeEntitled ? (
-              <Button variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground" onClick={onStartProbe}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2 text-muted-foreground"
+                onClick={onStartProbe}
+              >
                 Defend your design
               </Button>
             ) : (
@@ -179,13 +199,21 @@ function NoteBlock({
 }) {
   return (
     <section>
-      <p className={cn('mb-1.5 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide', accent)}>
+      <p
+        className={cn(
+          "mb-1.5 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide",
+          accent,
+        )}
+      >
         {icon}
         {title}
       </p>
       <ul className="space-y-1.5">
         {items.map((item, i) => (
-          <li key={i} className="text-sm leading-snug text-foreground/90 pl-0.5">
+          <li
+            key={i}
+            className="text-sm leading-snug text-foreground/90 pl-0.5"
+          >
             {item}
           </li>
         ))}
