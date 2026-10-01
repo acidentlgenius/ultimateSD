@@ -19,6 +19,12 @@ const emailEnvVars = [
     'NEXT_PUBLIC_APP_URL',
 ];
 
+
+const upstashEnvVars = [
+    'UPSTASH_REDIS_REST_URL',
+    'UPSTASH_REDIS_REST_TOKEN',
+];
+
 const cloudinaryEnvVars = [
     'CLOUDINARY_API_KEY',
     'CLOUDINARY_API_SECRET',
@@ -54,6 +60,7 @@ const main = () => {
     const missing = requiredEnvVars.filter(key => !loadedEnv[key]);
     const missingPayment = paymentEnvVars.filter(key => !loadedEnv[key]);
     const missingEmail = emailEnvVars.filter(key => !loadedEnv[key]);
+    const missingUpstash = upstashEnvVars.filter(key => !loadedEnv[key]);
     const missingCloudinary = cloudinaryEnvVars.filter(key => !loadedEnv[key]);
 
     if (missing.length > 0) {
@@ -73,6 +80,12 @@ const main = () => {
     if (missingEmail.length > 0) {
         console.warn('⚠️  Email env vars missing (Resend auth emails disabled):');
         missingEmail.forEach(key => console.warn(`   - ${key}`));
+    }
+
+
+    if (missingUpstash.length > 0) {
+        console.warn('⚠️  Upstash env vars missing (Rate limiting disabled):');
+        missingUpstash.forEach(key => console.warn(`   - ${key}`));
     }
 
     if (missingCloudinary.length > 0) {
