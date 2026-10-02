@@ -68,4 +68,49 @@ describe('StepFeedbackPanel', () => {
 
     expect(screen.queryByText('Your submission')).toBeNull();
   });
+
+  it('handles server action errors from updateStreak without throwing', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.mocked(updateStreak).mockResolvedValue({ error: 'Server error occurred' } as any);
+
+    render(
+      <StepFeedbackPanel
+        feedback={{ ...baseFeedback, score: 8, accuracy: 80, isAcceptable: true }}
+        probeEntitled={false}
+        xpEarned={20}
+        onStartProbe={() => {}}
+      />,
+    );
+
+    // Give the async effect time to resolve
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    expect(updateStreak).toHaveBeenCalled();
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to update streak:', 'Server error occurred');
+
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('handles network exceptions from updateStreak without throwing', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const networkError = new Error('Network failure');
+    vi.mocked(updateStreak).mockRejectedValue(networkError);
+
+    render(
+      <StepFeedbackPanel
+        feedback={{ ...baseFeedback, score: 8, accuracy: 80, isAcceptable: true }}
+        probeEntitled={false}
+        xpEarned={20}
+        onStartProbe={() => {}}
+      />,
+    );
+
+    // Give the async effect time to resolve
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    expect(updateStreak).toHaveBeenCalled();
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Error updating streak:', networkError);
+
+    consoleErrorSpy.mockRestore();
+  });
 });
