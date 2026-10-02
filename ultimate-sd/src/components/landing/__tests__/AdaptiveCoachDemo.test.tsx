@@ -28,6 +28,6 @@ describe('AdaptiveCoachDemo', () => {
     render(<AdaptiveCoachDemo />);
 
     // In reduced motion, playing should be false (so it says "Replay" instead of "Pause")
-    expect(screen.getByRole('button', { name: /Replay/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Replay demo' })).toBeInTheDocument();
   });
 });
