@@ -583,6 +583,7 @@ function PracticeUIContent({
                       return (
                         <button
                           key={stepIndex}
+                          aria-current={isCurrent ? 'step' : undefined}
                           onClick={() => {
                             setSidebarOpen(false);
                             window.dispatchEvent(new CustomEvent('sd-navigate-step', {
