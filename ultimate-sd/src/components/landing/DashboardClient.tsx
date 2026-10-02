@@ -13,6 +13,11 @@ import type { LaunchOfferPublicStats, LaunchOfferUserState } from '@/lib/launch-
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { ProblemExplorer } from '@/components/ProblemExplorer';
+import { PROBLEMS } from '@/lib/problems';
+import { StartHereTrack } from '@/components/landing/StartHereTrack';
+import { MostAskedSection } from '@/components/landing/MostAskedSection';
+import { useRouter } from 'next/navigation';
 import OnboardingModal from '@/components/OnboardingModal';
 import { ProblemWithStatus } from '@/types';
 import { type PlanType } from '@/lib/plans';
@@ -50,6 +55,7 @@ export function DashboardClient({
     interviewModeEnabled = false,
 }: DashboardClientProps) {
     const [showOnboarding, setShowOnboarding] = useState(!!(user && !onboardingCompleted));
+    const router = useRouter();
 
     return (
         <div className="min-h-screen bg-background relative overflow-x-hidden selection:bg-primary/20 selection:text-primary">
@@ -83,9 +89,28 @@ export function DashboardClient({
                 />
             )}
 
+            {!user && <StartHereTrack problems={recommendations?.recommended ?? []} />}
+            {!user && (
+                <MostAskedSection
+                    selectedCollectionId={null}
+                    onSelectCollection={(id) => {
+                        if (id) router.push(`/problems?collection=${id}`);
+                    }}
+                />
+            )}
             {!user && <FeatureShowcase />}
             {!user && <AdaptiveCoachDemo />}
             {!user && <AiInterviewerSection interviewModeEnabled={interviewModeEnabled} />}
+            {!user && (
+                <ProblemExplorer
+                    problems={PROBLEMS}
+                    showHeading={false}
+                    companyCollection={null}
+                    setCompanyCollection={(id) => {
+                        if (id) router.push(`/problems?collection=${id}`);
+                    }}
+                />
+            )}
 
             <RoadmapPreview />
 
