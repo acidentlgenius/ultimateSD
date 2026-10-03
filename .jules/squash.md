@@ -68,3 +68,8 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+## 2024-10-03 - Fix React strict mode violation in AdaptiveCoachDemo
+
+**Learning:** In the Next.js/React environment with strict mode enabled, reading from `useRef` directly during the render phase (e.g. `preferReducedMotion.current`) violates React's rules and can cause the component not to update as expected. Lint checks (`react-hooks/refs`) accurately catch this as a stability issue.
+
+**Action:** When a value needs to be read during render to determine UI state (like hiding animations based on `prefers-reduced-motion`), it must be stored in `useState` rather than `useRef`, even if its initial setup comes from a one-time side effect inside `useEffect`.
