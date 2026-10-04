@@ -73,3 +73,9 @@
 **Learning:** Next.js Server Actions typically return an object (e.g., `{ error: 'msg' }`) instead of throwing exceptions when they fail gracefully (e.g. database not available). Calling them in `.catch()` silently drops these errors and causes unhandled rejections if they throw other exceptions.
 
 **Action:** Always wrap server action calls inside `useEffect` in an `async` function using `try/catch`, and explicitly check the returned object for the `error` property to handle gracefully returned errors.
+
+## 2024-05-24 - React Ref Access During Render
+
+**Learning:** Accessing `useRef` values (`ref.current`) during a component's render phase is an anti-pattern in React and violates strict mode rules, leading to linting errors (like `react-hooks/refs`).
+
+**Action:** When you need a value during render that might change, use `useState` instead of `useRef`. If it depends on a browser API (like `window.matchMedia`), initialize it lazily in `useEffect` and handle the unmounted state to prevent hydration mismatches.
