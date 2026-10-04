@@ -38,15 +38,16 @@ export function AdaptiveCoachDemo() {
   const durationMs = useMemo(() => scriptDurationMs(script), [script]);
 
   useEffect(() => {
-    preferReducedMotion.current =
+    setPreferReducedMotion(
       typeof window !== 'undefined' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    );
   }, []);
 
   // Restart clock when level or replay changes
   useEffect(() => {
-    setElapsedMs(preferReducedMotion.current ? durationMs : 0);
-    setPlaying(!preferReducedMotion.current);
+    setElapsedMs(preferReducedMotion ? durationMs : 0);
+    setPlaying(!preferReducedMotion);
   }, [level, replayKey, durationMs, preferReducedMotion]);
 
   useEffect(() => {
@@ -73,7 +74,7 @@ export function AdaptiveCoachDemo() {
     }
   }, [playing, elapsedMs, durationMs]);
 
-  const shown = preferReducedMotion.current
+  const shown = preferReducedMotion
     ? script
     : visibleBeats(script, elapsedMs);
   const finished = elapsedMs >= durationMs;
