@@ -68,3 +68,8 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+## 2024-10-27 - [Floating Promise with Next.js Server Actions in React useEffects]
+
+**Learning:** When invoking Next.js Server Actions (like `updateStreak`) from within a React `useEffect` hook, the server actions often return error objects (e.g. `{ error: 'User not found' }`) rather than throwing standard JS exceptions. Appending a standard `.catch(console.error)` promise chain at the end of the action call will successfully compile but fail to catch these application-level errors entirely, creating silent failures on the client side where the app proceeds as if the state updated successfully.
+
+**Action:** Whenever invoking Next.js server actions inside a React `useEffect`, wrap the call inside an explicit inner `async () => {}` function. Always explicitly `await` the response, explicitly check the returned object structure for the application-level `error` key (e.g. `if (result.error)`), and finally wrap the whole execution in a `try...catch` block to handle legitimate network failures.
