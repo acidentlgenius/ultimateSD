@@ -57,6 +57,27 @@ describe('StepFeedbackPanel', () => {
     expect(screen.queryByText('Great Job!')).toBeNull();
   });
 
+  it('handles server action errors from updateStreak', async () => {
+    vi.mocked(updateStreak).mockResolvedValue({ error: 'Server error occurred' } as any);
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    render(
+      <StepFeedbackPanel
+        feedback={{ ...baseFeedback, isAcceptable: true }}
+        probeEntitled={false}
+        onStartProbe={() => {}}
+      />,
+    );
+
+    // Give it a moment to run the promise in useEffect
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    expect(updateStreak).toHaveBeenCalled();
+    expect(consoleSpy).toHaveBeenCalledWith('Error updating streak:', 'Server error occurred');
+
+    consoleSpy.mockRestore();
+  });
+
   it('does not render a Your submission block (left pane owns that)', () => {
     render(
       <StepFeedbackPanel

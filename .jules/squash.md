@@ -68,3 +68,8 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+## 2024-05-24 - Unhandled Server Action Errors in React Components
+
+**Learning:** Next.js Server Actions typically return an object (e.g., `{ error: 'msg' }`) instead of throwing exceptions when they fail gracefully (e.g. database not available). Calling them in `.catch()` silently drops these errors and causes unhandled rejections if they throw other exceptions.
+
+**Action:** Always wrap server action calls inside `useEffect` in an `async` function using `try/catch`, and explicitly check the returned object for the `error` property to handle gracefully returned errors.
