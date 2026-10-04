@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import StepFeedbackPanel from '../StepFeedbackPanel';
+import { act } from '@testing-library/react';
 import { updateStreak } from '@/app/actions/gamification';
 
 vi.mock('@/app/actions/gamification', () => ({
@@ -21,6 +22,45 @@ const baseFeedback = {
 };
 
 describe('StepFeedbackPanel', () => {
+  it('handles server action errors from updateStreak', async () => {
+    vi.mocked(updateStreak).mockResolvedValue({ error: 'Server error occurred' } as any);
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    await act(async () => {
+      render(
+        <StepFeedbackPanel
+          feedback={{ ...baseFeedback, isAcceptable: true }}
+          probeEntitled={false}
+          onStartProbe={() => {}}
+        />,
+      );
+    });
+
+    expect(updateStreak).toHaveBeenCalled();
+    expect(consoleSpy).toHaveBeenCalledWith('Failed to update streak:', 'Server error occurred');
+    consoleSpy.mockRestore();
+  });
+
+  it('handles network errors from updateStreak', async () => {
+    const error = new Error('Network error');
+    vi.mocked(updateStreak).mockRejectedValue(error);
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    await act(async () => {
+      render(
+        <StepFeedbackPanel
+          feedback={{ ...baseFeedback, isAcceptable: true }}
+          probeEntitled={false}
+          onStartProbe={() => {}}
+        />,
+      );
+    });
+
+    expect(updateStreak).toHaveBeenCalled();
+    expect(consoleSpy).toHaveBeenCalledWith('Error updating streak:', error);
+    consoleSpy.mockRestore();
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(updateStreak).mockResolvedValue({ success: true, streak: 1 } as never);
