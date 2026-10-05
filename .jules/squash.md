@@ -68,3 +68,26 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+## 2024-05-24 - Unhandled Server Action Errors in React Components
+
+**Learning:** Next.js Server Actions typically return an object (e.g., `{ error: 'msg' }`) instead of throwing exceptions when they fail gracefully (e.g. database not available). Calling them in `.catch()` silently drops these errors and causes unhandled rejections if they throw other exceptions.
+
+**Action:** Always wrap server action calls inside `useEffect` in an `async` function using `try/catch`, and explicitly check the returned object for the `error` property to handle gracefully returned errors.
+
+## 2024-05-24 - React Ref Access During Render
+
+**Learning:** Accessing `useRef` values (`ref.current`) during a component's render phase is an anti-pattern in React and violates strict mode rules, leading to linting errors (like `react-hooks/refs`).
+
+**Action:** When you need a value during render that might change, use `useState` instead of `useRef`. If it depends on a browser API (like `window.matchMedia`), initialize it lazily in `useEffect` and handle the unmounted state to prevent hydration mismatches.
+
+## 2024-05-24 - Do not touch unrelated tests
+
+**Learning:** When fixing a bug, do not "band-aid" or modify unrelated failing E2E tests in the CI pipeline unless they are directly related to the fix.
+
+**Action:** Keep PRs strictly focused on the assigned fix and revert any unrelated test modifications.
+
+## 2024-05-24 - Ignoring E2E test failures caused by pre-existing changes
+
+**Learning:** Sometimes E2E test failures are triggered by unrelated code changes made by someone else before you, such as when UI text changes on a landing page but tests aren't updated.
+
+**Action:** If E2E test failures appear unrelated to the specific bug you are fixing, verify that you didn't introduce them, and if not, ignore them and do not attempt to "fix" or band-aid them.
