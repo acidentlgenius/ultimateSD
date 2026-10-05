@@ -79,3 +79,9 @@
 **Learning:** Accessing `useRef` values (`ref.current`) during a component's render phase is an anti-pattern in React and violates strict mode rules, leading to linting errors (like `react-hooks/refs`).
 
 **Action:** When you need a value during render that might change, use `useState` instead of `useRef`. If it depends on a browser API (like `window.matchMedia`), initialize it lazily in `useEffect` and handle the unmounted state to prevent hydration mismatches.
+
+## 2024-05-24 - Do not touch unrelated tests
+
+**Learning:** When fixing a bug, do not "band-aid" or modify unrelated failing E2E tests in the CI pipeline unless they are directly related to the fix.
+
+**Action:** Keep PRs strictly focused on the assigned fix and revert any unrelated test modifications.

@@ -96,6 +96,8 @@ export function AdaptiveCoachDemo() {
     setLevel(next);
   };
 
+  if (!isMounted) return null;
+
   return (
     <section id="adaptive-coach" className="container mx-auto px-4 py-24">
       <div className="text-center mb-12">
