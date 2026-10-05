@@ -85,3 +85,9 @@
 **Learning:** When fixing a bug, do not "band-aid" or modify unrelated failing E2E tests in the CI pipeline unless they are directly related to the fix.
 
 **Action:** Keep PRs strictly focused on the assigned fix and revert any unrelated test modifications.
+
+## 2024-05-24 - Ignoring E2E test failures caused by pre-existing changes
+
+**Learning:** Sometimes E2E test failures are triggered by unrelated code changes made by someone else before you, such as when UI text changes on a landing page but tests aren't updated.
+
+**Action:** If E2E test failures appear unrelated to the specific bug you are fixing, verify that you didn't introduce them, and if not, ignore them and do not attempt to "fix" or band-aid them.
