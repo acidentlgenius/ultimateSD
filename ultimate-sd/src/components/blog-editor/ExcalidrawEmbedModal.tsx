@@ -8,6 +8,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import type { ExcalidrawScene } from '@/types/diagram';
@@ -54,6 +55,7 @@ export function ExcalidrawEmbedModal({
       <DialogContent className="max-w-4xl">
         <DialogHeader>
           <DialogTitle>Diagram</DialogTitle>
+          <DialogDescription className="sr-only">Create or edit a diagram using Excalidraw</DialogDescription>
         </DialogHeader>
         <div className="h-[500px] w-full overflow-hidden rounded-lg border">
           {open && (
