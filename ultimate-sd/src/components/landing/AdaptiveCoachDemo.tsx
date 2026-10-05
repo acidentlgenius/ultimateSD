@@ -73,7 +73,6 @@ export function AdaptiveCoachDemo() {
     }
   }, [playing, elapsedMs, durationMs]);
 
-  // eslint-disable-next-line
   const shown = preferReducedMotion.current
     ? script
     : visibleBeats(script, elapsedMs);
@@ -151,7 +150,6 @@ export function AdaptiveCoachDemo() {
           aria-live="polite"
         >
           <AnimatePresence initial={false}>
-            {/* eslint-disable-next-line */}
             {shown.map((beat) => (
               <motion.div
                 key={`${level}-${beat.id}`}
