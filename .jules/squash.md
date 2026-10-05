@@ -68,3 +68,9 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+
+## 2026-06-30 - [Silent UI Failure via Stale Closure in React refs]
+
+**Learning:** Reading `useRef` values (like `preferReducedMotion.current`) during a React component's render phase is a severe anti-pattern that violates React strict mode (triggering `react-hooks/refs` lint errors). Mutating a ref inside a `useEffect` does not trigger a re-render. Consequently, any UI logic depending on that ref during render (e.g., initial animation states) will become stale and silently ignore the updated value until an unrelated state change forces a re-render.
+
+**Action:** Whenever a dynamically calculated value (like reading a user's media preference on mount) is required during the render phase to determine UI output or animation states, it must be stored using `useState`. Furthermore, the newly introduced state variable must be meticulously added to the dependency arrays of all relevant `useEffect` or `useCallback` hooks that reference it to prevent functional regressions.
