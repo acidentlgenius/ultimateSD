@@ -74,3 +74,9 @@
 **Learning:** When making changes to components that are rendered dynamically based on user state (e.g. `!user && <MostAskedSection />`), if a component is accidentally omitted or removed during refactoring, end-to-end tests that assert the presence of its content (like `expect(page.getByText(/Popular at top companies/i)).toBeVisible()`) will fail with a timeout error.
 
 **Action:** Before removing or altering the conditional rendering logic of major sections on high-traffic pages like `DashboardClient`, verify if E2E tests in the `e2e/` directory explicitly assert on their text or headings. Ensure all expected sections are restored to fix regressions.
+
+## 2026-10-06 - [Missing component from Dashboard breaking E2E tests]
+
+**Learning:** When making changes to components that are rendered dynamically based on user state (e.g. `!user && <MostAskedSection />`), if a component is accidentally omitted or removed during refactoring, end-to-end tests that assert the presence of its content (like `expect(page.getByText(/Popular at top companies/i)).toBeVisible()`) will fail with a timeout error.
+
+**Action:** Before removing or altering the conditional rendering logic of major sections on high-traffic pages like `DashboardClient`, verify if E2E tests in the `e2e/` directory explicitly assert on their text or headings. Ensure all expected sections are restored to fix regressions.
