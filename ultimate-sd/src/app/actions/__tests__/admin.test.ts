@@ -30,6 +30,8 @@ vi.mock('@/lib/launch-offer-grant', () => ({
 import { updateUserPlan } from '../admin';
 
 describe('updateUserPlan', () => {
+  beforeEach(() => { vi.spyOn(console, 'error').mockImplementation(() => {}); });
+  afterEach(() => { vi.restoreAllMocks(); });
   beforeEach(() => {
     vi.clearAllMocks();
     mockAuth.mockResolvedValue({ user: { id: 'admin-1' } });
