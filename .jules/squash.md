@@ -68,3 +68,21 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+
+## 2026-10-05 - [Missing component from Dashboard breaking E2E tests]
+
+**Learning:** When making changes to components that are rendered dynamically based on user state (e.g. `!user && <MostAskedSection />`), if a component is accidentally omitted or removed during refactoring, end-to-end tests that assert the presence of its content (like `expect(page.getByText(/Popular at top companies/i)).toBeVisible()`) will fail with a timeout error.
+
+**Action:** Before removing or altering the conditional rendering logic of major sections on high-traffic pages like `DashboardClient`, verify if E2E tests in the `e2e/` directory explicitly assert on their text or headings. Ensure all expected sections are restored to fix regressions.
+
+## 2026-10-06 - [Missing component from Dashboard breaking E2E tests]
+
+**Learning:** When making changes to components that are rendered dynamically based on user state (e.g. `!user && <MostAskedSection />`), if a component is accidentally omitted or removed during refactoring, end-to-end tests that assert the presence of its content (like `expect(page.getByText(/Popular at top companies/i)).toBeVisible()`) will fail with a timeout error.
+
+**Action:** Before removing or altering the conditional rendering logic of major sections on high-traffic pages like `DashboardClient`, verify if E2E tests in the `e2e/` directory explicitly assert on their text or headings. Ensure all expected sections are restored to fix regressions.
+
+## 2026-10-06 - [Test Assertion Sync]
+
+**Learning:** In the `ultimate-sd` repository, AI coach test prompts and mocks (such as `STAGE_ASK_PROMPTS` and `ADAPTIVE_COACH_TIP`) used for E2E assertions are located in `e2e/helpers/ai-mocks.ts`. When UI copy or testing logic changes (e.g. replacing a hardcoded prompt with a custom assertion in `STAGE_ASK_PROMPTS`), ensure these constants are kept in sync with the source code (e.g., `src/lib/problem-steps.ts`) to prevent E2E timeout failures waiting for expected text.
+
+**Action:** Whenever modifying `STAGE_ASK_PROMPTS` or any UI copy verified by `e2e/helpers/ai-mocks.ts`, always search for its definition in the codebase and update the source code to match the expected test assertion.
