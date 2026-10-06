@@ -7,6 +7,7 @@ import { FeatureShowcase } from '@/components/landing/FeatureShowcase';
 import { AdaptiveCoachDemo } from '@/components/landing/AdaptiveCoachDemo';
 import { AiInterviewerSection } from '@/components/landing/AiInterviewerSection';
 import { RoadmapPreview } from '@/components/landing/RoadmapPreview';
+import { MostAskedSection } from '@/components/landing/MostAskedSection';
 import { UserHero } from '@/components/landing/UserHero';
 import { ClaimPlatformAccessBanner } from '@/components/landing/ClaimPlatformAccessBanner';
 import type { LaunchOfferPublicStats, LaunchOfferUserState } from '@/lib/launch-offer';
@@ -84,6 +85,7 @@ export function DashboardClient({
             )}
 
             {!user && <FeatureShowcase />}
+            {!user && <MostAskedSection selectedCollectionId={null} onSelectCollection={() => {}} />}
             {!user && <AdaptiveCoachDemo />}
             {!user && <AiInterviewerSection interviewModeEnabled={interviewModeEnabled} />}
 

@@ -69,8 +69,8 @@
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
 
-## 2026-06-30 - [Silent UI Failure via Stale Closure in React refs]
+## 2026-10-05 - [Missing component from Dashboard breaking E2E tests]
 
-**Learning:** Reading `useRef` values (like `preferReducedMotion.current`) during a React component's render phase is a severe anti-pattern that violates React strict mode (triggering `react-hooks/refs` lint errors). Mutating a ref inside a `useEffect` does not trigger a re-render. Consequently, any UI logic depending on that ref during render (e.g., initial animation states) will become stale and silently ignore the updated value until an unrelated state change forces a re-render.
+**Learning:** When making changes to components that are rendered dynamically based on user state (e.g. `!user && <MostAskedSection />`), if a component is accidentally omitted or removed during refactoring, end-to-end tests that assert the presence of its content (like `expect(page.getByText(/Popular at top companies/i)).toBeVisible()`) will fail with a timeout error.
 
-**Action:** Whenever a dynamically calculated value (like reading a user's media preference on mount) is required during the render phase to determine UI output or animation states, it must be stored using `useState`. Furthermore, the newly introduced state variable must be meticulously added to the dependency arrays of all relevant `useEffect` or `useCallback` hooks that reference it to prevent functional regressions.
+**Action:** Before removing or altering the conditional rendering logic of major sections on high-traffic pages like `DashboardClient`, verify if E2E tests in the `e2e/` directory explicitly assert on their text or headings. Ensure all expected sections are restored to fix regressions.
