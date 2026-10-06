@@ -31,6 +31,8 @@ beforeEach(() => {
 });
 
 describe('getProblemIntro', () => {
+  beforeEach(() => { vi.spyOn(console, 'warn').mockImplementation(() => {}); vi.spyOn(console, 'error').mockImplementation(() => {}); });
+  afterEach(() => { vi.restoreAllMocks(); });
   it('prefers a valid DB row and stamps source=generated', async () => {
     mocked.problemIntro.findUnique.mockResolvedValue({
       id: 'x',
