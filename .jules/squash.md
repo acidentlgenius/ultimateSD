@@ -68,3 +68,9 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+
+## 2025-02-23 - [Test Output Pollution from Intentional Warnings and Errors]
+
+**Learning:** When tests intentionally trigger error paths or warning states (e.g., to verify that an error is safely caught and a fallback is used, or an action returns an expected error result), the resulting `console.error` and `console.warn` outputs will pollute the test logs. While these tests pass, the noisy output can mask genuine unexpected errors in other tests. Similarly, failure to wrap timers in `act(...)` causes React to emit state update warnings that pollute output.
+
+**Action:** When writing or fixing error-path tests in Vitest, explicitly spy on and mock the console methods using `vi.spyOn(console, 'error').mockImplementation(() => {})` inside a `beforeEach` block, and strictly clean them up in an `afterEach` block using `vi.restoreAllMocks()`. For components that use timers or async state updates, always wrap timer advancements in `await act(async () => { ... })`. This ensures test logs remain pristine and actionable.
