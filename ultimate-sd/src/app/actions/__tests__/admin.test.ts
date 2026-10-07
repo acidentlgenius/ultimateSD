@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 const mockAuth = vi.fn();
 const mockFindUnique = vi.fn();
@@ -30,7 +30,11 @@ vi.mock('@/lib/launch-offer-grant', () => ({
 import { updateUserPlan } from '../admin';
 
 describe('updateUserPlan', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
   beforeEach(() => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.clearAllMocks();
     mockAuth.mockResolvedValue({ user: { id: 'admin-1' } });
     mockFindUnique.mockReset();
