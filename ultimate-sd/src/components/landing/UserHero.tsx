@@ -3,6 +3,7 @@ import { pickSecondaryRecommendation } from '@/lib/recommendations-logic';
 import { ProblemWithStatus } from '@/types';
 import ProblemCard from '@/components/ProblemCard';
 import { Sparkles } from 'lucide-react';
+import { SessionDashboard } from './SessionDashboard';
 
 interface UserHeroProps {
     user: {
@@ -99,6 +100,9 @@ export function UserHero({ user, recommendations, setShowOnboarding }: UserHeroP
                             )}
                         </div>
                     </div>
+
+                    {/* Offline Sessions */}
+                    <SessionDashboard />
                 </div>
             </div>
         </div>
