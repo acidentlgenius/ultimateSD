@@ -105,23 +105,28 @@ export function estimateReadingTime(content: unknown): number {
 }
 
 export async function getPublishedBlogPosts(searchQuery?: string): Promise<BlogPostSummary[]> {
-  const trimmed = searchQuery?.trim();
-  const rows = await prisma.blogPost.findMany({
-    where: {
-      status: 'PUBLISHED',
-      ...(trimmed
-        ? {
-            OR: [
-              { title: { contains: trimmed, mode: 'insensitive' as const } },
-              { excerpt: { contains: trimmed, mode: 'insensitive' as const } },
-            ],
-          }
-        : {}),
-    },
-    orderBy: { publishedAt: 'desc' },
-    select: summarySelect,
-  });
-  return rows.map(toSummary);
+  try {
+    const trimmed = searchQuery?.trim();
+    const rows = await prisma.blogPost.findMany({
+      where: {
+        status: 'PUBLISHED',
+        ...(trimmed
+          ? {
+              OR: [
+                { title: { contains: trimmed, mode: 'insensitive' as const } },
+                { excerpt: { contains: trimmed, mode: 'insensitive' as const } },
+              ],
+            }
+          : {}),
+      },
+      orderBy: { publishedAt: 'desc' },
+      select: summarySelect,
+    });
+    return rows.map(toSummary);
+  } catch (err) {
+    console.error('Failed to get published blog posts:', err);
+    return [];
+  }
 }
 
 export async function getBlogPostBySlug(slug: string): Promise<BlogPostDetail | null> {

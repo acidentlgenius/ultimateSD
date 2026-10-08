@@ -68,3 +68,9 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+
+## 2025-02-23 - [Stale Closures and Inconsistent Renders via useRef Mutation]
+
+**Learning:** Reading `useRef` values (like `preferReducedMotion.current`) during a React component's render phase is a severe anti-pattern that violates React's strict mode and reactive data-flow principles. Because mutating a ref does not trigger a re-render, the component can easily fall out of sync with its internal state, leading to race conditions where `useEffect` hooks and the returned JSX capture different, stale values.
+
+**Action:** Whenever a dynamically updated value needs to be read during the render phase or triggers logic updates in dependencies, it *must* be stored in a `useState` variable, never a `useRef`. Furthermore, ensure the new state variable is meticulously added to the dependency arrays of all relevant `useEffect` or `useCallback` hooks that reference it to prevent stale closures.
