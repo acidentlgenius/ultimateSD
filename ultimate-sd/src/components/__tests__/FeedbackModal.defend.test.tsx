@@ -29,6 +29,10 @@ describe('Defend your design button', () => {
     expect((btn as HTMLButtonElement).disabled).toBe(true);
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('is enabled when entitled', () => {
     render(
       <FeedbackModal
