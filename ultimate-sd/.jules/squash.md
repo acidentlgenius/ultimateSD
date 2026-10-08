@@ -33,3 +33,9 @@
 **Learning:** Next.js Server Actions (like `updateStreak`) return an error object (e.g., `{ error: 'string' }`) on failure instead of throwing exceptions. When calling them, especially inside `useEffect`, wrapping them in `.catch()` does not catch these object errors, leading to silent failures where the UI or the system is unaware the action failed.
 
 **Action:** When calling Server Actions inside `useEffect` or client components, explicitly `await` them inside an `async` function and check for `res.error` in the returned payload. Handle it accordingly and use `try/catch` strictly for network or runtime exceptions.
+
+## 2024-07-01 - React hooks lint failure from accessing ref during render
+
+**Learning:** Reading `useRef` values during a React component's render phase is an anti-pattern that violates React strict mode (triggering `react-hooks/refs` lint errors). `useRef` values should only be accessed in event handlers or effects.
+
+**Action:** When a value needs to be tracked across renders and accessed during the render phase (e.g. `preferReducedMotion` to determine if animations should be shown), replace `useRef` with `useState` and explicitly ensure the newly introduced state variable is meticulously added to the dependency arrays of all relevant `useEffect` or `useCallback` hooks that reference it to prevent stale closures and functional regressions.
