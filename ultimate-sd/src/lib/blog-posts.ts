@@ -106,7 +106,9 @@ export function estimateReadingTime(content: unknown): number {
 
 export async function getPublishedBlogPosts(searchQuery?: string): Promise<BlogPostSummary[]> {
   const trimmed = searchQuery?.trim();
-  const rows = await prisma.blogPost.findMany({
+  let rows: SummaryRow[] = [];
+  try {
+    rows = await prisma.blogPost.findMany({
     where: {
       status: 'PUBLISHED',
       ...(trimmed
@@ -121,6 +123,9 @@ export async function getPublishedBlogPosts(searchQuery?: string): Promise<BlogP
     orderBy: { publishedAt: 'desc' },
     select: summarySelect,
   });
+  } catch (error) {
+    console.warn('Failed to fetch blog posts (database likely offline during build):', error);
+  }
   return rows.map(toSummary);
 }
 
