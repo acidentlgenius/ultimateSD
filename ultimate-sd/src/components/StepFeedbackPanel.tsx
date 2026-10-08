@@ -43,9 +43,16 @@ export default function StepFeedbackPanel({
 
   useEffect(() => {
     if (feedback.isAcceptable && !isCoachedAdvance) {
-      void updateStreak().catch((error) => {
-        console.error('Error updating streak:', error);
-      });
+      void (async () => {
+        try {
+          const res = await updateStreak();
+          if (res && res.error) {
+            console.error('Error updating streak:', res.error);
+          }
+        } catch (error) {
+          console.error('Error updating streak:', error);
+        }
+      })();
     }
   }, [feedback.isAcceptable, isCoachedAdvance]);
 

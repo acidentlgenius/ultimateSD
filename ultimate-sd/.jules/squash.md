@@ -27,3 +27,9 @@
 **Learning:** `loadSessionState` relied on `clearSessionState(problemSlug)` to handle invalid data. However, if the `localStorage` key contained structurally valid JSON but the *content itself* was not valid JSON (causing `JSON.parse` to throw), the catch block would execute. But if `clearSessionState` failed or wasn't robust enough, the corrupted data stayed. On every subsequent mount, the UI would try to parse the corrupt data, throw, and crash again.
 
 **Action:** When purging corrupted or unparseable `localStorage` state, use direct `localStorage.removeItem(key)` rather than higher-level helpers to guarantee the bad data is purged, since helper methods might inadvertently fail when interacting with corrupted state.
+
+## 2024-07-01 - Silent failure from unhandled server action error object
+
+**Learning:** Next.js Server Actions (like `updateStreak`) return an error object (e.g., `{ error: 'string' }`) on failure instead of throwing exceptions. When calling them, especially inside `useEffect`, wrapping them in `.catch()` does not catch these object errors, leading to silent failures where the UI or the system is unaware the action failed.
+
+**Action:** When calling Server Actions inside `useEffect` or client components, explicitly `await` them inside an `async` function and check for `res.error` in the returned payload. Handle it accordingly and use `try/catch` strictly for network or runtime exceptions.
