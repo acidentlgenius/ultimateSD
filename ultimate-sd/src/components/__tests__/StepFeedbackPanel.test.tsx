@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import StepFeedbackPanel from '../StepFeedbackPanel';
 import { updateStreak } from '@/app/actions/gamification';
 
@@ -24,6 +24,10 @@ describe('StepFeedbackPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(updateStreak).mockResolvedValue({ success: true, streak: 1 } as never);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('shows a compact needs-work status with actionable notes', () => {
@@ -67,5 +71,27 @@ describe('StepFeedbackPanel', () => {
     );
 
     expect(screen.queryByText('Your submission')).toBeNull();
+  });
+
+  it('handles returned application error from updateStreak gracefully', async () => {
+    // SQUASH regression test: updateStreak returns `{ error: 'string' }` instead of throwing
+    vi.mocked(updateStreak).mockResolvedValue({ error: 'Failed to update streak' } as never);
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    render(
+      <StepFeedbackPanel
+        feedback={{ ...baseFeedback, score: 8, accuracy: 80, isAcceptable: true }}
+        probeEntitled={false}
+        onStartProbe={() => {}}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(updateStreak).toHaveBeenCalled();
+    });
+
+    await waitFor(() => {
+      expect(consoleSpy).toHaveBeenCalledWith('Failed to update streak:', 'Failed to update streak');
+    });
   });
 });

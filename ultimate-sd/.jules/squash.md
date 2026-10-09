@@ -27,3 +27,21 @@
 **Learning:** `loadSessionState` relied on `clearSessionState(problemSlug)` to handle invalid data. However, if the `localStorage` key contained structurally valid JSON but the *content itself* was not valid JSON (causing `JSON.parse` to throw), the catch block would execute. But if `clearSessionState` failed or wasn't robust enough, the corrupted data stayed. On every subsequent mount, the UI would try to parse the corrupt data, throw, and crash again.
 
 **Action:** When purging corrupted or unparseable `localStorage` state, use direct `localStorage.removeItem(key)` rather than higher-level helpers to guarantee the bad data is purged, since helper methods might inadvertently fail when interacting with corrupted state.
+
+## 2024-06-20 - Silent errors from Next.js Server Actions in try/catch
+
+**Learning:** Next.js Server Actions (like `updateStreak`) return an error object (`{ error: 'message' }`) rather than throwing an exception upon application-level failures. Using `.catch()` on the returned promise only catches network or structural errors, silently swallowing the returned error object.
+
+**Action:** When calling Server Actions from client components, explicitly resolve the promise (using `.then()` or `await`) and check for `if (result && 'error' in result && result.error)` to handle and log the failure correctly.
+
+## 2024-06-20 - Stale closures causing functional regressions after fixing useRef warnings
+
+**Learning:** Replacing a mutable `useRef` (e.g. `preferReducedMotion.current`) with a `useState` hook (e.g. `const [preferReducedMotion] = useState(false)`) fixes React strict mode warnings, but introduces state dependency tracking requirements.
+
+**Action:** Whenever a `useRef` is refactored into a `useState`, its new state variable *must* be added to the dependency arrays of all `useEffect`, `useCallback`, or `useMemo` hooks that rely on its value to avoid stale closures.
+
+## 2024-06-20 - GitHub CI "toomanyrequests" on Docker pull
+
+**Learning:** When GitHub CI fails with `Error response from daemon: toomanyrequests: You have reached your unauthenticated pull rate limit`, it is a transient, external infrastructure issue related to Docker Hub rate limits.
+
+**Action:** This is not a codebase defect. Do not refactor or debug the application code. It requires no code change; simply submitting will often resolve or it requires repo-level authentication configuration outside the scope of code patches.
