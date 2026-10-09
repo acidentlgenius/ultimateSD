@@ -33,15 +33,19 @@ export default async function Home() {
   let onboardingCompleted = false;
 
   if (resolvedUserId) {
-    const [recs, user] = await Promise.all([
-      getUserRecommendations(),
-      prisma.user.findUnique({
-        where: { id: resolvedUserId },
-        select: { onboardingCompleted: true }
-      }),
-    ]);
-    recommendations = recs;
-    onboardingCompleted = !!user?.onboardingCompleted;
+    try {
+      const [recs, user] = await Promise.all([
+        getUserRecommendations(),
+        prisma.user.findUnique({
+          where: { id: resolvedUserId },
+          select: { onboardingCompleted: true }
+        }),
+      ]);
+      recommendations = recs;
+      onboardingCompleted = !!user?.onboardingCompleted;
+    } catch (e) {
+      console.error('Failed to fetch user data for dashboard', e);
+    }
   }
 
   return (

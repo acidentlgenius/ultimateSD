@@ -27,3 +27,27 @@
 **Learning:** `loadSessionState` relied on `clearSessionState(problemSlug)` to handle invalid data. However, if the `localStorage` key contained structurally valid JSON but the *content itself* was not valid JSON (causing `JSON.parse` to throw), the catch block would execute. But if `clearSessionState` failed or wasn't robust enough, the corrupted data stayed. On every subsequent mount, the UI would try to parse the corrupt data, throw, and crash again.
 
 **Action:** When purging corrupted or unparseable `localStorage` state, use direct `localStorage.removeItem(key)` rather than higher-level helpers to guarantee the bad data is purged, since helper methods might inadvertently fail when interacting with corrupted state.
+
+## 2024-07-01 - Silent failure from unhandled server action error object
+
+**Learning:** Next.js Server Actions (like `updateStreak`) return an error object (e.g., `{ error: 'string' }`) on failure instead of throwing exceptions. When calling them, especially inside `useEffect`, wrapping them in `.catch()` does not catch these object errors, leading to silent failures where the UI or the system is unaware the action failed.
+
+**Action:** When calling Server Actions inside `useEffect` or client components, explicitly `await` them inside an `async` function and check for `res.error` in the returned payload. Handle it accordingly and use `try/catch` strictly for network or runtime exceptions.
+
+## 2024-07-01 - React hooks lint failure from accessing ref during render
+
+**Learning:** Reading `useRef` values during a React component's render phase is an anti-pattern that violates React strict mode (triggering `react-hooks/refs` lint errors). `useRef` values should only be accessed in event handlers or effects.
+
+**Action:** When a value needs to be tracked across renders and accessed during the render phase (e.g. `preferReducedMotion` to determine if animations should be shown), replace `useRef` with `useState` and explicitly ensure the newly introduced state variable is meticulously added to the dependency arrays of all relevant `useEffect` or `useCallback` hooks that reference it to prevent stale closures and functional regressions.
+
+## 2024-07-02 - Next build crashing from unhandled Prisma queries during pre-rendering
+
+**Learning:** Next.js static generation (e.g. `sitemap.ts` or `page.tsx`) executes database queries at build time. If these queries (like `getPublishedBlogPosts()` or `getLaunchOfferStats()`) throw an error (e.g. `ECONNREFUSED` if the database isn't fully available yet), the entire `next build` process will crash.
+
+**Action:** Wrap database queries executed during static pre-rendering in `try/catch` blocks and provide graceful fallbacks (like an empty array or default stats object) to allow the build to complete even if the database is unreachable.
+
+## 2024-07-02 - Unhandled Promise Rejections from Prisma Seed Scripts
+
+**Learning:** When using `await prisma.model.deleteMany({})` in test setup or seed scripts, if Prisma is not connected or the table doesn't exist, it throws an exception that crashes the entire test suite setup phase.
+
+**Action:** Wrap destructive or setup queries like `deleteMany` or `upsert` in `try/catch` blocks within test seed files (like `seed-e2e.ts`) to ensure the test suite can either recover or fail gracefully without crashing the Playwright runner.

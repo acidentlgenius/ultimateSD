@@ -68,4 +68,24 @@ describe('StepFeedbackPanel', () => {
 
     expect(screen.queryByText('Your submission')).toBeNull();
   });
+
+  it('logs an error when updateStreak server action returns an error object', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.mocked(updateStreak).mockResolvedValue({ error: 'Failed to update streak' } as never);
+
+    render(
+      <StepFeedbackPanel
+        feedback={{ ...baseFeedback, isAcceptable: true }}
+        probeEntitled={false}
+        onStartProbe={() => {}}
+      />,
+    );
+
+    // Wait for the async effect to complete
+    await vi.waitFor(() => {
+      expect(errorSpy).toHaveBeenCalledWith('Error updating streak:', 'Failed to update streak');
+    });
+
+    errorSpy.mockRestore();
+  });
 });
