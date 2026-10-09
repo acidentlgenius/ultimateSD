@@ -39,3 +39,9 @@
 **Learning:** Replacing a mutable `useRef` (e.g. `preferReducedMotion.current`) with a `useState` hook (e.g. `const [preferReducedMotion] = useState(false)`) fixes React strict mode warnings, but introduces state dependency tracking requirements.
 
 **Action:** Whenever a `useRef` is refactored into a `useState`, its new state variable *must* be added to the dependency arrays of all `useEffect`, `useCallback`, or `useMemo` hooks that rely on its value to avoid stale closures.
+
+## 2024-06-20 - GitHub CI "toomanyrequests" on Docker pull
+
+**Learning:** When GitHub CI fails with `Error response from daemon: toomanyrequests: You have reached your unauthenticated pull rate limit`, it is a transient, external infrastructure issue related to Docker Hub rate limits.
+
+**Action:** This is not a codebase defect. Do not refactor or debug the application code. It requires no code change; simply submitting will often resolve or it requires repo-level authentication configuration outside the scope of code patches.
