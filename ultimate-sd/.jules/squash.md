@@ -33,3 +33,9 @@
 **Learning:** Next.js Server Actions (like `updateStreak`) return an error object (`{ error: 'message' }`) rather than throwing an exception upon application-level failures. Using `.catch()` on the returned promise only catches network or structural errors, silently swallowing the returned error object.
 
 **Action:** When calling Server Actions from client components, explicitly resolve the promise (using `.then()` or `await`) and check for `if (result && 'error' in result && result.error)` to handle and log the failure correctly.
+
+## 2024-06-20 - Stale closures causing functional regressions after fixing useRef warnings
+
+**Learning:** Replacing a mutable `useRef` (e.g. `preferReducedMotion.current`) with a `useState` hook (e.g. `const [preferReducedMotion] = useState(false)`) fixes React strict mode warnings, but introduces state dependency tracking requirements.
+
+**Action:** Whenever a `useRef` is refactored into a `useState`, its new state variable *must* be added to the dependency arrays of all `useEffect`, `useCallback`, or `useMemo` hooks that rely on its value to avoid stale closures.
