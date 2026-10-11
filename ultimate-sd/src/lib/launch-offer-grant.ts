@@ -43,13 +43,19 @@ async function countPlatformSlotsUsed(tx: PrismaTx | typeof prisma): Promise<num
 }
 
 export async function getLaunchOfferStats(): Promise<LaunchOfferPublicStats> {
-  const [platformClaimed, aiWinners, aiEligible] = await Promise.all([
-    prisma.launchOfferRedemption.count({
-      where: { kind: { in: ['PLATFORM_LAUNCH', 'AI_GIVEAWAY'] } },
-    }),
-    prisma.launchOfferRedemption.count({ where: { kind: 'AI_GIVEAWAY' } }),
-    prisma.launchOfferRedemption.count({ where: { kind: 'PLATFORM_LAUNCH' } }),
-  ]);
+  let stats = [0, 0, 0];
+  try {
+    stats = await Promise.all([
+      prisma.launchOfferRedemption.count({
+        where: { kind: { in: ['PLATFORM_LAUNCH', 'AI_GIVEAWAY'] } },
+      }),
+      prisma.launchOfferRedemption.count({ where: { kind: 'AI_GIVEAWAY' } }),
+      prisma.launchOfferRedemption.count({ where: { kind: 'PLATFORM_LAUNCH' } }),
+    ]);
+  } catch (error) {
+    console.warn('Failed to fetch launch offer stats (database unreachable?)', error);
+  }
+  const [platformClaimed, aiWinners, aiEligible] = stats;
 
   return buildLaunchOfferStats(platformClaimed, aiWinners, aiEligible);
 }

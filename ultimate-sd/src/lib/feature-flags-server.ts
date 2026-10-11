@@ -4,7 +4,12 @@ import { getEffectivePlanType } from '@/lib/access';
 import { resolveFeatureAccess, type OverrideMode } from '@/lib/feature-flags';
 
 export async function getFeatureFlagState(feature: FeatureKey): Promise<PlanType[]> {
-  const row = await prisma.featureFlag.findUnique({ where: { key: feature } });
+  let row: any = null;
+  try {
+    row = await prisma.featureFlag.findUnique({ where: { key: feature } });
+  } catch (error) {
+    console.warn(`Failed to fetch feature flag ${feature} (db unreachable?)`, error);
+  }
   if (!row) {
     return FEATURE_SEED_DEFAULTS[feature];
   }
@@ -44,18 +49,26 @@ export async function canAccessFeature(
 export async function getAccessibleFeatures(
   userId: string | null
 ): Promise<Record<FeatureKey, boolean>> {
-  const [flags, overrides, user] = await Promise.all([
-    prisma.featureFlag.findMany(),
-    userId
-      ? prisma.featureFlagOverride.findMany({ where: { userId } })
-      : Promise.resolve([]),
-    userId
-      ? prisma.user.findUnique({
-          where: { id: userId },
-          select: { planType: true, planExpiresAt: true },
-        })
-      : Promise.resolve(null),
-  ]);
+  let flags: { key: string; enabledPlans: string[] }[] = [];
+  let overrides: { flagKey: string; mode: string }[] = [];
+  let user: { planType: string; planExpiresAt: Date | null } | null = null;
+
+  try {
+    [flags, overrides, user] = await Promise.all([
+      prisma.featureFlag.findMany() as any,
+      userId
+        ? prisma.featureFlagOverride.findMany({ where: { userId } }) as any
+        : Promise.resolve([]),
+      userId
+        ? prisma.user.findUnique({
+            where: { id: userId },
+            select: { planType: true, planExpiresAt: true },
+          }) as any
+        : Promise.resolve(null),
+    ]);
+  } catch (error) {
+    console.warn('Failed to fetch feature flags in batch (db unreachable?)', error);
+  }
 
   const plan = user
     ? getEffectivePlanType({ planType: user.planType as PlanType, planExpiresAt: user.planExpiresAt })
