@@ -68,3 +68,9 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+
+## 2025-02-12 - Fix react-hooks/refs issue in AdaptiveCoachDemo
+
+**Learning:** `useRef` was used to hold `preferReducedMotion` state which was then read during render. This violates React 19's rule against accessing `ref.current` during rendering, leading to potential stale closures and broken behavior if the ref value is accessed across different cycles.
+
+**Action:** Replace `useRef` with `useState` and include it in the dependency arrays for `useEffect` that depend on it to correctly track changes without violating rendering rules.
