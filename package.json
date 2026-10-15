@@ -3,6 +3,8 @@
 		"@playwright/test": "^1.61.0",
 		"@types/nodemailer": "^8.0.1",
 		"@types/uuid": "^11.0.0",
+		"@upstash/ratelimit": "^2.2.0",
+		"@upstash/redis": "^1.39.0",
 		"date-fns": "^4.1.0",
 		"nodemailer": "^9.0.1",
 		"playwright": "^1.61.0",
