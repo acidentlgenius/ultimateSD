@@ -7,3 +7,9 @@
 ## 2024-03-08 - UseState for preferReducedMotion
 **Learning:** `window.matchMedia` values used to condition React rendering or animations (like `prefers-reduced-motion`) must be stored in `useState`, not `useRef`. Accessing a `useRef`'s `.current` value during the render phase causes `react-hooks/refs` linting errors and functional bugs.
 **Action:** Always use `useState` for environment state that dictates UI rendering, and explicitly include it in dependency arrays to prevent stale closures.
+## 2024-03-08 - Safe JSON.parse in localStorage loops
+**Learning:** Wrapping an entire loop in a `try/catch` block when iterating over `localStorage` items (like sessions) is a brittle pattern. If one item is corrupted or unparseable, the error halts the entire loop, effectively causing the application to "forget" all subsequent valid items.
+**Action:** When parsing local storage items iteratively, always place the `try/catch` *inside* the loop so corrupted items can be individually logged, discarded, or ignored without aborting the loop for valid items.
+## 2024-03-08 - Accessible Dialog Descriptions
+**Learning:** Radix UI Dialog components (`DialogContent`) must have an accessible description (`DialogDescription` or `aria-describedby={undefined}`) to satisfy screen readers and prevent React warnings during tests.
+**Action:** When creating or modifying modals using `@/components/ui/dialog`, always include a `<DialogDescription className="sr-only">...</DialogDescription>` inside the `<DialogHeader>` if a visible description is not necessary.
