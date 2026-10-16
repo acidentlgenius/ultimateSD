@@ -1,6 +1,6 @@
 /**
  * Local Storage Session Persistence
- * 
+ *
  * Provides utilities to save and restore practice session state
  * across page refreshes and browser sessions.
  */
@@ -22,8 +22,8 @@ interface SessionState {
   lastUpdated: string;
 }
 
-const STORAGE_PREFIX = 'sd-practice-';
-const STORAGE_VERSION = 'v1';
+const STORAGE_PREFIX = "sd-practice-";
+const STORAGE_VERSION = "v1";
 
 /**
  * Generate a unique storage key for a problem session
@@ -37,7 +37,7 @@ function getStorageKey(problemSlug: string): string {
  */
 function isStorageAvailable(): boolean {
   try {
-    const test = '__storage_test__';
+    const test = "__storage_test__";
     localStorage.setItem(test, test);
     localStorage.removeItem(test);
     return true;
@@ -56,10 +56,10 @@ export function saveSessionState(
     currentStepIndex: number;
     savedStepData: Map<string, SavedStepData>;
     completedSteps: Set<string>;
-  }
+  },
 ): boolean {
   if (!isStorageAvailable()) {
-    console.warn('localStorage not available - session will not persist');
+    console.warn("localStorage not available - session will not persist");
     return false;
   }
 
@@ -74,17 +74,17 @@ export function saveSessionState(
 
     const key = getStorageKey(problemSlug);
     const serialized = JSON.stringify(sessionState);
-    
+
     localStorage.setItem(key, serialized);
     return true;
   } catch (error) {
-    console.error('Failed to save session state:', error);
-    
+    console.error("Failed to save session state:", error);
+
     // Handle quota exceeded error
-    if (error instanceof Error && error.name === 'QuotaExceededError') {
-      console.warn('localStorage quota exceeded - clearing old sessions');
+    if (error instanceof Error && error.name === "QuotaExceededError") {
+      console.warn("localStorage quota exceeded - clearing old sessions");
       clearOldSessions(problemSlug);
-      
+
       // Try again after clearing
       try {
         const sessionState: SessionState = {
@@ -94,14 +94,17 @@ export function saveSessionState(
           completedSteps: Array.from(state.completedSteps),
           lastUpdated: new Date().toISOString(),
         };
-        localStorage.setItem(getStorageKey(problemSlug), JSON.stringify(sessionState));
+        localStorage.setItem(
+          getStorageKey(problemSlug),
+          JSON.stringify(sessionState),
+        );
         return true;
       } catch (retryError) {
-        console.error('Failed to save even after clearing:', retryError);
+        console.error("Failed to save even after clearing:", retryError);
         return false;
       }
     }
-    
+
     return false;
   }
 }
@@ -109,9 +112,7 @@ export function saveSessionState(
 /**
  * Load session state from localStorage
  */
-export function loadSessionState(
-  problemSlug: string
-): {
+export function loadSessionState(problemSlug: string): {
   currentPhase: string;
   currentStepIndex: number;
   savedStepData: Map<string, SavedStepData>;
@@ -126,16 +127,16 @@ export function loadSessionState(
 
   try {
     const stored = localStorage.getItem(key);
-    
+
     if (!stored) {
       return null;
     }
 
     const parsed: SessionState = JSON.parse(stored);
-    
+
     // Validate the structure
-    if (!parsed.currentPhase || typeof parsed.currentStepIndex !== 'number') {
-      console.warn('Invalid session state structure - clearing');
+    if (!parsed.currentPhase || typeof parsed.currentStepIndex !== "number") {
+      console.warn("Invalid session state structure - clearing");
       localStorage.removeItem(key);
       return null;
     }
@@ -150,7 +151,7 @@ export function loadSessionState(
   } catch (error) {
     // SQUASH: Root Cause: Failing to parse invalid JSON didn't actually remove it, leading to unrecoverable UI crashes on next load.
     // SQUASH: Fix: Explicitly remove the corrupted key from localStorage when JSON.parse throws.
-    console.error('Failed to load session state:', error);
+    console.error("Failed to load session state:", error);
     localStorage.removeItem(key);
     return null;
   }
@@ -168,7 +169,7 @@ export function clearSessionState(problemSlug: string): void {
     const key = getStorageKey(problemSlug);
     localStorage.removeItem(key);
   } catch (error) {
-    console.error('Failed to clear session state:', error);
+    console.error("Failed to clear session state:", error);
   }
 }
 
@@ -193,11 +194,11 @@ function clearOldSessions(currentProblemSlug: string): void {
     }
 
     // Remove old sessions
-    keysToRemove.forEach(key => localStorage.removeItem(key));
-    
+    keysToRemove.forEach((key) => localStorage.removeItem(key));
+
     console.log(`Cleared ${keysToRemove.length} old session(s)`);
   } catch (error) {
-    console.error('Failed to clear old sessions:', error);
+    console.error("Failed to clear old sessions:", error);
   }
 }
 
@@ -227,20 +228,28 @@ export function getAllSessions(): Array<{
         if (stored) {
           try {
             const parsed: SessionState = JSON.parse(stored);
-            const problemSlug = key.replace(`${STORAGE_PREFIX}${STORAGE_VERSION}-`, '');
+            const problemSlug = key.replace(
+              `${STORAGE_PREFIX}${STORAGE_VERSION}-`,
+              "",
+            );
 
             // Legacy/partial records may lack lastUpdated; an Invalid Date here
             // would blow up date-fns formatting downstream.
             const lastUpdated = new Date(parsed.lastUpdated);
             sessions.push({
               problemSlug,
-              lastUpdated: isNaN(lastUpdated.getTime()) ? new Date(0) : lastUpdated,
+              lastUpdated: isNaN(lastUpdated.getTime())
+                ? new Date(0)
+                : lastUpdated,
               stepCount: Object.keys(parsed.savedStepData ?? {}).length,
             });
           } catch (parseError) {
             // SQUASH: Root Cause: Wrapping the whole loop in a try/catch meant a single corrupted item (e.g. invalid JSON) caused getAllSessions to fail completely, missing valid items.
             // SQUASH: Fix: Wrap parsing in its own try/catch per item. If one item is corrupted, log, remove it, and continue parsing the rest.
-            console.error(`Failed to parse session data for key ${key}. Removing corrupted data.`, parseError);
+            console.error(
+              `Failed to parse session data for key ${key}. Removing corrupted data.`,
+              parseError,
+            );
             localStorage.removeItem(key);
             // Iterator adjustment not needed when iterating backwards
           }
@@ -248,10 +257,12 @@ export function getAllSessions(): Array<{
       }
     }
   } catch (error) {
-    console.error('Failed to get all sessions:', error);
+    console.error("Failed to get all sessions:", error);
   }
 
-  return sessions.sort((a, b) => b.lastUpdated.getTime() - a.lastUpdated.getTime());
+  return sessions.sort(
+    (a, b) => b.lastUpdated.getTime() - a.lastUpdated.getTime(),
+  );
 }
 
 /**
@@ -287,7 +298,7 @@ export function getStorageInfo(): {
       sessionCount,
     };
   } catch (error) {
-    console.error('Failed to get storage info:', error);
+    console.error("Failed to get storage info:", error);
     return { used: 0, available: true, sessionCount: 0 };
   }
 }
@@ -296,9 +307,9 @@ export function getStorageInfo(): {
  * Format bytes to human-readable size
  */
 export function formatStorageSize(bytes: number): string {
-  if (bytes === 0) return '0 B';
+  if (bytes === 0) return "0 B";
   const k = 1024;
-  const sizes = ['B', 'KB', 'MB'];
+  const sizes = ["B", "KB", "MB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${Math.round(bytes / Math.pow(k, i) * 100) / 100} ${sizes[i]}`;
+  return `${Math.round((bytes / Math.pow(k, i)) * 100) / 100} ${sizes[i]}`;
 }

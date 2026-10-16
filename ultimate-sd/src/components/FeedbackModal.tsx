@@ -1,16 +1,32 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useRef } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle, AlertCircle, Lightbulb, TrendingUp, Award, Trophy, Sparkles, Zap, Target } from 'lucide-react';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
-import { updateStreak } from '@/app/actions/gamification';
-import { LockedFeatureButton } from '@/components/LockedFeatureButton';
-import { FEATURES } from '@/lib/features';
-import type { GateDecision } from '@/lib/adaptive-coach/types';
+import { useState, useEffect, useRef } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  CheckCircle,
+  AlertCircle,
+  Lightbulb,
+  TrendingUp,
+  Award,
+  Trophy,
+  Sparkles,
+  Zap,
+  Target,
+} from "lucide-react";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
+import { updateStreak } from "@/app/actions/gamification";
+import { LockedFeatureButton } from "@/components/LockedFeatureButton";
+import { FEATURES } from "@/lib/features";
+import type { GateDecision } from "@/lib/adaptive-coach/types";
 
 interface FeedbackData {
   score: number;
@@ -52,7 +68,7 @@ export default function FeedbackModal({
 }: FeedbackModalProps) {
   const allowAdvance = canAdvance ?? feedback.isAcceptable;
   const isCoachedAdvance =
-    gate?.action === 'teach_forward' || gate?.action === 'advance_budget';
+    gate?.action === "teach_forward" || gate?.action === "advance_budget";
   const [animatedScore, setAnimatedScore] = useState(0);
   const [animatedAccuracy, setAnimatedAccuracy] = useState(0);
   const accuracyBarRef = useRef<HTMLDivElement>(null);
@@ -63,11 +79,11 @@ export default function FeedbackModal({
         const handleStreakUpdate = async () => {
           try {
             const result = await updateStreak();
-            if (result && 'error' in result && result.error) {
-              console.error('Failed to update streak:', result.error);
+            if (result && "error" in result && result.error) {
+              console.error("Failed to update streak:", result.error);
             }
           } catch (error) {
-            console.error('Error updating streak:', error);
+            console.error("Error updating streak:", error);
           }
         };
         handleStreakUpdate();
@@ -90,7 +106,9 @@ export default function FeedbackModal({
         if (!startTime) startTime = timestamp;
         const progress = Math.min((timestamp - startTime) / duration, 1);
         const easeOutQuart = 1 - Math.pow(1 - progress, 4);
-        setAnimatedScore(Math.floor(startScore + (endScore - startScore) * easeOutQuart));
+        setAnimatedScore(
+          Math.floor(startScore + (endScore - startScore) * easeOutQuart),
+        );
 
         if (progress < 1) {
           animationFrameScoreId = requestAnimationFrame(animateScore);
@@ -105,9 +123,16 @@ export default function FeedbackModal({
 
       const animateAccuracy = (timestamp: number) => {
         if (!accuracyStartTime) accuracyStartTime = timestamp;
-        const progress = Math.min((timestamp - accuracyStartTime) / accuracyDuration, 1);
+        const progress = Math.min(
+          (timestamp - accuracyStartTime) / accuracyDuration,
+          1,
+        );
         const easeOutQuart = 1 - Math.pow(1 - progress, 4);
-        setAnimatedAccuracy(Math.floor(startAccuracy + (endAccuracy - startAccuracy) * easeOutQuart));
+        setAnimatedAccuracy(
+          Math.floor(
+            startAccuracy + (endAccuracy - startAccuracy) * easeOutQuart,
+          ),
+        );
 
         if (progress < 1) {
           animationFrameAccuracyId = requestAnimationFrame(animateAccuracy);
@@ -138,11 +163,11 @@ export default function FeedbackModal({
   };
 
   const exportToPDF = async () => {
-    const element = document.getElementById('feedback-content');
+    const element = document.getElementById("feedback-content");
     if (!element) return;
 
     const canvas = await html2canvas(element);
-    const imgData = canvas.toDataURL('image/png');
+    const imgData = canvas.toDataURL("image/png");
     const pdf = new jsPDF();
     const imgWidth = 210;
     const pageHeight = 295;
@@ -151,49 +176,88 @@ export default function FeedbackModal({
 
     let position = 0;
 
-    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+    pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
     heightLeft -= pageHeight;
 
     while (heightLeft >= 0) {
       position = heightLeft - imgHeight;
       pdf.addPage();
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
       heightLeft -= pageHeight;
     }
 
-    pdf.save('ultimate-sd-feedback.pdf');
+    pdf.save("ultimate-sd-feedback.pdf");
   };
 
   // Determine color scheme based on score
   const getScoreColor = () => {
-    if (feedback.score >= 8) return { primary: 'text-green-600', bg: 'bg-green-500/10', border: 'border-green-500/30', gradient: 'from-green-500/20 to-emerald-500/10' };
-    if (feedback.score >= 6) return { primary: 'text-blue-600', bg: 'bg-blue-500/10', border: 'border-blue-500/30', gradient: 'from-blue-500/20 to-cyan-500/10' };
-    if (feedback.score >= 4) return { primary: 'text-yellow-600', bg: 'bg-yellow-500/10', border: 'border-yellow-500/30', gradient: 'from-yellow-500/20 to-amber-500/10' };
-    return { primary: 'text-red-600', bg: 'bg-red-500/10', border: 'border-red-500/30', gradient: 'from-red-500/20 to-orange-500/10' };
+    if (feedback.score >= 8)
+      return {
+        primary: "text-green-600",
+        bg: "bg-green-500/10",
+        border: "border-green-500/30",
+        gradient: "from-green-500/20 to-emerald-500/10",
+      };
+    if (feedback.score >= 6)
+      return {
+        primary: "text-blue-600",
+        bg: "bg-blue-500/10",
+        border: "border-blue-500/30",
+        gradient: "from-blue-500/20 to-cyan-500/10",
+      };
+    if (feedback.score >= 4)
+      return {
+        primary: "text-yellow-600",
+        bg: "bg-yellow-500/10",
+        border: "border-yellow-500/30",
+        gradient: "from-yellow-500/20 to-amber-500/10",
+      };
+    return {
+      primary: "text-red-600",
+      bg: "bg-red-500/10",
+      border: "border-red-500/30",
+      gradient: "from-red-500/20 to-orange-500/10",
+    };
   };
 
   const scoreColors = getScoreColor();
-  const accuracyColor = feedback.accuracy >= 70 ? 'bg-green-500' : feedback.accuracy >= 50 ? 'bg-yellow-500' : 'bg-red-500';
+  const accuracyColor =
+    feedback.accuracy >= 70
+      ? "bg-green-500"
+      : feedback.accuracy >= 50
+        ? "bg-yellow-500"
+        : "bg-red-500";
 
   return (
     <>
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
         <DialogContent className="max-w-5xl w-full max-h-[90vh] overflow-y-auto p-0">
           <DialogHeader className="px-6 pt-6 pb-4 border-b border-border/50">
+            <DialogDescription className="sr-only">
+              Feedback for your step submission.
+            </DialogDescription>
             <DialogTitle className="text-3xl font-bold flex items-center gap-3">
-              <div className={`p-2 rounded-xl ${feedback.isAcceptable ? 'bg-green-500/20' : 'bg-orange-500/20'}`}>
+              <div
+                className={`p-2 rounded-xl ${feedback.isAcceptable ? "bg-green-500/20" : "bg-orange-500/20"}`}
+              >
                 {feedback.isAcceptable ? (
                   <Trophy className="h-7 w-7 text-green-600 dark:text-green-400" />
                 ) : (
                   <Target className="h-7 w-7 text-orange-600 dark:text-orange-400" />
                 )}
               </div>
-              <span className={feedback.isAcceptable ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'}>
+              <span
+                className={
+                  feedback.isAcceptable
+                    ? "text-green-600 dark:text-green-400"
+                    : "text-orange-600 dark:text-orange-400"
+                }
+              >
                 {feedback.isAcceptable
-                  ? 'Great Job!'
+                  ? "Great Job!"
                   : isCoachedAdvance
-                    ? 'Coached advance'
-                    : 'Keep Practicing'}
+                    ? "Coached advance"
+                    : "Keep Practicing"}
               </span>
             </DialogTitle>
           </DialogHeader>
@@ -223,14 +287,18 @@ export default function FeedbackModal({
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm leading-relaxed text-foreground">{tip}</p>
+                  <p className="text-sm leading-relaxed text-foreground">
+                    {tip}
+                  </p>
                 </CardContent>
               </Card>
             )}
 
             {/* XP Rewards Card - Enhanced */}
             {xpEarned > 0 && (
-              <Card className={`glass border-2 border-amber-500/30 shadow-2xl bg-gradient-to-br from-amber-500/10 via-yellow-500/5 to-transparent animate-slide-up overflow-hidden relative`}>
+              <Card
+                className={`glass border-2 border-amber-500/30 shadow-2xl bg-gradient-to-br from-amber-500/10 via-yellow-500/5 to-transparent animate-slide-up overflow-hidden relative`}
+              >
                 <div className="absolute inset-0 bg-gradient-to-r from-amber-500/0 via-amber-500/10 to-amber-500/0 animate-shimmer bg-[length:200%_100%]" />
                 <CardHeader className="pb-3 relative z-10">
                   <CardTitle className="flex items-center gap-2 text-amber-600 dark:text-amber-400 text-xl">
@@ -263,12 +331,16 @@ export default function FeedbackModal({
             )}
 
             {/* Performance Score Card - Enhanced */}
-            <Card className={`glass border-2 ${scoreColors.border} shadow-xl bg-gradient-to-br ${scoreColors.gradient} relative overflow-hidden ${isCoachedAdvance ? 'opacity-80' : ''}`}>
+            <Card
+              className={`glass border-2 ${scoreColors.border} shadow-xl bg-gradient-to-br ${scoreColors.gradient} relative overflow-hidden ${isCoachedAdvance ? "opacity-80" : ""}`}
+            >
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2 text-xl">
                   <Award className={`h-6 w-6 ${scoreColors.primary}`} />
                   <span className={scoreColors.primary}>
-                    {isCoachedAdvance ? 'Score (for reference)' : 'Performance Score'}
+                    {isCoachedAdvance
+                      ? "Score (for reference)"
+                      : "Performance Score"}
                   </span>
                 </CardTitle>
               </CardHeader>
@@ -276,12 +348,19 @@ export default function FeedbackModal({
                 <div className="text-center mb-8">
                   <div className="relative inline-block">
                     {/* Score Circle Background */}
-                    <div className={`absolute inset-0 rounded-full ${scoreColors.bg} blur-2xl opacity-50`} style={{ transform: 'scale(1.5)' }} />
+                    <div
+                      className={`absolute inset-0 rounded-full ${scoreColors.bg} blur-2xl opacity-50`}
+                      style={{ transform: "scale(1.5)" }}
+                    />
                     <div className="relative">
-                      <div className={`${isCoachedAdvance ? 'text-5xl' : 'text-8xl'} font-extrabold ${scoreColors.primary} transition-all duration-300`}>
+                      <div
+                        className={`${isCoachedAdvance ? "text-5xl" : "text-8xl"} font-extrabold ${scoreColors.primary} transition-all duration-300`}
+                      >
                         {animatedScore}
                       </div>
-                      <div className="text-sm text-muted-foreground mt-2 font-medium">out of 10</div>
+                      <div className="text-sm text-muted-foreground mt-2 font-medium">
+                        out of 10
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -293,7 +372,9 @@ export default function FeedbackModal({
                       <Target className="h-4 w-4" />
                       Accuracy
                     </span>
-                    <span className="font-bold text-lg">{animatedAccuracy}%</span>
+                    <span className="font-bold text-lg">
+                      {animatedAccuracy}%
+                    </span>
                   </div>
                   <div className="relative w-full bg-muted/40 rounded-full h-4 overflow-hidden shadow-inner">
                     <div
@@ -317,15 +398,19 @@ export default function FeedbackModal({
 
             {/* Strengths Section - Enhanced */}
             {feedback.strengths.length > 0 && (
-              <Card className="glass border-2 border-green-500/30 shadow-lg animate-fade-in bg-gradient-to-br from-green-500/5 to-transparent" style={{ animationDelay: '200ms' }}>
+              <Card
+                className="glass border-2 border-green-500/30 shadow-lg animate-fade-in bg-gradient-to-br from-green-500/5 to-transparent"
+                style={{ animationDelay: "200ms" }}
+              >
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-2 text-green-600 dark:text-green-400 text-lg">
                     <div className="p-1.5 rounded-lg bg-green-500/20 shrink-0">
                       <CheckCircle className="h-5 w-5" />
                     </div>
-                     <span className="flex-1 leading-tight">Strengths</span>
+                    <span className="flex-1 leading-tight">Strengths</span>
                     <span className="ml-auto text-xs font-normal text-muted-foreground shrink-0">
-                      {feedback.strengths.length} {feedback.strengths.length === 1 ? 'point' : 'points'}
+                      {feedback.strengths.length}{" "}
+                      {feedback.strengths.length === 1 ? "point" : "points"}
                     </span>
                   </CardTitle>
                 </CardHeader>
@@ -348,15 +433,21 @@ export default function FeedbackModal({
 
             {/* Improvements Section - Enhanced */}
             {feedback.weaknesses.length > 0 && (
-              <Card className="glass border-2 border-yellow-500/30 shadow-lg animate-fade-in bg-gradient-to-br from-yellow-500/5 to-transparent" style={{ animationDelay: '300ms' }}>
+              <Card
+                className="glass border-2 border-yellow-500/30 shadow-lg animate-fade-in bg-gradient-to-br from-yellow-500/5 to-transparent"
+                style={{ animationDelay: "300ms" }}
+              >
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-2 text-yellow-600 dark:text-yellow-400 text-lg">
                     <div className="p-1.5 rounded-lg bg-yellow-500/20 shrink-0">
                       <AlertCircle className="h-5 w-5" />
                     </div>
-                     <span className="flex-1 leading-tight">Areas for Improvement</span>
+                    <span className="flex-1 leading-tight">
+                      Areas for Improvement
+                    </span>
                     <span className="ml-auto text-xs font-normal text-muted-foreground shrink-0">
-                      {feedback.weaknesses.length} {feedback.weaknesses.length === 1 ? 'point' : 'points'}
+                      {feedback.weaknesses.length}{" "}
+                      {feedback.weaknesses.length === 1 ? "point" : "points"}
                     </span>
                   </CardTitle>
                 </CardHeader>
@@ -379,15 +470,21 @@ export default function FeedbackModal({
 
             {/* Missed Points Section - Enhanced */}
             {feedback.missed && feedback.missed.length > 0 && (
-              <Card className="glass border-2 border-blue-500/30 shadow-lg animate-fade-in bg-gradient-to-br from-blue-500/5 to-transparent" style={{ animationDelay: '400ms' }}>
+              <Card
+                className="glass border-2 border-blue-500/30 shadow-lg animate-fade-in bg-gradient-to-br from-blue-500/5 to-transparent"
+                style={{ animationDelay: "400ms" }}
+              >
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-2 text-blue-600 dark:text-blue-400 text-lg">
                     <div className="p-1.5 rounded-lg bg-blue-500/20 shrink-0">
                       <Lightbulb className="h-5 w-5" />
                     </div>
-                     <span className="flex-1 leading-tight">Key Points to Remember</span>
+                    <span className="flex-1 leading-tight">
+                      Key Points to Remember
+                    </span>
                     <span className="ml-auto text-xs font-normal text-muted-foreground shrink-0">
-                      {feedback.missed.length} {feedback.missed.length === 1 ? 'point' : 'points'}
+                      {feedback.missed.length}{" "}
+                      {feedback.missed.length === 1 ? "point" : "points"}
                     </span>
                   </CardTitle>
                 </CardHeader>
@@ -410,11 +507,13 @@ export default function FeedbackModal({
           </div>
 
           {/* Footer Actions - Enhanced */}
-          <div className={`flex flex-col-reverse sm:flex-row ${FEATURES.feedbackPdfExport ? 'justify-between' : 'justify-end'} items-center gap-4 px-6 py-4 border-t border-border/50 bg-muted/20`}>
+          <div
+            className={`flex flex-col-reverse sm:flex-row ${FEATURES.feedbackPdfExport ? "justify-between" : "justify-end"} items-center gap-4 px-6 py-4 border-t border-border/50 bg-muted/20`}
+          >
             {FEATURES.feedbackPdfExport && (
-              <Button 
-                variant="outline" 
-                onClick={exportToPDF} 
+              <Button
+                variant="outline"
+                onClick={exportToPDF}
                 className="w-full sm:w-auto hover:bg-muted transition-all hover:scale-105"
               >
                 Export PDF
@@ -436,13 +535,15 @@ export default function FeedbackModal({
               onClick={handleContinue}
               className={`w-full sm:w-auto gradient-bg hover:opacity-90 transition-all shadow-sm ${
                 allowAdvance
-                  ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                  : 'bg-primary text-primary-foreground hover:bg-primary/90'
+                  ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                  : "bg-primary text-primary-foreground hover:bg-primary/90"
               }`}
             >
               {allowAdvance
-                ? (feedback.isAcceptable ? 'Continue to Next Step' : 'Continue with coach tip')
-                : 'Try Again'}
+                ? feedback.isAcceptable
+                  ? "Continue to Next Step"
+                  : "Continue with coach tip"
+                : "Try Again"}
             </Button>
           </div>
         </DialogContent>
