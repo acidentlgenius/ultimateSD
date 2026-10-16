@@ -68,3 +68,15 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+
+## 2024-06-25 - Unhandled Promise Rejections from Server Actions
+
+**Learning:** Server Actions in Next.js (like `updateStreak`) return an error object (`{ error: 'message' }`) on failure instead of throwing exceptions. When calling them, especially within React `useEffect` hooks and appending `.catch()`, network errors or action-level errors aren't caught or resolved correctly, leaving unhandled promise rejections that could potentially swallow critical gamification failures or silently fail in local dev.
+
+**Action:** When calling Next.js Server Actions, always wrap them in a local async function (`const handleAction = async () => { ... }`) inside the `useEffect`. Use a `try/catch` block to handle network errors and explicitly check the returned object for the `.error` property to handle application-level logic failures.
+
+## 2024-06-25 - React Hook Ref Access During Render
+
+**Learning:** Reading `useRef` values (like `preferReducedMotion.current`) during a React component's render phase is an anti-pattern that violates React strict mode and triggers `react-hooks/refs` lint errors. This can cause the component not to update as expected because mutations to refs do not trigger re-renders.
+
+**Action:** When you need a value derived from `window.matchMedia` or other browser APIs that should affect rendering, use `useState` instead of `useRef`. Initialize it with a safe default (like `false` for SSR) and update it in a `useEffect`. Ensure the newly introduced state variable is meticulously added to the dependency arrays of all relevant `useEffect` or `useCallback` hooks that reference it to prevent stale closures and functional regressions.
