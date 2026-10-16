@@ -1,24 +1,38 @@
-import { prisma } from '@/lib/prisma';
-import { FEATURE_SEED_DEFAULTS, FEATURE_KEYS, type FeatureKey, type PlanType } from '@/lib/plans';
-import { getEffectivePlanType } from '@/lib/access';
-import { resolveFeatureAccess, type OverrideMode } from '@/lib/feature-flags';
+import { prisma } from "@/lib/prisma";
+import {
+  FEATURE_SEED_DEFAULTS,
+  FEATURE_KEYS,
+  type FeatureKey,
+  type PlanType,
+} from "@/lib/plans";
+import { getEffectivePlanType } from "@/lib/access";
+import { resolveFeatureAccess, type OverrideMode } from "@/lib/feature-flags";
 
-export async function getFeatureFlagState(feature: FeatureKey): Promise<PlanType[]> {
-  const row = await prisma.featureFlag.findUnique({ where: { key: feature } });
-  if (!row) {
+export async function getFeatureFlagState(
+  feature: FeatureKey,
+): Promise<PlanType[]> {
+  try {
+    const row = await prisma.featureFlag.findUnique({
+      where: { key: feature },
+    });
+    if (!row) {
+      return FEATURE_SEED_DEFAULTS[feature];
+    }
+    return row.enabledPlans as PlanType[];
+  } catch (error) {
+    console.warn(`Failed to fetch feature flag state for ${feature}:`, error);
     return FEATURE_SEED_DEFAULTS[feature];
   }
-  return row.enabledPlans as PlanType[];
 }
 
 export async function canAccessFeature(
   userId: string | null,
-  feature: FeatureKey
+  feature: FeatureKey,
 ): Promise<boolean> {
   const enabledPlans = await getFeatureFlagState(feature);
 
   if (!userId) {
-    return resolveFeatureAccess({ override: null, enabledPlans, plan: 'free' });
+    return resolveFeatureAccess({ override: null, enabledPlans, plan: "free" });
   }
 
   const [override, user] = await Promise.all([
@@ -32,8 +46,11 @@ export async function canAccessFeature(
   ]);
 
   const plan = user
-    ? getEffectivePlanType({ planType: user.planType as PlanType, planExpiresAt: user.planExpiresAt })
-    : 'free';
+    ? getEffectivePlanType({
+        planType: user.planType as PlanType,
+        planExpiresAt: user.planExpiresAt,
+      })
+    : "free";
   return resolveFeatureAccess({
     override: (override?.mode as OverrideMode | undefined) ?? null,
     enabledPlans,
@@ -42,7 +59,7 @@ export async function canAccessFeature(
 }
 
 export async function getAccessibleFeatures(
-  userId: string | null
+  userId: string | null,
 ): Promise<Record<FeatureKey, boolean>> {
   const [flags, overrides, user] = await Promise.all([
     prisma.featureFlag.findMany(),
@@ -58,10 +75,17 @@ export async function getAccessibleFeatures(
   ]);
 
   const plan = user
-    ? getEffectivePlanType({ planType: user.planType as PlanType, planExpiresAt: user.planExpiresAt })
-    : 'free';
-  const flagsByKey = new Map(flags.map((f) => [f.key, f.enabledPlans as PlanType[]]));
-  const overridesByKey = new Map(overrides.map((o) => [o.flagKey, o.mode as OverrideMode]));
+    ? getEffectivePlanType({
+        planType: user.planType as PlanType,
+        planExpiresAt: user.planExpiresAt,
+      })
+    : "free";
+  const flagsByKey = new Map(
+    flags.map((f) => [f.key, f.enabledPlans as PlanType[]]),
+  );
+  const overridesByKey = new Map(
+    overrides.map((o) => [o.flagKey, o.mode as OverrideMode]),
+  );
 
   const result = {} as Record<FeatureKey, boolean>;
   for (const key of FEATURE_KEYS) {

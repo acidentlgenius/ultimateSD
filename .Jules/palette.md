@@ -13,3 +13,6 @@
 ## 2024-03-08 - Accessible Dialog Descriptions
 **Learning:** Radix UI Dialog components (`DialogContent`) must have an accessible description (`DialogDescription` or `aria-describedby={undefined}`) to satisfy screen readers and prevent React warnings during tests.
 **Action:** When creating or modifying modals using `@/components/ui/dialog`, always include a `<DialogDescription className="sr-only">...</DialogDescription>` inside the `<DialogHeader>` if a visible description is not necessary.
+## 2024-03-08 - Graceful DB Failures on Public Routes
+**Learning:** Functions that query the database (like `prisma.launchOfferRedemption.count()` or `prisma.featureFlag.findUnique()`) and are invoked during the initial render of unauthenticated/public pages must degrade gracefully if the database is unreachable, especially during static build pre-rendering.
+**Action:** Always wrap these root-level configuration or metric queries in `try/catch` blocks and return safe fallback values (like `0` or `false`) to prevent the entire page or build from crashing.
