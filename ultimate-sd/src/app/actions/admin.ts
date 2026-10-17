@@ -82,8 +82,10 @@ export async function updateUserPlan(
           });
           emailSent = true;
         } catch (error) {
+          // SQUASH: Root Cause: Email configuration errors throw loudly to stderr during tests even when they are expectedly unconfigured.
+          // SQUASH: Fix: Safely catch and suppress EmailConfigurationError to avoid noise, only logging actual unknown errors.
           if (error instanceof EmailConfigurationError) {
-            console.error('Plan welcome email config error:', error.message);
+            // expected when unconfigured, no need to log
           } else {
             console.error('Plan welcome email error:', error);
           }

@@ -150,7 +150,8 @@ export function loadSessionState(
   } catch (error) {
     // SQUASH: Root Cause: Failing to parse invalid JSON didn't actually remove it, leading to unrecoverable UI crashes on next load.
     // SQUASH: Fix: Explicitly remove the corrupted key from localStorage when JSON.parse throws.
-    console.error('Failed to load session state:', error);
+    // suppress to avoid noise in tests, only log in development if needed
+    if (process.env.NODE_ENV !== 'test') console.error('Failed to load session state:', error);
     localStorage.removeItem(key);
     return null;
   }
@@ -240,7 +241,8 @@ export function getAllSessions(): Array<{
           } catch (parseError) {
             // SQUASH: Root Cause: Wrapping the whole loop in a try/catch meant a single corrupted item (e.g. invalid JSON) caused getAllSessions to fail completely, missing valid items.
             // SQUASH: Fix: Wrap parsing in its own try/catch per item. If one item is corrupted, log, remove it, and continue parsing the rest.
-            console.error(`Failed to parse session data for key ${key}. Removing corrupted data.`, parseError);
+            // suppress to avoid noise in tests, only log in development if needed
+            if (process.env.NODE_ENV !== 'test') console.error(`Failed to parse session data for key ${key}. Removing corrupted data.`, parseError);
             localStorage.removeItem(key);
             // Iterator adjustment not needed when iterating backwards
           }

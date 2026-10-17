@@ -68,3 +68,8 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+## 2024-05-24 - Silenced test suite noise
+
+**Learning:** When tests execute and run code that intentionally triggers failure branches (e.g. malformed JSON, missing DB, misconfigured email settings) to ensure fallbacks work properly, leaving unrestricted `console.error` and `console.warn` in the catch blocks creates massive, unhelpful noise in test output without actually failing the test.
+
+**Action:** When implementing graceful error handling or fallbacks, wrap warning/error logs in `if (process.env.NODE_ENV !== 'test')` or suppress expected errors entirely (like `SyntaxError` when parsing unknown strings or `EmailConfigurationError` when unconfigured) so the test suite stays clean and readable. Also wrap React state updates inside `act(...)` during async timer advances.
