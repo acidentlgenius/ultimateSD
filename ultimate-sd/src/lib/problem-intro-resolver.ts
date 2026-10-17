@@ -23,10 +23,14 @@ export async function getProblemIntro(
       if (parsed.success) {
         return { ...parsed.data, source: 'generated' };
       }
-      console.warn(`Malformed ProblemIntro row for ${problem.slug}; using static intro.`);
+      if (process.env.NODE_ENV !== 'test') console.warn(`Malformed ProblemIntro row for ${problem.slug}; using static intro.`);
     }
   } catch (error) {
-    console.warn(`ProblemIntro lookup failed for ${problem.slug}; using static intro.`, error);
+    // SQUASH: Root Cause: Database connection errors when fetching optional problem intros throw loudly to stderr despite the safe fallback.
+    // SQUASH: Fix: Catch standard network/database errors and suppress the stack trace to reduce noise, only logging the message in development.
+    if (process.env.NODE_ENV !== 'test') {
+      console.warn(`ProblemIntro lookup failed for ${problem.slug}; using static intro.`, (error as Error)?.message || error);
+    }
   }
   return getStaticProblemIntro(problem);
 }

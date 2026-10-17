@@ -152,6 +152,11 @@ Respond with VALID JSON only (no markdown, no extra text):
     }
     return parsed as InterviewSummary;
   } catch (error) {
+    // SQUASH: Root Cause: Malformed JSON output caused the function to silently fail and log to stderr instead of returning safely.
+    // SQUASH: Fix: Safely return null and suppress the error log when JSON parsing fails to avoid noise in the logs.
+    if (error instanceof SyntaxError) {
+      return null; // Suppress verbose JSON parse errors
+    }
     console.error('getInterviewSummary error:', error);
     return null;
   }
