@@ -15,8 +15,8 @@ export async function resolveSessionUserId(
     if (byId) return byId.id;
   }
   if (sessionUser.email) {
-    const byEmail = await prisma.user.findUnique({
-      where: { email: sessionUser.email },
+    const byEmail = await prisma.user.findFirst({
+      where: { email: { equals: sessionUser.email, mode: 'insensitive' } },
       select: { id: true },
     });
     if (byEmail) return byEmail.id;

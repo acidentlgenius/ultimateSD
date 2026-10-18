@@ -1,11 +1,7 @@
-💥 The Bug
-The Vercel deployment is failing with the error `ERR_PNPM_OUTDATED_LOCKFILE Cannot install with "frozen-lockfile" because pnpm-lock.yaml is not up to date with <ROOT>/package.json`.
+💥 The Bug: When using `resolveSessionUserId` to look up a user via their email address from the NextAuth session, the lookup can fail or incorrectly duplicate an account if the email's casing doesn't exactly match the database (e.g. `User@example.com` vs `user@example.com`).
 
-🔍 Root Cause
-The `package.json` file specified `@testing-library/dom` but this dependency was missing from the `pnpm-lock.yaml` file. Vercel runs `pnpm install --frozen-lockfile` by default on CI environments, which strictly enforces that the lockfile perfectly matches `package.json`. This mismatch caused the build to abort.
+🔍 Root Cause: The function `resolveSessionUserId` was using `findUnique({ where: { email } })` for email lookups. `findUnique` performs a case-sensitive match. In Postgres, string equality is case-sensitive by default unless a `citext` column is used. Since we are using standard `String` columns, `findUnique` will not match case-varied emails.
 
-🛠️ The Fix
-Ran `pnpm install` locally to update the `pnpm-lock.yaml` file, syncing the lockfile definitions with the updated `package.json` specifiers (specifically adding `@testing-library/dom` and deduplicating some minor `@babel` versions).
+🛠️ The Fix: Replaced `findUnique` with `findFirst` and used the Prisma `{ equals: email, mode: 'insensitive' }` filter for the email lookup in `resolveSessionUserId` within `src/lib/session-user.ts`.
 
-🛡️ Prevention
-When updating `package.json` dependencies, ensure to always run `pnpm install` and commit the updated `pnpm-lock.yaml` file to avoid breaking CI/CD pipelines that rely on frozen lockfiles.
+🛡️ Prevention: Updated `src/lib/__tests__/session-user.test.ts` to assert that `findFirst` is called with the `mode: 'insensitive'` filter. Added a note to Squash's journal to always use `findFirst` with `mode: 'insensitive'` for email lookups to prevent authentication fragmentation.
