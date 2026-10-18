@@ -1,10 +1,30 @@
 'use server';
 
+import { headers } from 'next/headers';
+import { Ratelimit } from '@upstash/ratelimit';
+import { Redis } from '@upstash/redis';
 import { prisma } from '@/lib/prisma';
 import { isValidEmail, normalizeEmail } from '@/lib/waitlist';
 
-// TODO: rate-limit before heavy traffic
+const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
+const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+
+const redis = redisUrl && redisToken ? new Redis({ url: redisUrl, token: redisToken }) : null;
+export const ratelimit = redis ? new Ratelimit({
+  redis: redis,
+  limiter: Ratelimit.slidingWindow(5, '1 m'), // 5 requests per minute
+  analytics: true,
+}) : null;
+
 export async function joinWaitlist(email: string): Promise<{ success: boolean; error?: string }> {
+  if (ratelimit) {
+    const ip = (await headers()).get('x-forwarded-for') || '127.0.0.1';
+    const { success } = await ratelimit.limit(`waitlist_${ip}`);
+    if (!success) {
+      return { success: false, error: 'Too many requests. Please try again later.' };
+    }
+  }
+
   const normalized = normalizeEmail(email);
   if (!isValidEmail(normalized)) {
     return { success: false, error: 'Please enter a valid email address.' };
