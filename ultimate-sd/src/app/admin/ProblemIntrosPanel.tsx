@@ -1,24 +1,24 @@
-'use client';
+"use client";
 
-import { useEffect, useRef, useState, useTransition } from 'react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Sparkles, Trash2 } from 'lucide-react';
+import { useEffect, useRef, useState, useTransition } from "react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Loader2, Sparkles, Trash2 } from "lucide-react";
 import {
   deleteProblemIntro,
   generateProblemIntroDraft,
   listProblemIntroStatuses,
   saveProblemIntro,
   type ProblemIntroStatus,
-} from '@/app/actions/problem-intros';
-import type { GeneratedIntro } from '@/lib/problem-intro-generation';
-import { PROBLEM_INTROS } from '@/lib/problem-intros';
+} from "@/app/actions/problem-intros";
+import type { GeneratedIntro } from "@/lib/problem-intro-generation";
+import { PROBLEM_INTROS } from "@/lib/problem-intros";
 
-const SOURCE_BADGE: Record<ProblemIntroStatus['source'], string> = {
-  generated: 'bg-purple-500/10 text-purple-600 border-purple-500/30',
-  bespoke: 'bg-green-500/10 text-green-600 border-green-500/30',
-  derived: 'bg-zinc-500/10 text-zinc-500 border-zinc-500/30',
+const SOURCE_BADGE: Record<ProblemIntroStatus["source"], string> = {
+  generated: "bg-purple-500/10 text-purple-600 border-purple-500/30",
+  bespoke: "bg-green-500/10 text-green-600 border-green-500/30",
+  derived: "bg-zinc-500/10 text-zinc-500 border-zinc-500/30",
 };
 
 // Small local helper so the delete button says what deletion reverts to.
@@ -45,7 +45,6 @@ export function ProblemIntrosPanel() {
 
   useEffect(() => {
     refresh();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const selected = statuses.find((s) => s.slug === selectedSlug) ?? null;
@@ -74,7 +73,7 @@ export function ProblemIntrosPanel() {
         setDraft(null);
       } catch (e) {
         if (selectedSlugRef.current !== slug) return;
-        setError(e instanceof Error ? e.message : 'Save failed');
+        setError(e instanceof Error ? e.message : "Save failed");
       }
     });
 
@@ -86,13 +85,19 @@ export function ProblemIntrosPanel() {
         setStatuses(await listProblemIntroStatuses());
       } catch (e) {
         if (selectedSlugRef.current !== slug) return;
-        setError(e instanceof Error ? e.message : 'Delete failed');
+        setError(e instanceof Error ? e.message : "Delete failed");
       }
     });
 
-  const updateConcept = (index: number, field: 'term' | 'blurb', value: string) => {
+  const updateConcept = (
+    index: number,
+    field: "term" | "blurb",
+    value: string,
+  ) => {
     if (!draft) return;
-    const concepts = draft.concepts.map((c, i) => (i === index ? { ...c, [field]: value } : c));
+    const concepts = draft.concepts.map((c, i) =>
+      i === index ? { ...c, [field]: value } : c,
+    );
     setDraft({ ...draft, concepts });
   };
 
@@ -105,7 +110,7 @@ export function ProblemIntrosPanel() {
         <CardContent className="max-h-[600px] space-y-1 overflow-y-auto">
           {statuses.length === 0 && (
             <p className="text-sm text-muted-foreground">
-              {isPending ? 'Loading…' : 'No problems found.'}
+              {isPending ? "Loading…" : "No problems found."}
             </p>
           )}
           {statuses.map((s) => (
@@ -118,7 +123,7 @@ export function ProblemIntrosPanel() {
                 setError(null);
               }}
               className={`flex w-full items-center justify-between gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors ${
-                selectedSlug === s.slug ? 'bg-muted' : 'hover:bg-muted/50'
+                selectedSlug === s.slug ? "bg-muted" : "hover:bg-muted/50"
               }`}
             >
               <span className="truncate">{s.title}</span>
@@ -133,7 +138,7 @@ export function ProblemIntrosPanel() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">
-            {selected ? selected.title : 'Select a problem'}
+            {selected ? selected.title : "Select a problem"}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -153,7 +158,7 @@ export function ProblemIntrosPanel() {
                   )}
                   Generate with AI
                 </Button>
-                {selected.source === 'generated' && (
+                {selected.source === "generated" && (
                   <Button
                     size="sm"
                     variant="outline"
@@ -162,7 +167,9 @@ export function ProblemIntrosPanel() {
                     className="gap-2 text-red-600 border-red-500/30 hover:bg-red-500/10"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
-                    Delete (revert to {PROBLEM_HAS_BESPOKE(selected.slug) ? 'bespoke' : 'derived'})
+                    Delete (revert to{" "}
+                    {PROBLEM_HAS_BESPOKE(selected.slug) ? "bespoke" : "derived"}
+                    )
                   </Button>
                 )}
               </div>
@@ -185,29 +192,41 @@ export function ProblemIntrosPanel() {
                     <textarea
                       id="intro-hook"
                       value={draft.hook}
-                      onChange={(e) => setDraft({ ...draft, hook: e.target.value })}
+                      onChange={(e) =>
+                        setDraft({ ...draft, hook: e.target.value })
+                      }
                       rows={4}
                       className="w-full rounded-md border border-border bg-background p-2 text-sm"
                     />
                   </div>
                   {draft.concepts.map((concept, i) => (
-                    <div key={i} className="space-y-1 rounded-md border border-border/60 p-3">
+                    <div
+                      key={i}
+                      className="space-y-1 rounded-md border border-border/60 p-3"
+                    >
                       <input
                         value={concept.term}
-                        onChange={(e) => updateConcept(i, 'term', e.target.value)}
+                        onChange={(e) =>
+                          updateConcept(i, "term", e.target.value)
+                        }
                         className="w-full rounded-md border border-border bg-background p-2 text-sm font-semibold"
                         aria-label={`Concept ${i + 1} term`}
                       />
                       <textarea
                         value={concept.blurb}
-                        onChange={(e) => updateConcept(i, 'blurb', e.target.value)}
+                        onChange={(e) =>
+                          updateConcept(i, "blurb", e.target.value)
+                        }
                         rows={2}
                         className="w-full rounded-md border border-border bg-background p-2 text-sm"
                         aria-label={`Concept ${i + 1} blurb`}
                       />
                     </div>
                   ))}
-                  <Button onClick={() => handleSave(selected.slug)} disabled={isPending}>
+                  <Button
+                    onClick={() => handleSave(selected.slug)}
+                    disabled={isPending}
+                  >
                     Save intro
                   </Button>
                 </div>

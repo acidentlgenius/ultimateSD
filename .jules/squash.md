@@ -68,3 +68,8 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+## 2026-06-30 - Case Sensitive Email Query Fragmenting Accounts
+
+**Learning:** When using `findUnique` for `email` match for user lookups in NextAuth session user resolution logic (`src/lib/session-user.ts`), it can lead to multiple accounts being created or failure to lookup an existing account if the user input casing differs from the database (e.g. `User@example.com` vs `user@example.com`).
+
+**Action:** Always replace `findUnique` email lookups with `findFirst` using `{ equals: email, mode: 'insensitive' }` across all authentication and internal user-fetching routes (e.g. `resolveSessionUserId`).
