@@ -5,6 +5,7 @@ vi.mock('@/lib/prisma', () => ({
   prisma: {
     user: {
       findUnique: vi.fn(),
+      findFirst: vi.fn(),
     },
   },
 }));
@@ -13,6 +14,7 @@ import { prisma } from '@/lib/prisma';
 import { resolveSessionUserId } from '@/lib/session-user';
 
 const findUnique = vi.mocked(prisma.user.findUnique);
+const findFirst = vi.mocked(prisma.user.findFirst);
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -30,21 +32,25 @@ describe('resolveSessionUserId', () => {
     });
   });
 
-  it('falls back to email when id is stale', async () => {
-    findUnique
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce({ id: 'u-new' } as never);
+  it('falls back to email when id is stale (case-insensitive)', async () => {
+    findUnique.mockResolvedValueOnce(null);
+    findFirst.mockResolvedValueOnce({ id: 'u-new' } as never);
     await expect(
-      resolveSessionUserId({ id: 'stale', email: 'a@b.com' })
+      resolveSessionUserId({ id: 'stale', email: 'A@B.com' })
     ).resolves.toBe('u-new');
-    expect(findUnique).toHaveBeenNthCalledWith(2, {
-      where: { email: 'a@b.com' },
+    expect(findUnique).toHaveBeenCalledWith({
+      where: { id: 'stale' },
+      select: { id: true },
+    });
+    expect(findFirst).toHaveBeenCalledWith({
+      where: { email: { equals: 'A@B.com', mode: 'insensitive' } },
       select: { id: true },
     });
   });
 
   it('returns null when neither id nor email resolve', async () => {
     findUnique.mockResolvedValue(null);
+    findFirst.mockResolvedValue(null);
     await expect(
       resolveSessionUserId({ id: 'gone', email: 'gone@b.com' })
     ).resolves.toBeNull();
