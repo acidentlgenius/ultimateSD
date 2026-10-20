@@ -68,3 +68,8 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+## 2024-10-21 - [Case-Sensitive Email Lookups and Updates]
+
+**Learning:** Prisma's `findUnique` and `.update` are strictly case-sensitive when querying by string fields like `email`. This leads to authentication bugs where users with differently cased emails (e.g., "User@example.com" vs "user@example.com") either fail lookups or fragment their state (e.g., during gamification updates or password resets). Attempting to `.update` by email directly causes silent failures or RecordNotFound errors.
+
+**Action:** Always use `findFirst` with `{ equals: email, mode: 'insensitive' }` to locate the user reliably, and then perform `.update` using the unique `id` retrieved from the user object, rather than relying on the email string as a key. Ensure test mocks reflect this two-step pattern (`findFirst` followed by update with `id`).

@@ -7,18 +7,19 @@ vi.mock('@/lib/prisma', () => ({
     $transaction: vi.fn(),
     stepSubmission: { create: vi.fn() },
     problemProgress: { findUnique: vi.fn(), upsert: vi.fn() },
+    user: { findFirst: vi.fn(), update: vi.fn() },
   },
 }));
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
-import { recordStepSubmission } from '@/app/actions/progress/submissions';
+import { recordStepSubmission, completeStep } from '@/app/actions/progress/submissions';
 
 describe('recordStepSubmission', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(auth).mockResolvedValue({ user: { id: 'u1' } } as never);
+    vi.mocked(auth).mockResolvedValue({ user: { id: 'u1', email: 'test@example.com' } } as never);
   });
 
   it('skips empty content submissions', async () => {
@@ -36,5 +37,38 @@ describe('recordStepSubmission', () => {
     expect(result.success).toBe(true);
     expect(result.skipped).toBe(true);
     expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('updates user xp and level using user id', async () => {
+    vi.mocked(prisma.user.findFirst).mockResolvedValue({ id: 'u1', email: 'test@example.com', xp: 100, level: 2, streak: 1, lastPracticeAt: new Date(Date.now() - 86400000) } as never);
+
+    // Mock the transaction block execution
+    vi.mocked(prisma.$transaction).mockImplementation(async (callback) => {
+      if (typeof callback === 'function') {
+        return callback(prisma);
+      }
+      return [];
+    });
+
+    vi.mocked(prisma.problemProgress.findUnique).mockResolvedValue({
+      activeSessionId: 's1',
+      completedStepIds: [],
+    } as never);
+
+    const result = await completeStep('p1', 'requirements-0', {
+      content: 'valid content',
+      feedback: 'good',
+      score: 10,
+      isPassing: true,
+    });
+
+    expect(result.success).toBe(true);
+    expect(prisma.user.update).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: 'u1' },
+      data: expect.objectContaining({
+        xp: expect.any(Number),
+        level: expect.any(Number),
+      })
+    }));
   });
 });

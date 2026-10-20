@@ -29,8 +29,19 @@ export async function POST(req: Request) {
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
+        const targetUser = await prisma.user.findFirst({
+            where: { email: { equals: verificationToken.identifier, mode: 'insensitive' } },
+        });
+
+        if (!targetUser) {
+            return NextResponse.json(
+                { message: "User not found" },
+                { status: 404 }
+            );
+        }
+
         await prisma.user.update({
-            where: { email: verificationToken.identifier },
+            where: { id: targetUser.id },
             data: {
                 password: hashedPassword,
                 emailVerified: new Date(),
