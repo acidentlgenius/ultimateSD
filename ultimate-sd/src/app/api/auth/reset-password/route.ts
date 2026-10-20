@@ -29,13 +29,20 @@ export async function POST(req: Request) {
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        await prisma.user.update({
-            where: { email: verificationToken.identifier },
-            data: {
-                password: hashedPassword,
-                emailVerified: new Date(),
-            },
+        const userToUpdate = await prisma.user.findFirst({
+            where: { email: { equals: verificationToken.identifier, mode: 'insensitive' } },
+            select: { id: true },
         });
+
+        if (userToUpdate) {
+            await prisma.user.update({
+                where: { id: userToUpdate.id },
+                data: {
+                    password: hashedPassword,
+                    emailVerified: new Date(),
+                },
+            });
+        }
 
         await prisma.verificationToken.delete({
             where: {

@@ -106,7 +106,9 @@ export function estimateReadingTime(content: unknown): number {
 
 export async function getPublishedBlogPosts(searchQuery?: string): Promise<BlogPostSummary[]> {
   const trimmed = searchQuery?.trim();
-  const rows = await prisma.blogPost.findMany({
+  let rows: any[] = [];
+  try {
+    rows = await prisma.blogPost.findMany({
     where: {
       status: 'PUBLISHED',
       ...(trimmed
@@ -121,6 +123,10 @@ export async function getPublishedBlogPosts(searchQuery?: string): Promise<BlogP
     orderBy: { publishedAt: 'desc' },
     select: summarySelect,
   });
+  } catch (error) {
+    console.error('Failed to fetch blog posts:', error);
+    return [];
+  }
   return rows.map(toSummary);
 }
 

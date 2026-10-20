@@ -39,7 +39,7 @@ export async function updateProgress(xpAmount: number) {
         const newLevel = calculateLevel(newXp);
 
         const updatedUser = await prisma.user.update({
-            where: { email },
+            where: { id: userRaw.id },
             data: {
                 xp: newXp,
                 level: newLevel,
@@ -83,7 +83,7 @@ export async function updateStreak() {
         const newStreak = calculateStreak(user.streak, lastPractice ? lastPractice : null, now);
 
         const updatedUser = await prisma.user.update({
-            where: { email },
+            where: { id: userRaw.id },
             data: {
                 streak: newStreak,
                 lastPracticeAt: now,
