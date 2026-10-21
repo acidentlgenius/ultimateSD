@@ -31,7 +31,7 @@ export default function CustomProblemPage() {
       <div className="border-b border-border bg-card/30 backdrop-blur-md p-4 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-4">
           <Link href="/">
-            <Button variant="ghost" size="icon" className="hover:bg-muted/50">
+            <Button variant="ghost" size="icon" className="hover:bg-muted/50" aria-label="Back to home" title="Back to home">
               <ArrowLeft className="h-5 w-5" />
             </Button>
           </Link>
