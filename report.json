@@ -15,7 +15,8 @@
         "ultimate-sd/package.json",
         "ultimate-sd/pnpm-lock.yaml",
         "ultimate-sd/src/app/actions/waitlist.ts",
-        "ultimate-sd/src/lib/ratelimit.ts"
+        "ultimate-sd/src/lib/ratelimit.ts",
+        "ultimate-sd/src/components/landing/AdaptiveCoachDemo.tsx"
       ],
       "tests_added": true
     },
