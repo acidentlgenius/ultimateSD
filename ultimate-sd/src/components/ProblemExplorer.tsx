@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useDebounce } from '@/hooks/useDebounce';
 import Link from 'next/link';
 import Fuse from 'fuse.js';
 import { Search, ArrowRight, Building2, TrendingUp, Lock, CheckCircle, Clock, RotateCcw } from 'lucide-react';
@@ -109,6 +110,7 @@ export function ProblemExplorer({
     setCompanyCollection: setCompanyCollectionProp,
 }: ProblemExplorerProps) {
     const [search, setSearch] = useState('');
+    const debouncedSearch = useDebounce(search, 300);
     const [category, setCategory] = useState('All');
     const [difficulty, setDifficulty] = useState('All');
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('All');
@@ -156,8 +158,8 @@ export function ProblemExplorer({
     const filtered = useMemo(() => {
         let filteredProblems = problems;
 
-        if (search) {
-            filteredProblems = fuseIndex.search(search).map(result => result.item);
+        if (debouncedSearch) {
+            filteredProblems = fuseIndex.search(debouncedSearch).map(result => result.item);
         }
 
         if (category !== 'All') {
@@ -187,7 +189,7 @@ export function ProblemExplorer({
         }
 
         return filteredProblems;
-    }, [problems, search, category, difficulty, statusFilter, topicFilter, companyCollection, user, fuseIndex]);
+    }, [problems, debouncedSearch, category, difficulty, statusFilter, topicFilter, companyCollection, user, fuseIndex]);
 
     const categories = ['All', ...new Set(problems.map(p => p.category))];
     const difficulties = ['All', 'Easy', 'Medium', 'Hard'];

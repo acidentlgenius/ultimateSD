@@ -106,7 +106,8 @@ export function estimateReadingTime(content: unknown): number {
 
 export async function getPublishedBlogPosts(searchQuery?: string): Promise<BlogPostSummary[]> {
   const trimmed = searchQuery?.trim();
-  const rows = await prisma.blogPost.findMany({
+  try {
+    const rows = await prisma.blogPost.findMany({
     where: {
       status: 'PUBLISHED',
       ...(trimmed
@@ -122,6 +123,9 @@ export async function getPublishedBlogPosts(searchQuery?: string): Promise<BlogP
     select: summarySelect,
   });
   return rows.map(toSummary);
+  } catch (error) {
+    return [];
+  }
 }
 
 export async function getBlogPostBySlug(slug: string): Promise<BlogPostDetail | null> {
@@ -135,9 +139,13 @@ export async function getBlogPostById(id: string): Promise<BlogPostDetail | null
 }
 
 export async function getAllBlogPostsForAdmin(): Promise<BlogPostSummary[]> {
-  const rows = await prisma.blogPost.findMany({
+  try {
+    const rows = await prisma.blogPost.findMany({
     orderBy: { updatedAt: 'desc' },
     select: summarySelect,
   });
   return rows.map(toSummary);
+  } catch (error) {
+    return [];
+  }
 }
