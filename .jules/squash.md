@@ -68,3 +68,9 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+
+## 2024-10-23 - [Case-sensitive database lookups in session resolution]
+
+**Learning:** When resolving session user IDs via a fallback to their email address (because their cached ID might be stale after a database wipe), using Prisma's `findUnique` with a strictly case-sensitive `email` field can fail to find existing users if the email casing from the OAuth provider/session doesn't match the database perfectly. This fragments authentication state and can cause session recovery to silently fail or create duplicate ghost accounts.
+
+**Action:** Always use `findFirst` with `{ equals: email, mode: 'insensitive' }` instead of `findUnique` across all authentication and internal user-fetching routes, especially during session resolution or lookup fallbacks, to guarantee robust matching regardless of casing inconsistencies.
