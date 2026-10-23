@@ -68,3 +68,9 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+
+## 2026-06-31 - [Floating Promise in StepFeedbackPanel]
+
+**Learning:** Next.js Server Actions (like `updateStreak`) that return error objects instead of throwing will not trigger `.catch()` handlers on their Promises. In `StepFeedbackPanel.tsx`, calling `void updateStreak().catch(console.error)` silently swallowed application-level errors returned as `{ error: 'message' }`.
+
+**Action:** When calling Next.js Server Actions inside `useEffect`, always wrap the call in an inner async function (e.g., `const handler = async () => { ... }`), await the result, and explicitly check for `result.error` within a try/catch block to ensure both application-level and network errors are caught and logged.
