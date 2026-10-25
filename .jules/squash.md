@@ -68,3 +68,9 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+
+## 2024-10-25 - Rate Limit Waitlist
+
+**Learning:** Rate limiting is important for forms exposed to the public like a waitlist, otherwise it could be a vector for abuse (spamming). The codebase has a `@upstash/ratelimit` utility but it was missing in `package.json` despite being referenced in issues. Setting it up requires `@upstash/ratelimit` and `@upstash/redis` to be installed and initialized conditionally based on environment variables to avoid breaking the build or tests when Redis isn't available.
+
+**Action:** When implementing rate limiting, check for the presence of the ratelimit client before using it. Use `next/headers` to get the client IP for the rate limiting key. Make sure to await `headers()` as it is a promise in Next.js 15+.

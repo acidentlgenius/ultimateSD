@@ -1,11 +1,10 @@
-💥 The Bug
-The Vercel deployment is failing with the error `ERR_PNPM_OUTDATED_LOCKFILE Cannot install with "frozen-lockfile" because pnpm-lock.yaml is not up to date with <ROOT>/package.json`.
+💥 The Bug: The `joinWaitlist` server action is publicly accessible and missing rate-limiting, making the waitlist form vulnerable to abuse and spam. The codebase referenced `@upstash/ratelimit` but the dependency was missing, preventing any rate limiting implementation.
 
-🔍 Root Cause
-The `package.json` file specified `@testing-library/dom` but this dependency was missing from the `pnpm-lock.yaml` file. Vercel runs `pnpm install --frozen-lockfile` by default on CI environments, which strictly enforces that the lockfile perfectly matches `package.json`. This mismatch caused the build to abort.
+🔍 Root Cause: The `waitlist.ts` action had a `TODO: rate-limit before heavy traffic` comment, indicating the feature was intentionally deferred but not implemented.
 
-🛠️ The Fix
-Ran `pnpm install` locally to update the `pnpm-lock.yaml` file, syncing the lockfile definitions with the updated `package.json` specifiers (specifically adding `@testing-library/dom` and deduplicating some minor `@babel` versions).
+🛠️ The Fix:
+1. Added `@upstash/ratelimit` and `@upstash/redis` to `package.json`.
+2. Created a conditionally initialized rate limiter instance in `src/lib/ratelimit.ts` based on Upstash environment variables to avoid breaking the build/tests when Redis is not available.
+3. Implemented rate-limiting (5 requests per minute) inside the `joinWaitlist` action using the `next/headers` client IP (`x-forwarded-for`) as the key.
 
-🛡️ Prevention
-When updating `package.json` dependencies, ensure to always run `pnpm install` and commit the updated `pnpm-lock.yaml` file to avoid breaking CI/CD pipelines that rely on frozen lockfiles.
+🛡️ Prevention: Added `waitlist.test.ts` to mock and verify the rate-limiting functionality, ensuring a "Too many requests" error is correctly returned when limits are exceeded.

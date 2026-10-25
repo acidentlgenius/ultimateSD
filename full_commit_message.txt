@@ -1,0 +1,12 @@
+🐛 Squash: Add rate-limiting to waitlist signup action
+
+💥 The Bug: The `joinWaitlist` server action is publicly accessible and missing rate-limiting, making the waitlist form vulnerable to abuse and spam. The codebase referenced `@upstash/ratelimit` but the dependency was missing, preventing any rate limiting implementation.
+
+🔍 Root Cause: The `waitlist.ts` action had a `TODO: rate-limit before heavy traffic` comment, indicating the feature was intentionally deferred but not implemented.
+
+🛠️ The Fix:
+1. Added `@upstash/ratelimit` and `@upstash/redis` to `package.json`.
+2. Created a conditionally initialized rate limiter instance in `src/lib/ratelimit.ts` based on Upstash environment variables to avoid breaking the build/tests when Redis is not available.
+3. Implemented rate-limiting (5 requests per minute) inside the `joinWaitlist` action using the `next/headers` client IP (`x-forwarded-for`) as the key.
+
+🛡️ Prevention: Added `waitlist.test.ts` to mock and verify the rate-limiting functionality, ensuring a "Too many requests" error is correctly returned when limits are exceeded.
