@@ -82,12 +82,10 @@ export async function updateUserPlan(
           });
           emailSent = true;
         } catch (error) {
-          if (process.env.NODE_ENV !== 'test') {
-            if (error instanceof EmailConfigurationError) {
-              console.error('Plan welcome email config error:', error.message);
-            } else {
-              console.error('Plan welcome email error:', error);
-            }
+          if (error instanceof EmailConfigurationError) {
+            console.error('Plan welcome email config error:', error.message);
+          } else {
+            console.error('Plan welcome email error:', error);
           }
         }
       }
