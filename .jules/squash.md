@@ -68,3 +68,9 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+
+## 2024-06-30 - [React 19 Ref warnings from reading refs during render]
+
+**Learning:** Accessing a ref value (`ref.current`) during a component's render phase is a violation of React's pure rendering rules and causes strict linting errors (`react-hooks/refs`) in newer React versions. If a value needs to conditionally influence the render output (e.g., conditional CSS classes or rendering branches based on `preferReducedMotion`), it must be standard React state, not a ref.
+
+**Action:** When migrating or writing components that read `window.matchMedia` or similar environment variables to conditionally render UI, always store the result using `useState`, initialize it to a safe default (like `false`), and update it within a `useEffect`. Ensure the new state variable is added to any relevant dependency arrays.
