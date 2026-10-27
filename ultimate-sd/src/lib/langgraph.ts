@@ -74,7 +74,16 @@ Score 1-10 on: Structure, Scalability, Trade-offs, Communication. Provide 3 tips
 
   try {
     const response = await llm.invoke([new HumanMessage(prompt)]);
-    const parsed = JSON.parse(response.content as string);
+
+    // Fix: Add safe JSON parsing wrapper to prevent unhandled syntax errors when AI output is malformed
+    let parsed;
+    try {
+      parsed = JSON.parse(response.content as string);
+    } catch (parseError) {
+      console.warn('Failed to parse getFeedback LLM response:', parseError);
+      return { score: 0, tips: ['Unable to analyze answer. Please try again.'] };
+    }
+
     return { score: parsed.score, tips: parsed.tips };
   } catch (error) {
     console.error('getFeedback error:', error);
@@ -140,7 +149,14 @@ Respond with VALID JSON only (no markdown, no extra text):
       .replace(/```json\n?/g, '')
       .replace(/```\n?/g, '')
       .trim();
-    const parsed = JSON.parse(content);
+    let parsed;
+    try {
+      parsed = JSON.parse(content);
+    } catch (parseError) {
+      console.warn('Failed to parse getInterviewSummary LLM response:', parseError);
+      return null;
+    }
+
     if (
       typeof parsed.overallScore !== 'number' ||
       typeof parsed.verdict !== 'string' ||
