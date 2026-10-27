@@ -1,18 +1,18 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Card } from '@/components/ui/card';
-import { ArrowLeft, Sparkles, Wand2 } from 'lucide-react';
-import Link from 'next/link';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Card } from "@/components/ui/card";
+import { ArrowLeft, Sparkles, Wand2 } from "lucide-react";
+import Link from "next/link";
 
 export default function CustomProblemPage() {
   const router = useRouter();
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
 
   const handleStart = (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,7 +31,13 @@ export default function CustomProblemPage() {
       <div className="border-b border-border bg-card/30 backdrop-blur-md p-4 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-4">
           <Link href="/">
-            <Button variant="ghost" size="icon" className="hover:bg-muted/50">
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Go back"
+              title="Go back"
+              className="hover:bg-muted/50"
+            >
               <ArrowLeft className="h-5 w-5" />
             </Button>
           </Link>
@@ -39,16 +45,22 @@ export default function CustomProblemPage() {
             <div className="p-1.5 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-500 shadow-sm text-white">
               <Wand2 className="h-4 w-4" />
             </div>
-            <h1 className="font-bold text-lg hidden sm:block">Design Your Own Problem</h1>
+            <h1 className="font-bold text-lg hidden sm:block">
+              Design Your Own Problem
+            </h1>
           </div>
         </div>
       </div>
 
       <div className="flex-1 max-w-2xl w-full mx-auto p-4 sm:p-8 mt-8">
         <div className="mb-8 text-center">
-          <h2 className="text-3xl font-bold tracking-tight mb-3">Custom System Design Challenge</h2>
+          <h2 className="text-3xl font-bold tracking-tight mb-3">
+            Custom System Design Challenge
+          </h2>
           <p className="text-muted-foreground">
-            Got an interview coming up for a specific company or domain? Define your own system design problem and practice it with our AI assistant.
+            Got an interview coming up for a specific company or domain? Define
+            your own system design problem and practice it with our AI
+            assistant.
           </p>
         </div>
 
@@ -57,7 +69,10 @@ export default function CustomProblemPage() {
 
           <form onSubmit={handleStart} className="space-y-6">
             <div className="space-y-2">
-              <label htmlFor="title" className="text-sm font-semibold flex items-center gap-2">
+              <label
+                htmlFor="title"
+                className="text-sm font-semibold flex items-center gap-2"
+              >
                 Problem Title <span className="text-red-500">*</span>
               </label>
               <Input
@@ -72,9 +87,14 @@ export default function CustomProblemPage() {
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="description" className="text-sm font-semibold flex items-center justify-between">
+              <label
+                htmlFor="description"
+                className="text-sm font-semibold flex items-center justify-between"
+              >
                 <span>Description / Key Constraints</span>
-                <span className="text-xs text-muted-foreground font-normal">Optional</span>
+                <span className="text-xs text-muted-foreground font-normal">
+                  Optional
+                </span>
               </label>
               <Textarea
                 id="description"
@@ -84,7 +104,8 @@ export default function CustomProblemPage() {
                 className="min-h-[160px] resize-none bg-background/50 focus-visible:ring-primary/20 leading-relaxed"
               />
               <p className="text-xs text-muted-foreground mt-2">
-                Providing more context helps the AI evaluate your design more accurately against your specific constraints.
+                Providing more context helps the AI evaluate your design more
+                accurately against your specific constraints.
               </p>
             </div>
 
