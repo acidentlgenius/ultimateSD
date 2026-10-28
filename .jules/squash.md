@@ -68,3 +68,13 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+
+## 2026-07-02 - [React act() Warnings with Async Timers in Vitest]
+
+**Learning:** When using `vi.advanceTimersByTimeAsync` in tests for React components that have debounced updates or other timer-based state changes (like `DiagramCanvas` auto-saving), failing to wrap the timer advance in an `act()` block causes React state updates to flush outside of `act(...)`, leading to noisy warnings and potential test flakiness.
+**Action:** Always wrap `vi.advanceTimersByTimeAsync` in `await act(async () => { ... })` when testing React components with timer-based state updates.
+
+## 2026-07-02 - [Silent JSON Parsing Crashes]
+
+**Learning:** Unhandled `JSON.parse` exceptions can silently crash applications or tests when given invalid data (e.g., from an LLM response or corrupted `localStorage`).
+**Action:** Always wrap `JSON.parse` in a `try...catch` block with safe fallbacks and suppress the error logs during tests (e.g., using `if (process.env.NODE_ENV !== 'test')`) to avoid noisy test output while still maintaining visibility in production.
