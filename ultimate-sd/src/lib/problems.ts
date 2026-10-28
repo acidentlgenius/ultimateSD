@@ -2152,5 +2152,28 @@ export const PROBLEMS: SystemDesignProblem[] = [
       'Memory overhead per entry bounded and predictable at any capacity',
     ],
     tags: ['System Design']
+  },
+  {
+    id: '87',
+    title: 'Design an AI Coding Agent Workspace',
+    slug: 'design-ai-coding-agent-workspace',
+    context: 'Design a cloud-based IDE workspace for an autonomous AI coding agent. The agent must be able to read/write files, execute terminal commands, run tests, and iterate autonomously. The environment must be strictly isolated to prevent malicious actions, fast to provision (under 2 seconds), and capable of streaming real-time output (logs, file diffs) back to the user interface. It also needs a mechanism to pause execution and request human intervention when stuck.',
+    difficulty: 'Hard',
+    category: 'Advanced',
+    companies: ['Replit', 'Cursor', 'GitHub'],
+    functionalRequirements: [
+      'Provision isolated, ephemeral workspaces containing a full Linux environment',
+      'Execute arbitrary bash commands and stream stdout/stderr in real-time',
+      'Read and write workspace files with concurrent access from the AI agent and the human user',
+      'Manage agent state transitions (running, paused, waiting for user input, crashed)',
+      'Snapshot the workspace state to allow resuming from a previous checkpoint',
+    ],
+    nonFunctionalRequirements: [
+      'Workspace cold-start latency must be under 2 seconds',
+      'Strict security isolation: no network access to internal AWS metadata or other tenants',
+      'Real-time streaming latency under 100ms for terminal output',
+      'Support thousands of concurrent active agent workspaces without resource exhaustion',
+    ],
+    tags: ['System Design', 'Agentic AI']
   }
 ];
