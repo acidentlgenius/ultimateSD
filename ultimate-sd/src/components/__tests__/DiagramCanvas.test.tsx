@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { useEffect, useState } from 'react';
-import { render, waitFor } from '@testing-library/react';
+import { render, waitFor, act } from '@testing-library/react';
 import DiagramCanvas from '../DiagramCanvas';
 import { DiagramCanvasProvider, useDiagramCanvasRef } from '../diagram/DiagramCanvasContext';
 
@@ -131,7 +131,12 @@ describe('DiagramCanvas', () => {
       </DiagramCanvasProvider>
     );
 
-    await vi.advanceTimersByTimeAsync(RESTORE_GUARD_MS + 50 + SAVE_DEBOUNCE_MS);
+
+    // 💥 The Bug: vi.advanceTimersByTimeAsync triggers debounced auto-saves and state updates without an act() wrap.
+    // 🔍 Root Cause: React Testing Library requires wrapping timer advances in an act block when they trigger React state updates.
+    // 🛠️ The Fix: Wrap the timer advances in act(async () => { ... }).
+    // 🛡️ Prevention: This makes the regression test pass cleanly without act warnings.
+    await act(async () => { await vi.advanceTimersByTimeAsync(RESTORE_GUARD_MS + 50 + SAVE_DEBOUNCE_MS); });
 
     const raw = localStorage.getItem('diagram-hld-0');
     expect(raw).toBeTruthy();
@@ -169,7 +174,7 @@ describe('DiagramCanvas', () => {
       </DiagramCanvasProvider>
     );
 
-    await vi.advanceTimersByTimeAsync(RESTORE_GUARD_MS + 50 + SAVE_DEBOUNCE_MS + 500);
+    await act(async () => { await vi.advanceTimersByTimeAsync(RESTORE_GUARD_MS + 50 + SAVE_DEBOUNCE_MS + 500); });
 
     const raw = localStorage.getItem('diagram-hld-0');
     expect(raw).toBeTruthy();
@@ -192,11 +197,16 @@ describe('DiagramCanvas', () => {
     );
 
     // First onChange (content) + debounce → saved
-    await vi.advanceTimersByTimeAsync(RESTORE_GUARD_MS + 50 + SAVE_DEBOUNCE_MS);
+
+    // 💥 The Bug: vi.advanceTimersByTimeAsync triggers debounced auto-saves and state updates without an act() wrap.
+    // 🔍 Root Cause: React Testing Library requires wrapping timer advances in an act block when they trigger React state updates.
+    // 🛠️ The Fix: Wrap the timer advances in act(async () => { ... }).
+    // 🛡️ Prevention: This makes the regression test pass cleanly without act warnings.
+    await act(async () => { await vi.advanceTimersByTimeAsync(RESTORE_GUARD_MS + 50 + SAVE_DEBOUNCE_MS); });
     expect(localStorage.getItem('diagram-hld-0')).toBeTruthy();
 
     // Delete-all onChange + debounce → storage cleared, old scene must not resurrect
-    await vi.advanceTimersByTimeAsync(SAVE_DEBOUNCE_MS + 200 + SAVE_DEBOUNCE_MS);
+    await act(async () => { await vi.advanceTimersByTimeAsync(SAVE_DEBOUNCE_MS + 200 + SAVE_DEBOUNCE_MS); });
     expect(localStorage.getItem('diagram-hld-0')).toBeNull();
 
     vi.useRealTimers();

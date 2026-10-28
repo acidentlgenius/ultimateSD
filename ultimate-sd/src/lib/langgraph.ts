@@ -140,7 +140,16 @@ Respond with VALID JSON only (no markdown, no extra text):
       .replace(/```json\n?/g, '')
       .replace(/```\n?/g, '')
       .trim();
-    const parsed = JSON.parse(content);
+    let parsed: any;
+    try {
+      parsed = JSON.parse(content);
+    } catch (e) {
+      if (process.env.NODE_ENV !== 'test') {
+        console.error('getInterviewSummary JSON parse error:', e);
+      }
+      return null;
+    }
+
     if (
       typeof parsed.overallScore !== 'number' ||
       typeof parsed.verdict !== 'string' ||
