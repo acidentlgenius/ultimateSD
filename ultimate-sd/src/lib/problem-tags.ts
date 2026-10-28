@@ -206,6 +206,7 @@ export const PROBLEM_TAG_IDS: Record<string, ProblemTagId[]> = {
   'design-strangler-fig-migration': ['strangler-fig', 'api-gateway', 'event-driven'],
   'design-blue-green-deployment': ['blue-green', 'deployment', 'high-availability'],
   'design-flash-sale-system': ['e-commerce', 'caching', 'rate-limiting', 'inventory'],
+  'design-ai-coding-agent-workspace': ['ai-agents', 'security', 'real-time', 'cloud-infrastructure'],
   'design-payment-system': ['payments', 'idempotency', 'consistency', 'security'],
   'design-lru-cache': ['caching', 'data-structures'],
 };
