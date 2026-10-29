@@ -27,3 +27,9 @@
 **Learning:** `loadSessionState` relied on `clearSessionState(problemSlug)` to handle invalid data. However, if the `localStorage` key contained structurally valid JSON but the *content itself* was not valid JSON (causing `JSON.parse` to throw), the catch block would execute. But if `clearSessionState` failed or wasn't robust enough, the corrupted data stayed. On every subsequent mount, the UI would try to parse the corrupt data, throw, and crash again.
 
 **Action:** When purging corrupted or unparseable `localStorage` state, use direct `localStorage.removeItem(key)` rather than higher-level helpers to guarantee the bad data is purged, since helper methods might inadvertently fail when interacting with corrupted state.
+
+## 2024-07-02 - fetchWithRetry loses external AbortSignal
+
+**Learning:** `fetchWithRetry` had its own internal `AbortController` to handle timeouts, but when it was called with an external `AbortSignal` in `fetchOptions`, the internal controller overwrote the external one (`signal: controller.signal` vs `...fetchOptions`). This caused requests to ignore external aborts and keep hanging or retrying when they shouldn't.
+
+**Action:** Combine the internal timeout signal and the external signal using `AbortSignal.any()` (or fallback to an event listener on the external signal to trigger the internal one), so `fetch` correctly aborts when *either* the timeout is reached or the external signal is aborted.
