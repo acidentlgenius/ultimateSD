@@ -116,10 +116,30 @@ export async function fetchWithRetry(url: string, options: FetchWithRetryOptions
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
 
+    let abortCombined: (() => void) | undefined;
     try {
+      let finalSignal = controller.signal;
+
+      if (fetchOptions.signal) {
+        if ('any' in AbortSignal) {
+          finalSignal = (AbortSignal as any).any([controller.signal, fetchOptions.signal]);
+        } else {
+          const combinedController = new AbortController();
+          abortCombined = () => combinedController.abort(fetchOptions.signal?.reason || controller.signal.reason);
+
+          if (fetchOptions.signal.aborted) {
+             abortCombined();
+          } else {
+             controller.signal.addEventListener('abort', abortCombined, { once: true });
+             fetchOptions.signal.addEventListener('abort', abortCombined, { once: true });
+          }
+          finalSignal = combinedController.signal;
+        }
+      }
+
       const response = await fetch(url, {
         ...fetchOptions,
-        signal: controller.signal
+        signal: finalSignal
       });
 
       if (!response.ok) {
@@ -128,6 +148,11 @@ export async function fetchWithRetry(url: string, options: FetchWithRetryOptions
 
       return response;
     } catch (error) {
+      // If the external signal was aborted (with or without a custom reason), we shouldn't retry
+      if (fetchOptions.signal?.aborted) {
+        throw error;
+      }
+
       const retryable = !(error instanceof HttpError) || isRetryableStatus(error.status);
       if (!retryable || attempt === retries) {
         throw error;
@@ -136,6 +161,9 @@ export async function fetchWithRetry(url: string, options: FetchWithRetryOptions
       await new Promise(resolve => setTimeout(resolve, retryDelay));
     } finally {
       clearTimeout(timeoutId);
+      if (abortCombined && fetchOptions.signal) {
+          fetchOptions.signal.removeEventListener('abort', abortCombined);
+      }
     }
   }
 
