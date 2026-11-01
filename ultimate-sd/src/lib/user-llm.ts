@@ -31,9 +31,6 @@ export class AIAccessError extends Error {
 
 function selectApiKey(user: UserAccess): Record<string, string | null> | null {
   switch (user.preferredProvider) {
-    case 'deepseek':
-      if (user.deepseekApiKey) return { apiKey: user.deepseekApiKey };
-      break;
     case 'xai':
       if (user.xaiApiKey) return { apiKey: user.xaiApiKey };
       break;
@@ -85,17 +82,6 @@ function createOpenAILLM(apiKey: string, temperature = 0.7): ChatOpenAI {
     modelName: 'gpt-4o-mini',
     openAIApiKey: apiKey,
     temperature,
-  });
-}
-
-function createDeepseekLLM(apiKey: string, temperature = 0.7): ChatOpenAI {
-  return new ChatOpenAI({
-    modelName: 'deepseek-chat',
-    openAIApiKey: apiKey,
-    temperature,
-    configuration: {
-        baseURL: "https://api.deepseek.com/v1",
-    }
   });
 }
 
@@ -195,7 +181,6 @@ async function loadUserAccess(userId: string): Promise<UserAccess | null> {
       planExpiresAt: true,
       aiCredits: true,
       geminiApiKey: true,
-      deepseekApiKey: true,
       xaiApiKey: true,
       openaiApiKey: true,
       anthropicApiKey: true,
@@ -222,7 +207,6 @@ async function loadUserAccess(userId: string): Promise<UserAccess | null> {
     planExpiresAt: user.planExpiresAt,
     aiCredits: user.aiCredits,
     geminiApiKey: user.geminiApiKey,
-    deepseekApiKey: user.deepseekApiKey,
     xaiApiKey: user.xaiApiKey,
     openaiApiKey: user.openaiApiKey,
     anthropicApiKey: user.anthropicApiKey,
@@ -263,9 +247,6 @@ export async function getUserLLM(
     let llm: BaseChatModel;
 
     switch (user.preferredProvider) {
-      case 'deepseek':
-        llm = createDeepseekLLM(creds.apiKey as string, temp);
-        break;
       case 'xai':
         llm = createXaiLLM(creds.apiKey as string, temp);
         break;

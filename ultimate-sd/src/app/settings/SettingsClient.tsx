@@ -40,7 +40,6 @@ export default function SettingsClient({ user }: SettingsClientProps) {
     const [bio, setBio] = useState(user.bio || '');
     const [isPublic, setIsPublic] = useState(user.isPublic ?? true);
     const [geminiKey, setGeminiKey] = useState('');
-    const [deepseekKey, setDeepseekKey] = useState('');
     const [xaiKey, setXaiKey] = useState('');
     const [openaiKey, setOpenaiKey] = useState('');
     const [anthropicKey, setAnthropicKey] = useState('');
@@ -53,7 +52,6 @@ export default function SettingsClient({ user }: SettingsClientProps) {
     const [ollamaModel, setOllamaModel] = useState('');
     const [preferredProvider, setPreferredProvider] = useState(user.preferredProvider ?? 'gemini');
     const [hasGeminiKey, setHasGeminiKey] = useState(false);
-    const [hasDeepseekKey, setHasDeepseekKey] = useState(false);
     const [hasXaiKey, setHasXaiKey] = useState(false);
     const [hasOpenaiKey, setHasOpenaiKey] = useState(false);
     const [hasAnthropicKey, setHasAnthropicKey] = useState(false);
@@ -71,7 +69,6 @@ export default function SettingsClient({ user }: SettingsClientProps) {
             .then(res => res.json())
             .then(data => {
                 if (data.hasGeminiKey !== undefined) setHasGeminiKey(data.hasGeminiKey);
-                if (data.hasDeepseekKey !== undefined) setHasDeepseekKey(data.hasDeepseekKey);
                 if (data.hasXaiKey !== undefined) setHasXaiKey(data.hasXaiKey);
                 if (data.hasOpenaiKey !== undefined) setHasOpenaiKey(data.hasOpenaiKey);
                 if (data.hasAnthropicKey !== undefined) setHasAnthropicKey(data.hasAnthropicKey);
@@ -112,7 +109,6 @@ export default function SettingsClient({ user }: SettingsClientProps) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     geminiApiKey: geminiKey,
-                    deepseekApiKey: deepseekKey,
                     xaiApiKey: xaiKey,
                     openaiApiKey: openaiKey,
                     anthropicApiKey: anthropicKey,
@@ -130,7 +126,6 @@ export default function SettingsClient({ user }: SettingsClientProps) {
             if (!res.ok) throw new Error(data.error ?? 'Failed to save keys');
 
             if (geminiKey) setHasGeminiKey(true);
-            if (deepseekKey) setHasDeepseekKey(true);
             if (xaiKey) setHasXaiKey(true);
             if (openaiKey) setHasOpenaiKey(true);
             if (anthropicKey) setHasAnthropicKey(true);
@@ -293,16 +288,6 @@ export default function SettingsClient({ user }: SettingsClientProps) {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="deepseek-key">DeepSeek API Key {hasDeepseekKey && <span className="text-green-600">(saved)</span>}</Label>
-                                    <Input
-                                        id="deepseek-key"
-                                        type="password"
-                                        value={deepseekKey}
-                                        onChange={(e) => setDeepseekKey(e.target.value)}
-                                        placeholder="sk-..."
-                                    />
-                                </div>
-                                <div className="space-y-2">
                                     <Label htmlFor="xai-key">xAI API Key (optional) {hasXaiKey && <span className="text-green-600">(saved)</span>}</Label>
                                     <Input
                                         id="xai-key"
@@ -352,7 +337,6 @@ export default function SettingsClient({ user }: SettingsClientProps) {
                                     <Label>Preferred provider</Label>
                                     <div className="flex gap-2 flex-wrap">
                                         <Button type="button" variant={preferredProvider === 'gemini' ? 'default' : 'outline'} onClick={() => setPreferredProvider('gemini')}>Gemini</Button>
-                                        <Button type="button" variant={preferredProvider === 'deepseek' ? 'default' : 'outline'} onClick={() => setPreferredProvider('deepseek')}>DeepSeek</Button>
                                         <Button type="button" variant={preferredProvider === 'xai' ? 'default' : 'outline'} onClick={() => setPreferredProvider('xai')}>xAI</Button>
                                         <Button type="button" variant={preferredProvider === 'openai' ? 'default' : 'outline'} onClick={() => setPreferredProvider('openai')}>OpenAI</Button>
                                         <Button type="button" variant={preferredProvider === 'anthropic' ? 'default' : 'outline'} onClick={() => setPreferredProvider('anthropic')}>Anthropic</Button>

@@ -14,7 +14,6 @@ declare module "next-auth" {
             hasPlatformPlan: boolean
             hasAiPlan: boolean
             hasGeminiKey: boolean
-            hasDeepseekKey: boolean
             hasXaiKey: boolean
             hasOpenaiKey: boolean
             hasAnthropicKey: boolean
@@ -47,7 +46,6 @@ declare module "next-auth/jwt" {
         hasPlatformPlan: boolean
         hasAiPlan: boolean
         hasGeminiKey: boolean
-        hasDeepseekKey: boolean
         hasXaiKey: boolean
         hasOpenaiKey: boolean
         hasAnthropicKey: boolean

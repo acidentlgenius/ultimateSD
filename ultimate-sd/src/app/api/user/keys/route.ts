@@ -12,7 +12,6 @@ export async function GET() {
     where: { id: session.user.id },
     select: {
       geminiApiKey: true,
-      deepseekApiKey: true,
       xaiApiKey: true,
       openaiApiKey: true,
       anthropicApiKey: true,
@@ -30,7 +29,6 @@ export async function GET() {
 
   return NextResponse.json({
     hasGeminiKey: Boolean(user.geminiApiKey),
-    hasDeepseekKey: Boolean(user.deepseekApiKey),
     hasXaiKey: Boolean(user.xaiApiKey),
     hasOpenaiKey: Boolean(user.openaiApiKey),
     hasAnthropicKey: Boolean(user.anthropicApiKey),
@@ -51,7 +49,6 @@ export async function POST(req: NextRequest) {
 
     const {
       geminiApiKey,
-      deepseekApiKey,
       xaiApiKey,
       openaiApiKey,
       anthropicApiKey,
@@ -69,7 +66,6 @@ export async function POST(req: NextRequest) {
 
     const stringFields = [
       'geminiApiKey',
-      'deepseekApiKey',
       'xaiApiKey',
       'openaiApiKey',
       'anthropicApiKey',
@@ -84,7 +80,6 @@ export async function POST(req: NextRequest) {
 
     const body = {
       geminiApiKey,
-      deepseekApiKey,
       xaiApiKey,
       openaiApiKey,
       anthropicApiKey,
@@ -103,7 +98,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const validProviders = ['gemini', 'deepseek', 'xai', 'openai', 'anthropic', 'azure', 'aws', 'ollama'];
+    const validProviders = ['gemini', 'xai', 'openai', 'anthropic', 'azure', 'aws', 'ollama'];
     if (validProviders.includes(preferredProvider)) {
       data.preferredProvider = preferredProvider;
     }

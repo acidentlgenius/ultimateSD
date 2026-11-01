@@ -18,7 +18,6 @@ function makeUser(overrides: Partial<UserAccess> = {}): UserAccess {
     planExpiresAt: null,
     aiCredits: FREE_MONTHLY_CREDITS,
     geminiApiKey: null,
-    deepseekApiKey: null,
     xaiApiKey: null,
     openaiApiKey: null,
     anthropicApiKey: null,
