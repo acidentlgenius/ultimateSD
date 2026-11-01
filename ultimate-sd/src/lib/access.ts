@@ -12,6 +12,7 @@ export interface UserAccess {
   planExpiresAt: Date | null;
   aiCredits: number;
   geminiApiKey: string | null;
+  deepseekApiKey: string | null;
   xaiApiKey: string | null;
   openaiApiKey: string | null;
   anthropicApiKey: string | null;
@@ -32,6 +33,7 @@ export interface UserAccessSnapshot {
   hasPlatformPlan: boolean;
   hasAiPlan: boolean;
   hasGeminiKey: boolean;
+  hasDeepseekKey: boolean;
   hasXaiKey: boolean;
   hasOpenaiKey: boolean;
   hasAnthropicKey: boolean;
@@ -87,6 +89,7 @@ export function hasByokKey(
   user: Pick<
     UserAccess,
     | 'geminiApiKey'
+    | 'deepseekApiKey'
     | 'xaiApiKey'
     | 'openaiApiKey'
     | 'anthropicApiKey'
@@ -97,6 +100,8 @@ export function hasByokKey(
   >
 ): boolean {
   switch (user.preferredProvider) {
+    case 'deepseek':
+      return Boolean(user.deepseekApiKey);
     case 'xai':
       return Boolean(user.xaiApiKey);
     case 'openai':
@@ -196,6 +201,7 @@ export function toAccessSnapshot(user: UserAccess): UserAccessSnapshot {
     hasPlatformPlan: active && (planType === 'platform' || planType === 'lifetime' || planType === 'ai'),
     hasAiPlan: active && planType === 'ai',
     hasGeminiKey: Boolean(user.geminiApiKey),
+    hasDeepseekKey: Boolean(user.deepseekApiKey),
     hasXaiKey: Boolean(user.xaiApiKey),
     hasOpenaiKey: Boolean(user.openaiApiKey),
     hasAnthropicKey: Boolean(user.anthropicApiKey),

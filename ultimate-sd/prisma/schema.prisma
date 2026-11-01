@@ -61,6 +61,7 @@ model User {
 
   // BYOK (stored server-side; never returned to client)
   geminiApiKey         String?
+  deepseekApiKey       String?
   xaiApiKey            String?
   openaiApiKey         String?
   anthropicApiKey      String?

@@ -17,6 +17,7 @@ const accessSelect = {
     planExpiresAt: true,
     aiCredits: true,
     geminiApiKey: true,
+    deepseekApiKey: true,
     xaiApiKey: true,
     openaiApiKey: true,
     anthropicApiKey: true,
@@ -41,6 +42,7 @@ function applyAccessToToken(
         planExpiresAt: Date | null;
         aiCredits: number;
         geminiApiKey: string | null;
+        deepseekApiKey: string | null;
         xaiApiKey: string | null;
         openaiApiKey: string | null;
         anthropicApiKey: string | null;
@@ -60,6 +62,7 @@ function applyAccessToToken(
         planExpiresAt: user.planExpiresAt,
         aiCredits: user.aiCredits,
         geminiApiKey: user.geminiApiKey,
+        deepseekApiKey: user.deepseekApiKey,
         xaiApiKey: user.xaiApiKey,
         openaiApiKey: user.openaiApiKey,
         anthropicApiKey: user.anthropicApiKey,
@@ -81,6 +84,7 @@ function applyAccessToToken(
     token.hasPlatformPlan = access.hasPlatformPlan;
     token.hasAiPlan = access.hasAiPlan;
     token.hasGeminiKey = access.hasGeminiKey;
+    token.hasDeepseekKey = access.hasDeepseekKey;
     token.hasXaiKey = access.hasXaiKey;
     token.hasOpenaiKey = access.hasOpenaiKey;
     token.hasAnthropicKey = access.hasAnthropicKey;
@@ -209,6 +213,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 session.user.hasPlatformPlan = token.hasPlatformPlan as boolean;
                 session.user.hasAiPlan = token.hasAiPlan as boolean;
                 session.user.hasGeminiKey = token.hasGeminiKey as boolean;
+                session.user.hasDeepseekKey = token.hasDeepseekKey as boolean;
                 session.user.hasXaiKey = token.hasXaiKey as boolean;
                 session.user.hasOpenaiKey = token.hasOpenaiKey as boolean;
                 session.user.hasAnthropicKey = token.hasAnthropicKey as boolean;
