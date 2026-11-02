@@ -1,11 +1,4 @@
-💥 The Bug
-The Vercel deployment is failing with the error `ERR_PNPM_OUTDATED_LOCKFILE Cannot install with "frozen-lockfile" because pnpm-lock.yaml is not up to date with <ROOT>/package.json`.
-
-🔍 Root Cause
-The `package.json` file specified `@testing-library/dom` but this dependency was missing from the `pnpm-lock.yaml` file. Vercel runs `pnpm install --frozen-lockfile` by default on CI environments, which strictly enforces that the lockfile perfectly matches `package.json`. This mismatch caused the build to abort.
-
-🛠️ The Fix
-Ran `pnpm install` locally to update the `pnpm-lock.yaml` file, syncing the lockfile definitions with the updated `package.json` specifiers (specifically adding `@testing-library/dom` and deduplicating some minor `@babel` versions).
-
-🛡️ Prevention
-When updating `package.json` dependencies, ensure to always run `pnpm install` and commit the updated `pnpm-lock.yaml` file to avoid breaking CI/CD pipelines that rely on frozen lockfiles.
+💥 The Bug: Accessing `preferReducedMotion.current` during the render phase in `AdaptiveCoachDemo.tsx` causes a linting error (`react-hooks/refs`) and breaks concurrent React rendering.
+🔍 Root Cause: React refs (`useRef`) are mutable and not tracked by the React rendering system, so accessing their `.current` value during render is not allowed.
+🛠️ The Fix: Changed `preferReducedMotion` to use `useState` instead of `useRef`. Added `preferReducedMotion` to the `useEffect` dependency array where appropriate.
+🛡️ Prevention: Added regression tests to `AdaptiveCoachDemo.test.tsx` to verify the component renders without crashing and handles `preferReducedMotion` properly.
