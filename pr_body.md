@@ -1,11 +1,13 @@
-💥 The Bug
-The Vercel deployment is failing with the error `ERR_PNPM_OUTDATED_LOCKFILE Cannot install with "frozen-lockfile" because pnpm-lock.yaml is not up to date with <ROOT>/package.json`.
+🪲 Squash: Fix react-hooks/refs linting error in AdaptiveCoachDemo
 
-🔍 Root Cause
-The `package.json` file specified `@testing-library/dom` but this dependency was missing from the `pnpm-lock.yaml` file. Vercel runs `pnpm install --frozen-lockfile` by default on CI environments, which strictly enforces that the lockfile perfectly matches `package.json`. This mismatch caused the build to abort.
+💥 The Bug:
+A linting error `react-hooks/refs` was being thrown due to accessing `preferReducedMotion.current` during the render phase in `AdaptiveCoachDemo.tsx`. This violates React's rules and can cause the component not to update as expected during concurrent rendering.
 
-🛠️ The Fix
-Ran `pnpm install` locally to update the `pnpm-lock.yaml` file, syncing the lockfile definitions with the updated `package.json` specifiers (specifically adding `@testing-library/dom` and deduplicating some minor `@babel` versions).
+🔍 Root Cause:
+The `preferReducedMotion` flag, implemented as a `useRef`, was conditionally influencing the render output (`const shown = preferReducedMotion.current ? ...`) and the initial state of the Framer Motion `motion.div`. `useRef.current` should not be read during rendering.
 
-🛡️ Prevention
-When updating `package.json` dependencies, ensure to always run `pnpm install` and commit the updated `pnpm-lock.yaml` file to avoid breaking CI/CD pipelines that rely on frozen lockfiles.
+🛠️ The Fix:
+Changed `preferReducedMotion` from a `useRef` to a `useState` hook. The `useEffect` that checks for `(prefers-reduced-motion: reduce)` now calls `setPreferReducedMotion(...)`, and the rendering logic correctly reads the state value instead of the ref current property. Also added `preferReducedMotion` to the relevant `useEffect` dependency array.
+
+🛡️ Prevention:
+Added a new regression test `AdaptiveCoachDemo.test.tsx` that simulates `matchMedia` returning `true` for reduced motion to ensure the component mounts successfully without throwing errors and correctly applies the reduced motion preference.
