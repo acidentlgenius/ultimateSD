@@ -68,3 +68,8 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+## 2025-05-23 - JSON parsing crashes from markdown blocks in getFeedback
+
+**Learning:** AI responses often include markdown code blocks (e.g., `\`\`\`json ... \`\`\``) even when instructed to return only JSON. Directly passing `JSON.parse` to `response.content` without stripping these blocks causes a parsing exception, breaking the feedback flow.
+
+**Action:** Whenever parsing LLM response output, strip markdown fences (using `.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()`) or use safe parsing wrappers before calling `JSON.parse`.

@@ -1,0 +1,4 @@
+💥 The Bug: E2E tests for the landing page (`guest-funnel` and `smoke`) started timing out because the `StartHereTrack` (Beginner Track) and `MostAskedSection` (Popular at top companies) elements were missing from the home page.
+🔍 Root Cause: A recent refactor introduced a new `DashboardClient.tsx` that replaced the previous `page.tsx` client structure but inadvertently omitted rendering these two sections for non-authenticated users.
+🛠️ The Fix: Re-imported and added `<StartHereTrack />` and `<MostAskedSection />` into `DashboardClient.tsx` under the condition `{!user && ...}` so that guests can see these sections again, satisfying the E2E expectations.
+🛡️ Prevention: The playwright E2E suite (`smoke` and `guest-funnel`) correctly caught this UI regression, ensuring critical funnel entry points are rendered for guests.

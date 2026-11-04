@@ -11,7 +11,10 @@ import { UserHero } from '@/components/landing/UserHero';
 import { ClaimPlatformAccessBanner } from '@/components/landing/ClaimPlatformAccessBanner';
 import type { LaunchOfferPublicStats, LaunchOfferUserState } from '@/lib/launch-offer';
 
+import { StartHereTrack } from '@/components/landing/StartHereTrack';
+import { MostAskedSection } from '@/components/landing/MostAskedSection';
 import Link from 'next/link';
+
 import { useState } from 'react';
 import OnboardingModal from '@/components/OnboardingModal';
 import { ProblemWithStatus } from '@/types';
@@ -83,11 +86,13 @@ export function DashboardClient({
                 />
             )}
 
+            {!user && <StartHereTrack />}
             {!user && <FeatureShowcase />}
             {!user && <AdaptiveCoachDemo />}
             {!user && <AiInterviewerSection interviewModeEnabled={interviewModeEnabled} />}
 
             <RoadmapPreview />
+            {!user && <MostAskedSection selectedCollectionId={null} onSelectCollection={() => {}} />}
 
             {!user && (
                 <div className="container mx-auto px-4 pb-24 relative z-10 max-w-7xl">
