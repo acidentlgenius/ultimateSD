@@ -74,7 +74,13 @@ Score 1-10 on: Structure, Scalability, Trade-offs, Communication. Provide 3 tips
 
   try {
     const response = await llm.invoke([new HumanMessage(prompt)]);
-    const parsed = JSON.parse(response.content as string);
+    // SQUASH: Fix: AI models frequently wrap JSON output in markdown fences (e.g., ````json ... ````).
+    // Directly parsing this causes JSON.parse to throw a fatal error. We strip these fences before parsing to ensure stability.
+    const content = (response.content as string)
+      .replace(/```json\n?/g, '')
+      .replace(/```\n?/g, '')
+      .trim();
+    const parsed = JSON.parse(content);
     return { score: parsed.score, tips: parsed.tips };
   } catch (error) {
     console.error('getFeedback error:', error);
@@ -136,6 +142,8 @@ Respond with VALID JSON only (no markdown, no extra text):
 
   try {
     const response = await llm.invoke([new HumanMessage(prompt)]);
+    // SQUASH: Fix: AI models frequently wrap JSON output in markdown fences (e.g., ````json ... ````).
+    // Directly parsing this causes JSON.parse to throw a fatal error. We strip these fences before parsing to ensure stability.
     const content = (response.content as string)
       .replace(/```json\n?/g, '')
       .replace(/```\n?/g, '')

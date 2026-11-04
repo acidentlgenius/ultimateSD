@@ -1,11 +1,4 @@
-💥 The Bug
-The Vercel deployment is failing with the error `ERR_PNPM_OUTDATED_LOCKFILE Cannot install with "frozen-lockfile" because pnpm-lock.yaml is not up to date with <ROOT>/package.json`.
-
-🔍 Root Cause
-The `package.json` file specified `@testing-library/dom` but this dependency was missing from the `pnpm-lock.yaml` file. Vercel runs `pnpm install --frozen-lockfile` by default on CI environments, which strictly enforces that the lockfile perfectly matches `package.json`. This mismatch caused the build to abort.
-
-🛠️ The Fix
-Ran `pnpm install` locally to update the `pnpm-lock.yaml` file, syncing the lockfile definitions with the updated `package.json` specifiers (specifically adding `@testing-library/dom` and deduplicating some minor `@babel` versions).
-
-🛡️ Prevention
-When updating `package.json` dependencies, ensure to always run `pnpm install` and commit the updated `pnpm-lock.yaml` file to avoid breaking CI/CD pipelines that rely on frozen lockfiles.
+💥 The Bug: When the AI provides feedback, it often wraps the JSON response in markdown code blocks, which causes `JSON.parse` to crash and silently breaks the feedback flow.
+🔍 Root Cause: Directly passing `response.content` to `JSON.parse` without sanitizing it meant that perfectly valid JSON, when wrapped in standard markdown fences, resulted in a fatal parse error.
+🛠️ The Fix: Replaced the direct `JSON.parse` call with a step to strip out markdown fences before parsing the AI's content in `src/lib/langgraph.ts`.
+🛡️ Prevention: Wrote `src/lib/__tests__/langgraph-getfeedback.test.ts` to explicitly assert that `getFeedback` strips markdown blocks correctly when parsing responses, ensuring it gracefully handles AI models that inject conversational text or markdown blocks.
