@@ -4,6 +4,7 @@ import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Hero } from '@/components/landing/Hero';
 import { FeatureShowcase } from '@/components/landing/FeatureShowcase';
+
 import { AdaptiveCoachDemo } from '@/components/landing/AdaptiveCoachDemo';
 import { AiInterviewerSection } from '@/components/landing/AiInterviewerSection';
 import { RoadmapPreview } from '@/components/landing/RoadmapPreview';

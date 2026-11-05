@@ -38,7 +38,7 @@ async function passCurrentStep(page: Page, answer: string) {
   } else {
     await textarea.fill(answer);
   }
-  await page.getByRole('button', { name: /Submit for Review/i }).click();
+  await page.getByRole('button', { name: /Submit answer/i }).click();
   await expect(page.getByRole('heading', { name: /Great Job/i })).toBeVisible({ timeout: 15_000 });
   await page.getByRole('button', { name: /Continue to Next Step/i }).click();
   // recordStepSubmission persists in a background server action — let it land

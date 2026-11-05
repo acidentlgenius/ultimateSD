@@ -23,7 +23,7 @@ test.describe('Problem intro step', () => {
 
     await intro.getByRole('button', { name: /I'm ready/i }).click();
     await expect(intro).toBeHidden();
-    await expect(page.getByText('Problem Brief')).toHaveCount(0);
+    await expect(page.getByRole('dialog', { name: /Problem Intro/i })).toBeHidden();
 
     // Open menu tab on desktop to reach Problem brief
     await page.getByRole('button', { name: /Open menu/i }).click();
