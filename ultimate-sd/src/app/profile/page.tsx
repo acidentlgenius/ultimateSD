@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { StatsOverview } from "@/components/profile/StatsOverview";
 import { HistoryList, HistoryItemData } from "@/components/profile/HistoryList";
+import { OfflineSessionsDashboard } from "@/components/profile/OfflineSessionsDashboard";
+
 import { PROBLEMS } from "@/lib/problems";
 import { deriveDisplayStatus } from "@/lib/progress-utils";
 import { SessionStatus } from "@prisma/client";
@@ -148,6 +150,8 @@ export default async function ProfilePage() {
             <ProfileHeader user={user} />
             <StatsOverview stats={stats} />
             <HistoryList history={historyItems} />
+            <OfflineSessionsDashboard />
+
         </div>
     );
 }
