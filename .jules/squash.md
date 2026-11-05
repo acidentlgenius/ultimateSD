@@ -68,3 +68,9 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+
+## 2026-06-31 - Floating Promise with Next.js Server Actions (.catch flaw)
+
+**Learning:** Next.js Server Actions (like `updateStreak`) often return error objects (e.g., `{ error: 'message' }`) instead of throwing exceptions. When calling these actions from client components (like inside `useEffect`), appending `.catch()` to the promise will not catch these application-level errors, causing them to be silently swallowed and ignored.
+
+**Action:** When calling Server Actions from client components, do not use `.catch()`. Instead, wrap the call in an `async` function, `await` the result, and explicitly check the returned object (e.g., `if (result?.error)`) to properly handle and log failures. Also handle `catch` for actual network exceptions.

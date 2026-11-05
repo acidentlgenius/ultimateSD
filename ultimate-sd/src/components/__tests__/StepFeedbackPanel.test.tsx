@@ -68,4 +68,54 @@ describe('StepFeedbackPanel', () => {
 
     expect(screen.queryByText('Your submission')).toBeNull();
   });
+
+  it('handles returned error object from updateStreak action correctly', async () => {
+    const errorObj = { error: 'Failed to update streak' };
+
+    // updateStreak returns an error object, does not throw
+    vi.mocked(updateStreak).mockResolvedValue(errorObj as any);
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const { unmount } = render(
+      <StepFeedbackPanel
+        feedback={{ ...baseFeedback, isAcceptable: true }}
+        probeEntitled={false}
+        onStartProbe={() => {}}
+      />
+    );
+
+    // Give it a moment to run the microtask
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    expect(updateStreak).toHaveBeenCalled();
+    expect(console.error).toHaveBeenCalledWith('Error updating streak:', 'Failed to update streak');
+
+    consoleSpy.mockRestore();
+    unmount();
+  });
+
+  it('handles thrown error from updateStreak action correctly', async () => {
+    const error = new Error('Network error');
+
+    // updateStreak throws a network error
+    vi.mocked(updateStreak).mockRejectedValue(error);
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const { unmount } = render(
+      <StepFeedbackPanel
+        feedback={{ ...baseFeedback, isAcceptable: true }}
+        probeEntitled={false}
+        onStartProbe={() => {}}
+      />
+    );
+
+    // Give it a moment to run the microtask
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    expect(updateStreak).toHaveBeenCalled();
+    expect(console.error).toHaveBeenCalledWith('Error updating streak:', error);
+
+    consoleSpy.mockRestore();
+    unmount();
+  });
 });
