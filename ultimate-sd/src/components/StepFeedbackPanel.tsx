@@ -43,9 +43,19 @@ export default function StepFeedbackPanel({
 
   useEffect(() => {
     if (feedback.isAcceptable && !isCoachedAdvance) {
-      void updateStreak().catch((error) => {
-        console.error('Error updating streak:', error);
-      });
+      const handleStreakUpdate = async () => {
+        try {
+          // SQUASH: Fix: Next.js Server Actions return error objects rather than throwing exceptions.
+          // Appending `.catch` previously caused a silent failure. Now we explicitly await and check for `result.error`.
+          const result = await updateStreak();
+          if (result && 'error' in result && result.error) {
+            console.error('Failed to update streak:', result.error);
+          }
+        } catch (error) {
+          console.error('Error updating streak:', error);
+        }
+      };
+      void handleStreakUpdate();
     }
   }, [feedback.isAcceptable, isCoachedAdvance]);
 

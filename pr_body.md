@@ -1,11 +1,4 @@
-💥 The Bug
-The Vercel deployment is failing with the error `ERR_PNPM_OUTDATED_LOCKFILE Cannot install with "frozen-lockfile" because pnpm-lock.yaml is not up to date with <ROOT>/package.json`.
-
-🔍 Root Cause
-The `package.json` file specified `@testing-library/dom` but this dependency was missing from the `pnpm-lock.yaml` file. Vercel runs `pnpm install --frozen-lockfile` by default on CI environments, which strictly enforces that the lockfile perfectly matches `package.json`. This mismatch caused the build to abort.
-
-🛠️ The Fix
-Ran `pnpm install` locally to update the `pnpm-lock.yaml` file, syncing the lockfile definitions with the updated `package.json` specifiers (specifically adding `@testing-library/dom` and deduplicating some minor `@babel` versions).
-
-🛡️ Prevention
-When updating `package.json` dependencies, ensure to always run `pnpm install` and commit the updated `pnpm-lock.yaml` file to avoid breaking CI/CD pipelines that rely on frozen lockfiles.
+💥 The Bug: Next.js Server Actions return error objects rather than throwing exceptions. Therefore, appending `.catch()` to them inside a `useEffect` fails to catch any application-level errors, leading to a silent failure.
+🔍 Root Cause: The `updateStreak` action is a Next.js Server Action that returns `{ error: '...' }` on failure, instead of rejecting the Promise. The `.catch()` block only handles true network exceptions, not returned error objects. Also, the `preferReducedMotion` ref was being accessed during render in `AdaptiveCoachDemo.tsx`, which violates React's rules and breaks concurrent rendering.
+🛠️ The Fix: The hook call to `updateStreak` inside `StepFeedbackPanel.tsx` has been rewritten. We created an inner `async` wrapper function, explicitly `await`ed the call, and verified whether `result.error` is present. We also converted `preferReducedMotion` from a `useRef` to a `useState` hook in `AdaptiveCoachDemo.tsx` to fix the render phase ref access.
+🛡️ Prevention: Regression tests were added to `StepFeedbackPanel.test.tsx` to handle both mocked server error objects and actual network rejections for `updateStreak`, utilizing `waitFor` for resilience in CI instead of hardcoded timeouts. Linting rules check for `react-hooks/refs`.
