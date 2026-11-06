@@ -4,11 +4,18 @@ import { getEffectivePlanType } from '@/lib/access';
 import { resolveFeatureAccess, type OverrideMode } from '@/lib/feature-flags';
 
 export async function getFeatureFlagState(feature: FeatureKey): Promise<PlanType[]> {
-  const row = await prisma.featureFlag.findUnique({ where: { key: feature } });
-  if (!row) {
+  try {
+    const row = await prisma.featureFlag.findUnique({ where: { key: feature } });
+    if (!row) {
+      return FEATURE_SEED_DEFAULTS[feature];
+    }
+    return row.enabledPlans as PlanType[];
+  } catch (error) {
+    if (process.env.NODE_ENV !== 'test') {
+      console.error('Error fetching feature flag state:', error);
+    }
     return FEATURE_SEED_DEFAULTS[feature];
   }
-  return row.enabledPlans as PlanType[];
 }
 
 export async function canAccessFeature(
@@ -44,18 +51,28 @@ export async function canAccessFeature(
 export async function getAccessibleFeatures(
   userId: string | null
 ): Promise<Record<FeatureKey, boolean>> {
-  const [flags, overrides, user] = await Promise.all([
-    prisma.featureFlag.findMany(),
-    userId
-      ? prisma.featureFlagOverride.findMany({ where: { userId } })
-      : Promise.resolve([]),
-    userId
-      ? prisma.user.findUnique({
-          where: { id: userId },
-          select: { planType: true, planExpiresAt: true },
-        })
-      : Promise.resolve(null),
-  ]);
+  let flags: any[] = [];
+  let overrides: any[] = [];
+  let user: any = null;
+
+  try {
+    [flags, overrides, user] = await Promise.all([
+      prisma.featureFlag.findMany(),
+      userId
+        ? prisma.featureFlagOverride.findMany({ where: { userId } })
+        : Promise.resolve([]),
+      userId
+        ? prisma.user.findUnique({
+            where: { id: userId },
+            select: { planType: true, planExpiresAt: true },
+          })
+        : Promise.resolve(null),
+    ]);
+  } catch (error) {
+    if (process.env.NODE_ENV !== 'test') {
+      console.error('Error fetching accessible features:', error);
+    }
+  }
 
   const plan = user
     ? getEffectivePlanType({ planType: user.planType as PlanType, planExpiresAt: user.planExpiresAt })

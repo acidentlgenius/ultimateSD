@@ -1,7 +1,5 @@
-fix: CI build and lint failures
+fix: Prisma `ECONNREFUSED` build crashes and E2E timeouts
 
-- Wrapped `prisma.blogPost.findMany` inside a `try...catch` block in `blog-posts.ts` to return an empty array if the database connection fails, preventing `ECONNREFUSED` build crashes on `/sitemap.xml` generation.
-- Replaced `useRef` with `useState` for `preferReducedMotion` in `AdaptiveCoachDemo.tsx` to fix ESLint `Cannot access refs during render` violations.
-- Wrapped `vi.advanceTimersByTimeAsync` with `await act(async () => { ... })` and imported `act` from `@testing-library/react` in `DiagramCanvas.test.tsx` to fix React state update warnings during tests.
-- Replaced the `.catch` logic inside `useEffect` in `StepFeedbackPanel.tsx` with an `async` function checking for `result?.error` handling server action return types.
-- Added `aria-describedby={undefined}` to `<DialogContent>` in `FeedbackModal.tsx` to fix Radix accessibility warnings.
+- Wrapped `prisma.launchOfferRedemption.count()` inside a `try...catch` block in `getLaunchOfferStats()` (in `launch-offer-grant.ts`) to prevent Next.js build crashes when the DB is unreachable during static pre-rendering.
+- Wrapped `prisma.featureFlag.findUnique()` and `prisma.featureFlag.findMany()` inside `try...catch` blocks in `getFeatureFlagState` and `getAccessibleFeatures` (in `feature-flags-server.ts`) to prevent Next.js build crashes and subsequent E2E timeouts.
+- Removed empty objects `{}` from `deleteMany()` calls in `seed-e2e.ts` to prevent Prisma `Invalid invocation` validation errors during the E2E seed step.
