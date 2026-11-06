@@ -1,11 +1,5 @@
-💥 The Bug
-The Vercel deployment is failing with the error `ERR_PNPM_OUTDATED_LOCKFILE Cannot install with "frozen-lockfile" because pnpm-lock.yaml is not up to date with <ROOT>/package.json`.
+fix: Prisma `ECONNREFUSED` build crashes and E2E timeouts
 
-🔍 Root Cause
-The `package.json` file specified `@testing-library/dom` but this dependency was missing from the `pnpm-lock.yaml` file. Vercel runs `pnpm install --frozen-lockfile` by default on CI environments, which strictly enforces that the lockfile perfectly matches `package.json`. This mismatch caused the build to abort.
-
-🛠️ The Fix
-Ran `pnpm install` locally to update the `pnpm-lock.yaml` file, syncing the lockfile definitions with the updated `package.json` specifiers (specifically adding `@testing-library/dom` and deduplicating some minor `@babel` versions).
-
-🛡️ Prevention
-When updating `package.json` dependencies, ensure to always run `pnpm install` and commit the updated `pnpm-lock.yaml` file to avoid breaking CI/CD pipelines that rely on frozen lockfiles.
+- Wrapped `prisma.launchOfferRedemption.count()` inside a `try...catch` block in `getLaunchOfferStats()` (in `launch-offer-grant.ts`) to prevent Next.js build crashes when the DB is unreachable during static pre-rendering.
+- Wrapped `prisma.featureFlag.findUnique()` and `prisma.featureFlag.findMany()` inside `try...catch` blocks in `getFeatureFlagState` and `getAccessibleFeatures` (in `feature-flags-server.ts`) to prevent Next.js build crashes and subsequent E2E timeouts.
+- Removed empty objects `{}` from `deleteMany()` calls in `seed-e2e.ts` to prevent Prisma `Invalid invocation` validation errors during the E2E seed step.
