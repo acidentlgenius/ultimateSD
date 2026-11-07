@@ -74,3 +74,9 @@
 **Learning:** Next.js Server Actions return error objects (e.g., `{ error: 'message' }`) instead of throwing exceptions. When calling them as floating promises using `.catch()` inside side effects like `StepFeedbackPanel`'s `useEffect`, the `.catch` block never triggers on logical server errors. This leads to silent failures and prevents proper error logging.
 
 **Action:** Always wrap async Server Action calls in an inner async function inside the `useEffect`. Await the result, explicitly check for returned error objects (e.g., `if (result?.error)`), and log them properly. Ensure tests cover both network errors (rejected promises) and logical server errors (resolved error objects).
+
+## 2026-11-07 - [Cannot access refs during render]
+
+**Learning:** Accessing a `useRef`'s `.current` value directly inside the component render body violates the `react-hooks/refs` linting rule and causes an ESLint error `Error: Cannot access refs during render`. Refs are mutable variables that do not trigger re-renders, and accessing them during rendering breaks React's concurrent rendering guarantees.
+
+**Action:** If a value needs to conditionally control the render output (like `preferReducedMotion`), implement it using `useState` instead of `useRef`. Update the state inside `useEffect` on mount. Make sure to add this state variable to the dependency arrays of any other `useEffect` hooks that rely on it to prevent stale closures.
