@@ -68,3 +68,33 @@
 **Learning:** When using dynamic timers (`setInterval`, `setTimeout`) inside a `useEffect` that frequently re-runs due to dependency changes (like crawler state variables changing), clearing the timeouts in that same `useEffect`'s cleanup function will prematurely kill those timeouts during re-renders, breaking the logic (e.g. killing timeouts that were meant to simulate sequential crawler steps).
 
 **Action:** Store timeout IDs in a `useRef` (e.g., `useRef(new Set<NodeJS.Timeout>())`) and clear them exclusively in a separate unmount-only `useEffect` (with an empty `[]` dependency array) to prevent memory leaks while preserving asynchronous functionality across state-induced re-renders.
+
+## 2026-06-31 - [Floating Promises with Next.js Server Actions in StepFeedbackPanel]
+
+**Learning:** Next.js Server Actions return error objects (e.g., `{ error: 'message' }`) instead of throwing exceptions. When calling them as floating promises using `.catch()` inside side effects like `StepFeedbackPanel`'s `useEffect`, the `.catch` block never triggers on logical server errors. This leads to silent failures and prevents proper error logging.
+
+**Action:** Always wrap async Server Action calls in an inner async function inside the `useEffect`. Await the result, explicitly check for returned error objects (e.g., `if (result?.error)`), and log them properly. Ensure tests cover both network errors (rejected promises) and logical server errors (resolved error objects).
+
+## 2026-11-07 - [Cannot access refs during render]
+
+**Learning:** Accessing a `useRef`'s `.current` value directly inside the component render body violates the `react-hooks/refs` linting rule and causes an ESLint error `Error: Cannot access refs during render`. Refs are mutable variables that do not trigger re-renders, and accessing them during rendering breaks React's concurrent rendering guarantees.
+
+**Action:** If a value needs to conditionally control the render output (like `preferReducedMotion`), implement it using `useState` instead of `useRef`. Update the state inside `useEffect` on mount. Make sure to add this state variable to the dependency arrays of any other `useEffect` hooks that rely on it to prevent stale closures.
+
+## 2026-11-07 - [ECONNREFUSED during prerender]
+
+**Learning:** When deploying or building a Next.js application (e.g. `next build` or `pnpm build`), any page or route that requires prerendering (like `sitemap.xml`) and fetches data from Prisma will fail and abort the build with `ECONNREFUSED` if the database is unreachable.
+
+**Action:** Wrap database queries during Next.js build-time execution (like `generateSitemaps` or route prerendering) in `try/catch` blocks and gracefully degrade (e.g. return default empty arrays) if the database is unreachable to ensure successful CI/CD pipeline builds.
+
+## 2026-11-07 - [Invalid deleteMany invocation with empty object]
+
+**Learning:** When clearing Prisma tables in seed scripts (e.g. `deleteMany({})`), passing an empty object as an argument can trigger a `PrismaClientKnownRequestError: Invalid invocation` depending on the Prisma version and schema structure.
+
+**Action:** When calling `deleteMany` to wipe an entire table without conditions, omit the empty object argument and call it with no arguments: `await prisma.model.deleteMany()`.
+
+## 2026-11-07 - [Vitest mock hoisting with undefined external variables]
+
+**Learning:** When using `vi.mock` to mock external modules that rely on variables defined in the test file (like mock functions), defining those variables *after* the `vi.mock` call or using standard `const` declarations will result in them being undefined when the mock factory executes, since `vi.mock` is hoisted to the top of the file by Vitest during compilation.
+
+**Action:** If a mock factory needs to reference external variables, define those variables using `vi.hoisted(() => ...)` before or above the `vi.mock` call. This explicitly hoists the variables to the top of the file alongside the mock, ensuring they are initialized and accessible during module mocking.

@@ -17,12 +17,19 @@ vi.mock('@/lib/prisma', () => ({
   },
 }));
 vi.mock('next/cache', () => ({ revalidatePath: (...args: unknown[]) => mockRevalidatePath(...args) }));
-vi.mock('@/lib/email', () => ({
-  EmailConfigurationError: class EmailConfigurationError extends Error {
+vi.hoisted(() => {
+  class EmailConfigurationError extends Error {
     name = 'EmailConfigurationError';
-  },
-  sendPlanWelcomeEmail: (...args: unknown[]) => mockSendPlanWelcomeEmail(...args),
-}));
+  }
+  (global as any).EmailConfigurationError = EmailConfigurationError;
+});
+
+vi.mock('@/lib/email', () => {
+  return {
+    EmailConfigurationError: (global as any).EmailConfigurationError,
+    sendPlanWelcomeEmail: (...args: unknown[]) => mockSendPlanWelcomeEmail(...args),
+  };
+});
 vi.mock('@/lib/launch-offer-grant', () => ({
   grantAdminPlatformPlan: (...args: unknown[]) => mockGrantAdminPlatformPlan(...args),
 }));

@@ -19,7 +19,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.9,
     }))
 
-    const blogPosts = await getPublishedBlogPosts()
+    let blogPosts: Awaited<ReturnType<typeof getPublishedBlogPosts>> = []
+    try {
+        blogPosts = await getPublishedBlogPosts()
+    } catch (e) {
+        console.warn('Could not fetch blog posts for sitemap', e)
+    }
     const blogUrls = blogPosts.map((post) => ({
         url: `${SITE_URL}/blog/${post.slug}`,
         lastModified: post.updatedAt,

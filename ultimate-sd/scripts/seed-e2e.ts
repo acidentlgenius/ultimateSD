@@ -120,8 +120,8 @@ export async function seedE2eAdminUser() {
  * is sufficient — no need to recreate them with `enabledPlans: []`.
  */
 export async function resetE2eFeatureFlags() {
-  await prisma.featureFlagOverride.deleteMany({});
-  await prisma.featureFlag.deleteMany({});
+  await prisma.featureFlagOverride.deleteMany();
+  await prisma.featureFlag.deleteMany();
 }
 
 export async function setFeatureFlagStateForE2e(

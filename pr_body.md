@@ -1,11 +1,20 @@
-💥 The Bug
-The Vercel deployment is failing with the error `ERR_PNPM_OUTDATED_LOCKFILE Cannot install with "frozen-lockfile" because pnpm-lock.yaml is not up to date with <ROOT>/package.json`.
+💥 The Bug:
+In `StepFeedbackPanel.tsx`, the `updateStreak` Server Action was being called as a floating promise (`void updateStreak().catch(...)`). Because Next.js Server Actions in this project return error objects instead of throwing exceptions, the `.catch` block never executed on application-level errors, silently swallowing streak update failures. Additionally, several build and test errors were occurring due to unhandled database connection failures (`ECONNREFUSED`) during Next.js prerendering, a `Cannot access refs during render` error in `AdaptiveCoachDemo.tsx`, a playwright E2E failure due to missing DOM elements on the dashboard, and a Vitest `ReferenceError` during mocking.
 
-🔍 Root Cause
-The `package.json` file specified `@testing-library/dom` but this dependency was missing from the `pnpm-lock.yaml` file. Vercel runs `pnpm install --frozen-lockfile` by default on CI environments, which strictly enforces that the lockfile perfectly matches `package.json`. This mismatch caused the build to abort.
+🔍 Root Cause:
+1. Server Actions return `{ error: string }` instead of rejecting the promise on logical server errors. Appending `.catch()` only captures network-level errors, leaving server logic failures unhandled.
+2. Next.js prerendering steps (`sitemap.ts`, etc.) crash the build if the database is unreachable (`ECONNREFUSED`) when making Prisma calls.
+3. Accessing a `useRef`'s `.current` property during the render phase in `AdaptiveCoachDemo.tsx` violates React's concurrent rendering rules.
+4. E2E tests for the guest funnel failed because `DashboardClient.tsx` was missing the `StartHereTrack` component, which the tests expected to interact with.
+5. In `admin.test.ts`, mock variables were accessed inside `vi.mock` before initialization, resulting in ReferenceErrors during hoisting.
 
-🛠️ The Fix
-Ran `pnpm install` locally to update the `pnpm-lock.yaml` file, syncing the lockfile definitions with the updated `package.json` specifiers (specifically adding `@testing-library/dom` and deduplicating some minor `@babel` versions).
+🛠️ The Fix:
+1. Refactored the `useEffect` in `StepFeedbackPanel.tsx` to explicitly `await` the Server Action and check for the `error` property to log it appropriately.
+2. Wrapped database queries in `try/catch` blocks in `sitemap.ts`, `feature-flags-server.ts`, and `launch-offer-grant.ts` to gracefully degrade if the database is unreachable during Next.js builds.
+3. Changed `preferReducedMotion` from `useRef` to `useState` in `AdaptiveCoachDemo.tsx` and added it to the `useEffect` dependency arrays, resolving the linter error.
+4. Added the missing `StartHereTrack` and `MostAskedSection` components back to the unauthenticated view in `DashboardClient.tsx` so E2E tests pass.
+5. Fixed `deleteMany({})` in `seed-e2e.ts` to `deleteMany()` to prevent Prisma invalid invocation errors.
+6. Wrapped `EmailConfigurationError` and `sendPlanWelcomeEmail` mocks with `vi.hoisted()` in `admin.test.ts` to fix reference errors during test initialization.
 
-🛡️ Prevention
-When updating `package.json` dependencies, ensure to always run `pnpm install` and commit the updated `pnpm-lock.yaml` file to avoid breaking CI/CD pipelines that rely on frozen lockfiles.
+🛡️ Prevention:
+Created robust regression tests in `src/components/__tests__/StepFeedbackPanel.defend.test.tsx` that explicitly mock both server action failures (resolved error object) and network failures (rejected promise), verifying that the errors are logged correctly in both scenarios. Added journal entries for the `ECONNREFUSED`, `deleteMany({})`, and `vi.hoisted()` issues.

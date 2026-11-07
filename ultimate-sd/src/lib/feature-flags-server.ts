@@ -4,11 +4,15 @@ import { getEffectivePlanType } from '@/lib/access';
 import { resolveFeatureAccess, type OverrideMode } from '@/lib/feature-flags';
 
 export async function getFeatureFlagState(feature: FeatureKey): Promise<PlanType[]> {
-  const row = await prisma.featureFlag.findUnique({ where: { key: feature } });
-  if (!row) {
+  try {
+    const row = await prisma.featureFlag.findUnique({ where: { key: feature } });
+    if (!row) {
+      return FEATURE_SEED_DEFAULTS[feature];
+    }
+    return row.enabledPlans as PlanType[];
+  } catch (error) {
     return FEATURE_SEED_DEFAULTS[feature];
   }
-  return row.enabledPlans as PlanType[];
 }
 
 export async function canAccessFeature(
@@ -44,7 +48,11 @@ export async function canAccessFeature(
 export async function getAccessibleFeatures(
   userId: string | null
 ): Promise<Record<FeatureKey, boolean>> {
-  const [flags, overrides, user] = await Promise.all([
+  let flags: any[] = [];
+  let overrides: any[] = [];
+  let user = null;
+  try {
+    const results = await Promise.all([
     prisma.featureFlag.findMany(),
     userId
       ? prisma.featureFlagOverride.findMany({ where: { userId } })
@@ -55,7 +63,13 @@ export async function getAccessibleFeatures(
           select: { planType: true, planExpiresAt: true },
         })
       : Promise.resolve(null),
-  ]);
+    ]);
+    flags = results[0];
+    overrides = results[1];
+    user = results[2];
+  } catch (e) {
+    console.warn("Could not fetch feature flags");
+  }
 
   const plan = user
     ? getEffectivePlanType({ planType: user.planType as PlanType, planExpiresAt: user.planExpiresAt })
