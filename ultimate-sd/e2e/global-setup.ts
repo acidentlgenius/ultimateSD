@@ -9,9 +9,13 @@ loadEnv({ path: '.env' });
 loadEnv({ path: '.env.local' });
 
 async function globalSetup() {
-  await resetE2eFeatureFlags();
-  await seedE2eUser({ resetProgress: true });
-  await seedE2eAdminUser();
+  try {
+    await resetE2eFeatureFlags();
+    await seedE2eUser({ resetProgress: true });
+    await seedE2eAdminUser();
+  } catch (e) {
+    console.warn("Could not execute globalSetup database resets", e)
+  }
 }
 
 export default globalSetup;

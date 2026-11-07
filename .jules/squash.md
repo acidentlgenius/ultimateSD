@@ -80,3 +80,15 @@
 **Learning:** Accessing a `useRef`'s `.current` value directly inside the component render body violates the `react-hooks/refs` linting rule and causes an ESLint error `Error: Cannot access refs during render`. Refs are mutable variables that do not trigger re-renders, and accessing them during rendering breaks React's concurrent rendering guarantees.
 
 **Action:** If a value needs to conditionally control the render output (like `preferReducedMotion`), implement it using `useState` instead of `useRef`. Update the state inside `useEffect` on mount. Make sure to add this state variable to the dependency arrays of any other `useEffect` hooks that rely on it to prevent stale closures.
+
+## 2026-11-07 - [ECONNREFUSED during prerender]
+
+**Learning:** When deploying or building a Next.js application (e.g. `next build` or `pnpm build`), any page or route that requires prerendering (like `sitemap.xml`) and fetches data from Prisma will fail and abort the build with `ECONNREFUSED` if the database is unreachable.
+
+**Action:** Wrap database queries during Next.js build-time execution (like `generateSitemaps` or route prerendering) in `try/catch` blocks and gracefully degrade (e.g. return default empty arrays) if the database is unreachable to ensure successful CI/CD pipeline builds.
+
+## 2026-11-07 - [Invalid deleteMany invocation with empty object]
+
+**Learning:** When clearing Prisma tables in seed scripts (e.g. `deleteMany({})`), passing an empty object as an argument can trigger a `PrismaClientKnownRequestError: Invalid invocation` depending on the Prisma version and schema structure.
+
+**Action:** When calling `deleteMany` to wipe an entire table without conditions, omit the empty object argument and call it with no arguments: `await prisma.model.deleteMany()`.
