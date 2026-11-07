@@ -92,3 +92,9 @@
 **Learning:** When clearing Prisma tables in seed scripts (e.g. `deleteMany({})`), passing an empty object as an argument can trigger a `PrismaClientKnownRequestError: Invalid invocation` depending on the Prisma version and schema structure.
 
 **Action:** When calling `deleteMany` to wipe an entire table without conditions, omit the empty object argument and call it with no arguments: `await prisma.model.deleteMany()`.
+
+## 2026-11-07 - [Vitest mock hoisting with undefined external variables]
+
+**Learning:** When using `vi.mock` to mock external modules that rely on variables defined in the test file (like mock functions), defining those variables *after* the `vi.mock` call or using standard `const` declarations will result in them being undefined when the mock factory executes, since `vi.mock` is hoisted to the top of the file by Vitest during compilation.
+
+**Action:** If a mock factory needs to reference external variables, define those variables using `vi.hoisted(() => ...)` before or above the `vi.mock` call. This explicitly hoists the variables to the top of the file alongside the mock, ensuring they are initialized and accessible during module mocking.
