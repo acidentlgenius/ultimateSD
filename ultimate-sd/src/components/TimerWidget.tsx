@@ -154,8 +154,7 @@ export function TimerWidget({
             expireCalledRef.current = false;
             countdown.restart(serverCountdownExpiry, isTimerRunning);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [startedAt, isCountUp, isTimerRunning, serverStopwatchOffset, serverCountdownExpiry]);
+            }, [startedAt, isCountUp, isTimerRunning, serverStopwatchOffset, serverCountdownExpiry]);
 
     // Local countdown start (once expiry is loaded)
     useEffect(() => {
@@ -163,8 +162,7 @@ export function TimerWidget({
         localStartedRef.current = true;
         expireCalledRef.current = false;
         countdown.restart(localExpiry, localAutoStart);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [startedAt, isCountUp, localExpiry, localAutoStart]);
+            }, [startedAt, isCountUp, localExpiry, localAutoStart]);
 
     // Persist local countdown ticks
     useEffect(() => {
