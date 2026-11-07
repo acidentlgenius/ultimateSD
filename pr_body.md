@@ -1,11 +1,11 @@
-💥 The Bug
-The Vercel deployment is failing with the error `ERR_PNPM_OUTDATED_LOCKFILE Cannot install with "frozen-lockfile" because pnpm-lock.yaml is not up to date with <ROOT>/package.json`.
+💥 The Bug:
+In `StepFeedbackPanel.tsx`, the `updateStreak` Server Action was being called as a floating promise (`void updateStreak().catch(...)`). Because Next.js Server Actions in this project return error objects instead of throwing exceptions, the `.catch` block never executed on application-level errors, silently swallowing streak update failures.
 
-🔍 Root Cause
-The `package.json` file specified `@testing-library/dom` but this dependency was missing from the `pnpm-lock.yaml` file. Vercel runs `pnpm install --frozen-lockfile` by default on CI environments, which strictly enforces that the lockfile perfectly matches `package.json`. This mismatch caused the build to abort.
+🔍 Root Cause:
+Server Actions return `{ error: string }` instead of rejecting the promise on logical server errors. Appending `.catch()` only captures network-level errors, leaving server logic failures unhandled.
 
-🛠️ The Fix
-Ran `pnpm install` locally to update the `pnpm-lock.yaml` file, syncing the lockfile definitions with the updated `package.json` specifiers (specifically adding `@testing-library/dom` and deduplicating some minor `@babel` versions).
+🛠️ The Fix:
+Refactored the `useEffect` in `StepFeedbackPanel.tsx` to use an inner `async` function (`handleStreakUpdate`). The action is now `await`ed, and the returned object is explicitly checked for the `error` property to log it appropriately.
 
-🛡️ Prevention
-When updating `package.json` dependencies, ensure to always run `pnpm install` and commit the updated `pnpm-lock.yaml` file to avoid breaking CI/CD pipelines that rely on frozen lockfiles.
+🛡️ Prevention:
+Created robust regression tests in `src/components/__tests__/StepFeedbackPanel.defend.test.tsx` that explicitly mock both server action failures (resolved error object) and network failures (rejected promise), verifying that the errors are logged correctly in both scenarios.
