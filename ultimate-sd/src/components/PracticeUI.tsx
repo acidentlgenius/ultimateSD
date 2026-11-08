@@ -828,7 +828,7 @@ function PracticeUIContent({
             {isMounted ? (
               <Sheet>
                 <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Open menu">
+                  <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Open menu" title="Open menu">
                     <Menu className="h-4 w-4" />
                   </Button>
                 </SheetTrigger>
@@ -837,7 +837,7 @@ function PracticeUIContent({
                 </SheetContent>
               </Sheet>
             ) : (
-              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Open menu">
+              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Open menu" title="Open menu">
                 <Menu className="h-4 w-4" />
               </Button>
             )}
