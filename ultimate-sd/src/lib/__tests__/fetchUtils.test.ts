@@ -2,6 +2,25 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { fetchWithRetry, getFetchErrorMessage, getUserFacingFetchError, HttpError, isAiAccessUserError } from '../fetchUtils';
 
 describe('fetchWithRetry', () => {
+  it('should use exponential backoff with jitter on retries', async () => {
+    (global.fetch as any).mockRejectedValue(new Error('Network error'));
+    const spy = vi.spyOn(global, 'setTimeout');
+
+    const promise = fetchWithRetry('/api/test', { retries: 2, retryDelay: 100 });
+    const catchPromise = promise.catch(() => {});
+
+    await vi.runAllTimersAsync();
+    await catchPromise;
+
+    const timeoutCalls = spy.mock.calls.filter(call => typeof call[1] === 'number');
+
+    // First is the abort controller timeout, skip it
+    const delay1 = timeoutCalls.find(c => c[1] >= 100 && c[1] <= 110);
+    expect(delay1).toBeDefined();
+
+    const delay2 = timeoutCalls.find(c => c[1] >= 200 && c[1] <= 220);
+    expect(delay2).toBeDefined();
+  });
   beforeEach(() => {
     vi.stubGlobal('fetch', vi.fn());
     vi.useFakeTimers();

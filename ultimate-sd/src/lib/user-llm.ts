@@ -71,7 +71,7 @@ function selectApiKey(user: UserAccess): Record<string, string | null> | null {
 
 function createGeminiLLM(apiKey: string, temperature = 0.7): ChatGoogleGenerativeAI {
   return new ChatGoogleGenerativeAI({
-    model: 'gemini-2.5-flash-lite',
+    model: 'gemini-2.5-flash',
     apiKey,
     temperature,
   });

@@ -133,7 +133,13 @@ export async function fetchWithRetry(url: string, options: FetchWithRetryOptions
         throw error;
       }
       attempt++;
-      await new Promise(resolve => setTimeout(resolve, retryDelay));
+      // Exponential backoff with max delay and jitter to prevent thundering herd
+      const baseDelay = retryDelay * Math.pow(2, attempt - 1);
+      const maxDelay = 10000; // Cap delay at 10s
+      const delay = Math.min(baseDelay, maxDelay);
+      const jitter = Math.random() * (delay * 0.1); // 10% jitter
+
+      await new Promise(resolve => setTimeout(resolve, delay + jitter));
     } finally {
       clearTimeout(timeoutId);
     }
