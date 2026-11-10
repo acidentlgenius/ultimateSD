@@ -1,11 +1,6 @@
-💥 The Bug
-The Vercel deployment is failing with the error `ERR_PNPM_OUTDATED_LOCKFILE Cannot install with "frozen-lockfile" because pnpm-lock.yaml is not up to date with <ROOT>/package.json`.
-
-🔍 Root Cause
-The `package.json` file specified `@testing-library/dom` but this dependency was missing from the `pnpm-lock.yaml` file. Vercel runs `pnpm install --frozen-lockfile` by default on CI environments, which strictly enforces that the lockfile perfectly matches `package.json`. This mismatch caused the build to abort.
-
-🛠️ The Fix
-Ran `pnpm install` locally to update the `pnpm-lock.yaml` file, syncing the lockfile definitions with the updated `package.json` specifiers (specifically adding `@testing-library/dom` and deduplicating some minor `@babel` versions).
-
-🛡️ Prevention
-When updating `package.json` dependencies, ensure to always run `pnpm install` and commit the updated `pnpm-lock.yaml` file to avoid breaking CI/CD pipelines that rely on frozen lockfiles.
+💡 What: Added `aria-label` and `title` attributes to all icon-only formatting buttons in the `BlogEditor` toolbar (e.g., Bold, Italic, Heading 2).
+🎯 Why: Without these attributes, screen readers only announce these buttons as "button", making the editor completely inaccessible to visually impaired users. The missing titles also meant sighted users had no tooltips to understand less obvious icons.
+📸 Before/After:
+Before: `<Button size="icon-sm"><Bold /></Button>`
+After: `<Button size="icon-sm" aria-label="Bold" title="Bold"><Bold /></Button>`
+♿ Accessibility: The toolbar is now fully navigable and understandable by screen readers, adhering to WCAG guidelines for icon-only interactive elements.
