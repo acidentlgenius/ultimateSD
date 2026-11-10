@@ -32,26 +32,22 @@ export function AdaptiveCoachDemo() {
   const [playing, setPlaying] = useState(true);
   const [elapsedMs, setElapsedMs] = useState(0);
   const [replayKey, setReplayKey] = useState(0);
-  const [preferReducedMotion, setPreferReducedMotion] = useState(false);
+  const preferReducedMotion = useRef(false);
+  const [isReduced, setIsReduced] = useState(false);
 
   const script = useMemo(() => getDemoScript(level), [level]);
   const durationMs = useMemo(() => scriptDurationMs(script), [script]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-      setPreferReducedMotion(mediaQuery.matches);
-
-      const listener = (e: MediaQueryListEvent) => setPreferReducedMotion(e.matches);
-      mediaQuery.addEventListener('change', listener);
-      return () => mediaQuery.removeEventListener('change', listener);
-    }
+    const reduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    preferReducedMotion.current = reduced;
+    setIsReduced(reduced);
   }, []);
 
   // Restart clock when level or replay changes
   useEffect(() => {
-    setElapsedMs(preferReducedMotion ? durationMs : 0);
-    setPlaying(!preferReducedMotion);
+    setElapsedMs(isReduced ? durationMs : 0);
+    setPlaying(!isReduced);
   }, [level, replayKey, durationMs]);
 
   useEffect(() => {
@@ -78,9 +74,7 @@ export function AdaptiveCoachDemo() {
     }
   }, [playing, elapsedMs, durationMs]);
 
-  const shown = preferReducedMotion
-    ? script
-    : visibleBeats(script, elapsedMs);
+  const shown = isReduced ? script : visibleBeats(script, elapsedMs);
   const finished = elapsedMs >= durationMs;
   const nextBeat = script.find((b) => b.atMs > elapsedMs);
   const showTyping =
@@ -158,7 +152,7 @@ export function AdaptiveCoachDemo() {
             {shown.map((beat) => (
               <motion.div
                 key={`${level}-${beat.id}`}
-                initial={preferReducedMotion ? false : { opacity: 0, y: 10 }}
+                initial={isReduced ? false : { opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.28 }}
               >
