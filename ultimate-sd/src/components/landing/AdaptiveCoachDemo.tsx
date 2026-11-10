@@ -33,21 +33,19 @@ export function AdaptiveCoachDemo() {
   const [elapsedMs, setElapsedMs] = useState(0);
   const [replayKey, setReplayKey] = useState(0);
   const [preferReducedMotion, setPreferReducedMotion] = useState(false);
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    setPreferReducedMotion(mediaQuery.matches);
-    const listener = () => setPreferReducedMotion(mediaQuery.matches);
-    mediaQuery.addEventListener('change', listener);
-    return () => mediaQuery.removeEventListener('change', listener);
-  }, []);
 
   const script = useMemo(() => getDemoScript(level), [level]);
   const durationMs = useMemo(() => scriptDurationMs(script), [script]);
 
   useEffect(() => {
-    preferReducedMotion =
-      typeof window !== 'undefined' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (typeof window !== 'undefined') {
+      const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+      setPreferReducedMotion(mediaQuery.matches);
+
+      const listener = (e: MediaQueryListEvent) => setPreferReducedMotion(e.matches);
+      mediaQuery.addEventListener('change', listener);
+      return () => mediaQuery.removeEventListener('change', listener);
+    }
   }, []);
 
   // Restart clock when level or replay changes
