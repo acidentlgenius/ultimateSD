@@ -1,0 +1,6 @@
+feat(llm): replace workaround with native @langchain/xai integration
+
+- Installed `@langchain/xai` package which was missing from the ecosystem previously.
+- Replaced `ChatOpenAI` fallback with the proper `ChatXAI` class for handling the 'xai' provider.
+- Added `report.json` detailing the R&D exploration and implementation.
+- Fixed a lint error related to `react-hooks/refs` in AdaptiveCoachDemo.

@@ -1,5 +1,6 @@
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import { ChatOpenAI, AzureChatOpenAI } from '@langchain/openai';
+import { ChatXAI } from '@langchain/xai';
 import { ChatAnthropic } from '@langchain/anthropic';
 import { ChatBedrockConverse } from '@langchain/aws';
 import { ChatOllama } from '@langchain/ollama';
@@ -85,14 +86,11 @@ function createOpenAILLM(apiKey: string, temperature = 0.7): ChatOpenAI {
   });
 }
 
-function createXaiLLM(apiKey: string, temperature = 0.7): ChatOpenAI {
-  return new ChatOpenAI({
-    modelName: 'grok-2-latest',
-    openAIApiKey: apiKey,
+function createXaiLLM(apiKey: string, temperature = 0.7): ChatXAI {
+  return new ChatXAI({
+    model: 'grok-2-latest',
+    apiKey,
     temperature,
-    configuration: {
-        baseURL: "https://api.x.ai/v1",
-    }
   });
 }
 
